@@ -68,11 +68,14 @@ fit for you:
 
 Supported Pico versions
 =======================
-You can use any version of the Pico. We support them all:
+The following versions of the Pico are supported:
 
 * Pico 1
-* Pico 1W
 * Pico 2
+
+The following versions of the Pico are **not** supported:
+
+* Pico 1W
 * Pico 2W
 
 .. _showcase-sense-tutorial-intro-summary:

@@ -116,14 +116,9 @@ See :ref:`Figure 1 <showcase-sense-figure-1>`.
    While the Enviro+ pack has a display, at time of writing (August 2024)
    Pigweed’s display subsystem isn’t ready yet, so there is no display use.
 
-.. _Pico W: https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html#raspberry-pi-pico-w-and-pico-wh
-
 .. caution::
 
-   **The Pico W is untested**. We are still in the process of verifying that
-   all parts of the tutorial work with the `Pico W`_. You are welcome to try
-   the tutorial with a Pico W, but please remember that some things may not
-   work yet.
+   **The Pico 1W and Pico 2W aren't supported.**
 
 .. _showcase-sense-codebase:
 

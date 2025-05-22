@@ -13,14 +13,21 @@ Enviro+ sensors.
 
 .. important::
 
-   This section requires a Pimoroni Enviro+ Pack. If you don't have one,
-   skip ahead to :ref:`showcase-sense-tutorial-bazel_cloud`.
+   This section requires the :ref:`full setup <showcase-sense-tutorial-hardware>`.
+   If you don't have the full setup, skip ahead to
+   :ref:`showcase-sense-tutorial-bazel_cloud`.
 
 .. _showcase-sense-tutorial-factory-flash:
 
 ----------------------------------
 Flash the factory app to your Pico
 ----------------------------------
+.. warning::
+
+   The factory workflow currently does not work with the Pico 2.
+   See :bug:`382073705`. If you're using a Pico 2, skip ahead to
+   :ref:`showcase-sense-tutorial-bazel_cloud`.
+
 #. Flash the ``factory`` binary to your Pico.
 
    .. tab-set::
@@ -30,13 +37,13 @@ Flash the factory app to your Pico
 
          .. tab-set::
 
-            .. tab-item:: Pico 1 & 1W (RP2040)
+            .. tab-item:: Pico 1 (RP2040)
 
                In **Bazel Build Targets** expand **//apps/factory**, then
-               right-click **:flash_rp2040 (native_binary)**, then select **Run
+               right-click **:flash (native_binary)**, then select **Run
                target**.
 
-            .. tab-item:: Pico 2 & 2W (RP2350)
+            .. tab-item:: Pico 2 (RP2350)
 
                In **Bazel Build Targets** expand **//apps/factory**, then
                right-click **:flash_rp2350 (native_binary)**, then select **Run
@@ -47,17 +54,20 @@ Flash the factory app to your Pico
 
          .. tab-set::
 
-            .. tab-item:: Pico 1 & 1W (RP2040)
+            .. tab-item:: Pico 1 (RP2040)
 
                .. code-block:: console
 
-                  bazelisk run //apps/factory:flash_rp2040
+                  bazelisk run //apps/factory:flash
 
-            .. tab-item:: Pico 2 & 2W (RP2350)
+            .. tab-item:: Pico 2 (RP2350)
 
                .. code-block:: console
 
                   bazelisk run //apps/factory:flash_rp2350
+
+When you see the ``Please select a serial port device`` prompt, select
+the Debug Probe, not the Pico.
 
 .. _showcase-sense-tutorial-factory-tests:
 
@@ -91,6 +101,9 @@ Exercise the sensors
       [Errno 16] Device or resource busy``. Close the browser tab running the
       web app. The factory script couldn't connect to your Pico because the
       web app is still connected to the Pico.
+
+   When you see the ``Please select a serial port device`` prompt, select
+   the Debug Probe, not the Pico.
 
 #. Follow the prompts in the factory testing script. It's OK if some
    tests don't pass. This is just an example factory-at-your-desk

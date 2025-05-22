@@ -16,28 +16,17 @@ Teams often have common commands or RPCs they need to run while
 debugging or developing a product. You can put these in snippets
 for easy sharing across your team. Try running a snippet now:
 
-#. If you don't already have a ``pw_console`` instance connected to
-   a Pico, connect one now:
-
-   .. tab-set::
-
-      .. tab-item:: Pico 1 & 1W (RP2040)
-
-         .. code-block:: console
-
-            bazelisk run //apps/blinky:rp2040_console
-
-      .. tab-item:: Pico 2 & 2W (RP2350)
-
-         .. code-block:: console
-
-            bazelisk run //apps/blinky:rp2350_console
+#. If you just completed the previous step, then you should still have
+   a ``pw_console`` instance running. If not, open one now. Refer back
+   to the previous step, :ref:`showcase-sense-tutorial-pico-rpc-interact`,
+   for a refresher on how to launch ``pw_console``.
 
 #. In ``pw_console`` click **File** then click **Insert Repl Snippet**.
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/snippet_v1.png
 
 #. Select **Echo RPC** with your keyboard and then press :kbd:`Enter`.
+   The command doesn't run yet. It only gets populated into **Python Repl**.
 
    .. admonition:: Troubleshooting
 
@@ -97,6 +86,10 @@ everything into a script.
          .. code-block:: console
 
             $ bazelisk run //tools:example_script
+
+If you've got both a Pico and a Debug Probe connected to your development host
+and you see the ``Please select a serial port device`` prompt, select the Debug
+Probe, not the Pico.
 
 .. admonition:: Troubleshooting
 

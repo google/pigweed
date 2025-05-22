@@ -6,11 +6,10 @@
 Now, let's revisit ``pw_console`` and ``pw_rpc``. This time, we'll send commands
 to and view logs from the real Pico device.
 
-.. warning::
+.. caution::
 
-   https://pwrev.dev/405441939 - The LED does not work yet on the Pico W or
-   Pico 2 W.
-
+   The Pico 1W and Pico 2W aren't supported. The LED won't blink on either
+   of those boards.
 
 .. _showcase-sense-tutorial-pico-rpc-interact:
 
@@ -26,14 +25,14 @@ Interact with the Pico
 
          .. tab-set::
 
-            .. tab-item:: Pico 1 & 1W (RP2040)
+            .. tab-item:: Pico 1 (RP2040)
                :sync: rp2040
 
                In **Bazel Build Targets** right-click
                **:rp2040_console (native_binary)** (under **//apps/blinky**)
                and then select **Run target**.
 
-            .. tab-item:: Pico 2 & 2W (RP2350)
+            .. tab-item:: Pico 2 (RP2350)
                :sync: rp2350
 
                In **Bazel Build Targets** right-click
@@ -45,14 +44,14 @@ Interact with the Pico
 
          .. tab-set::
 
-            .. tab-item:: Pico 1 & 1W (RP2040)
+            .. tab-item:: Pico 1 (RP2040)
                :sync: rp2040
 
                .. code-block:: console
 
                   bazelisk run //apps/blinky:rp2040_console
 
-            .. tab-item:: Pico 2 & 2W (RP2350)
+            .. tab-item:: Pico 2 (RP2350)
                :sync: rp2350
 
                .. code-block:: console
@@ -73,8 +72,8 @@ Interact with the Pico
               5 - /dev/ttyS2 - None - n/a
               6 - /dev/ttyS3 - None - n/a
 
-#. Toggle the Pico's LED by typing the following into **Python Repl** and then
-   pressing :kbd:`Enter`:
+#. Toggle the Pico's LED by typing the following into **Python Repl** (the
+   bottom-left pane) and then pressing :kbd:`Enter`:
 
    .. code-block:: pycon
 
@@ -101,11 +100,11 @@ Interact with the Pico
       >>> def my_blinky(count, delay):
       ...     from time import sleep
       ...     toggle = device.rpcs.blinky.Blinky.ToggleLed
-      ...     for _ in range(count):
+      ...     for _ in range(count * 2):
       ...         toggle()
       ...         sleep(delay)
       ...
-      >>> my_blinky(20, 1)
+      >>> my_blinky(10, 1)
 
 
    .. note::
@@ -161,8 +160,7 @@ You can search and filter your device's logs. Try it now:
 -----------------------
 Keep pw_console running
 -----------------------
-There's no need to close ``pw_console`` right now. You're going to use it
-on the next page.
+Don't close ``pw_console`` yet. You're going to use it on the next page.
 
 .. _showcase-sense-tutorial-pico-rpc-summary:
 

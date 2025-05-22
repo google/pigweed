@@ -27,13 +27,13 @@ Generate a crash
 
          .. tab-set::
 
-            .. tab-item:: Pico 1 & 1W (RP2040)
+            .. tab-item:: Pico 1 (RP2040)
                :sync: rp2040
 
                In **Bazel Targets** expand **//apps/production**, then right-click
                **:rp2040_console (native binary)**, then select **Run target**.
 
-            .. tab-item:: Pico 2 & 2W (RP2350)
+            .. tab-item:: Pico 2 (RP2350)
                :sync: rp2350
 
                In **Bazel Targets** expand **//apps/production**, then right-click
@@ -46,13 +46,13 @@ Generate a crash
 
          .. tab-set::
 
-            .. tab-item:: Pico 1 & 1W (RP2040)
+            .. tab-item:: Pico 1 (RP2040)
 
                .. code-block:: console
 
                   bazelisk run //apps/production:rp2040_console
 
-            .. tab-item:: Pico 2 & 2W (RP2350)
+            .. tab-item:: Pico 2 (RP2350)
 
                .. code-block:: console
 

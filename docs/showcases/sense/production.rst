@@ -47,13 +47,13 @@ Flash the ``production`` app to your Pico:
 
       .. tab-set::
 
-         .. tab-item:: Pico 1 & 1W (RP2040)
+         .. tab-item:: Pico 1 (RP2040)
             :sync: rp2040
 
             In **Bazel Targets** expand **//apps/production**, then right-click
             **:flash_rp2040 (native binary)**, then select **Run target**.
 
-         .. tab-item:: Pico 2 & 2W (RP2350)
+         .. tab-item:: Pico 2 (RP2350)
             :sync: rp2350
 
             In **Bazel Targets** expand **//apps/production**, then right-click
@@ -64,13 +64,13 @@ Flash the ``production`` app to your Pico:
 
       .. tab-set::
 
-         .. tab-item:: Pico 1 & 1W (RP2040)
+         .. tab-item:: Pico 1 (RP2040)
 
             .. code-block:: console
 
                bazelisk run //apps/production:flash_rp2040
 
-         .. tab-item:: Pico 2 & 2W (RP2350)
+         .. tab-item:: Pico 2 (RP2350)
 
             .. code-block:: console
 
@@ -91,13 +91,13 @@ help you grok how the app works. Fire up ``pw_console`` again now:
 
       .. tab-set::
 
-         .. tab-item:: Pico 1 & 1W (RP2040)
+         .. tab-item:: Pico 1 (RP2040)
             :sync: rp2040
 
             In **Bazel Targets** right-click the **:rp2040_console (native binary)**
             target (under **//apps/production**) then select **Run target**.
 
-         .. tab-item:: Pico 2 & 2W (RP2350)
+         .. tab-item:: Pico 2 (RP2350)
             :sync: rp2350
 
             In **Bazel Targets** right-click the **:rp2350_console (native binary)**
@@ -110,13 +110,13 @@ help you grok how the app works. Fire up ``pw_console`` again now:
 
       .. tab-set::
 
-         .. tab-item:: Pico 1 & 1W (RP2040)
+         .. tab-item:: Pico 1 (RP2040)
 
             .. code-block:: console
 
                bazelisk run //apps/production:rp2040_console
 
-         .. tab-item:: Pico 2 & 2W (RP2350)
+         .. tab-item:: Pico 2 (RP2350)
 
             .. code-block:: console
 
@@ -194,18 +194,6 @@ than a second) you should see a log like this:
 
 That log is telling you that the LED will change to red and start
 blinking when the air quality value is less than ``384``.
-
-.. _showcase-sense-tutorial-prod-morse:
-
-----------------------------------------
-Print air quality messages in Morse code
-----------------------------------------
-.. _Morse code: https://en.wikipedia.org/wiki/Morse_code
-
-Press the **Y** button to put the app in `Morse code`_ mode.
-In this mode, the LED on the Enviro+ prints out air quality
-messages like ``AQ EXCELLENT 872`` as Morse code messages,
-in addition to changing color as previously described.
 
 -------------------------------------------
 View more information in the custom web app

@@ -12,6 +12,8 @@ monitoring and controlling your Pico over the web now.
 .. _NVM: https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating
 .. _those browsers don't support: https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API#browser_compatibility
 
+#. If you're using a Debug Probe, disconnect it temporarily. See :bug:`419102596`.
+
 #. Open a terminal.
 
 #. Install `NVM`_. You'll need to close and re-open your terminal
@@ -61,7 +63,8 @@ monitoring and controlling your Pico over the web now.
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_splash.png
 
-#. Click **Connect** and select the **Pico** option.
+#. Click **Connect**. Select **Pico** if you've only got a Pico connected to your development
+   host. If you've got both a Pico and a Debug Probe connected, select **Debug Probe**.
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_connect.png
 
@@ -91,6 +94,8 @@ monitoring and controlling your Pico over the web now.
    .. code-block:: console
 
       cd ..
+
+#. If you're using a Debug Probe, re-connect it now.
 
 .. _showcase-sense-tutorial-webapp-summary:
 

@@ -136,7 +136,7 @@ Communicate with a simulated device
 
             bazelisk run //apps/blinky:simulator_console
 
-   You should see ``pw_console`` start up within VS Code like this:
+   You should see ``pw_console`` start up like this:
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/simulator_console.png
 
@@ -211,7 +211,8 @@ Communicate with a simulated device
       .. tab-item:: CLI
          :sync: cli
 
-         Press :kbd:`Ctrl+C` to close the simulated device.
+         Go back to the console window or tab that's running the simulator and
+         press :kbd:`Ctrl+C` to close the simulated device.
 
 Of course polling a simulated temperature and toggling a simulated LED
 is rather basic but hopefully you can see how much faster your team's
@@ -319,10 +320,9 @@ accessible, and easy to make plugins for. Try it now:
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/webconsole_filter_v2.png
 
-#. Close the web-based console and simulated app. You're done
-   with them for now. In the terminals where you launched these,
-   each can be closed by pressing :kbd:`Control+C`. To close the
-   web console you may need to press :kbd:`Control+C` twice.
+#. Close the browser tab running the web app, the terminal window or tab running the
+   web console, and the terminal window or tab running the simulated device. You're
+   done with them for now.
 
 .. _showcase-sense-tutorial-sim-console-more:
 

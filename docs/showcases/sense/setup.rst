@@ -31,9 +31,10 @@ Prepare your computer for working with Pigweed-based projects:
 ------------------------
 Set up the Sense project
 ------------------------
-We recommend trying out this tutorial with Visual Studio Code (VS Code). This
-tutorial will also provide CLI-equivalent workflows if you can't or don't want
-to use VS Code.
+Usually, we recommend trying out the tutorial with Visual Studio Code (VS Code)
+but we're currently refactoring our VS Code extension and fixing some bugs
+(e.g. :bug:`419310666`). In the short-term, we recommend trying the CLI path of
+the tutorial, not the VS Code path.
 
 .. _Visual Studio Code: https://code.visualstudio.com/Download
 .. _Pigweed extension: https://marketplace.visualstudio.com/items?itemName=pigweed.pigweed-vscode
@@ -102,6 +103,19 @@ to use VS Code.
          things depend on this extension being installed.
 
          .. figure:: https://storage.googleapis.com/pigweed-media/sense/install_pigweed_extension.png
+
+      #. Open the **Extensions** pane (:kbd:`Control+Shift+X` on Linux and Windows,
+         :kbd:`Command+Shift+X` on macOS), open the **Pigweed** extension, and make
+         sure that you're running version 1.9.1 or later. If not, click the **More actions** (**▼**)
+         button next to **Uninstall**, then select **Install Specific Version**, and then select
+         the latest version from the dropdown menu.
+
+         .. figure:: https://storage.googleapis.com/pigweed-media/sense/install_specific_version_v1.png
+
+         You should see a Pigweed icon in the **Activity Bar**. If you don't, try closing and re-opening
+         VS Code.
+
+         .. figure:: https://storage.googleapis.com/pigweed-media/sense/extension_icon_v1.png
 
       #. If you see the popup that starts with **Pigweed recommends using Bazelisk to manage your
          Bazel environment** click **Default**.
@@ -223,9 +237,12 @@ for you. If for some reason it doesn't work, here's how to set it
 up manually:
 
 #. First check ``//.vscode/settings.json``. If you see a
-   ``bazel.buildifierExecutable`` entry then the Pigweed extension
-   actually already set up Buildifier correctly and no further
-   work is needed on your part.
+   ``bazel.buildifierExecutable`` entry, try copying the path to the
+   executable and running ``<buildifier-path> --version`` to confirm
+   that the executable is valid. If this works, then the Pigweed extension
+   has already set up Buildifier correctly and no further work is needed.
+
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/buildifier_version_v1.png
 
 #. Download the latest `Buildifier
    release <https://github.com/bazelbuild/buildtools/releases>`_.

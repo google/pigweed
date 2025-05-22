@@ -74,7 +74,7 @@ Run on-device tests
 
    .. tab-set::
 
-      .. tab-item:: Pico 1 & 1W (RP2040)
+      .. tab-item:: Pico 1 (RP2040)
          :sync: rp2040
 
          .. code-block:: console
@@ -83,7 +83,7 @@ Run on-device tests
                 @pigweed//targets/rp2040/py:unit_test_server \
                 -- --debug-probe-only --chip RP2040
 
-      .. tab-item:: Pico 2 & 2W (RP2350)
+      .. tab-item:: Pico 2 (RP2350)
          :sync: rp2040
 
          .. code-block:: console
@@ -91,6 +91,14 @@ Run on-device tests
             bazelisk run \
                 @pigweed//targets/rp2040/py:unit_test_server \
                 -- --debug-probe-only --chip RP2350
+
+         .. note::
+
+            The ``rp2040`` part of the previous command is not a typo.
+            In :ref:`docs-glossary-upstream` there is a single hardware
+            target named ``rp2040`` that can control both RP2040 and RP2350
+            chips. Admittedly, the confusion would be avoided if this target
+            had a more general name, e.g. ``rp2xxx``.
 
    You should see output like this:
 
@@ -119,14 +127,14 @@ Run on-device tests
 
    .. tab-set::
 
-      .. tab-item:: Pico 1 & 1W (RP2040)
+      .. tab-item:: Pico 1 (RP2040)
          :sync: rp2040
 
          .. code-block:: console
 
             bazelisk test --config=rp2040 //...
 
-      .. tab-item:: Pico 2 & 2W (RP2350)
+      .. tab-item:: Pico 2 (RP2350)
          :sync: rp2040
 
          .. code-block:: console
@@ -178,13 +186,13 @@ your Pico again:
 
       .. tab-set::
 
-         .. tab-item:: Pico 1 & 1W (RP2040)
+         .. tab-item:: Pico 1 (RP2040)
             :sync: rp2040
 
             In **Bazel Targets** expand **//apps/blinky**, then right-click
             **:flash_rp2040 (native binary)**, then select **Run target**.
 
-         .. tab-item:: Pico 2 & 2W (RP2350)
+         .. tab-item:: Pico 2 (RP2350)
             :sync: rp2350
 
             In **Bazel Targets** expand **//apps/blinky**, then right-click
@@ -195,19 +203,24 @@ your Pico again:
 
       .. tab-set::
 
-         .. tab-item:: Pico 1 & 1W (RP2040)
+         .. tab-item:: Pico 1 (RP2040)
             :sync: rp2040
 
             .. code-block:: console
 
                bazelisk run //apps/blinky:flash_rp2040
 
-         .. tab-item:: Pico 2 & 2W (RP2350)
+         .. tab-item:: Pico 2 (RP2350)
             :sync: rp2350
 
             .. code-block:: console
 
                bazelisk run //apps/blinky:flash_rp2350
+
+If you've got both a Pico and a Debug Probe connected to your development
+host and you see the ``Please select a serial port device`` prompt, remember
+to select the Debug Probe, not the Pico. The flashing command passes through
+the Debug Probe to the Pico.
 
 .. _showcase-sense-tutorial-devicetests-summary:
 

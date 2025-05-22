@@ -14,6 +14,11 @@ toolchain management. Try building the ``blinky`` bringup app now:
    .. tab-item:: VS Code
       :sync: vsc
 
+      .. admonition:: Known issue
+
+         Compile commands generation is not working.
+         See :bug:`419310666` for updates.
+
       #. In **Bazel Targets** right-click the **//apps/blinky** folder
          and select **Build Package Recursively**.
 

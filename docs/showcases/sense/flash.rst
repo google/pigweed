@@ -5,8 +5,11 @@
 ==================
 Enough with the simulations. Let's work with some real hardware!
 You'll need a physical Raspberry Pi Pico for the rest of the tutorial.
-You can use any version of the Pico: Pico 1, Pico 1W, Pico 2, or Pico 2W.
-We support them all.
+
+.. caution::
+
+   Make sure that you're using a Pico 1 or Pico 2, not a Pico 1W or Pico 2W.
+   The Pico 1W and Pico 2W aren't supported.
 
 .. _showcase-sense-tutorial-hardware:
 
@@ -66,9 +69,14 @@ in the tutorial require the full setup.
       .. _JST-SH: https://cdn-shop.adafruit.com/970x728/5765-01.jpg
 
       #. Find the Serial Wire Debug (SWD) port on your Pico. On the Pico 1 and
-         Pico 2 the SWD port is at the edge of the board. On the Pico 1W and
-         Pico 2W it's near the middle of the board. The front of the Pico (the side
-         with the raspberry logo) has a **DEBUG** label close to the port.
+         Pico 2 the SWD port is at the edge of the board. The front of the Pico
+         (the side with the raspberry logo) has a **DEBUG** label close to the
+         port.
+
+         .. caution::
+
+            If your SWD port is in the middle of your board, it means you're
+            using a Pico 1W or Pico 2W. Those boards aren't supported.
 
       #. Determine if your Serial Wire Debug (SWD) port has male or female connectors.
 
@@ -235,11 +243,9 @@ Flash an application binary to your Pico
          #. In **Bazel Targets** expand **//apps/blinky** and find your board's
             target:
 
-            * If your board is a Pico 1 or Pico 1W then your board's target
-              is **flash_rp2040**.
+            * If your board is a Pico 1 then your board's target is **flash_rp2040**.
 
-            * If your board is a Pico 2 or Pico 2W then your board's target
-              is **flash_rp2350**.
+            * If your board is a Pico 2 then your board's target is **flash_rp2350**.
 
               RP2040 is the name of the MCU that powers first-generation
               Picos. The RP2350 powers second-generation Picos.
@@ -270,14 +276,14 @@ Flash an application binary to your Pico
 
             .. tab-set::
 
-               .. tab-item:: Pico 1 & 1W (RP2040)
+               .. tab-item:: Pico 1 (RP2040)
                   :sync: rp2040
 
                   .. code-block:: console
 
                      bazelisk run //apps/blinky:flash_rp2040
 
-               .. tab-item:: Pico 2 & 2W (RP2350)
+               .. tab-item:: Pico 2 (RP2350)
                   :sync: rp2350
 
                   .. code-block:: console
@@ -295,7 +301,9 @@ Flash an application binary to your Pico
                  1 - bus 3, port 1 (Raspberry Pi - Debug Probe (CMSIS-DAP))
                  2 - bus 3, port 6 (Raspberry Pi - Pico)
 
-         You should see output like this:
+         If the command completes and you see output like the following, then
+         the flashing was successful. Sense does **not** log an explicit
+         ``flashing successful`` message.
 
          .. code-block:: text
 
