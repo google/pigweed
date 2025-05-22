@@ -14,6 +14,8 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 load("//pw_build:compatibility.bzl", "host_backend_alias", "incompatible_with_mcu")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
@@ -226,10 +228,33 @@ filegroup(
     ],
 )
 
+pw_size_diff(
+    name = "sha256_simple_size_diff",
+    base = "//pw_bloat:bloat_base",
+    label = "SHA256",
+    target = "//pw_crypto/size_report:sha256_simple",
+)
+
+pw_size_diff(
+    name = "ecdsa_p256_verify_size_diff",
+    base = "//pw_bloat:bloat_base",
+    label = "ECDSA P256 Verify",
+    target = "//pw_crypto/size_report:ecdsa_p256_verify",
+)
+
+pw_size_table(
+    name = "pw_crypto_size_report",
+    reports = [
+        ":sha256_simple_size_diff",
+        ":ecdsa_p256_verify_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        ":pw_crypto_size_report",
     ],
     prefix = "pw_crypto/",
     target_compatible_with = incompatible_with_mcu(),
