@@ -273,7 +273,9 @@ cc_feature(
     feature_name = "supports_pic",
 )
 
-# Symlink to clangd, for user convenience.
+# TODO: b/419617754 - Anything that depends on this target is forcefully bound
+# to a specific clang package/tool version. Please avoid proliferation of this
+# pattern.
 copy_file(
     name = "copy_clangd",
     src = "@llvm_toolchain//:bin/clangd",
@@ -281,11 +283,24 @@ copy_file(
     allow_symlink = True,
 )
 
-# Symlink to clang-tidy, for user convenience.
+# TODO: b/419617754 - Anything that depends on this target is forcefully bound
+# to a specific clang package/tool version. Please avoid proliferation of this
+# pattern.
 copy_file(
     name = "copy_clang_tidy",
     src = "@llvm_toolchain//:clang-tidy",
     out = "clang-tidy",
+    allow_symlink = True,
+    is_executable = True,
+)
+
+# TODO: b/419617754 - Anything that depends on this target is forcefully bound
+# to a specific clang package/tool version. Please avoid proliferation of this
+# pattern.
+copy_file(
+    name = "copy_addr2line",
+    src = "@llvm_toolchain//:bin/llvm-addr2line",
+    out = "addr2line",
     allow_symlink = True,
     is_executable = True,
 )
