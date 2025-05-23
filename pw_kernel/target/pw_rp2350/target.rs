@@ -14,8 +14,8 @@
 #![no_std]
 #![no_main]
 
-use kernel as _;
 use console_backend as _;
+use kernel as _;
 
 use rp235x_hal as hal;
 
@@ -82,11 +82,28 @@ impl TargetInterface for Target {
     }
 
     fn main() -> ! {
-        #[cfg(not(feature = "test"))]
+        // cortex_m_rt does not run ctors, so we do it manually. Note that this
+        // is required in order to register tests, which is a prerequisite to
+        // calling `run_all_tests` below.
+        unsafe { target_common::run_ctors() };
+
+        #[cfg(not(test))]
         demo::main();
 
-        #[cfg(feature = "test")]
-        loop {}
+        #[cfg(test)]
+        {
+            use cortex_m_semihosting::debug::*;
+            use unittest_core::TestsResult;
+
+            exit(match unittest_core::run_all_tests() {
+                TestsResult::AllPassed => EXIT_SUCCESS,
+                TestsResult::SomeFailed => EXIT_FAILURE,
+            });
+
+            // `exit` can return under rare circumstances.
+            #[allow(unreachable_code, clippy::empty_loop)]
+            loop {}
+        }
     }
 }
 
@@ -94,22 +111,6 @@ declare_target!(Target);
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    // cortex_m_rt does not run ctors, so we do it manually. Note that this is
-    // required in order to register tests, which is a prerequisite to calling
-    // `run_tests` below.
-    unsafe { target_common::run_ctors() };
-
-    #[cfg(not(feature = "test"))]
-    kernel::Kernel::main();
-
-    #[cfg(feature = "test")]
-    {
-        use cortex_m_semihosting::debug::*;
-        Target::console_init();
-        exit(target_common::run_tests(EXIT_SUCCESS, EXIT_FAILURE));
-
-        // `exit` can return under rare circumstances.
-        #[allow(clippy::empty_loop)]
-        loop {}
-    }
+    Target::console_init();
+    kernel::Kernel::main()
 }

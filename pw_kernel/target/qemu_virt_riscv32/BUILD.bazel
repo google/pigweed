@@ -124,9 +124,9 @@ rust_binary(
 rust_library(
     name = "unittest_runner",
     srcs = SRCS,
-    crate_features = ["test"],
     crate_name = "unittest_runner",
     edition = "2021",
+    rustc_flags = ["--cfg=test"],
     tags = ["kernel"],
     target_compatible_with = [
         "@platforms//cpu:riscv32",

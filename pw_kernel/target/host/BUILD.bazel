@@ -20,7 +20,6 @@ load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
 COMMON_DEPS = [
     "//pw_kernel/kernel",
     "//pw_kernel/subsys/console:console_backend",
-    "//pw_kernel/target:target_common",
 ]
 
 platform(
@@ -54,9 +53,9 @@ rust_binary(
 rust_library(
     name = "unittest_runner",
     srcs = ["target.rs"],
-    crate_features = ["test"],
     crate_name = "unittest_runner",
     edition = "2021",
+    rustc_flags = ["--cfg=test"],
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     deps = COMMON_DEPS + ["//pw_kernel/lib/unittest:unittest_core"],

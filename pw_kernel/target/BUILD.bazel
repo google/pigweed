@@ -22,7 +22,6 @@ rust_library(
     srcs = ["target_common.rs"],
     tags = ["kernel"],
     deps = [
-        "//pw_kernel/lib/unittest:unittest_core",
         "@pigweed//pw_log/rust:pw_log",
     ],
 )

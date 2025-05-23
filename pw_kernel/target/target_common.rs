@@ -44,16 +44,6 @@ macro_rules! declare_target {
     };
 }
 
-pub fn run_tests<S>(success_status: S, failure_status: S) -> S {
-    pw_log::info!("=============== Unit Test Runner ===============");
-
-    use unittest_core::TestsResult;
-    match unittest_core::run_all_tests() {
-        TestsResult::AllPassed => success_status,
-        TestsResult::SomeFailed => failure_status,
-    }
-}
-
 /// Run all ELF static constructors.
 ///
 /// # Safety

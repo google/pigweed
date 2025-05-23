@@ -55,14 +55,34 @@ where
     });
 }
 
+#[derive(Eq, PartialEq)]
 pub enum TestsResult {
     AllPassed,
     SomeFailed,
 }
 
+pub fn run_bare_metal_tests() -> TestsResult {
+    run_tests(TestSet::BareMetal)
+}
+
 pub fn run_all_tests() -> TestsResult {
+    let bare_metal_result = run_tests(TestSet::BareMetal);
+    let kernel_result = run_tests(TestSet::Kernel);
+
+    use TestsResult::*;
+    match (bare_metal_result, kernel_result) {
+        (AllPassed, AllPassed) => AllPassed,
+        _ => SomeFailed,
+    }
+}
+
+fn run_tests(set: TestSet) -> TestsResult {
     let mut result = TestsResult::AllPassed;
     for_each_test(|test| {
+        if test.set != set {
+            return;
+        }
+
         pw_log::info!("🔄 [{}] RUNNING", test.name as &str);
         if let Err(e) = (test.test_fn)() {
             pw_log::error!("❌ [{}] FAILED", test.name as &str);
@@ -86,17 +106,28 @@ pub type Result<T> = core::result::Result<T, TestError>;
 
 pub type TestFn = fn() -> Result<()>;
 
+/// Which set of tests is this test a member of?
+#[derive(PartialEq)]
+pub enum TestSet {
+    /// Bare metal tests run with or without a kernel.
+    BareMetal,
+    /// Kernel tests only run when a kernel is present and has been initialized.
+    Kernel,
+}
+
 pub struct Test {
     name: &'static str,
     test_fn: TestFn,
+    set: TestSet,
     link: Link,
 }
 
 impl Test {
-    pub const fn new(name: &'static str, test_fn: TestFn) -> Self {
+    pub const fn new(name: &'static str, test_fn: TestFn, set: TestSet) -> Self {
         Self {
             name,
             test_fn,
+            set,
             link: Link::new(),
         }
     }

@@ -14,20 +14,53 @@
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, ItemFn};
+use syn::{parse_macro_input, Ident, ItemFn};
 
 #[proc_macro_attribute]
-pub fn test(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
     let item: ItemFn = parse_macro_input!(item as ItemFn);
     let fn_ident = item.sig.ident.clone();
     let fn_name = item.sig.ident.to_string();
     let ctor_fn_ident = format_ident!("__mz_unittest_ctor_fn_{}__", fn_name);
     let ctor_ident = format_ident!("__mz_unittest_ctor_{}__", fn_name);
     let desc_ident = format_ident!("__MZ_UNITTEST_DESC_{}__", fn_name.to_uppercase());
+
+    struct Args {
+        needs_kernel: bool,
+    }
+
+    impl syn::parse::Parse for Args {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            if input.is_empty() {
+                return Ok(Args {
+                    needs_kernel: false,
+                });
+            }
+
+            let needs_kernel: Ident = input.parse()?;
+            if needs_kernel != "needs_kernel" {
+                return Err(syn::Error::new_spanned(
+                    &needs_kernel,
+                    "unsupported, expected `needs_kernel`",
+                ));
+            }
+
+            Ok(Args { needs_kernel: true })
+        }
+    }
+
+    let args = parse_macro_input!(attr as Args);
+    let test_set = if args.needs_kernel {
+        quote! { unittest::TestSet::Kernel }
+    } else {
+        quote! { unittest::TestSet::BareMetal }
+    };
+
     quote! {
         static mut #desc_ident: unittest::Test = unittest::Test::new(
             #fn_name,
             #fn_ident,
+            #test_set,
         );
 
         extern "C" fn #ctor_fn_ident() -> usize {
