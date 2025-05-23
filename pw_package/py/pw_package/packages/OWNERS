@@ -1,2 +1,4 @@
+pigweed-roller@pigweed-service-accounts.iam.gserviceaccount.com
+
 # Additional owners for updating emboss package dependencies
 per-file emboss.py=drees@google.com,erahm@google.com,benlawson@google.com
