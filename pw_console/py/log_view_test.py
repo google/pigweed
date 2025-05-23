@@ -15,6 +15,7 @@
 
 import logging
 import time
+import re
 import sys
 import unittest
 from datetime import datetime
@@ -403,34 +404,67 @@ class TestLogView(unittest.TestCase):
         log_view.render_content()
         log_view.log_screen.reset_logs.assert_called_once()
         log_view.log_screen.get_lines.assert_called_once_with(
-            marked_logs_start=None, marked_logs_end=None
+            marked_logs_start_line=None, marked_logs_end_line=None
         )
         log_view.log_screen.get_lines.reset_mock()
         log_view.log_screen.reset_logs.reset_mock()
 
-        self.assertIsNone(log_view.marked_logs_start)
-        self.assertIsNone(log_view.marked_logs_end)
+        self.assertIsNone(log_view.marked_logs_start_line)
+        self.assertIsNone(log_view.marked_logs_end_line)
+
+        # Test a reverse drag selection. Click from the bottom of the window and
+        # drag upwards.
         log_view.visual_select_line(Point(0, 9))
         self.assertEqual(
-            (99, 99), (log_view.marked_logs_start, log_view.marked_logs_end)
+            (99, 99),
+            (log_view.marked_logs_start_line, log_view.marked_logs_end_line),
         )
 
         log_view.visual_select_line(Point(0, 8))
         log_view.visual_select_line(Point(0, 7))
         self.assertEqual(
-            (97, 99), (log_view.marked_logs_start, log_view.marked_logs_end)
+            (99, 97),
+            (log_view.marked_logs_start_line, log_view.marked_logs_end_line),
         )
 
-        log_view.clear_visual_selection()
-        self.assertIsNone(log_view.marked_logs_start)
-        self.assertIsNone(log_view.marked_logs_end)
+        log_text = log_view._logs_to_text(  # pylint: disable=protected-access
+            selected_lines_only=True, use_table_formatting=False
+        )
+        self.assertEqual(
+            [
+                'Test log 97',
+                'Test log 98',
+                'Test log 99',
+            ],
+            re.findall(r'Test log [0-9]+', log_text),
+        )
 
+        # Clear the selection
+        log_view.clear_visual_selection()
+        self.assertIsNone(log_view.marked_logs_start_line)
+        self.assertIsNone(log_view.marked_logs_end_line)
+
+        # Test a drag from the top of the window downwards.
         log_view.visual_select_line(Point(0, 1))
         log_view.visual_select_line(Point(0, 2))
         log_view.visual_select_line(Point(0, 3))
         log_view.visual_select_line(Point(0, 4))
         self.assertEqual(
-            (91, 94), (log_view.marked_logs_start, log_view.marked_logs_end)
+            (91, 94),
+            (log_view.marked_logs_start_line, log_view.marked_logs_end_line),
+        )
+
+        log_text = log_view._logs_to_text(  # pylint: disable=protected-access
+            selected_lines_only=True, use_table_formatting=False
+        )
+        self.assertEqual(
+            [
+                'Test log 91',
+                'Test log 92',
+                'Test log 93',
+                'Test log 94',
+            ],
+            re.findall(r'Test log [0-9]+', log_text),
         )
 
         # Make sure the log screen was not re-generated.
@@ -442,7 +476,7 @@ class TestLogView(unittest.TestCase):
         log_view.log_screen.reset_logs.assert_called_once()
         # Check the visual selection was specified
         log_view.log_screen.get_lines.assert_called_once_with(
-            marked_logs_start=91, marked_logs_end=94
+            marked_logs_start_line=91, marked_logs_end_line=94
         )
         log_view.log_screen.get_lines.reset_mock()
         log_view.log_screen.reset_logs.reset_mock()

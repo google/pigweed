@@ -213,23 +213,40 @@ class LogScreen:
 
     def get_lines(
         self,
-        marked_logs_start: int | None = None,
-        marked_logs_end: int | None = None,
+        marked_logs_start_line: int | None = None,
+        marked_logs_end_line: int | None = None,
     ) -> list[StyleAndTextTuples]:
         """Return lines for final display.
 
         Styling is added for the line under the cursor."""
-        if not marked_logs_start:
-            marked_logs_start = -1
-        if not marked_logs_end:
-            marked_logs_end = -1
+        if not marked_logs_start_line:
+            marked_logs_start_line = -1
+        if not marked_logs_end_line:
+            marked_logs_end_line = -1
 
         all_lines: list[StyleAndTextTuples] = []
         # Loop through a copy of the line_buffer in case it is mutated before
         # this function is complete.
         for i, line in enumerate(list(self.line_buffer)):
+            # Is this part of the highlighted block?
+            if line.log_index is not None and (
+                marked_logs_start_line <= line.log_index <= marked_logs_end_line
+            ):
+                new_fragments = fill_character_width(
+                    line.fragments,
+                    len(line.fragments) - 1,  # -1 for the ending line break
+                    self.width,
+                )
+
+                # Apply a style to highlight this line.
+                all_lines.append(
+                    to_formatted_text(
+                        new_fragments, style='class:marked-log-line'
+                    )
+                )
+
             # Is this line the cursor_position? Apply line highlighting
-            if (
+            elif (
                 i == self.cursor_position
                 and (self.cursor_position < len(self.line_buffer))
                 and not self.line_buffer[self.cursor_position].empty()
@@ -249,22 +266,6 @@ class LogScreen:
                         new_fragments, style='class:selected-log-line'
                     )
                 )
-            elif line.log_index is not None and (
-                marked_logs_start <= line.log_index <= marked_logs_end
-            ):
-                new_fragments = fill_character_width(
-                    line.fragments,
-                    len(line.fragments) - 1,  # -1 for the ending line break
-                    self.width,
-                )
-
-                # Apply a style to highlight this line.
-                all_lines.append(
-                    to_formatted_text(
-                        new_fragments, style='class:marked-log-line'
-                    )
-                )
-
             else:
                 all_lines.append(line.fragments)
 
