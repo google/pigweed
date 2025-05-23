@@ -108,10 +108,10 @@ constexpr std::optional<T> CheckedSub(A a, B b) {
 ///
 /// @param[in] base The variable to be decremented.
 ///
-/// @param[in] inc The number to subtract from `base`.
+/// @param[in] dec The number to subtract from `base`.
 ///
 /// @returns True if the subtraction was successful and `base` was decremented
-/// (`base -= inc`); False if the subtraction would overflow and ``base`` is
+/// (`base -= dec`); False if the subtraction would overflow and ``base`` is
 /// unmodified.
 template <typename T, typename Dec>
 constexpr bool CheckedDecrement(T& base, Dec dec) {

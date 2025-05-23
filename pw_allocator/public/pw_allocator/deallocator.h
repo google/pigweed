@@ -308,10 +308,10 @@ class Deallocator {
   /// Virtual `Deallocate` function implemented by derived classes.
   ///
   /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
-  virtual void DoDeallocate(void*) {
-    // This method will be pure virtual once consumer migrate from the deprected
-    // version that takes a `Layout` parameter. In the meantime, the check that
-    // this method is implemented is deferred to run-time.
+  virtual void DoDeallocate([[maybe_unused]] void* ptr) {
+    // This method will be pure virtual once consumer migrate from the
+    // deprecated version that takes a `Layout` parameter. In the meantime, the
+    // check that this method is implemented is deferred to run-time.
     PW_ASSERT(false);
   }
 

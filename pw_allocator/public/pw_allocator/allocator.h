@@ -49,7 +49,7 @@ class Allocator : public Deallocator {
   /// fail. Callers must check for this error before using the resulting
   /// pointer.
   ///
-  /// @param[in]  args...     Arguments passed to the object constructor.
+  /// @param[in]  args        Arguments passed to the object constructor.
   template <typename T, int&... kExplicitGuard, typename... Args>
   [[nodiscard]] std::enable_if_t<!std::is_array_v<T>, T*> New(Args&&... args) {
     void* ptr = Allocate(Layout::Of<T>());
@@ -116,7 +116,7 @@ class Allocator : public Deallocator {
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
-  /// @param[in]  args...     Arguments passed to the object constructor.
+  /// @param[in]  args        Arguments passed to the object constructor.
   template <typename T,
             int&... kExplicitGuard,
             std::enable_if_t<!std::is_array_v<T>, int> = 0,
@@ -125,13 +125,13 @@ class Allocator : public Deallocator {
     return Deallocator::WrapUnique<T>(New<T>(std::forward<Args>(args)...));
   }
 
-  /// Constructs an array of `count` objects, and wraps it in a `UniquePtr`
+  /// Constructs an array of `size` objects, and wraps it in a `UniquePtr`
   ///
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
   /// @tparam     T            An array type.
-  /// @param[in]  count        Number of objects to allocate.
+  /// @param[in]  size         Number of objects to allocate.
   template <typename T,
             int&... kExplicitGuard,
             std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
@@ -139,14 +139,14 @@ class Allocator : public Deallocator {
     return MakeUnique<T>(size, alignof(std::remove_extent_t<T>));
   }
 
-  /// Constructs an `alignment`-byte aligned array of `count` objects of type
+  /// Constructs an `alignment`-byte aligned array of `size` objects of type
   /// `T`, and wraps it in a `UniquePtr`
   ///
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
   /// @tparam     T            An array type.
-  /// @param[in]  count        Number of objects to allocate.
+  /// @param[in]  size         Number of objects to allocate.
   /// @param[in]  alignment    Object alignment.
   template <typename T,
             int&... kExplicitGuard,
@@ -189,7 +189,7 @@ class Allocator : public Deallocator {
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `SharedPtr`.
   ///
-  /// @param[in]  args...     Arguments passed to the object constructor.
+  /// @param[in]  args        Arguments passed to the object constructor.
   template <typename T,
             int&... kExplicitGuard,
             std::enable_if_t<!std::is_array_v<T>, int> = 0,
@@ -199,13 +199,13 @@ class Allocator : public Deallocator {
                                                   std::forward<Args>(args)...);
   }
 
-  /// Constructs an array of `count` objects, and wraps it in a `UniquePtr`
+  /// Constructs an array of `size` objects, and wraps it in a `UniquePtr`
   ///
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
   /// @tparam     T            An array type.
-  /// @param[in]  count        Number of objects to allocate.
+  /// @param[in]  size         Number of objects to allocate.
   template <typename T,
             int&... kExplicitGuard,
             std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
@@ -213,14 +213,14 @@ class Allocator : public Deallocator {
     return MakeShared<T>(size, alignof(std::remove_extent_t<T>));
   }
 
-  /// Constructs an `alignment`-byte aligned array of `count` objects, and wraps
+  /// Constructs an `alignment`-byte aligned array of `size` objects, and wraps
   /// it in a `SharedPtr`
   ///
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `SharedPtr`.
   ///
   /// @tparam     T            An array type.
-  /// @param[in]  count        Number of objects to allocate.
+  /// @param[in]  size         Number of objects to allocate.
   /// @param[in]  alignment    Object alignment.
   template <typename T,
             int&... kExplicitGuard,
@@ -333,7 +333,10 @@ class Allocator : public Deallocator {
   ///
   /// @param[in]  ptr           Pointer to memory, guaranteed to not be null.
   /// @param[in]  new_size      Requested size, guaranteed to be non-zero..
-  virtual bool DoResize(void* /*ptr*/, size_t /*new_size*/) { return false; }
+  virtual bool DoResize([[maybe_unused]] void* ptr,
+                        [[maybe_unused]] size_t new_size) {
+    return false;
+  }
 
   /// Deprecated version of `DoResize` that takes a `Layout`.
   /// Do not use this method. It will be removed.

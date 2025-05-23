@@ -186,7 +186,7 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   /// NOTE: Instances of this type are most commonly constructed using
   /// `Allocator::MakeShared`.
   ///
-  /// @param[in]  args...     Arguments passed to the object constructor.
+  /// @param[in]  args         Arguments passed to the object constructor.
   template <typename... Args>
   static SharedPtr Create(Allocator* allocator, Args&&... args);
 
@@ -200,7 +200,7 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   ///
   /// @param[in]  allocator    Used to allocate memory.
   /// @param[in]  count        Number of objects to allocate.
-  /// @param[in]  count        Alignment requirement for the array.
+  /// @param[in]  alignment    Alignment requirement for the array.
   static SharedPtr Create(Allocator* allocator, size_t count, size_t alignment);
 
   /// Constructs a `SharedPtr` from an already-allocated value.
