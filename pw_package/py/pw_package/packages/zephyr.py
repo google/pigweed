@@ -28,7 +28,10 @@ import pw_package.package_manager
 
 # Main branch, this commit is close to the v3.6 RC3 tag which contains some
 # bug fixes for Twister and support for GTEST_SKIP()
-_ZEPHYR_COMMIT_SHA = '5b19a9b94d4b8dd2d612ba07d49bdb5c215bc232'
+# ROLL: Warning: this variable is automatically updated.
+# ROLL: Last updated 2025-05-26.
+# ROLL: By https://cr-buildbucket.appspot.com/build/8713826062643619265.
+_ZEPHYR_COMMIT_SHA = '74056a7aedd466b455ec1440c34a79f4e659ddff'
 
 
 class Zephyr(pw_package.git_repo.GitRepo):
