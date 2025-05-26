@@ -26,8 +26,6 @@ import pw_env_setup.virtualenv_setup
 import pw_package.git_repo
 import pw_package.package_manager
 
-# Main branch, this commit is close to the v3.6 RC3 tag which contains some
-# bug fixes for Twister and support for GTEST_SKIP()
 # ROLL: Warning: this variable is automatically updated.
 # ROLL: Last updated 2025-05-26.
 # ROLL: By https://cr-buildbucket.appspot.com/build/8713826062643619265.
