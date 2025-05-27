@@ -172,7 +172,7 @@ export async function processCompDbs() {
 const bazelInterceptorScriptTemplate = `#!/bin/sh
 set -uo pipefail
 
- if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" ) ]]; then
+ if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
   echo "⏳ Generating compile commands..."
   $BAZEL_REAL run @pigweed//pw_ide/ts/pigweed_vscode:compile_commands_generator_binary -- --target "$*" --cwd "$(pwd)" --bazelCmd "$BAZEL_REAL"
   if [ $? -ne 0 ]; then
