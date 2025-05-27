@@ -25,9 +25,9 @@ const exec = util.promisify(cbExec);
 
 import * as vscode from 'vscode';
 
-import { vendoredBazeliskPath } from './bazel';
+import { getReliableBazelExecutable } from './bazel';
 import logger from './logging';
-import { bazel_executable, settings } from './settings/vscode';
+import { settings } from './settings/vscode';
 
 type InitScript = 'activate' | 'bootstrap';
 
@@ -152,7 +152,7 @@ async function getShellTypeFromTerminal(
 export async function patchBazeliskIntoTerminalPath(
   terminal?: vscode.Terminal,
 ): Promise<void> {
-  const bazeliskPath = bazel_executable.get() ?? vendoredBazeliskPath();
+  const bazeliskPath = getReliableBazelExecutable();
 
   if (!bazeliskPath) {
     logger.error(
