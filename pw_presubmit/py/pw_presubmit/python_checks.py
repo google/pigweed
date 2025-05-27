@@ -28,6 +28,7 @@ from tempfile import TemporaryDirectory
 import venv
 
 from pw_cli.diff import colorize_diff_line
+from pw_cli.file_filter import FileFilter
 from pw_env_setup import python_packages
 
 from pw_presubmit.presubmit import (
@@ -59,10 +60,11 @@ _PYTHON_IS_3_9_OR_HIGHER = sys.version_info >= (
 )
 
 
-@filter_paths(endswith=_PYTHON_EXTENSIONS)
-def gn_python_check(ctx: PresubmitContext):
-    build.gn_gen(ctx)
-    build.ninja(ctx, 'python.tests', 'python.lint')
+gn_python_check = build.GnGenNinja(
+    name='gn_python_check',
+    path_filter=FileFilter(endswith=_PYTHON_EXTENSIONS),
+    ninja_targets=('python.tests', 'python.lint'),
+)
 
 
 def _transform_lcov_file_paths(lcov_file: Path, repo_root: Path) -> str:
