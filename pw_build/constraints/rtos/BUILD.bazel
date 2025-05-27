@@ -40,3 +40,8 @@ constraint_value(
     name = "threadx",
     constraint_setting = ":rtos",
 )
+
+constraint_value(
+    name = "zephyr",
+    constraint_setting = ":rtos",
+)
