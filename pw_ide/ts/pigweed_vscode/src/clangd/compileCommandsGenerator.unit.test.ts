@@ -440,7 +440,7 @@ test('parseBazelBuildCommand_singleTarget_noArgs', async () => {
   assert.deepEqual(args, []);
 });
 
-test.only('parseBazelBuildCommand_singleTargetWith@_noArgs', async () => {
+test('parseBazelBuildCommand_singleTargetWith@_noArgs', async () => {
   const bazel = getReliableBazelExecutable();
   const { targets, args } = await parseBazelBuildCommand(
     'build @pigweed//pw_status/...',
