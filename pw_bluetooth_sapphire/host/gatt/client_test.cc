@@ -874,6 +874,53 @@ TEST_F(ClientTest, DiscoverServicesInRangeFailsIfServiceResultIsOutOfRange) {
   EXPECT_EQ(0u, services.size());
 }
 
+TEST_F(ClientTest, DiscoverServicesSucceedsWithServiceEndPastRangeEnd) {
+  const att::Handle kRangeStart = 0x0010;
+  const att::Handle kRangeEnd = 0x0020;
+  const att::Handle kServiceStart = 0x00012;
+  const att::Handle kServiceEnd = 0x0022;
+
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x10,  // opcode: read by group type request
+                       LowerBits(kRangeStart),
+                       UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28  // type: primary service (0x2800)
+      );
+
+  const auto kResponse =
+      StaticByteBuffer(0x11,  // opcode: read by group type response
+                       0x06,  // data length: 6 (16-bit UUIDs)
+                       LowerBits(kServiceStart),
+                       UpperBits(kServiceStart),  // svc start
+                       LowerBits(kServiceEnd),
+                       UpperBits(kServiceEnd),  // svc end
+                       0xAD,
+                       0xDE  // svc uuid: 0xDEAD
+      );
+
+  std::optional<att::Result<>> status;
+  auto res_cb = [&status](att::Result<> val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
+
+  EXPECT_PACKET_OUT(kExpectedRequest);
+  client()->DiscoverServicesInRange(
+      ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  fake_chan()->Receive(kResponse);
+  RunUntilIdle();
+  ASSERT_TRUE(status.has_value());
+  ASSERT_EQ(fit::ok(), status);
+  EXPECT_EQ(1u, services.size());
+}
+
 TEST_F(ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
   att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };

@@ -367,7 +367,7 @@ class Impl final : public Client {
       }
 
       // The procedure is over if we have reached the end of the handle range.
-      if (!last_handle.has_value() || last_handle.value() == range_end) {
+      if (!last_handle.has_value() || last_handle.value() >= range_end) {
         res_cb(fit::ok());
         return;
       }
