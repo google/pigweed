@@ -51,8 +51,6 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_bytes/rust:pw_bytes",
-        "//pw_kernel/lib/foreign_box",
-        "//pw_kernel/lib/list",
         "@pigweed//pw_log/rust:pw_log",
     ],
 )

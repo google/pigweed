@@ -57,26 +57,42 @@ pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     quote! {
-        static mut #desc_ident: unittest::Test = unittest::Test::new(
-            #fn_name,
-            #fn_ident,
-            #test_set,
-        );
+        // We put these in a block so they can't be referenced from other code,
+        // which ensures that functions defined here can't be called from
+        // elsewhere.
+        const _: () = {
+            static mut #desc_ident: unittest::Test = unittest::Test::new(
+                #fn_name,
+                #fn_ident,
+                #test_set,
+            );
 
-        extern "C" fn #ctor_fn_ident() -> usize {
-            // Safety: We're only ever mutating this at constructor time which
-            // is single threaded.
-            let desc = unsafe { unittest::foreign_box::ForeignBox::new_from_ptr(&mut #desc_ident) };
-            unittest::add_test(desc);
-            0
-        }
+            extern "C" fn #ctor_fn_ident() -> usize {
+                // SAFETY: This function is defined in a block, so it is not
+                // callable from safe code outside of this block. By linker
+                // contract, `#ctor_ident` below is only called during
+                // initialization, and is only called once. Thus, this function
+                // is only called once. Furthermore, we don't reference
+                // `#desc_ident` elsewhere. Thus, this is the only reference to
+                // `#desc_ident` that will ever happen in this program, and so
+                // it is acceptable to take a mutable reference that will live
+                // for the rest of the program's lifetime.
+                let desc = unsafe { &mut #desc_ident };
+                // SAFETY: As described above, this function will only be called
+                // during initialization. At that point, execution is
+                // single-threaded. Thus, this call to `add_test` will not
+                // overlap with any other code executing.
+                unsafe { unittest::add_test(desc) };
+                0
+            }
 
-        #[used]
-        #[cfg_attr(target_os = "linux", link_section = ".init_array")]
-        #[cfg_attr(target_os = "none", link_section = ".init_array")]
-        #[cfg_attr(target_vendor = "apple", link_section = "__DATA,__mod_init_func")]
-        #[cfg_attr(windows, link_section = ".CRT$XCU")]
-        static #ctor_ident: extern "C" fn() -> usize = #ctor_fn_ident;
+            #[used]
+            #[cfg_attr(target_os = "linux", link_section = ".init_array")]
+            #[cfg_attr(target_os = "none", link_section = ".init_array")]
+            #[cfg_attr(target_vendor = "apple", link_section = "__DATA,__mod_init_func")]
+            #[cfg_attr(windows, link_section = ".CRT$XCU")]
+            static #ctor_ident: extern "C" fn() -> usize = #ctor_fn_ident;
+        };
 
         #item
     }
