@@ -230,7 +230,7 @@ Status LinuxDigitalInInterrupt::Impl::OpenHandle() {
 
   if (interrupts_desired_) {
     // Open a lineevent handle; lineevent_create enables IRQs.
-    PW_LOG_INFO("Interrupts desired; Opening a line event handle");
+    PW_LOG_DEBUG("Interrupts desired; Opening a line event handle");
     PW_TRY_ASSIGN(fd_,
                   chip_->GetLineEventHandle(
                       config_.index, config_.GetFlags(), GetEventFlags()));
@@ -243,7 +243,7 @@ Status LinuxDigitalInInterrupt::Impl::OpenHandle() {
     }
   } else {
     // Open a regular linehandle
-    PW_LOG_INFO("Interrupts not desired; Opening a normal line handle");
+    PW_LOG_DEBUG("Interrupts not desired; Opening a normal line handle");
     PW_TRY_ASSIGN(fd_, chip_->GetLineHandle(config_.index, config_.GetFlags()));
     fd_is_event_handle_ = false;
   }
