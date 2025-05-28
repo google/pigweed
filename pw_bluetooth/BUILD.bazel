@@ -275,6 +275,14 @@ emboss_cc_library(
 )
 
 emboss_cc_library(
+    name = "_emboss_a2dp_vendor",
+    srcs = ["public/pw_bluetooth/a2dp_vendor_codec.emb"],
+    enable_enum_traits = False,
+    import_dirs = ["public"],
+    visibility = ["//visibility:private"],
+)
+
+emboss_cc_library(
     name = "_emboss_avdtp",
     srcs = ["public/pw_bluetooth/avdtp.emb"],
     enable_enum_traits = False,
@@ -283,6 +291,7 @@ emboss_cc_library(
     deps = [
         ":_emboss_a2dp_aac",
         ":_emboss_a2dp_sbc",
+        ":_emboss_a2dp_vendor",
     ],
 )
 
@@ -306,6 +315,11 @@ cc_library(
 cc_library(
     name = "emboss_a2dp_sbc",
     deps = [":_emboss_a2dp_sbc"],
+)
+
+cc_library(
+    name = "emboss_a2dp_vendor",
+    deps = [":_emboss_a2dp_vendor"],
 )
 
 cc_library(
