@@ -106,7 +106,7 @@ template("_pw_python_static_analysis_mypy") {
       # Use a mypy cache dir for this target only to avoid cache conflicts in
       # parallel mypy invocations.
       "--cache-dir",
-      rebase_path(target_out_dir, root_build_dir) + "/.mypy_cache",
+      rebase_path("$target_gen_dir/$target_name/.mypy_cache", root_build_dir),
     ]
 
     # Use this environment variable to force mypy to colorize output.
