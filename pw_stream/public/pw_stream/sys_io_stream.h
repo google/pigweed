@@ -13,11 +13,7 @@
 // the License.
 #pragma once
 
-#include <array>
-#include <cstddef>
-#include <limits>
-
-#include "pw_span/span.h"
+#include "pw_bytes/span.h"
 #include "pw_stream/stream.h"
 #include "pw_sys_io/sys_io.h"
 
@@ -25,7 +21,7 @@ namespace pw::stream {
 
 class SysIoWriter : public NonSeekableWriter {
  private:
-  Status DoWrite(span<const std::byte> data) override {
+  Status DoWrite(ConstByteSpan data) override {
     return pw::sys_io::WriteBytes(data).status();
   }
 };

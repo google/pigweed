@@ -74,6 +74,7 @@ cc_library(
     hdrs = ["public/pw_stream/sys_io_stream.h"],
     strip_include_prefix = "public",
     deps = [
+        "//pw_bytes",
         "//pw_stream",
         "//pw_sys_io",
     ],

@@ -55,6 +55,7 @@ pw_add_library(pw_stream.sys_io_stream INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_bytes
     pw_stream
     pw_sys_io
 )

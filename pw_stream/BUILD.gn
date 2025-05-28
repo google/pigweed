@@ -67,6 +67,7 @@ pw_source_set("socket_stream") {
 pw_source_set("sys_io_stream") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    "$dir_pw_bytes",
     "$dir_pw_stream",
     "$dir_pw_sys_io",
   ]
