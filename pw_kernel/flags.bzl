@@ -17,11 +17,10 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 KERNEL_COMMON_FLAGS = {
+    "@pigweed//pw_kernel/lib/pw_assert:debug_assertions": True,
     # Default to using the tokenized backend.  Platforms can overwrite this value
     "@pigweed//pw_log/rust:pw_log_backend": "//pw_kernel/subsys/console:pw_log_backend_tokenized",
     "@pigweed//pw_toolchain:cortex-m_toolchain_kind": "clang",
-    # For now, enable debug assertions for all builds
-    "@rules_rust//rust/settings:extra_rustc_flags": "-Cdebug-assertions",
     "@rules_rust//rust/toolchain/channel": "nightly",
 }
 

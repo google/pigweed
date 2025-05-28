@@ -12,16 +12,38 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
+
+# When debug_assertions is False, all debug_* macros will be compiled out.
+#
+# The pw_assert crate has it's own feature rather than re-using the rustc
+# debug-assertions feature, as it allows for pw_assert debug_* macros to be
+# enabled without incurring the additional runtime overhead of rusts
+# debug-assertions feature.
+bool_flag(
+    name = "debug_assertions",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "debug_assertions_enabled",
+    flag_values = {
+        ":debug_assertions": "true",
+    },
+)
 
 rust_library(
     name = "pw_assert",
     srcs = [
         "pw_assert.rs",
     ],
-    crate_features = ["color"],
+    crate_features = ["color"] + select({
+        ":debug_assertions_enabled": ["debug_assertions"],
+        "//conditions:default": [],
+    }),
     tags = ["kernel"],
     deps = ["//pw_log/rust:pw_log"],
 )

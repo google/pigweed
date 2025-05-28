@@ -93,28 +93,30 @@ macro_rules! panic {
 }
 
 #[macro_export]
+#[cfg(feature = "debug_assertions")]
 macro_rules! debug_panic {
   ($format_string:literal $(,)?) => {{
-    #[cfg(debug_assertions)]
-    {
-      // Ideally we'd combine these two log statements.  However, the `pw_log` API
-      // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
-      $crate::__private_log_panic_banner!();
-      $crate::__private::fatal!($format_string);
-      unsafe{$crate::pw_assert_HandleFailure()}
-    }
+    // Ideally we'd combine these two log statements.  However, the `pw_log` API
+    // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
+    $crate::__private_log_panic_banner!();
+    $crate::__private::fatal!($format_string);
+    unsafe{$crate::pw_assert_HandleFailure()}
   }};
 
   ($format_string:literal, $($args:expr),* $(,)?) => {{
-    #[cfg(debug_assertions)]
-    {
-      // Ideally we'd combine these two log statements.  However, the `pw_log` API
-      // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
-      $crate::__private_log_panic_banner!();
-      $crate::__private::fatal!($format_string, $($args),*);
-      unsafe{$crate::pw_assert_HandleFailure()}
-    }
+    // Ideally we'd combine these two log statements.  However, the `pw_log` API
+    // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
+    $crate::__private_log_panic_banner!();
+    $crate::__private::fatal!($format_string, $($args),*);
+    unsafe{$crate::pw_assert_HandleFailure()}
   }};
+}
+
+#[macro_export]
+#[cfg(not(feature = "debug_assertions"))]
+macro_rules! debug_panic {
+    ($format_string:literal $(,)?) => {{}};
+    ($format_string:literal, $($args:expr),* $(,)?) => {{}};
 }
 
 #[macro_export]
@@ -144,35 +146,37 @@ macro_rules! assert {
 }
 
 #[macro_export]
+#[cfg(feature = "debug_assertions")]
 macro_rules! debug_assert {
   ($condition:expr $(,)?) => {
-    #[cfg(debug_assertions)]
-    {
-      #[allow(clippy::unnecessary_cast)]
-      if !$condition {
-          // Ideally we'd combine these two log statements.  However, the `pw_log` API
-          // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
-          $crate::__private_log_panic_banner!();
-          $crate::__private::fatal!("debug_assert!() failed");
-          unsafe{$crate::pw_assert_HandleFailure()}
-      }
+    #[allow(clippy::unnecessary_cast)]
+    if !$condition {
+        // Ideally we'd combine these two log statements.  However, the `pw_log` API
+        // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
+        $crate::__private_log_panic_banner!();
+        $crate::__private::fatal!("debug_assert!() failed");
+        unsafe{$crate::pw_assert_HandleFailure()}
     }
   };
 
   ($condition:expr, $($args:expr),* $(,)?) => {
-    #[cfg(debug_assertions)]
-    {
-      #[allow(clippy::unnecessary_cast)]
-      if !$condition {
-          // Ideally we'd combine these two log statements.  However, the `pw_log` API
-          // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
-          $crate::__private_log_panic_banner!();
-          $crate::__private::fatal!("debug_assert!() failed");
-          $crate::__private::fatal!($($args),*);
-          unsafe{$crate::pw_assert_HandleFailure()}
-      }
+    #[allow(clippy::unnecessary_cast)]
+    if !$condition {
+        // Ideally we'd combine these two log statements.  However, the `pw_log` API
+        // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
+        $crate::__private_log_panic_banner!();
+        $crate::__private::fatal!("debug_assert!() failed");
+        $crate::__private::fatal!($($args),*);
+        unsafe{$crate::pw_assert_HandleFailure()}
     }
   };
+}
+
+#[macro_export]
+#[cfg(not(feature = "debug_assertions"))]
+macro_rules! debug_assert {
+    ($condition:expr $(,)?) => {};
+    ($condition:expr, $($args:expr),* $(,)?) => {};
 }
 
 #[macro_export]
