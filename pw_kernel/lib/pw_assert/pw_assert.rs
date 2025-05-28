@@ -93,6 +93,31 @@ macro_rules! panic {
 }
 
 #[macro_export]
+macro_rules! debug_panic {
+  ($format_string:literal $(,)?) => {{
+    #[cfg(debug_assertions)]
+    {
+      // Ideally we'd combine these two log statements.  However, the `pw_log` API
+      // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
+      $crate::__private_log_panic_banner!();
+      $crate::__private::fatal!($format_string);
+      unsafe{$crate::pw_assert_HandleFailure()}
+    }
+  }};
+
+  ($format_string:literal, $($args:expr),* $(,)?) => {{
+    #[cfg(debug_assertions)]
+    {
+      // Ideally we'd combine these two log statements.  However, the `pw_log` API
+      // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
+      $crate::__private_log_panic_banner!();
+      $crate::__private::fatal!($format_string, $($args),*);
+      unsafe{$crate::pw_assert_HandleFailure()}
+    }
+  }};
+}
+
+#[macro_export]
 macro_rules! assert {
   ($condition:expr $(,)?) => {{
       #[allow(clippy::unnecessary_cast)]
