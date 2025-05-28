@@ -282,22 +282,13 @@ class LogContentControl(UIControl):
         """Mouse handler for this control."""
         mouse_position = mouse_event.position
 
-        # Left mouse button release should:
-        # 1. check if a mouse drag just completed.
-        # 2. If not in focus, switch focus to this log pane
-        #    If in focus, move the cursor to that position.
+        # Left mouse button press should:
+        # 1. If not in focus, switch focus to this log pane.
+        # 2. If in focus, move the cursor to that position.
         if (
-            mouse_event.event_type == MouseEventType.MOUSE_UP
+            mouse_event.event_type == MouseEventType.MOUSE_DOWN
             and mouse_event.button == MouseButton.LEFT
         ):
-            # If a drag was in progress and this is the first mouse release
-            # press, set the stop flag.
-            if (
-                self.visual_select_mode_drag_start
-                and not self.visual_select_mode_drag_stop
-            ):
-                self.visual_select_mode_drag_stop = True
-
             if not has_focus(self)():
                 # Focus the save as dialog if open.
                 if self.log_pane.saveas_dialog_active:
@@ -308,14 +299,38 @@ class LogContentControl(UIControl):
                 # Otherwise, focus on the log pane content.
                 else:
                     get_app().layout.focus(self)
+
                 # Mouse event handled, return None.
                 return None
 
             # Log pane in focus already, move the cursor to the position of the
-            # mouse click.
+            # mouse click and clear any visual selections.
+            self.log_pane.log_view.clear_visual_selection()
             self.log_pane.log_view.scroll_to_position(mouse_position)
+
             # Mouse event handled, return None.
             return None
+
+        # Left mouse button release should:
+        # 1. check if a mouse drag just completed.
+        if (
+            mouse_event.event_type == MouseEventType.MOUSE_UP
+            and mouse_event.button == MouseButton.LEFT
+        ):
+            # If a drag was in progress and this is the first mouse release
+            # press, set the stop flag.
+            if (
+                self.visual_select_mode_drag_start
+                and not self.visual_select_mode_drag_stop
+            ):
+                if not has_focus(self)():
+                    # Don't modify the selection unless the window is in focus.
+                    return NotImplemented
+
+                self.visual_select_mode_drag_stop = True
+
+                # Mouse event handled, return None.
+                return None
 
         # Mouse drag with left button should start selecting lines.
         # The log pane does not need to be in focus to start this.
@@ -323,6 +338,10 @@ class LogContentControl(UIControl):
             mouse_event.event_type == MouseEventType.MOUSE_MOVE
             and mouse_event.button == MouseButton.LEFT
         ):
+            if not has_focus(self)():
+                # Don't modify the selection unless the window is in focus.
+                return NotImplemented
+
             # If a previous mouse drag was completed, clear the selection.
             if (
                 self.visual_select_mode_drag_start
@@ -727,6 +746,7 @@ class LogPane(WindowPane):
             return
         # Show the search bar
         self.search_bar_active = True
+        self.search_toolbar.open_search_bar()
         # Focus on the search bar
         self.application.focus_on_container(self.search_toolbar)
 

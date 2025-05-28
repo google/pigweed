@@ -305,6 +305,9 @@ class LogView:
     def set_search_regex(
         self, text, invert, field, matcher: SearchMatcher | None = None
     ) -> bool:
+        """Set the search regex.
+
+        Returns True if it compiles successfully."""
         search_matcher = matcher if matcher else self.search_matcher
         _LOG.debug(search_matcher)
 
@@ -346,8 +349,14 @@ class LogView:
         ):
             selected_matcher = SearchMatcher(search_matcher.upper())
 
+        # Apply the regex.
         if not self.set_search_regex(text, invert, field, selected_matcher):
+            # Return if it fails to compile.
             return False
+
+        # Redraw highlighting
+        self.view_mode_changed()
+        self.log_pane.application.redraw_ui()
 
         # Clear matched lines
         self.search_matched_lines = {}
@@ -358,9 +367,9 @@ class LogView:
                 self.count_search_matches()
             )
 
-        # Default search direction when hitting enter in the search bar.
-        if interactive:
+            # Default search direction when hitting enter in the search bar.
             self.search_forwards()
+
         return True
 
     def save_search_matched_line(self, log_index: int) -> None:
@@ -514,8 +523,12 @@ class LogView:
 
         # From the end of the log store to the beginning.
         for i in range(starting_index, ending_index - 1, -1):
+            # If the search was canceled
+            if not self.search_filter:
+                return
+
             # Is this log a match?
-            if self.search_filter.matches(logs[i]):
+            if self.search_filter and self.search_filter.matches(logs[i]):
                 self.save_search_matched_line(i)
             # Pause every 100 lines or so
             if i % 100 == 0:
@@ -733,14 +746,25 @@ class LogView:
             return (self.marked_logs_start_line - self.marked_logs_end_line) + 1
         return (self.marked_logs_end_line - self.marked_logs_start_line) + 1
 
-    def clear_visual_selection(self) -> None:
+    def clear_visual_selection_variables(self) -> None:
         self.marked_logs_start_line = None
         self.marked_logs_end_line = None
         self.visual_select_mode = False
         self._user_scroll_event = True
+
+    def clear_visual_selection(self) -> None:
+        self.clear_visual_selection_variables()
         self.log_pane.application.redraw_ui()
 
+    def clear_other_visual_selections(self) -> None:
+        for pane in self.log_pane.application.all_log_panes():
+            if pane == self.log_pane:
+                continue
+            pane.log_view.clear_visual_selection_variables()
+
     def visual_select_all(self) -> None:
+        self.clear_other_visual_selections()
+
         self.marked_logs_start_line = self._scrollback_start_index
         self.marked_logs_end_line = self.get_total_count() - 1
 
@@ -749,6 +773,8 @@ class LogView:
         self.log_pane.application.redraw_ui()
 
     def visual_select_up(self) -> None:
+        self.clear_other_visual_selections()
+
         # Select the current line
         self.visual_select_line(self.get_cursor_position(), autoscroll=False)
         # Move the cursor by 1
@@ -757,6 +783,8 @@ class LogView:
         self.visual_select_line(self.get_cursor_position(), autoscroll=False)
 
     def visual_select_down(self) -> None:
+        self.clear_other_visual_selections()
+
         # Select the current line
         self.visual_select_line(self.get_cursor_position(), autoscroll=False)
         # Move the cursor by 1
@@ -768,6 +796,8 @@ class LogView:
         self, mouse_position: Point, autoscroll: bool = True
     ) -> None:
         """Mark the log under mouse_position as visually selected."""
+        self.clear_other_visual_selections()
+
         # Check mouse_position is valid
         if not 0 <= mouse_position.y < len(self.log_screen.line_buffer):
             return

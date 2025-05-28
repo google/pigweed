@@ -228,6 +228,10 @@ class SearchToolbar(ConditionalContainer):
         self.log_pane.application.focus_on_container(self.log_pane)
         self.log_pane.redraw_ui()
 
+    def open_search_bar(self) -> None:
+        # User started a new search, clear any old input.
+        self.input_field.buffer.reset()
+
     def _start_search(self) -> None:
         self.input_field.buffer.validate_and_handle()
 
