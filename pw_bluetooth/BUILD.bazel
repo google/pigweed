@@ -267,6 +267,14 @@ emboss_cc_library(
 )
 
 emboss_cc_library(
+    name = "_emboss_a2dp_android_opus",
+    srcs = ["public/pw_bluetooth/a2dp_android_opus.emb"],
+    enable_enum_traits = False,
+    import_dirs = ["public"],
+    visibility = ["//visibility:private"],
+)
+
+emboss_cc_library(
     name = "_emboss_a2dp_sbc",
     srcs = ["public/pw_bluetooth/a2dp_sbc.emb"],
     enable_enum_traits = False,
@@ -290,6 +298,7 @@ emboss_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":_emboss_a2dp_aac",
+        ":_emboss_a2dp_android_opus",
         ":_emboss_a2dp_sbc",
         ":_emboss_a2dp_vendor",
     ],
@@ -310,6 +319,11 @@ emboss_cc_library(
 cc_library(
     name = "emboss_a2dp_aac",
     deps = [":_emboss_a2dp_aac"],
+)
+
+cc_library(
+    name = "emboss_a2dp_android_opus",
+    deps = [":_emboss_a2dp_android_opus"],
 )
 
 cc_library(
