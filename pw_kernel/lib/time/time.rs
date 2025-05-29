@@ -118,8 +118,11 @@ impl<Clock: crate::Clock> Add<Duration<Clock>> for Instant<Clock> {
     type Output = Instant<Clock>;
 
     fn add(self, rhs: Duration<Clock>) -> Self::Output {
-        self.checked_add_duration(rhs)
-            .expect("Instant - Duration overflow")
+        let time = self.checked_add_duration(rhs);
+        if time.is_none() {
+            pw_assert::panic!("Instant - Duration overflow");
+        }
+        time.unwrap()
     }
 }
 
@@ -127,8 +130,11 @@ impl<Clock: crate::Clock> Sub<Duration<Clock>> for Instant<Clock> {
     type Output = Instant<Clock>;
 
     fn sub(self, rhs: Duration<Clock>) -> Self::Output {
-        self.checked_sub_duration(rhs)
-            .expect("Instant - Duration overflow")
+        let time = self.checked_sub_duration(rhs);
+        if time.is_none() {
+            pw_assert::panic!("Instant - Duration overflow")
+        }
+        time.unwrap()
     }
 }
 
@@ -241,8 +247,11 @@ impl<Clock: crate::Clock> Sub<Duration<Clock>> for Duration<Clock> {
     type Output = Duration<Clock>;
 
     fn sub(self, rhs: Duration<Clock>) -> Self::Output {
-        self.checked_sub(rhs)
-            .expect("Duration subtraction overflow")
+        let time = self.checked_sub(rhs);
+        if time.is_none() {
+            pw_assert::panic!("Duration subtraction overflow")
+        }
+        time.unwrap()
     }
 }
 
@@ -250,6 +259,10 @@ impl<Clock: crate::Clock> Add<Duration<Clock>> for Duration<Clock> {
     type Output = Duration<Clock>;
 
     fn add(self, rhs: Duration<Clock>) -> Self::Output {
-        self.checked_add(rhs).expect("Duration addition overflow")
+        let time = self.checked_add(rhs);
+        if time.is_none() {
+            pw_assert::panic!("Duration addition overflow")
+        }
+        time.unwrap()
     }
 }

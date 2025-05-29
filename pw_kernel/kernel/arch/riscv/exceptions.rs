@@ -78,7 +78,11 @@ fn handle_ecall(frame: &mut TrapFrame) {
     // ECALL exceptions do not "retire the instruction" requiring the advancing
     // of the PC past the ECALL instruction.  ECALLs are encoded as 4 byte
     // instructions.
-    frame.epc += 4;
+    //
+    // Use a wrapping add, as section 1.4 of the RISC-V unprivileged spec states:
+    // "...memory address computations done by the hardware ignore overflow
+    // and instead wrap around modulo 2^XLEN"
+    frame.epc = frame.epc.wrapping_add(4);
 }
 
 fn exception_handler(exception: Exception, mepc: usize, frame: &mut TrapFrame) {

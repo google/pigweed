@@ -18,7 +18,7 @@
 #[doc(hidden)]
 pub mod __private {
     use console;
-    use pw_status::Result;
+    use pw_status::{Error, Result};
     use pw_stream::{Cursor, Write};
     use pw_tokenizer::MessageWriter;
 
@@ -65,11 +65,17 @@ pub mod __private {
             let mut encode_buffer = [0u8; ENCODED_SIZE + 2];
             encode_buffer[0] = b'$';
             // pass a slice of encode_buffer to ensure $ is not encoded.
+            let data_slice = data.get(0..write_len).ok_or(Error::OutOfRange)?;
             if let Ok(s) =
-                pw_base64::encode_str(&data[0..write_len], &mut encode_buffer[1..ENCODED_SIZE + 1])
+                pw_base64::encode_str(data_slice, &mut encode_buffer[1..ENCODED_SIZE + 1])
             {
                 // postfix the encoded buffer with a newline after the $ and encoded string
-                encode_buffer[s.len() + 1] = b'\n';
+                let encoded_len = s.len();
+                if let Some(bytes_ref) = encode_buffer.get_mut(encoded_len + 1) {
+                    *bytes_ref = b'\n';
+                } else {
+                    return Err(Error::OutOfRange);
+                }
                 let mut console = console::Console::new();
                 let _ = console.write_all(&encode_buffer);
             } else {

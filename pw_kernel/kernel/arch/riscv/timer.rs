@@ -47,8 +47,13 @@ fn set_next_monotonic_tick() {
 
     let ticks_per_monotonic: Duration<Clock> =
         time::Duration::from_millis((1000 / KernelConfig::SCHEDULER_TICK_HZ).into());
-
-    write_mtimecmp(now + (ticks_per_monotonic.ticks() as u64));
+    // safe to cast to u64 as ticks_per_monotonic will never be negative here,
+    let next = now.checked_add(ticks_per_monotonic.ticks().cast_unsigned());
+    if let Some(val) = next {
+        write_mtimecmp(val);
+    } else {
+        pw_assert::debug_panic!("next_monotonic_tick overflow");
+    }
 }
 
 fn disable_timer() {

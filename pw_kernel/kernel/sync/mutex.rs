@@ -32,7 +32,7 @@ macro_rules! mutex_debug {
 }
 
 struct MutexState {
-    count: u32,
+    count: usize,
     holder_thread_id: usize,
 }
 
@@ -84,8 +84,18 @@ impl<T> Mutex<T> {
 
     pub fn lock(&self) -> MutexGuard<'_, T> {
         let mut state = self.state.lock();
-        assert_ne!(state.holder_thread_id, state.sched().current_thread_id());
-        state.count += 1;
+        pw_assert::ne!(
+            state.holder_thread_id as usize,
+            state.sched().current_thread_id() as usize
+        );
+
+        #[allow(clippy::needless_else)]
+        if let Some(val) = state.count.checked_add(1) {
+            state.count = val;
+        } else {
+            pw_assert::debug_assert!(false)
+        }
+
         // TODO - konkers: investigate using core::intrinsics::unlikely() or
         //                 core::hint::unlikely()
         if state.count > 1 {
@@ -104,8 +114,18 @@ impl<T> Mutex<T> {
     // TODO - konkers: Investigate combining with lock().
     pub fn lock_until(&self, deadline: Instant) -> Result<MutexGuard<'_, T>> {
         let mut state = self.state.lock();
-        assert_ne!(state.holder_thread_id, state.sched().current_thread_id());
-        state.count += 1;
+        pw_assert::ne!(
+            state.holder_thread_id as usize,
+            state.sched().current_thread_id() as usize
+        );
+
+        #[allow(clippy::needless_else)]
+        if let Some(val) = state.count.checked_add(1) {
+            state.count = val;
+        } else {
+            pw_assert::debug_assert!(false)
+        }
+
         // TODO - konkers: investigate using core::intrinsics::unlikely() or
         //                 core::hint::unlikely()
         if state.count > 1 {
@@ -123,7 +143,14 @@ impl<T> Mutex<T> {
                     &raw const *self as usize,
                     e as u32
                 );
-                state.count -= 1;
+
+                if let Some(val) = state.count.checked_sub(1) {
+                    state.count = val;
+                } else {
+                    // use assert not debug_assert, as it's possible a
+                    // real bug could trigger this assert,
+                    pw_assert::assert!(false)
+                }
                 return Err(e);
             }
         }

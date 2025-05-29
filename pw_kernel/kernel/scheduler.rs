@@ -103,7 +103,14 @@ pub struct PremptDisableGuard;
 impl PremptDisableGuard {
     pub fn new() -> Self {
         let mut sched_state = SCHEDULER_STATE.lock();
-        sched_state.current_thread_mut().preempt_disable_count += 1;
+        let thread = sched_state.current_thread_mut();
+
+        #[allow(clippy::needless_else)]
+        if let Some(val) = thread.preempt_disable_count.checked_add(1) {
+            thread.preempt_disable_count = val;
+        } else {
+            pw_assert::debug_panic!("PremptDisableGuard preempt_disable_count overflow")
+        }
 
         Self
     }
@@ -114,7 +121,14 @@ impl Drop for PremptDisableGuard {
         let mut sched_state = SCHEDULER_STATE.lock();
         let thread = sched_state.current_thread_mut();
 
-        thread.preempt_disable_count -= 1;
+        if let Some(val) = thread.preempt_disable_count.checked_sub(1) {
+            thread.preempt_disable_count = val;
+        } else {
+            // use panic, not debug_panic, as it's possible a
+            // real bug could trigger this assert.
+            pw_assert::panic!("PremptDisableGuard drop past zero")
+        }
+
         if thread.preempt_disable_count == 0 {
             preempt();
         }

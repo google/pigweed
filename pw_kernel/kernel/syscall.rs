@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use pw_status::Result;
+use pw_status::{Error, Result};
 
 use pw_log::info;
 use syscall_defs::{SysCallId, SysCallReturnValue};
@@ -47,7 +47,10 @@ pub fn handle_syscall(
             );
             crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
             log_if::debug_if!(SYSCALL_DEBUG, "sycall: DebugAdd woken");
-            Ok((arg0 + arg1) as u64)
+            match arg0.checked_add(arg1) {
+                Some(res) => Ok(res as u64),
+                None => Err(Error::OutOfRange),
+            }
         }
         SysCallId::DebugPutc => {
             crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));

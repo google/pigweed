@@ -43,7 +43,7 @@ fn thread_a() -> ! {
         let mut counter = TEST_COUNTER.lock();
         kernel::sleep_until(Clock::now() + Duration::from_secs(1));
         info!("Thread A: incrementing counter");
-        *counter += 1;
+        *counter = (*counter).saturating_add(1);
     }
 }
 

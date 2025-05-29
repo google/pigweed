@@ -22,6 +22,9 @@ rust_library(
         "time.rs",
     ],
     tags = ["kernel"],
+    deps = [
+        "//pw_kernel/lib/pw_assert",
+    ],
 )
 
 rust_test(

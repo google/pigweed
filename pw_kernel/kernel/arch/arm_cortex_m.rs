@@ -46,7 +46,13 @@ impl ArchInterface for Arch {
         //  FPU initial state
         //  enable cache (if present)
         //  enable cycle counter?
-        let p = Peripherals::take().unwrap();
+        let p: Peripherals;
+        // TODO: davidroth - use expect wrapper when available.
+        if let Some(val) = Peripherals::take() {
+            p = val;
+        } else {
+            pw_assert::panic!("Could not take peripherals.")
+        }
         let mut r = regs::Regs::get();
         let cpuid = p.CPUID.base.read();
         info!("CPUID 0x{:x}", cpuid as u32);
