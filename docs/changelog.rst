@@ -6,14 +6,23 @@
 What's new in Pigweed
 =====================
 
+------------------------------------------------
+(June 2025) This changelog is temporarily paused
+------------------------------------------------
+.. changelog_highlights_start
+
 .. _commit log: https://pigweed.googlesource.com/pigweed/pigweed/+log/refs/heads/main
 
-.. note::
+Our changelog (:ref:`docs-changelog`) is paused while we investigate how to
+further automate our changelog authoring process to make the workload more
+manageable. Only the changelog is paused; Pigweed itself is still a highly
+active project!  In the meantime, you can join our monthly community meeting
+(:ref:`Pigweed Live <docs-changelog-live>`) or check out our `commit log`_
+to get a sense of what we've been working on recently.
 
-   (May 2025) The changelog is paused while we investigate how to further
-   automate the changelog authoring process to make the workload more
-   manageable. Pigweed in general is still a highly active project! In the
-   meantime, see the `commit log`_ for updates.
+.. changelog_highlights_end
+
+.. _docs-changelog-live:
 
 --------------------------------
 Talk to the team at Pigweed Live
@@ -26,9 +35,6 @@ Talk to the team at Pigweed Live
 -----------
 Feb 6, 2025
 -----------
-
-.. changelog_highlights_start
-
 Highlights (Jan 25, 2025 to Feb 6, 2025):
 
 * **Tokenization improvements in C++**: The new
@@ -42,8 +48,6 @@ Highlights (Jan 25, 2025 to Feb 6, 2025):
 
 * **Bazel-based docs build**: ``pigweed.dev`` is now built with Bazel. See
   :ref:`blog-08-bazel-docgen`.
-
-.. changelog_highlights_end
 
 .. _docs-changelog-2025-02-06-Modules:
 

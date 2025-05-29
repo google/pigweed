@@ -145,8 +145,6 @@ What's new in Pigweed
    :start-after: .. changelog_highlights_start
    :end-before: .. changelog_highlights_end
 
-See :ref:`docs-changelog-latest` in our changelog for details.
-
 ----------
 Talk to us
 ----------
