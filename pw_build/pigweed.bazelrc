@@ -23,10 +23,8 @@
 # Don't automatically create __init__.py files.
 #
 # This prevents spurious package name collisions at import time, and should be
-# the default (https://github.com/bazelbuild/bazel/issues/7386). It's
-# particularly helpful for Pigweed, because we have many potential package name
-# collisions due to a profusion of stuttering paths like
-# pw_transfer/py/pw_transfer.
+# the default (https://github.com/bazelbuild/bazel/issues/7386). Pigweed's
+# Python libraries break without this.
 common --incompatible_default_to_explicit_init_py
 
 # Do not attempt to configure an autodetected (local) toolchain. We vendor all
