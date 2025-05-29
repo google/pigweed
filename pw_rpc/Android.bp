@@ -66,6 +66,7 @@ filegroup {
         "client_call.cc",
         "client_server.cc",
         "endpoint.cc",
+        "fake_channel_output.cc",
         "packet.cc",
         "packet_meta.cc",
         "server.cc",
