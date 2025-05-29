@@ -59,19 +59,6 @@ Test
    bazelisk test --config k_host //pw_kernel/...
 
 
-Panic Checks
-------------
-
-To verify the system image hasn't pulled in the rust panic handler.
-
-Note that this is currently only supported on risc-v, and this test will
-currently fail as the panic handler hasn't been fully removed from the kernel.
-
-.. code-block:: shell
-
-   bazelisk test --config=k_host //pw_kernel/target/qemu_virt_riscv32:kernel_only_demo_no_panics_test
-
-
 QEMU
 ====
 

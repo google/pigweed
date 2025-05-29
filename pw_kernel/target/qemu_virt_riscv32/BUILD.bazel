@@ -56,7 +56,7 @@ system_image(
 rust_binary_no_panics_test(
     name = "kernel_only_demo_no_panics_test",
     binary = ":kernel_only_demo",
-    tags = ["manual"],
+    tags = ["kernel"],
 )
 
 system_image(
@@ -73,7 +73,7 @@ system_image(
 rust_binary_no_panics_test(
     name = "userspace_demo_no_panics_test",
     binary = ":userspace_demo",
-    tags = ["manual"],
+    tags = ["kernel"],
 )
 
 SRCS = ["target.rs"]

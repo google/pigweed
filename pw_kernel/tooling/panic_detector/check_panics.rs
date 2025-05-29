@@ -12,16 +12,20 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// TODO: refactor this file and crate::riscv to separate generic elf code from
+// riscv specific code.
 use crate::find_symbol_address;
 use crate::riscv::call_graph::list_functions;
 use crate::riscv::call_graph::FuncRepo;
+use crate::riscv::call_graph::Function;
 use crate::riscv::DecodedInstr;
 use crate::riscv::ElfMem;
 use crate::riscv::InstrA;
 use crate::riscv::Reg;
 use anyhow::anyhow;
 use anyhow::Context;
-use object::read::elf::ElfFile32;
+use object::elf;
+use object::read::elf::{ElfFile32, FileHeader};
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::path::Path;
@@ -38,54 +42,14 @@ pub fn check_panic(elf_path: &Path) -> anyhow::Result<()> {
     let funcs = list_functions(&elf, &elf_mem)?;
     let func_repo = FuncRepo::new(funcs).unwrap();
     if let Some(panic_func) = func_repo.get_func_by_symbol("panic_is_possible") {
-        // Define a closure that the solver can use to read from .rodata and
-        // .text when dereferencing pointers.
-        let mem_read = |addr: u32| {
-            elf_mem
-                .get(addr, 4)
-                .map(|a| u32::from_le_bytes(a.try_into().unwrap()))
-        };
-        // Solve for "all" possible (constant) values to the arguments to
-        // panic_is_possible(filename: *const u8, filename_len: usize, line: u32, col: u32)
-        let solutions = solve(
-            &func_repo,
-            panic_func.start_addr(),
-            // The RISC-V C calling convention stores the arguments starting at register a0-a3
-            &[Reg::X10A0, Reg::X11A1, Reg::X12A2, Reg::X13A3],
-            mem_read,
-        );
-        for solution in solutions {
-            let (filename_ptr, filename_len, line, column) = (
-                solution.results[0],
-                solution.results[1],
-                solution.results[2],
-                solution.results[3],
-            );
-            // Lookup the string contents from .rodata
-            let Some(filename) = elf_mem.get(filename_ptr, filename_len) else {
-                println!(
-                    "Couldn't find filename at addr {:x} len={}",
-                    filename_ptr, filename_len
-                );
-                continue;
-            };
-            let Ok(filename) = std::str::from_utf8(filename) else {
-                continue;
-            };
-            println!();
-            println!("Found panic {filename} line {line} column {column}. Branch trace:");
-            for addr in solution.branch_trace {
-                let Some((func, mut instr_iter)) = func_repo.instructions_at_addr(addr) else {
-                    continue;
-                };
-                let Some(instr) = instr_iter.next() else {
-                    continue;
-                };
-                println!(
-                    "  {: <36} ({})",
-                    instr.to_string(),
-                    rustc_demangle::demangle(func.symbol_name)
-                );
+        match elf.elf_header().e_machine(E) {
+            elf::EM_ARM => solve_arm(&elf_mem, &func_repo, panic_func),
+            elf::EM_RISCV => solve_riscv(&elf_mem, &func_repo, panic_func),
+            _ => {
+                return Err(anyhow!(
+                    "Unsupported machine type: {:?}",
+                    elf.elf_header().e_machine
+                ));
             }
         }
     }
@@ -99,6 +63,66 @@ pub fn check_panic(elf_path: &Path) -> anyhow::Result<()> {
     }
     Ok(())
 }
+
+fn solve_riscv(elf_mem: &ElfMem, func_repo: &FuncRepo, panic_func: &Function) {
+    // Define a closure that the solver can use to read from .rodata and
+    // .text when dereferencing pointers.
+    let mem_read = |addr: u32| {
+        elf_mem
+            .get(addr, 4)
+            .map(|a| u32::from_le_bytes(a.try_into().unwrap()))
+    };
+    // Solve for "all" possible (constant) values to the arguments to
+    // panic_is_possible(filename: *const u8, filename_len: usize, line: u32, col: u32)
+    let solutions = solve(
+        func_repo,
+        panic_func.start_addr(),
+        // The RISC-V C calling convention stores the arguments starting at register a0-a3
+        &[Reg::X10A0, Reg::X11A1, Reg::X12A2, Reg::X13A3],
+        mem_read,
+    );
+    for solution in solutions {
+        let (filename_ptr, filename_len, line, column) = (
+            solution.results[0],
+            solution.results[1],
+            solution.results[2],
+            solution.results[3],
+        );
+        // Lookup the string contents from .rodata
+        let Some(filename) = elf_mem.get(filename_ptr, filename_len) else {
+            println!(
+                "Couldn't find filename at addr {:x} len={}",
+                filename_ptr, filename_len
+            );
+            continue;
+        };
+        let Ok(filename) = std::str::from_utf8(filename) else {
+            continue;
+        };
+        println!();
+        println!("Found panic {filename} line {line} column {column}. Branch trace:");
+        for addr in solution.branch_trace {
+            let Some((func, mut instr_iter)) = func_repo.instructions_at_addr(addr) else {
+                continue;
+            };
+            let Some(instr) = instr_iter.next() else {
+                continue;
+            };
+            println!(
+                "  {: <36} ({})",
+                instr.to_string(),
+                rustc_demangle::demangle(func.symbol_name)
+            );
+        }
+    }
+}
+
+fn solve_arm(_elf_mem: &ElfMem, _func_repo: &FuncRepo, _panic_func: &Function) {
+    println!("Panic is possible.");
+    println!("Location backtrace not supported on ARM.");
+    // TODO: implement
+}
+
 /// Try to find all possible values of the registers specified in `regs` when
 /// the PC is pointing at `addr`. The works well when `addr` is a function,
 /// `regs` are the ABI arguments to that function, and the function is called

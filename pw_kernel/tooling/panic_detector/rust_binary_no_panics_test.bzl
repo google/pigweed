@@ -14,6 +14,8 @@
 """Rule to validate a rust binary contains no panics.
 """
 
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+
 def _rust_binary_no_panics_test_impl(ctx):
     binary = ctx.files.binary[0]
     run_script = ctx.actions.declare_file("%s.sh" % ctx.label.name)
@@ -32,7 +34,7 @@ def _rust_binary_no_panics_test_impl(ctx):
         executable = run_script,
     )]
 
-rust_binary_no_panics_test = rule(
+_rust_binary_no_panics_test = rule(
     implementation = _rust_binary_no_panics_test_impl,
     test = True,
     attrs = {
@@ -50,3 +52,13 @@ rust_binary_no_panics_test = rule(
     },
     doc = "Check whether the rust binary contains any panics.",
 )
+
+def rust_binary_no_panics_test(name, binary, **kwargs):
+    if kwargs.get("target_compatible_with") == None:
+        kwargs["target_compatible_with"] = incompatible_with_mcu()
+
+    _rust_binary_no_panics_test(
+        name = name,
+        binary = binary,
+        **kwargs
+    )

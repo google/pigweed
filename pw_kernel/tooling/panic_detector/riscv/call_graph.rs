@@ -58,7 +58,7 @@ pub fn list_functions<'a>(
     let mut result = vec![];
     for sym in t.symbols() {
         let name = std::str::from_utf8(t.symbol_name(E, sym)?)?;
-        if sym.st_type() != STT_FUNC {
+        if sym.st_type() != STT_FUNC || name.is_empty() {
             continue;
         }
         let Some(contents) = elf_mem.get(sym.st_value(E), sym.st_size(E)) else {
