@@ -31,35 +31,57 @@ from pw_console.text_formatting import strip_ansi
 _LOG = logging.getLogger(__package__)
 
 
-class TableView:
+class TableView:  # pylint: disable=too-many-instance-attributes
     """Store column information and render logs into formatted tables."""
 
-    # TODO(tonymd): Add a method to provide column formatters externally.
-    # Should allow for string format, column color, and column ordering.
     FLOAT_FORMAT = '%.3f'
     INT_FORMAT = '%s'
     LAST_TABLE_COLUMN_NAMES = ['msg', 'message']
 
     def __init__(self, prefs: ConsolePrefs):
-        self.column_widths: collections.OrderedDict = collections.OrderedDict()
         self._header_fragment_cache: list[StyleAndTextTuples] = []
 
-        # Assume common defaults here before recalculating in set_formatting().
+        # Max column sizes determined from logs.
+        self.column_width_from_logs: collections.OrderedDict = (
+            collections.OrderedDict()
+        )
+        # Set width defaults.
         self._default_time_width: int = 17
-        self.column_widths['time'] = self._default_time_width
-        self.column_widths['level'] = 3
+        self.column_width_from_logs['time'] = self._default_time_width
+        self.column_width_from_logs['level'] = 3
         self._year_month_day_width: int = 9
 
+        # List of all column names. This is updated as new logs come in. Used
+        # for rendering column visibility checkboxes in the log pane menu.
         self.column_names: list[str] = []
+        # Hidden column bool values.
         self.hidden_columns: dict[str, bool] = {}
-        self.apply_max_column_width: bool = True
+
+        # Column resizing variables
+        # Starting x coordinate for the separators between columns.
+        self.drag_handle_x_coordinates: list[int] = []
+        # name and +/- values for x coordinate drag distance.
+        self.drag_diff_amounts: dict[str, int] = {}
+        # Index and name of the selected column to resize.
+        self.resize_column_index: int | None = None
+        self.resize_column_name: str | None = None
+        # Start x coordinate of a drag event
+        self.resize_column_start_cursor_position: int | None = None
+        # Ending x coordinate of a drag event
+        self.resize_column_end_cursor_position: int | None = None
+        # Final desired column width based on the default width +/- the
+        # drag_diff_amounts.
+        self.user_resized_width: dict[str, int] = {}
 
         # Set prefs last to override defaults.
         self.set_prefs(prefs)
+        self.reset_user_column_widths()
 
     def set_prefs(self, prefs: ConsolePrefs) -> None:
         self.prefs = prefs
-        self.column_padding = ' ' * self.prefs.spaces_between_columns
+        column_spacing = max(1, self.prefs.spaces_between_columns)
+        self.column_padding = ' ' * column_spacing
+        self.column_padding_handle = '|' + (' ' * (column_spacing - 1))
 
         # Set columns hidden based on legacy hide column prefs.
         if not self.prefs.show_python_file:
@@ -79,16 +101,16 @@ class TableView:
 
     def set_column_hidden(self, name: str, hidden: bool = True) -> None:
         self.hidden_columns[name] = hidden
-        self._update_table_header()
+        self.update_table_header()
 
     def all_column_names(self) -> Iterable[str]:
         yield from self.column_names
 
     def _ordered_column_widths(self) -> dict[str, int]:
-        """Return each column and width in the preferred order."""
+        """Return each column and default width value in the preferred order."""
         if self.prefs.column_order:
             # Get ordered_columns
-            columns = copy.copy(self.column_widths)
+            columns = copy.copy(self.column_width_from_logs)
             ordered_columns = {}
 
             for column_name in self.prefs.column_order:
@@ -101,53 +123,179 @@ class TableView:
                 for column_name in columns:
                     ordered_columns[column_name] = columns[column_name]
         else:
-            ordered_columns = copy.copy(self.column_widths)
+            ordered_columns = copy.copy(self.column_width_from_logs)
 
         for column_name, is_hidden in self.hidden_columns.items():
             if is_hidden and column_name in ordered_columns:
                 del ordered_columns[column_name]
 
+        for column_name, width in self.user_resized_width.items():
+            if column_name in ordered_columns:
+                ordered_columns[column_name] = width
+
         return ordered_columns
 
-    def update_column_widths(
+    def set_column_to_resize(self, x_position: int) -> None:
+        """Flag the column that a mouse drag will resize."""
+        self.resize_column_index = None
+
+        _LOG.warning(
+            'drag_handle_x_coordinates %s', self.drag_handle_x_coordinates
+        )
+
+        # Determine which column is being resized.
+        for i, position in enumerate(self.drag_handle_x_coordinates):
+            if x_position >= position:
+                self.resize_column_index = i
+
+        if self.resize_column_index is None:
+            return
+
+        # Save the start x coordinate.
+        self.resize_column_start_cursor_position = x_position
+
+        # Get the visible column names
+        visible_columns = self._ordered_column_widths()
+        visible_column_names = list(name for name in visible_columns.keys())
+        try:
+            self.resize_column_name = visible_column_names[
+                self.resize_column_index
+            ]
+        except IndexError as _error:
+            _LOG.debug('INVALID index %s', self.resize_column_index)
+            self.stop_column_resize()
+            return
+
+        _LOG.warning(
+            'SET resize index = %s, name = %s',
+            self.resize_column_index,
+            self.resize_column_name,
+        )
+
+    def stop_column_resize(self) -> None:
+        """Stop column resizing."""
+        self.resize_column_index = None
+        self.resize_column_name = None
+        self.resize_column_start_cursor_position = None
+        self.resize_column_end_cursor_position = None
+        for key in self.drag_diff_amounts.keys():
+            self.drag_diff_amounts[key] = 0
+        _LOG.warning('CLEAR resize index')
+
+    def set_column_resize_amount(self, x_position: int) -> None:
+        """Update the user_resized_width based on a mouse drag event."""
+
+        # Mouse down events are sometimes missed, so if no column has been
+        # flagged yet, set it here. This should only run once per mouse drag.
+        if self.resize_column_index is None:
+            self.set_column_to_resize(x_position)
+        if self.resize_column_index is None:
+            _LOG.error('resize_column_index is None')
+            return
+        if self.resize_column_name is None:
+            _LOG.error('resize_column_name is None')
+            return
+
+        _LOG.debug(
+            'CHANGE resize amount %s -> %s',
+            self.resize_column_end_cursor_position,
+            x_position,
+        )
+        self.resize_column_end_cursor_position = x_position
+
+        if not self.resize_column_start_cursor_position or (
+            self.resize_column_end_cursor_position
+            == self.resize_column_start_cursor_position
+        ):
+            # The mouse hasn't moved yet, return.
+            return
+
+        drag_amount = x_position - self.resize_column_start_cursor_position
+
+        if drag_amount != 0:
+            self.drag_diff_amounts[self.resize_column_name] = drag_amount
+            # Move the end coordinate to the start for the next event.
+            self.resize_column_start_cursor_position = (
+                self.resize_column_end_cursor_position
+            )
+            _LOG.debug('  drag_diff %s', self.drag_diff_amounts)
+
+            self._update_user_desired_width(
+                drag_amount, self.resize_column_name
+            )
+
+        self.update_table_header()
+
+    def _update_user_desired_width(self, drag_amount: int, name: str) -> None:
+        default_width = self.column_width_from_logs.get(name, 5)
+        width = self.user_resized_width.get(name, default_width)
+        new_width = max(1, width + drag_amount)
+        self.user_resized_width[name] = new_width
+        _LOG.debug('  user_resized_width %s', self.user_resized_width)
+
+    def reset_user_column_widths(self) -> None:
+        # Set widths based on max values from logs.
+        for name, width in self.column_width_from_logs.items():
+            self.user_resized_width[name] = width
+
+        # Override widths based on settings in prefs.
+        for name, width in self.prefs.column_width.items():
+            self.user_resized_width[name] = width
+
+        self.update_table_header()
+
+    def update_column_widths_from_logs(
         self, new_column_widths: collections.OrderedDict
     ) -> None:
         """Calculate the max widths for each metadata field."""
-        self.column_widths.update(new_column_widths)
+        self.column_width_from_logs.update(new_column_widths)
 
-        # If max column width is enabled.
-        if self.apply_max_column_width:
-            for name, width in self.prefs.column_width.items():
-                # If column is present, set the width from preferences
-                if name in self.column_widths:
-                    self.column_widths[name] = width
+        self.update_table_header()
 
-        self._update_table_header()
-
-    def _update_table_header(self) -> None:
+    def update_table_header(self) -> None:
+        """Redraw the table header."""
         self.column_names = [
-            name for name, _width in self.column_widths.items() if name != 'msg'
+            name
+            for name, _width in self.column_width_from_logs.items()
+            if name != 'msg'
         ] + ['message']
 
         default_style = 'bold'
         fragments: collections.deque = collections.deque()
 
         # Update time column width to current prefs setting
-        self.column_widths['time'] = self._default_time_width
+        self.column_width_from_logs['time'] = self._default_time_width
         if self.prefs.hide_date_from_log_time:
-            self.column_widths['time'] = (
+            self.column_width_from_logs['time'] = (
                 self._default_time_width - self._year_month_day_width
             )
 
-        for name, width in self._ordered_column_widths().items():
+        self.drag_handle_x_coordinates = list()
+        x_coordinate = 0
+        ordered_column_widths = self._ordered_column_widths()
+        for name, width in ordered_column_widths.items():
             # These fields will be shown at the end
             if name in TableView.LAST_TABLE_COLUMN_NAMES:
                 continue
 
             fragments.append((default_style, name.title()[:width].ljust(width)))
-            fragments.append(('', self.column_padding))
 
-        fragments.append((default_style, 'Message'))
+            x_coordinate += width
+
+            fragments.append(('', self.column_padding_handle))
+
+            self.drag_handle_x_coordinates.append(x_coordinate)
+
+            x_coordinate += self.prefs.spaces_between_columns
+
+        fragments.append(
+            (
+                default_style,
+                # Add extra space to allow mouse dragging. Without this
+                # prompt_toolkit does not process mosue events.
+                'Message'.ljust(100),
+            )
+        )
 
         self._header_fragment_cache = list(fragments)
 
@@ -167,12 +315,13 @@ class TableView:
 
         # NOTE: To preseve ANSI formatting on log level use:
         # table_fragments.extend(
-        #     ANSI(log.record.levelname.ljust(
-        #         self.column_widths['level'])).__pt_formatted_text__())
+        #   ANSI(log.record.levelname.ljust(
+        #     self.column_width_from_logs['level'])).__pt_formatted_text__())
 
         # Collect remaining columns to display after host time and level.
         columns: dict[str, str | tuple[str, str]] = {}
-        for name, width in self._ordered_column_widths().items():
+        ordered_column_widths = self._ordered_column_widths()
+        for name, width in ordered_column_widths.items():
             # Skip these modifying these fields
             if name in TableView.LAST_TABLE_COLUMN_NAMES:
                 continue
@@ -189,7 +338,7 @@ class TableView:
                 )
                 columns['time'] = (
                     time_style,
-                    time_text.ljust(self.column_widths['time']),
+                    time_text[:width].ljust(width),
                 )
                 continue
 
@@ -203,7 +352,7 @@ class TableView:
                 )
                 columns['level'] = (
                     level_style,
-                    level_text.ljust(self.column_widths['level']),
+                    level_text[:width].ljust(width),
                 )
                 continue
 
@@ -224,9 +373,9 @@ class TableView:
                 left_justify = False
 
             if left_justify:
-                columns[name] = value.ljust(width)
+                columns[name] = value[:width].ljust(width)
             else:
-                columns[name] = value.rjust(width)
+                columns[name] = value[:width].rjust(width)
 
         # Grab the message to appear after the justified columns.
         # Default to the Python log message
@@ -244,13 +393,6 @@ class TableView:
         # Go through columns and convert to FormattedText where needed.
         for i, column in enumerate(columns.items()):
             column_name, column_value = column
-
-            # If max column width is enabled.
-            if self.apply_max_column_width:
-                # Truncate the column width if set in prefs.
-                if column_name in self.prefs.column_width:
-                    max_width = self.prefs.column_width[column_name]
-                    column_value = column_value[:max_width]  # type: ignore
 
             # Skip the message column in this loop.
             if column_name == 'message':

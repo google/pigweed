@@ -49,6 +49,8 @@ def _create_log_view():
     )
     application.prefs.reset_config()
     log_view = LogView(log_pane, application)
+    # So we can see the full 'DEBUG' column value.
+    log_view.table.user_resized_width['level'] = 5
     return log_view, log_pane
 
 

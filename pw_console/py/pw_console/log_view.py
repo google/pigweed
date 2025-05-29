@@ -466,7 +466,7 @@ class LogView:
 
     def refresh_visible_table_columns(self) -> None:
         """Trigger a redraw of the table header and log lines."""
-        self.table.update_column_widths(self.log_store.column_widths)
+        self.table.update_table_header()
         self.view_mode_changed()
         # Trigger a main menu update to set log window menu titles.
         self.log_pane.application.update_menu_items()
@@ -478,10 +478,8 @@ class LogView:
         self.table.set_column_hidden(name, hidden)
         self.refresh_visible_table_columns()
 
-    def toggle_table_column_truncation(self) -> None:
-        self.table.apply_max_column_width = (
-            not self.table.apply_max_column_width
-        )
+    def reset_column_sizes(self) -> None:
+        self.table.reset_user_column_widths()
         self.refresh_visible_table_columns()
 
     def delete_filter(self, filter_text):
@@ -630,7 +628,7 @@ class LogView:
         or scroll.
         """
         latest_total = self.log_store.get_total_count()
-        self.table.update_column_widths(self.log_store.column_widths)
+        self.table.update_column_widths_from_logs(self.log_store.column_widths)
 
         if self.filtering_on:
             # Scan newly arived log lines

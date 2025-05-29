@@ -278,9 +278,14 @@ class LogContentControl(UIControl):
 
         return self.uicontent
 
-    def mouse_handler(self, mouse_event: MouseEvent):
+    def mouse_handler(
+        self, mouse_event: MouseEvent
+    ):  # pylint: disable=too-many-return-statements
         """Mouse handler for this control."""
         mouse_position = mouse_event.position
+        table_header = (
+            self.log_pane.table_header_toolbar.table_header_bar_control
+        )
 
         # Left mouse button press should:
         # 1. If not in focus, switch focus to this log pane.
@@ -317,6 +322,15 @@ class LogContentControl(UIControl):
             mouse_event.event_type == MouseEventType.MOUSE_UP
             and mouse_event.button == MouseButton.LEFT
         ):
+            # Check if a table resize is in progress and the cursor moved down
+            # over the log lines.
+            if (
+                self.log_pane.table_view
+                and table_header.column_drag_in_progress()
+            ):
+                table_header.handle_mouse_up_event(mouse_position)
+                return None
+
             # If a drag was in progress and this is the first mouse release
             # press, set the stop flag.
             if (
@@ -341,6 +355,15 @@ class LogContentControl(UIControl):
             if not has_focus(self)():
                 # Don't modify the selection unless the window is in focus.
                 return NotImplemented
+
+            # Check if a table resize is in progress and the cursor moved down
+            # over the log lines.
+            if (
+                self.log_pane.table_view
+                and table_header.column_drag_in_progress()
+            ):
+                table_header.handle_mouse_drag_event(mouse_position)
+                return None
 
             # If a previous mouse drag was completed, clear the selection.
             if (
@@ -865,17 +888,12 @@ class LogPane(WindowPane):
             ),
         ]
 
-        if self.application.prefs.column_width:
-            options += [
-                (
-                    '{check} Apply max column widths'.format(
-                        check=to_checkbox_text(
-                            self.log_view.table.apply_max_column_width, end=''
-                        )
-                    ),
-                    self.log_view.toggle_table_column_truncation,
-                ),
-            ]
+        options += [
+            (
+                'Reset column sizes',
+                self.log_view.reset_column_sizes,
+            ),
+        ]
 
         options += [
             # Menu separator
@@ -930,7 +948,7 @@ class LogPane(WindowPane):
             checkbox = to_checkbox_text(not is_hidden, end='')
             options.append(
                 (
-                    f'Log table show: {checkbox} {column_name}',
+                    f'Log table show/hide: {checkbox} {column_name}',
                     functools.partial(
                         self.log_view.set_table_column_hidden,
                         column_name,

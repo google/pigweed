@@ -173,6 +173,8 @@ Select a range of log lines                   :guilabel:`Left Mouse Drag`
 
 Select all lines                              :kbd:`Ctrl-a`
 Clear Selection                               :kbd:`Ctrl-c`
+
+Resize table columns                          :guilabel:`Left Mouse Drag`
 ============================================  =====================
 
 When making log line selections a popup will appear in the upper right of the log
@@ -675,7 +677,7 @@ Example Config
      - metadata2
      - file
 
-   # Set maximum character widths for columns.
+   # Set default character widths for columns.
    column_width:
      metadata1: 20
      metadata2: 15
