@@ -43,5 +43,5 @@ struct CodecSpecificInformationOpus:
   $next [+1]  bits:
     0     [+3]       ChannelMode        channel_mode
     $next [+2]       FrameSize          frame_size
-    $next [+1]       SamplingFrequency  sampling_frequency
     $next [+2]       UInt               reserved
+    $next [+1]       SamplingFrequency  sampling_frequency
