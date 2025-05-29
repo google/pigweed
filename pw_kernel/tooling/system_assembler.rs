@@ -14,13 +14,27 @@
 
 use anyhow::{anyhow, bail, Context, Result};
 use clap::Parser;
-use object::build::elf::{Builder, Section, SectionData, SectionId};
+use object::build::elf::{
+    AttributeTag, AttributesSection, AttributesSubsection, AttributesSubsubsection, Builder,
+    Section, SectionData, SectionId,
+};
 use object::build::{ByteString, Bytes, Id};
 use object::{elf, ReadRef};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
+
+// Don't copy these sections, as the object writer won't allow multiple
+// sections of SYMTAB and STRTAB type.  All other sections should be copied
+// even if they're not loaded into memory, as symbols may reference
+// these non-alloc sections.
+static SKIPPED_APP_SECTIONS: LazyLock<HashSet<&[u8]>> = LazyLock::new(|| {
+    [&b".symtab"[..], &b".shstrtab"[..], &b".strtab"[..]]
+        .into_iter()
+        .collect()
+});
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -90,12 +104,12 @@ impl<'data> SystemImage<'data> {
                 }
             }
 
-            // Only need to add sections which occupy memory during runtime.
-            // TODO: In the future work out how to copy symbol tables and
-            // debug information etc without confusing tools to allow
-            // debugging of apps etc.
-            if !section.is_alloc() && !add_tokenizer_section {
-                // println!("Skipping non-alloc section '{}'", section.name);
+            // TODO: davidroth - This isn't a problem right now as we don't support
+            // debugging of merged self files.  Revisit this once we add debugging
+            // support.  Possibly we could move the symbols & strings into merged
+            // sections as we do with the tokenized section.
+            if SKIPPED_APP_SECTIONS.contains(&section.name.as_slice()) {
+                // println!("Skipping section '{}'", section.name);
                 continue;
             }
 
@@ -115,7 +129,7 @@ impl<'data> SystemImage<'data> {
                 sections_for_fixup.push(new_section.id());
             }
 
-            Self::copy_section(section, new_section);
+            Self::copy_section(section_map, section, new_section)?;
 
             // println!("Added app section '{:?}'", new_section);
         }
@@ -135,7 +149,11 @@ impl<'data> SystemImage<'data> {
         Ok(())
     }
 
-    fn copy_section(src: &Section, dst: &mut Section) {
+    fn copy_section(
+        section_map: &mut HashMap<usize, SectionId>,
+        src: &Section,
+        dst: &mut Section<'data>,
+    ) -> Result<()> {
         dst.sh_type = src.sh_type;
         dst.sh_flags = src.sh_flags;
         // Copy sh_addr and sh_offset.  They will be updated if they're
@@ -152,6 +170,9 @@ impl<'data> SystemImage<'data> {
         dst.data = match &src.data {
             SectionData::Data(data) => SectionData::Data(Bytes::from(data.to_vec())),
             SectionData::UninitializedData(data) => SectionData::UninitializedData(*data),
+            SectionData::Attributes(data) => {
+                Self::copy_section_attributes(section_map, data).unwrap()
+            }
             SectionData::SectionString => SectionData::SectionString,
             SectionData::Symbol => SectionData::Symbol,
             SectionData::SymbolSectionIndex => SectionData::SymbolSectionIndex,
@@ -165,6 +186,47 @@ impl<'data> SystemImage<'data> {
             SectionData::GnuVerneed => SectionData::GnuVerneed,
             _ => unreachable!("Unsupported section data type: {:?}", src.data),
         };
+
+        Ok(())
+    }
+
+    // Copy the section attributes which may GNU or other vendor-specific attributes. Need to
+    // deep copy as the object crate does not provide a Copy and if an attribute tag points
+    // to a section id, it need to be remapped to the new section id in the merged elf.
+    fn copy_section_attributes(
+        section_map: &mut HashMap<usize, SectionId>,
+        data: &AttributesSection,
+    ) -> Result<SectionData<'data>, ()> {
+        let mut attributes_section = AttributesSection::new();
+        for subsection in &data.subsections {
+            let mut attributes_subsection =
+                AttributesSubsection::new(ByteString::from(subsection.vendor.to_vec()));
+            for subsubsection in &subsection.subsubsections {
+                let tag = match &subsubsection.tag {
+                    AttributeTag::File => AttributeTag::File,
+                    AttributeTag::Section(section_tag) => {
+                        let mut tag_sections = Vec::new();
+                        // Remap the section ids to the new ids in the merged elf.
+                        for section_id in section_tag {
+                            let mapped_id = Self::get_mapped_section_id(section_map, *section_id);
+                            tag_sections.push(mapped_id.unwrap().expect("Section attribute copy"));
+                        }
+                        AttributeTag::Section(tag_sections)
+                    }
+                    AttributeTag::Symbol(symbol_tag) => AttributeTag::Symbol(symbol_tag.to_vec()),
+                };
+
+                let attributes_subsubsection = AttributesSubsubsection {
+                    tag,
+                    data: Bytes::from(subsubsection.data.to_vec()),
+                };
+                attributes_subsection
+                    .subsubsections
+                    .push(attributes_subsubsection);
+            }
+            attributes_section.subsections.push(attributes_subsection);
+        }
+        Ok(SectionData::Attributes(attributes_section))
     }
 
     fn add_app_segments(
@@ -257,6 +319,7 @@ impl<'data> SystemImage<'data> {
         for section in &mut self.builder.sections {
             let is_tokenizer = Self::is_tokenizer_section(section);
             if is_tokenizer {
+                // println!("Tokenized section: {:?}", section);
                 self.tokenized_section = Some(section.id());
                 break;
             }
