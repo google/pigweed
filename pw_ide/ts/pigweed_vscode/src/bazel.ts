@@ -31,6 +31,7 @@ import {
   workingDir,
 } from './settings/vscode';
 import { getPigweedProjectRoot, isBazelProject } from './project';
+import { existsSync } from 'fs';
 
 /** Should we try to generate compile commands for Bazel targets? */
 export async function shouldSupportBazel(): Promise<boolean> {
@@ -203,38 +204,6 @@ export const interactivelySetBazeliskPath = () =>
     vendoredBazeliskPath(),
   );
 
-export async function configureBazelisk() {
-  if (settings.disableBazeliskCheck()) return;
-  if (hasConfiguredPathTo('bazelisk', bazel_executable)) return;
-
-  await vscode.window
-    .showInformationMessage(
-      'Pigweed recommends using Bazelisk to manage your Bazel environment. ' +
-        'The Pigweed extension comes with Bazelisk built in, or you can select ' +
-        'an existing Bazelisk install from your system.',
-      'Default',
-      'Select',
-      'Disable',
-    )
-    .then((value) => {
-      switch (value) {
-        case 'Default': {
-          bazel_executable.update(vendoredBazeliskPath());
-          break;
-        }
-        case 'Select': {
-          interactivelySetBazeliskPath();
-          break;
-        }
-        case 'Disable': {
-          settings.disableBazeliskCheck(true);
-          vscode.window.showInformationMessage("Okay, I won't ask again.");
-          break;
-        }
-      }
-    });
-}
-
 export async function setBazelRecommendedSettings() {
   if (!settings.preserveBazelPath()) {
     await bazel_executable.update(vendoredBazeliskPath());
@@ -245,9 +214,6 @@ export async function setBazelRecommendedSettings() {
 }
 
 export async function configureBazelSettings() {
-  await updateVendoredBazelisk();
-  await updateVendoredBuildifier();
-
   if (settings.disableBazelSettingsRecommendations()) return;
 
   return new Promise((resolve) => {
@@ -287,23 +253,26 @@ export async function configureBazelSettings() {
 }
 
 export async function updateVendoredBazelisk() {
-  const isUsingVendoredBazelisk = !!bazel_executable
-    .get()
-    ?.match(/pigweed\.pigweed-.*/);
+  const bazeliskPath = bazel_executable.get();
+  const isUsingVendoredBazelisk = !!bazeliskPath?.match(/pigweed\.pigweed-.*/);
 
   if (isUsingVendoredBazelisk && !settings.preserveBazelPath()) {
     logger.info('Updating Bazelisk path for current extension version');
+    await bazel_executable.update(vendoredBazeliskPath());
+  } else if (!existsSync(bazeliskPath!) && !settings.preserveBazelPath()) {
     await bazel_executable.update(vendoredBazeliskPath());
   }
 }
 
 export async function updateVendoredBuildifier() {
-  const isUsingVendoredBuildifier = !!buildifier_executable
-    .get()
-    ?.match(/pigweed\.pigweed-.*/);
+  const buildifierPath = buildifier_executable.get();
+  const isUsingVendoredBuildifier =
+    !!buildifierPath?.match(/pigweed\.pigweed-.*/);
 
   if (isUsingVendoredBuildifier) {
     logger.info('Updating Buildifier path for current extension version');
+    await buildifier_executable.update(vendoredBuildifierPath());
+  } else if (!existsSync(buildifierPath!)) {
     await buildifier_executable.update(vendoredBuildifierPath());
   }
 }

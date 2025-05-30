@@ -16,11 +16,12 @@ import * as vscode from 'vscode';
 import { ExtensionContext } from 'vscode';
 
 import {
-  configureBazelisk,
   configureBazelSettings,
   interactivelySetBazeliskPath,
   setBazelRecommendedSettings,
   shouldSupportBazel,
+  updateVendoredBazelisk,
+  updateVendoredBuildifier,
 } from './bazel';
 
 import {
@@ -222,9 +223,10 @@ async function registerCommands(
 
 async function initAsBazelProject(refreshManager: RefreshManager<any>) {
   // Do stuff that we want to do on load.
+  await updateVendoredBazelisk();
+  await updateVendoredBuildifier();
   await initBazelClangdPath();
   await configureBazelSettings();
-  await configureBazelisk();
   linkRefreshManagerToEvents(refreshManager);
 
   if (settings.activateBazeliskInNewTerminals()) {
