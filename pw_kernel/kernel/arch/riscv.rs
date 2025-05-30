@@ -14,16 +14,16 @@
 
 use core::arch::asm;
 
-use kernel_config::{KernelConfig, RiscVKernelConfigInterface};
 use riscv;
 
 mod exceptions;
+mod protection;
 mod regs;
 mod spinlock;
 mod threads;
 mod timer;
 
-use crate::arch::{ArchInterface, MemoryRegion, MemoryRegionType};
+use crate::arch::ArchInterface;
 
 pub struct Arch {}
 
@@ -31,18 +31,11 @@ impl ArchInterface for Arch {
     type ThreadState = threads::ArchThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = timer::Clock;
+    type MemoryConfig = protection::MemoryConfig;
 
     fn early_init() {
         // Make sure interrupts are disabled
         Self::disable_interrupts();
-
-        // Hard code full access for U-Mode in the PMP.
-        const MEM_CONFIG: MemoryConfig = MemoryConfig::const_new(&[MemoryRegion {
-            ty: MemoryRegionType::ReadWriteExecutable,
-            start: 0x0000_0000,
-            end: 0xffff_ffff,
-        }]);
-        unsafe { MEM_CONFIG.0.write() };
 
         timer::early_init();
     }
@@ -77,28 +70,5 @@ impl ArchInterface for Arch {
         }
         #[allow(clippy::empty_loop)]
         loop {}
-    }
-}
-
-type PmpConfig =
-    regs::pmp::PmpConfig<{ KernelConfig::PMP_CFG_REGISTERS }, { KernelConfig::PMP_ENTRIES }>;
-
-/// RISC-V memory configuration
-///
-/// Represents the full configuration of RISC-V memory configuration through
-/// the PMP block.
-pub struct MemoryConfig(PmpConfig);
-
-impl MemoryConfig {
-    /// Create a new `MemoryConfig` in a `const` context
-    ///
-    /// # Panics
-    /// Will panic if the current target's PMP will does not have enough entries
-    /// to represent the provided `regions`.
-    pub const fn const_new(regions: &[MemoryRegion]) -> Self {
-        match PmpConfig::new(regions) {
-            Ok(cfg) => Self(cfg),
-            Err(_) => panic!("Can't create Memory config"),
-        }
     }
 }

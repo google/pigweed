@@ -17,9 +17,10 @@ use cortex_m::peripheral::*;
 use pw_cast::CastInto as _;
 use pw_log::info;
 
-use super::ArchInterface;
+use crate::arch::ArchInterface;
 
 mod exceptions;
+mod protection;
 mod regs;
 mod spinlock;
 mod syscall;
@@ -38,6 +39,7 @@ impl ArchInterface for Arch {
     type ThreadState = threads::ArchThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = timer::Clock;
+    type MemoryConfig = protection::MemoryConfig;
 
     fn early_init() {
         info!("arch early init");
@@ -89,8 +91,13 @@ impl ArchInterface for Arch {
 
             // TODO: set all of the NVIC external irqs to medium as well
 
+            scb.enable(scb::Exception::MemoryManagement);
             // TODO: configure BASEPRI, FAULTMASK
         } // unsafe
+
+        // Set up PMP attr registers so that all PMP configs can reference them.
+        #[cfg(feature = "user_space")]
+        protection::init();
 
         timer::systick_early_init();
 

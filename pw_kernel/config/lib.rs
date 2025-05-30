@@ -26,6 +26,9 @@ pub trait KernelConfigInterface {
 pub trait CortexMKernelConfigInterface {
     /// Rate of the Cortex-M systick system timer.
     const SYS_TICK_HZ: u32;
+
+    /// Number of supported MPU regions
+    const NUM_MPU_REGIONS: usize;
 }
 
 /// RISC-V specific configuration.

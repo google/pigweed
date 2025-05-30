@@ -29,10 +29,10 @@ pub enum PmpCfgAddressMode {
     Tor = 1,
 
     /// Naturally aligned four-byte region
-    Na4 = 3,
+    Na4 = 2,
 
     /// Naturally aligned power-of-two region, ≥8 bytes
-    Napot = 4,
+    Napot = 3,
 }
 
 #[repr(transparent)]
@@ -72,6 +72,7 @@ impl PmpCfgVal {
     }
 }
 
+#[derive(Clone)]
 pub struct PmpConfig<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize> {
     pub cfg: [usize; NUM_CFG_REGISTERS],
     pub addr: [usize; NUM_ENTRIES],
@@ -160,6 +161,7 @@ impl<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize>
         Ok(self)
     }
 
+    /// Write this PMP configuration to the registers.
     pub unsafe fn write(&self) {
         // Currently only 16 entry, rv32 PMPs are supported.
         pw_assert::debug_assert!(NUM_ENTRIES == 16);
@@ -187,6 +189,17 @@ impl<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize>
             asm!("csrw pmpaddr13, {addr}", addr = in(reg) self.addr[13]);
             asm!("csrw pmpaddr14, {addr}", addr = in(reg) self.addr[14]);
             asm!("csrw pmpaddr15, {addr}", addr = in(reg) self.addr[15]);
+        }
+    }
+
+    /// Log the details of the PMP configuration.
+    pub fn dump(&self) {
+        for (i, cfg) in self.cfg.iter().enumerate() {
+            pw_log::debug!("pmpcfg{}: {:#10x}", i as usize, *cfg as usize);
+        }
+
+        for (i, addr) in self.addr.iter().enumerate() {
+            pw_log::debug!("pmpaddr{}: {:#10x}", i as usize, *addr as usize);
         }
     }
 }

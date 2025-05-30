@@ -157,7 +157,10 @@ impl SchedulerState {
     #[allow(dead_code)]
     const fn new() -> Self {
         Self {
-            kernel_process: UnsafeCell::new(Process::new("kernel")),
+            kernel_process: UnsafeCell::new(Process::new(
+                "kernel",
+                <Arch as ArchInterface>::MemoryConfig::KERNEL_THREAD_MEMORY_CONFIG,
+            )),
             current_thread: None,
             current_arch_thread_state: core::ptr::null_mut(),
             process_list: UnsafeList::new(),

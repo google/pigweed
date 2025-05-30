@@ -96,8 +96,12 @@ pub enum RbarSh {
 
 #[derive(Copy, Clone, Default)]
 #[repr(transparent)]
-pub struct RbarVal(u32);
+pub struct RbarVal(pub u32);
 impl RbarVal {
+    pub const fn const_default() -> Self {
+        Self(0)
+    }
+
     rw_bool_field!(u32, xn, 0, "execute-never");
 
     /// Extract access permissions field.
@@ -133,8 +137,12 @@ rw_reg!(
 
 #[derive(Copy, Clone, Default)]
 #[repr(transparent)]
-pub struct RlarVal(u32);
+pub struct RlarVal(pub u32);
 impl RlarVal {
+    pub const fn const_default() -> Self {
+        Self(0)
+    }
+
     rw_bool_field!(u32, en, 0, "region enable");
     rw_int_field!(u32, attrindx, 1, 3, u8, "attribute index");
     rw_bool_field!(u32, pxn, 4, "privileged execute-never");

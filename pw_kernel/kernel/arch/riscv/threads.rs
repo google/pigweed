@@ -13,10 +13,12 @@
 // the License.
 
 use core::arch::naked_asm;
-use core::mem::{self, MaybeUninit};
+use core::mem;
 
 use log_if::debug_if;
+use pw_status::Result;
 
+use crate::arch::riscv::protection::MemoryConfig;
 use crate::arch::riscv::regs::{MStatusVal, PrivilegeLevel};
 use crate::arch::{Arch, ArchInterface};
 use crate::scheduler::{self, thread::Stack, SchedulerState};
@@ -44,6 +46,8 @@ struct ContextSwitchFrame {
 
 pub struct ArchThreadState {
     frame: *mut ContextSwitchFrame,
+    #[cfg(feature = "user_space")]
+    memory_config: *const MemoryConfig,
 }
 
 impl ArchThreadState {
@@ -54,25 +58,20 @@ impl ArchThreadState {
         trampoline: extern "C" fn(),
         initial_mstatus: MStatusVal,
         initial_sp: usize,
-        initial_function: extern "C" fn(usize, usize),
-        (arg0, arg1): (usize, usize),
+        (s0, s1, s2): (usize, usize, usize),
     ) {
-        let frame = Stack::aligned_stack_allocation(
-            kernel_stack.initial_sp(8),
-            size_of::<ContextSwitchFrame>(),
-            8,
-        );
-        let frame: *mut ContextSwitchFrame = frame.cast::<ContextSwitchFrame>().cast_mut();
-        unsafe { (*frame) = mem::zeroed() };
+        let frame: *mut ContextSwitchFrame =
+            Stack::aligned_stack_allocation_mut(unsafe { kernel_stack.end_mut() }, 8);
 
         unsafe {
             // Clear the stack and set up the exception frame such that it would
             // return to the function passed in with arg0 and arg1 passed in the
             // first two argument slots.
+            (*frame) = mem::zeroed();
             (*frame).ra = trampoline as usize;
-            (*frame).s0 = initial_function as usize;
-            (*frame).s1 = arg0;
-            (*frame).s2 = arg1;
+            (*frame).s0 = s0;
+            (*frame).s1 = s1;
+            (*frame).s2 = s2;
             (*frame).s5 = initial_sp;
             (*frame).s6 = initial_mstatus.0;
         }
@@ -85,6 +84,8 @@ impl super::super::ThreadState for ArchThreadState {
     fn new() -> Self {
         Self {
             frame: core::ptr::null_mut(),
+            #[cfg(feature = "user_space")]
+            memory_config: core::ptr::null(),
         }
     }
 
@@ -101,6 +102,21 @@ impl super::super::ThreadState for ArchThreadState {
             (*new_thread_state).frame as usize,
         );
 
+        // Memory config is swapped before the context switch instead of after.
+        // This avoids needing a special case in the user mode thread init to
+        // initialize the config.
+        //
+        // Memory context switch overhead is avoided for threads in the same
+        // memory config space.
+        #[cfg(feature = "user_space")]
+        if (*new_thread_state).memory_config != (*old_thread_state).memory_config {
+            (*(*new_thread_state).memory_config).write();
+        }
+
+        // Note: there is a small window of time where the new memory configuration
+        // is active (above) and the new thread is active (below).  Since this code
+        // always executes in M-Mode, it bypasses the memory config and by the
+        // time control is returned to user space, the memory config is correct.
         riscv_context_switch(&mut (*old_thread_state).frame, (*new_thread_state).frame);
 
         sched_state
@@ -109,16 +125,17 @@ impl super::super::ThreadState for ArchThreadState {
     fn initialize_kernel_frame(
         &mut self,
         kernel_stack: Stack,
+        memory_config: *const MemoryConfig,
         initial_function: extern "C" fn(usize, usize),
         args: (usize, usize),
     ) {
+        self.memory_config = memory_config;
         self.initialize_frame(
             kernel_stack,
             asm_trampoline,
             MStatusVal::default(),
             0x0,
-            initial_function,
-            args,
+            (initial_function as usize, args.0, args.1),
         );
     }
 
@@ -126,10 +143,12 @@ impl super::super::ThreadState for ArchThreadState {
     fn initialize_user_frame(
         &mut self,
         kernel_stack: Stack,
-        initial_sp: *mut MaybeUninit<u8>,
-        initial_function: extern "C" fn(usize, usize),
-        args: (usize, usize),
-    ) {
+        memory_config: *const MemoryConfig,
+        initial_sp: usize,
+        entry_point: usize,
+        arg: usize,
+    ) -> Result<()> {
+        self.memory_config = memory_config;
         let mstatus = MStatusVal::default()
             .with_mpie(true)
             .with_spie(true)
@@ -138,10 +157,11 @@ impl super::super::ThreadState for ArchThreadState {
             kernel_stack,
             asm_user_trampoline,
             mstatus,
-            initial_sp.expose_provenance(),
-            initial_function,
-            args,
+            initial_sp as usize,
+            (entry_point, arg, 0),
         );
+
+        Ok(())
     }
 }
 

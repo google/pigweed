@@ -12,11 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use core::mem::MaybeUninit;
-
 use pw_log::info;
+use pw_status::Result;
 
-use crate::arch::ArchInterface;
+use crate::arch::{ArchInterface, MemoryRegionType};
 use crate::scheduler::{thread::Stack, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
 
@@ -40,6 +39,7 @@ impl super::ThreadState for ThreadState {
     fn initialize_kernel_frame(
         &mut self,
         _kernel_stack: Stack,
+        _memory_config: *const MemoryConfig,
         _initial_function: extern "C" fn(usize, usize),
         _args: (usize, usize),
     ) {
@@ -50,10 +50,11 @@ impl super::ThreadState for ThreadState {
     fn initialize_user_frame(
         &mut self,
         _kernel_stack: Stack,
-        _initial_sp: *mut MaybeUninit<u8>,
-        _initial_function: extern "C" fn(usize, usize),
-        _args: (usize, usize),
-    ) {
+        _memory_config: *const MemoryConfig,
+        _initial_sp: usize,
+        _entry_point: usize,
+        _arg: usize,
+    ) -> Result<()> {
         pw_assert::panic!("unimplemented");
     }
 }
@@ -68,12 +69,29 @@ impl time::Clock for Clock {
     }
 }
 
-pub struct Arch {}
+pub struct MemoryConfig;
+impl MemoryConfig {
+    pub const KERNEL_THREAD_MEMORY_CONFIG: Self = Self;
+}
+
+impl crate::arch::MemoryConfig for MemoryConfig {
+    fn range_has_access(
+        &self,
+        _access_type: MemoryRegionType,
+        _start_addr: usize,
+        _end_addr: usize,
+    ) -> bool {
+        false
+    }
+}
+
+pub struct Arch;
 
 impl ArchInterface for Arch {
     type ThreadState = ThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = Clock;
+    type MemoryConfig = MemoryConfig;
 
     fn early_init() {
         info!("HOST arch early init");

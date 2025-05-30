@@ -27,7 +27,7 @@ mod host;
 #[cfg(feature = "arch_host")]
 pub use host::Arch;
 
-use core::mem::MaybeUninit;
+use pw_status::Result;
 
 use crate::scheduler::{thread::Stack, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
@@ -58,6 +58,7 @@ pub trait ThreadState {
     fn initialize_kernel_frame(
         &mut self,
         kernel_stack: Stack,
+        memory_config: *const <Arch as ArchInterface>::MemoryConfig,
         initial_function: extern "C" fn(usize, usize),
         args: (usize, usize),
     );
@@ -70,10 +71,11 @@ pub trait ThreadState {
     fn initialize_user_frame(
         &mut self,
         kernel_stack: Stack,
-        initial_sp: *mut MaybeUninit<u8>,
-        initial_function: extern "C" fn(usize, usize),
-        args: (usize, usize),
-    );
+        memory_config: *const <Arch as ArchInterface>::MemoryConfig,
+        initial_sp: usize,
+        entry_point: usize,
+        arg: usize,
+    ) -> Result<()>;
 }
 
 #[derive(Clone, Copy)]
@@ -102,13 +104,42 @@ pub enum MemoryRegionType {
 #[allow(dead_code)]
 pub struct MemoryRegion {
     /// Type of the memory region
-    ty: MemoryRegionType,
+    pub ty: MemoryRegionType,
 
     /// Start address of the memory region (inclusive)
-    start: usize,
+    pub start: usize,
 
     /// Start address of the memory region (exclusive)
-    end: usize,
+    pub end: usize,
+}
+
+/// Architecture agnostic operation on memory configuration
+pub trait MemoryConfig {
+    /// Check for access to specified address range.
+    ///
+    /// Returns true if the memory configuration has access (as specified by
+    /// `access_type` to the memory range specified by `start_addr` (inclusive)
+    /// and `end_addr` (exclusive).
+    #[allow(dead_code)]
+    fn range_has_access(
+        &self,
+        access_type: MemoryRegionType,
+        start_addr: usize,
+        end_addr: usize,
+    ) -> bool;
+
+    /// Check for access to a specified object.
+    ///
+    /// Returns true if the memory configuration has access (as specified by
+    /// `access_type` to the memory pointed to by `object`.
+    #[allow(dead_code)]
+    fn has_access<T: Sized>(&self, access_type: MemoryRegionType, object: *const T) -> bool {
+        self.range_has_access(
+            access_type,
+            object as usize,
+            object as usize + core::mem::size_of::<T>(),
+        )
+    }
 }
 
 pub trait BareSpinLock {
@@ -140,6 +171,7 @@ pub trait ArchInterface {
     type ThreadState: ThreadState;
     type BareSpinLock: BareSpinLock;
     type Clock: time::Clock;
+    type MemoryConfig: MemoryConfig;
 
     fn early_init() {}
     fn init() {}

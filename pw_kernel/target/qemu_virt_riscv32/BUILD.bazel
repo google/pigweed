@@ -115,6 +115,7 @@ rust_binary(
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     visibility = ["//visibility:public"],
     deps = [
+        "//pw_kernel/lib/time",
         "//pw_log/rust:pw_log",
     ] + COMMON_DEPS,
 )

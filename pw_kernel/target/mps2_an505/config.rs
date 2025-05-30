@@ -21,4 +21,6 @@ impl KernelConfigInterface for KernelConfig {}
 
 impl CortexMKernelConfigInterface for KernelConfig {
     const SYS_TICK_HZ: u32 = 20_000_000;
+
+    const NUM_MPU_REGIONS: usize = 8;
 }

@@ -27,15 +27,51 @@ impl TargetInterface for Target {
 
     fn main() -> ! {
         // TODO: davidroth - codegen process/thread creation
-        let start_fn_one = unsafe { core::mem::transmute::<usize, fn(usize)>(0x10600001_usize) };
-        let process_one = kernel::init_non_priv_process!("process one");
-        let thread_one_main =
-            kernel::init_non_priv_thread!("main one", process_one, start_fn_one, STACK_SIZE_BYTES);
+        let start_fn_one = 0x10600001_usize;
+        const MEMORY_CONFIG_ONE: <kernel::Arch as kernel::ArchInterface>::MemoryConfig =
+            <kernel::Arch as kernel::ArchInterface>::MemoryConfig::const_new(&[
+                kernel::MemoryRegion {
+                    ty: kernel::MemoryRegionType::ReadOnlyExecutable,
+                    start: 0x10600000,
+                    end: 0x10600000 + 255 * 1024,
+                },
+                kernel::MemoryRegion {
+                    ty: kernel::MemoryRegionType::ReadWriteData,
+                    start: 0x38020000,
+                    end: 0x38020000 + 64 * 1024,
+                },
+            ]);
+        let process_one = kernel::init_non_priv_process!("process one", MEMORY_CONFIG_ONE);
+        let thread_one_main = kernel::init_non_priv_thread!(
+            "main one",
+            process_one,
+            start_fn_one,
+            0x38020000 + 63 * 1024, // Initial Stack Pointer
+            STACK_SIZE_BYTES
+        );
 
-        let start_fn_two = unsafe { core::mem::transmute::<usize, fn(usize)>(0x10700001_usize) };
-        let process_two = kernel::init_non_priv_process!("process two");
-        let thread_two_main =
-            kernel::init_non_priv_thread!("main two", process_two, start_fn_two, STACK_SIZE_BYTES);
+        let start_fn_two = 0x10700001_usize;
+        const MEMORY_CONFIG_TWO: <kernel::Arch as kernel::ArchInterface>::MemoryConfig =
+            <kernel::Arch as kernel::ArchInterface>::MemoryConfig::const_new(&[
+                kernel::MemoryRegion {
+                    ty: kernel::MemoryRegionType::ReadOnlyExecutable,
+                    start: 0x10700000,
+                    end: 0x10700000 + 255 * 1024,
+                },
+                kernel::MemoryRegion {
+                    ty: kernel::MemoryRegionType::ReadWriteData,
+                    start: 0x38040000,
+                    end: 0x38040000 + 64 * 1024,
+                },
+            ]);
+        let process_two = kernel::init_non_priv_process!("process two", MEMORY_CONFIG_TWO);
+        let thread_two_main = kernel::init_non_priv_thread!(
+            "main two",
+            process_two,
+            start_fn_two,
+            0x38040000 + 63 * 1024, // Initial Stack Pointer
+            STACK_SIZE_BYTES
+        );
 
         kernel::start_thread(thread_one_main);
         kernel::start_thread(thread_two_main);
