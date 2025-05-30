@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use pw_status::{Error, Result};
-
+use pw_cast::CastInto as _;
 use pw_log::info;
+use pw_status::{Error, Result};
 use syscall_defs::{SysCallId, SysCallReturnValue};
 use time::Clock;
 
@@ -48,15 +48,19 @@ pub fn handle_syscall(
             crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
             log_if::debug_if!(SYSCALL_DEBUG, "sycall: DebugAdd woken");
             match arg0.checked_add(arg1) {
-                Some(res) => Ok(res as u64),
+                Some(res) => Ok(res.cast_into()),
                 None => Err(Error::OutOfRange),
             }
         }
+        // TODO: Remove this syscall when logging is added.
         SysCallId::DebugPutc => {
             crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
-            let c = unsafe { char::from_u32_unchecked(arg0 as u32) };
+            let c = u32::try_from(arg0)
+                .ok()
+                .and_then(char::from_u32)
+                .ok_or(Error::InvalidArgument)?;
             info!("{}", c as char);
-            Ok(c as u64)
+            Ok(arg0.cast_into())
         }
     };
     log_if::debug_if!(SYSCALL_DEBUG, "syscall: {:#06x} returning", id as usize);

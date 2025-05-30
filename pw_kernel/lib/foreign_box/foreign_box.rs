@@ -96,12 +96,12 @@ impl<T: ?Sized> Drop for ForeignBox<T> {
             if cfg!(feature = "core_panic") {
                 panic!(
                     "ForeignBox@{:08x} dropped before being consumed!",
-                    self.inner.as_ptr() as *const () as usize
+                    self.inner.as_ptr().cast::<()>().expose_provenance()
                 );
             } else {
                 pw_assert::panic!(
                     "ForeignBox@{:08x} dropped before being consumed!",
-                    self.inner.as_ptr() as *const () as usize
+                    self.inner.as_ptr().cast::<()>() as usize
                 );
             }
         }

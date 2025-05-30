@@ -162,9 +162,16 @@ impl Process {
         }
     }
 
-    // A simple id for debugging purposes, currently the pointer to the thread structure itself
+    /// A simple ID for debugging purposes, currently the pointer to the thread
+    /// structure itself.
+    ///
+    /// # Safety
+    ///
+    /// The returned value should not be relied upon as being a valid pointer.
+    /// Even in the current implementation, `id` does not expose the pointer's
+    /// provenance.
     pub fn id(&self) -> usize {
-        core::ptr::from_ref(self) as usize
+        core::ptr::from_ref(self).addr()
     }
 
     pub fn dump(&self) {
@@ -276,7 +283,10 @@ impl Thread {
                 // the RISC-V calling convention.   Ideally this would be
                 // architecture dependant.  However, this value will eventually
                 // be passed in from user space.
-                main_stack.initial_sp(16) as *mut MaybeUninit<u8>,
+                main_stack
+                    .initial_sp(16)
+                    .cast::<MaybeUninit<u8>>()
+                    .cast_mut(),
                 Self::trampoline,
                 args,
             );
@@ -324,12 +334,19 @@ impl Thread {
         );
     }
 
-    // A simple id for debugging purposes, currently the pointer to the thread structure itself
+    /// A simple ID for debugging purposes, currently the pointer to the thread
+    /// structure itself.
+    ///
+    /// # Safety
+    ///
+    /// The returned value should not be relied upon as being a valid pointer.
+    /// Even in the current implementation, `id` does not expose the pointer's
+    /// provenance.
     pub fn id(&self) -> usize {
-        core::ptr::from_ref(self) as usize
+        core::ptr::from_ref(self).addr()
     }
 
-    // An id that can not be assigned to any thread in the system.
+    // An ID that can not be assigned to any thread in the system.
     pub const fn null_id() -> usize {
         // `core::ptr::null::<Self>() as usize` can not be evaluated at const time
         // and a null pointer is defined to be at address 0 (see

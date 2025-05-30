@@ -61,7 +61,7 @@ pub unsafe fn run_ctors() {
     unsafe {
         let start_ptr: *const CtorFn = &__init_array_start;
         let end_ptr: *const CtorFn = &__init_array_end;
-        let num_ctors = end_ptr.offset_from(start_ptr) as usize;
+        let num_ctors = end_ptr.offset_from(start_ptr).cast_unsigned();
         let ctors = core::slice::from_raw_parts(start_ptr, num_ctors);
         for ctor in ctors {
             let _ = ctor();

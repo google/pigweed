@@ -25,7 +25,7 @@ fn entry() -> ! {
     let mut buffer = [0u8; 1024];
     let _ = tokenize_core_fmt_to_buffer!(&mut buffer, "App one tokenized string {}", 1 as i32);
     loop {
-        let _ = SysCall::debug_putc('a' as u32);
+        let _ = SysCall::debug_putc(u32::from('a'));
     }
 }
 

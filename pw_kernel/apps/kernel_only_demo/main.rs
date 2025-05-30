@@ -56,7 +56,7 @@ fn thread_b() {
         };
         info!("Thread B: counter value {}", *counter as u64);
 
-        pw_assert::ne!(*counter as usize, 4 as usize);
+        pw_assert::ne!(*counter as u64, 4 as u64);
         drop(counter);
         // Give Thread A a chance to acquire the mutex.
         kernel::yield_timeslice();

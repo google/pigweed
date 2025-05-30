@@ -16,6 +16,7 @@ use core::arch::asm;
 use core::mem::{self, MaybeUninit};
 
 use cortex_m::peripheral::SCB;
+use pw_cast::CastInto as _;
 
 // use pw_log::info;
 
@@ -65,15 +66,15 @@ impl ArchThreadState {
         // first two argument slots.
         unsafe {
             (*user_frame) = mem::zeroed();
-            (*user_frame).r0 = r0 as u32;
-            (*user_frame).r1 = r1 as u32;
-            (*user_frame).r2 = r2 as u32;
-            (*user_frame).pc = initial_pc as u32;
+            (*user_frame).r0 = r0.cast_into();
+            (*user_frame).r1 = r1.cast_into();
+            (*user_frame).r2 = r2.cast_into();
+            (*user_frame).pc = initial_pc.cast_into();
             (*user_frame).psr = RetPsrVal(0).with_t(true);
             (*kernel_frame) = mem::zeroed();
             (*kernel_frame).psp = psp;
             (*kernel_frame).control = control;
-            (*kernel_frame).return_address = return_address.bits() as u32;
+            (*kernel_frame).return_address = return_address.bits().cast_into();
         }
         self.frame = kernel_frame;
     }
@@ -157,9 +158,12 @@ impl super::super::ThreadState for ArchThreadState {
             size_of::<usize>(),
         );
 
+        // TODO: This is unsound: `user_frame` and `kernel_frame` need to be
+        // `*mut` to preserve the ability to mutate their referents in the Rust
+        // memory model.
         self.initialize_frame(
-            user_frame as *mut ExceptionFrame,
-            kernel_frame as *mut KernelExceptionFrame,
+            user_frame.cast::<ExceptionFrame>().cast_mut(),
+            kernel_frame.cast::<KernelExceptionFrame>().cast_mut(),
             ControlVal::default()
                 .with_npriv(false)
                 .with_spsel(Spsel::Main),
@@ -195,13 +199,16 @@ impl super::super::ThreadState for ArchThreadState {
             STACK_ALIGNMENT,
         );
 
+        // TODO: This is unsound: `user_frame` and `kernel_frame` need to be
+        // `*mut` to preserve the ability to mutate their referents in the Rust
+        // memory model.
         self.initialize_frame(
-            user_frame as *mut ExceptionFrame,
-            kernel_frame as *mut KernelExceptionFrame,
+            user_frame.cast::<ExceptionFrame>().cast_mut(),
+            kernel_frame.cast::<KernelExceptionFrame>().cast_mut(),
             ControlVal::default()
                 .with_npriv(true)
                 .with_spsel(Spsel::Process),
-            user_frame as u32,
+            user_frame.expose_provenance().cast_into(),
             ExcReturn::new(
                 ExcReturnStack::ThreadSecure,
                 ExcReturnRegisterStacking::Default,

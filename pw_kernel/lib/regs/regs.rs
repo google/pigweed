@@ -11,7 +11,10 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 #![no_std]
+
+use core::ptr::{with_exposed_provenance, with_exposed_provenance_mut};
 
 pub trait RO<T> {
     const ADDR: usize;
@@ -22,7 +25,8 @@ pub trait RO<T> {
     /// The caller must guarantee that provided `ADDR` is accessible.
     #[inline]
     unsafe fn raw_read(&self) -> T {
-        (Self::ADDR as *const T).read_volatile()
+        let ptr = with_exposed_provenance::<T>(Self::ADDR);
+        ptr.read_volatile()
     }
 }
 
@@ -35,7 +39,8 @@ pub trait RW<T> {
     /// The caller must guarantee that provided `ADDR` is accessible.
     #[inline]
     unsafe fn raw_read(&self) -> T {
-        (Self::ADDR as *const T).read_volatile()
+        let ptr = with_exposed_provenance::<T>(Self::ADDR);
+        ptr.read_volatile()
     }
 
     /// Write a raw value to the specified register
@@ -45,7 +50,8 @@ pub trait RW<T> {
     /// and the `ADDR` is accessible.
     #[inline]
     unsafe fn raw_write(&mut self, val: T) {
-        (Self::ADDR as *mut T).write_volatile(val)
+        let ptr = with_exposed_provenance_mut::<T>(Self::ADDR);
+        ptr.write_volatile(val)
     }
 }
 
@@ -215,7 +221,7 @@ pub mod ops {
     #[inline]
     pub const fn mask(start: usize, end: usize) -> usize {
         let length = end - start + 1;
-        if length == usize::BITS as usize {
+        if length == pw_cast::cast!(usize::BITS => usize) {
             // Special case full mask to keep shifting logic below from overflowing.
             usize::MAX
         } else {
@@ -241,7 +247,7 @@ pub mod ops {
 
     #[inline]
     pub const fn set_bool(value: usize, bit: usize, field_value: bool) -> usize {
-        value & !(1 << bit) | ((field_value as usize) << bit)
+        value & !(1 << bit) | (pw_cast::cast!(field_value => usize) << bit)
     }
 
     #[inline]

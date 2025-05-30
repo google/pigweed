@@ -260,8 +260,9 @@ impl Debug for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Const(val) => {
-                if (*val as i32) < 1024 && (*val as i32) >= -1024 {
-                    write!(f, "Const({})", *val as i32)
+                let val = (*val).cast_signed();
+                if (-1024..1024).contains(&val) {
+                    write!(f, "Const({})", val)
                 } else {
                     write!(f, "Const({val:08x})")
                 }
@@ -350,13 +351,14 @@ impl Expr {
                         // as the source register; optimize() will collapse it
                         // to a constant expression)
                         DecodedInstr::Addi(i) => {
-                            *self = Expr::add(Expr::reg(i.rs1()), Expr::Const(i.imm() as u32))
+                            *self =
+                                Expr::add(Expr::reg(i.rs1()), Expr::Const(i.imm().cast_unsigned()))
                         }
                         // Load from memory into this register.
                         DecodedInstr::Lw(i) => {
                             *self = Expr::ptr_deref(Expr::add(
                                 Expr::reg(i.rs1()),
-                                Expr::Const(i.imm() as u32),
+                                Expr::Const(i.imm().cast_unsigned()),
                             ))
                         }
                         _ => return Err(ExprErr::RegCloberred(instr)),
@@ -379,7 +381,8 @@ impl Expr {
                 // sure we're still a PtrDeref to make the borrow checker happy.
                 if let Self::PtrDeref(ptr) = self {
                     if let DecodedInstr::Sw(i) = instr_d {
-                        let store_expr = Expr::add(Expr::reg(i.rs1()), Expr::Const(i.imm() as u32));
+                        let store_expr =
+                            Expr::add(Expr::reg(i.rs1()), Expr::Const(i.imm().cast_unsigned()));
                         if store_expr == **ptr {
                             // This instruction modifies the memory address we dereferenced.
                             // Update the expression tree.

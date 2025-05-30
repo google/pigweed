@@ -108,7 +108,7 @@ impl<Clock: crate::Clock> Sub<Instant<Clock>> for Instant<Clock> {
         Self::Output {
             // Use a wrapping_sub then conversion to i64 to avoid losing
             // resolution for large values of ticks.
-            ticks: self.ticks.wrapping_sub(rhs.ticks) as i64,
+            ticks: self.ticks.wrapping_sub(rhs.ticks).cast_signed(),
             _phantom: PhantomData,
         }
     }
@@ -160,28 +160,28 @@ impl<Clock: crate::Clock> Duration<Clock> {
 
     pub const fn from_secs(secs: i64) -> Self {
         Self {
-            ticks: secs * (Clock::TICKS_PER_SEC as i64),
+            ticks: secs * (Clock::TICKS_PER_SEC.cast_signed()),
             _phantom: PhantomData,
         }
     }
 
     pub const fn from_millis(millis: i64) -> Self {
         Self {
-            ticks: millis * (Clock::TICKS_PER_SEC as i64) / 1000,
+            ticks: millis * (Clock::TICKS_PER_SEC.cast_signed()) / 1000,
             _phantom: PhantomData,
         }
     }
 
     pub const fn from_micros(micros: i64) -> Self {
         Self {
-            ticks: micros * (Clock::TICKS_PER_SEC as i64) / 1_000_000,
+            ticks: micros * (Clock::TICKS_PER_SEC.cast_signed()) / 1_000_000,
             _phantom: PhantomData,
         }
     }
 
     pub const fn from_nanos(nanos: i64) -> Self {
         Self {
-            ticks: nanos * (Clock::TICKS_PER_SEC as i64) / 1_000_000_000,
+            ticks: nanos * (Clock::TICKS_PER_SEC.cast_signed()) / 1_000_000_000,
             _phantom: PhantomData,
         }
     }

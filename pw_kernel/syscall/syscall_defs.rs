@@ -164,7 +164,10 @@ impl SysCallReturnValue {
         let value = self.0;
         if value < 0 {
             // TODO debug assert if error number is out of range
-            Err(unsafe { core::mem::transmute::<u32, Error>((-value) as u32) })
+            let value = (-value).cast_unsigned();
+            // TODO(421404517): Avoid the lossy cast
+            #[allow(clippy::cast_possible_truncation)]
+            Err(unsafe { core::mem::transmute::<u32, Error>(value as u32) })
         } else {
             Ok(())
         }
@@ -173,9 +176,14 @@ impl SysCallReturnValue {
         let value = self.0;
         if value < 0 {
             // TODO debug assert if error number is out of range
-            Err(unsafe { core::mem::transmute::<u32, Error>((-value) as u32) })
+            let value = (-value).cast_unsigned();
+            // TODO(421404517): Avoid the lossy cast
+            #[allow(clippy::cast_possible_truncation)]
+            Err(unsafe { core::mem::transmute::<u32, Error>(value as u32) })
         } else {
-            Ok(value as u32)
+            // TODO(421404517): Avoid the lossy cast
+            #[allow(clippy::cast_possible_truncation)]
+            Ok(value.cast_unsigned() as u32)
         }
     }
 }
@@ -184,7 +192,7 @@ impl From<Result<u64>> for SysCallReturnValue {
     fn from(value: Result<u64>) -> Self {
         match value {
             // TODO - konkers: Debug assert on high bit of value being set.
-            Ok(val) => Self(val as i64),
+            Ok(val) => Self(val.cast_signed()),
             Err(error) => Self(-(error as i64)),
         }
     }

@@ -75,14 +75,14 @@ pub struct Link {
 
 #[inline]
 unsafe fn get_element(inner: &UnsafeCell<LinkInner>, offset: usize) -> Option<NonNull<Link>> {
-    let inner_ptr = inner.get() as *const Option<NonNull<Link>>;
+    let inner_ptr = inner.get().cast::<Option<NonNull<Link>>>();
     let element_ptr = inner_ptr.byte_add(offset);
     core::ptr::read(element_ptr)
 }
 
 #[inline]
 unsafe fn set_element(inner: &UnsafeCell<LinkInner>, offset: usize, value: Option<NonNull<Link>>) {
-    let inner_ptr = inner.get() as *mut Option<NonNull<Link>>;
+    let inner_ptr = inner.get().cast::<Option<NonNull<Link>>>();
     let element_ptr = inner_ptr.byte_add(offset);
     core::ptr::write(element_ptr, value);
 }
@@ -184,11 +184,11 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     }
 
     unsafe fn get_element_ptr(link: NonNull<Link>) -> *const T {
-        link.byte_sub(A::LINK_OFFSET).as_ptr() as *const T
+        link.byte_sub(A::LINK_OFFSET).as_ptr().cast::<T>()
     }
 
     unsafe fn get_element_mut(link: NonNull<Link>) -> *mut T {
-        link.byte_sub(A::LINK_OFFSET).as_ptr() as *mut T
+        link.byte_sub(A::LINK_OFFSET).as_ptr().cast::<T>()
     }
 
     /// Returns true if element is in **ANY** list that uses this list's adapter.

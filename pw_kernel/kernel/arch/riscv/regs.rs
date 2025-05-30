@@ -119,7 +119,7 @@ impl MCauseVal {
     #[inline]
     pub fn is_interrupt(&self) -> bool {
         // is_negative() is used to test the high bit to be word size independent.
-        (self.0 as isize).is_negative()
+        self.0.cast_signed().is_negative()
     }
 }
 
@@ -173,7 +173,7 @@ impl MStatusVal {
     pub fn sd(&self) -> bool {
         // is_negative() is used to as a word size independent way to test the
         // high bit.
-        (self.0 as isize).is_negative()
+        self.0.cast_signed().is_negative()
     }
 }
 

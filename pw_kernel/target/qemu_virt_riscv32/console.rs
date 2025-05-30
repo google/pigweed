@@ -32,7 +32,8 @@ impl Uart {
                 // will never back up. This is reasonable for a first
                 // implementation, but it is possible for qemu to eventually
                 // fill its buffers.
-                ptr::write_volatile(self.base_addr as *mut u8, *c);
+                let ptr = ptr::with_exposed_provenance_mut::<u8>(self.base_addr);
+                ptr::write_volatile(ptr, *c);
             }
             Ok(())
         }

@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 use log_if::debug_if;
 use pw_log::info;
 
@@ -72,8 +73,8 @@ fn handle_ecall(frame: &mut TrapFrame) {
         (*frame).a2 as usize,
         (*frame).a3 as usize,
     );
-    (*frame).a0 = (ret_val as u64) as usize;
-    (*frame).a1 = (ret_val as u64 >> 32) as usize;
+    (*frame).a0 = ret_val.cast_unsigned() as usize;
+    (*frame).a1 = (ret_val.cast_unsigned() >> 32) as usize;
 
     // ECALL exceptions do not "retire the instruction" requiring the advancing
     // of the PC past the ECALL instruction.  ECALLs are encoded as 4 byte

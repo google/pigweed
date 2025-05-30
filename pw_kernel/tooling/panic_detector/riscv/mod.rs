@@ -82,7 +82,7 @@ impl Instr {
     #[inline(always)]
     pub fn decode(self) -> DecodedInstr {
         if self.is_compressed() {
-            match compression::decompress_instr(self.0 as u16) {
+            match compression::decompress_instr(pw_cast::try_cast!(self.0 => u16).unwrap()) {
                 Some(instr) => instr.decode32(),
                 None => DecodedInstr::Unknown(self.0 & 0xffff),
             }
@@ -200,11 +200,11 @@ impl From<u16> for Instr {
 }
 const fn sign_extend_i16(val: u16, msb: u16) -> i16 {
     let sh = 15 - msb;
-    ((val << sh) as i16) >> sh
+    ((val << sh).cast_signed()) >> sh
 }
 const fn sign_extend_i32(val: u32, msb: u32) -> i32 {
     let sh = 31 - msb;
-    ((val << sh) as i32) >> sh
+    ((val << sh).cast_signed()) >> sh
 }
 const OP_MASK_32: u32 = 0x3;
 #[derive(Debug, Eq, PartialEq)]
@@ -719,7 +719,7 @@ impl Instr32I {
         sign_extend_i32(self.uimm(), 11)
     }
     pub fn set_imm(&mut self, val: i32) {
-        self.set_uimm(val as u32 & 0xfff);
+        self.set_uimm(val.cast_unsigned() & 0xfff);
     }
 }
 impl Display for Instr32I {
@@ -817,7 +817,7 @@ impl Instr32S {
         sign_extend_i32(self.uimm(), 11)
     }
     pub fn set_imm(&mut self, val: i32) {
-        self.set_uimm(val as u32 & 0xfff);
+        self.set_uimm(val.cast_unsigned() & 0xfff);
     }
 }
 impl Display for Instr32S {
@@ -858,7 +858,7 @@ impl Instr32B {
         sign_extend_i32(self.uimm(), 11)
     }
     fn set_imm(&mut self, val: i32) {
-        self.set_uimm(val as u32 & 0xfff);
+        self.set_uimm(val.cast_unsigned() & 0xfff);
     }
 }
 impl Display for Instr32B {
@@ -886,7 +886,7 @@ impl Instr32J {
         sign_extend_i32(self.uimm(), 20)
     }
     fn set_imm(&mut self, val: i32) {
-        self.set_uimm(val as u32 & 0x1fffff);
+        self.set_uimm(val.cast_unsigned() & 0x1fffff);
     }
     fn uimm(&self) -> u32 {
         (self.imm1() << 1) | (self.imm11() << 11) | (self.imm12() << 12) | (self.imm20() << 20)
@@ -920,10 +920,10 @@ impl Instr32U {
         self.set_imm12(val >> 12);
     }
     pub fn imm(&self) -> i32 {
-        self.uimm() as i32
+        self.uimm().cast_signed()
     }
     pub fn set_imm(&mut self, val: i32) {
-        self.set_uimm(val as u32)
+        self.set_uimm(val.cast_unsigned())
     }
 }
 impl Display for Instr32U {

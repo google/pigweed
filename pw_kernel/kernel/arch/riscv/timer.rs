@@ -12,12 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use crate::arch::riscv::spinlock::InterruptGuard;
-use crate::scheduler;
+use core::ptr::{with_exposed_provenance, with_exposed_provenance_mut};
 use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
 use time::Clock as _;
 use time::Duration;
+
+use crate::arch::riscv::spinlock::InterruptGuard;
+use crate::scheduler;
 
 // Use the CLINT to read time and set the hardware timer.
 // NOTE: assumes machine mode and the CLINT is the best timer to use.
@@ -29,14 +31,14 @@ const CLINT_MTIME_REGISTER: usize = CLINT_BASE + 0xbff8;
 fn read_mtime() -> u64 {
     // TODO: consider using riscv::register::time instead.
     // TODO: make sure this is 32bit safe by reading high and low parts separately.
-    unsafe { (CLINT_MTIME_REGISTER as *const u64).read_volatile() }
+    let reg = with_exposed_provenance::<u64>(CLINT_MTIME_REGISTER);
+    unsafe { reg.read_volatile() }
 }
 
 fn write_mtimecmp(value: u64) {
-    unsafe {
-        // TODO: make sure this is 32bit safe by writing high and low parts separately.
-        (CLINT_MTIMECMP_REGISTER as *mut u64).write_volatile(value);
-    }
+    let reg = with_exposed_provenance_mut::<u64>(CLINT_MTIMECMP_REGISTER);
+    // TODO: make sure this is 32bit safe by writing high and low parts separately.
+    unsafe { reg.write_volatile(value) }
 }
 
 #[inline(never)]

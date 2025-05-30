@@ -32,6 +32,7 @@ rust_binary(
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:public"],
     deps = [
+        "//pw_kernel/lib/pw_cast",
         "@rust_crates//:anyhow",
         "@rust_crates//:clap",
         "@rust_crates//:object",

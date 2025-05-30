@@ -11,8 +11,10 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 use core::arch::asm;
 use cortex_m::peripheral::*;
+use pw_cast::CastInto as _;
 use pw_log::info;
 
 use super::ArchInterface;
@@ -64,7 +66,9 @@ impl ArchInterface for Arch {
                 fn pw_boot_vector_table_addr();
             }
             let vector_table = pw_boot_vector_table_addr as *const ();
-            p.SCB.vtor.write(vector_table as u32);
+            p.SCB
+                .vtor
+                .write(vector_table.expose_provenance().cast_into());
 
             // Only the high two bits or the priority are guaranteed to be
             // implemented.  Values below are chosen accordingly.

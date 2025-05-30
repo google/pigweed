@@ -75,8 +75,9 @@ impl<'lock, T> SchedLockGuard<'lock, T> {
     /// The caller must guarantee that the underlying lock remains valid and
     /// un-moved for the live the smuggled lock.
     pub unsafe fn smuggle(&self) -> SmuggledSchedLock<T> {
+        let inner: *const T = self.inner;
         SmuggledSchedLock {
-            inner: unsafe { NonNull::new_unchecked(self.inner as *const T as *mut T) },
+            inner: unsafe { NonNull::new_unchecked(inner.cast_mut()) },
         }
     }
 }

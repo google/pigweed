@@ -25,6 +25,7 @@ common:k_lint --platforms=//pw_kernel/target/host:host
 # Enable clippy lints
 build:k_lint --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect
 build:k_lint --output_groups=+clippy_checks
+build:k_lint --@rules_rust//rust/settings:clippy_flags="-Dclippy::cast_lossless,-Dclippy::cast_possible_truncation,-Dclippy::cast_possible_wrap,-Dclippy::cast_precision_loss,-Dclippy::cast_sign_loss,-Dclippy::char_lit_as_u8,-Dclippy::fn_to_numeric_cast,-Dclippy::fn_to_numeric_cast_with_truncation,-Dclippy::ptr_as_ptr,-Dclippy::unnecessary_cast,-Dinvalid_reference_casting"
 
 # Enforce rustfmt formatting
 build:k_lint --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect

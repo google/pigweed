@@ -11,13 +11,14 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-use crate::arch::arm_cortex_m::regs::Regs;
 
-use crate::scheduler;
-use crate::sync::spinlock::SpinLock;
 use kernel_config::{CortexMKernelConfigInterface, KernelConfig, KernelConfigInterface};
 use pw_log::info;
 use time::Clock as _;
+
+use crate::arch::arm_cortex_m::regs::Regs;
+use crate::scheduler;
+use crate::sync::spinlock::SpinLock;
 
 static TICKS: SpinLock<u64> = SpinLock::new(0);
 const SYSTICK_RELOAD_VALUE: u32 = KernelConfig::SYS_TICK_HZ / KernelConfig::SCHEDULER_TICK_HZ;
@@ -35,11 +36,11 @@ impl time::Clock for Clock {
         if systick_regs.csr.read().countflag() {
             // Update the global tick count, as reading the control bit
             // when it's 1 will clear it.
-            *ticks += SYSTICK_RELOAD_VALUE as u64;
+            *ticks += u64::from(SYSTICK_RELOAD_VALUE);
             current = systick_regs.cvr.read().current();
         }
 
-        let delta = (reload - current) as u64;
+        let delta = u64::from(reload - current);
         // The cortex-m systick is a count down timer which triggers
         // ever reload period, which we define as (SYS_TICK_HZ / SCHEDULER_TICK_HZ).
         // The current time is calculated as the number of ticks + delta where:
@@ -98,7 +99,7 @@ pub fn systick_init() {
 #[allow(non_snake_case)]
 pub unsafe extern "C" fn SysTick() {
     let mut ticks = TICKS.lock();
-    *ticks += SYSTICK_RELOAD_VALUE as u64;
+    *ticks += u64::from(SYSTICK_RELOAD_VALUE);
 
     //info!("SysTick {}", *ticks as u64);
 

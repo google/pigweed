@@ -62,7 +62,7 @@ impl ArchThreadState {
             size_of::<ContextSwitchFrame>(),
             8,
         );
-        let frame: *mut ContextSwitchFrame = frame as *mut ContextSwitchFrame;
+        let frame: *mut ContextSwitchFrame = frame.cast::<ContextSwitchFrame>().cast_mut();
         unsafe { (*frame) = mem::zeroed() };
 
         unsafe {
@@ -138,7 +138,7 @@ impl super::super::ThreadState for ArchThreadState {
             kernel_stack,
             asm_user_trampoline,
             mstatus,
-            initial_sp as usize,
+            initial_sp.expose_provenance(),
             initial_function,
             args,
         );

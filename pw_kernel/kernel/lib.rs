@@ -69,9 +69,9 @@ impl ThreadBuffer {
     pub fn alloc_thread(&mut self, name: &'static str) -> ForeignBox<Thread> {
         pw_assert::eq!(
             self.buffer.as_ptr().align_offset(align_of::<Thread>()) as usize,
-            0 as usize
+            0 as usize,
         );
-        let thread_ptr = self.buffer.as_mut_ptr() as *mut Thread;
+        let thread_ptr = self.buffer.as_mut_ptr().cast::<Thread>();
         unsafe {
             thread_ptr.write(Thread::new(name));
             ForeignBox::new_from_ptr(&mut *thread_ptr)

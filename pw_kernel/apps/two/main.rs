@@ -20,7 +20,7 @@ use userspace::entry;
 #[entry]
 fn entry() -> ! {
     loop {
-        let _ = SysCall::debug_putc('b' as u32);
+        let _ = SysCall::debug_putc(u32::from('b'));
     }
 }
 
