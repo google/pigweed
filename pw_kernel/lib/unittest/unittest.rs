@@ -16,4 +16,25 @@
 
 pub use unittest_core::*;
 pub use unittest_proc_macro::*;
-pub use unittest_runner::*;
+
+#[cfg(test)]
+mod tests {
+    use crate as unittest;
+    use unittest::test;
+
+    fn add(a: u32, b: u32) -> u32 {
+        a + b
+    }
+
+    #[test]
+    fn test_add() -> unittest::Result<()> {
+        unittest::assert_eq!(add(1, 2), 3);
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_ne() -> unittest::Result<()> {
+        unittest::assert_ne!(add(1, 2), 4);
+        Ok(())
+    }
+}

@@ -12,23 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+load("//pw_kernel:flags.bzl", "KERNEL_TEST_DEPS", "KERNEL_TEST_RUSTC_FLAGS")
 
 rust_library(
     name = "regs",
     srcs = ["regs.rs"],
+    rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     visibility = ["//visibility:public"],
-)
-
-rust_test(
-    name = "regs_test",
-    srcs = ["tests/regs_test.rs"],
-    tags = ["kernel"],
-    use_libtest_harness = False,
-    deps = [
-        ":regs",
-        "//pw_kernel/lib/unittest",
-        "//pw_kernel/target:linker_script",
-    ],
+    deps = KERNEL_TEST_DEPS,
 )

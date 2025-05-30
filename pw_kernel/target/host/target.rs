@@ -20,7 +20,7 @@ use kernel as _;
 #[no_mangle]
 pub extern "C" fn main() -> core::ffi::c_int {
     #[cfg(test)]
-    match unittest_core::run_bare_metal_tests() {
+    match unittest_core::run_bare_metal_tests!() {
         unittest_core::TestsResult::AllPassed => 0,
         unittest_core::TestsResult::SomeFailed => 1,
     }

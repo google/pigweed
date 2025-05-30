@@ -234,3 +234,69 @@ macro_rules! ne {
       }
   }};
 }
+
+#[cfg(test)]
+mod tests {
+    use unittest::test;
+
+    use super::*;
+
+    // Because infrastructure to verify panics does not exist, these tests only
+    // check for the valid condition and the syntax of the macros being correct.
+
+    #[test]
+    fn assert_syntax_works() -> unittest::Result<()> {
+        assert!(true as bool);
+        assert!(true as bool,);
+
+        assert!(true as bool, "custom msg");
+        assert!(true as bool, "custom msg",);
+
+        assert!(true as bool, "custom msg with arg {}", 42 as u32);
+        assert!(true as bool, "custom msg with arg {}", 42 as u32,);
+
+        Ok(())
+    }
+
+    #[test]
+    fn debug_assert_syntax_works() -> unittest::Result<()> {
+        debug_assert!(true as bool);
+        debug_assert!(true as bool,);
+
+        debug_assert!(true as bool, "custom msg");
+        debug_assert!(true as bool, "custom msg",);
+
+        debug_assert!(true as bool, "custom msg with arg {}", 42 as u32);
+        debug_assert!(true as bool, "custom msg with arg {}", 42 as u32,);
+
+        Ok(())
+    }
+
+    #[test]
+    fn assert_eq_syntax_works() -> unittest::Result<()> {
+        eq!(1 as u32, 1 as u32);
+        eq!(1 as u32, 1 as u32,);
+
+        eq!(1 as u32, 1 as u32, "custom msg");
+        eq!(1 as u32, 1 as u32, "custom msg",);
+
+        eq!(1 as u32, 1 as u32, "custom msg with arg {}", 42 as u32);
+        eq!(1 as u32, 1 as u32, "custom msg with arg {}", 42 as u32,);
+
+        Ok(())
+    }
+
+    #[test]
+    fn assert_ne_syntax_works() -> unittest::Result<()> {
+        ne!(1 as u32, 2 as u32);
+        ne!(1 as u32, 2 as u32,);
+
+        ne!(1 as u32, 2 as u32, "custom msg");
+        ne!(1 as u32, 2 as u32, "custom msg",);
+
+        ne!(1 as u32, 2 as u32, "custom msg with arg {}", 42 as u32);
+        ne!(1 as u32, 2 as u32, "custom msg with arg {}", 42 as u32,);
+
+        Ok(())
+    }
+}

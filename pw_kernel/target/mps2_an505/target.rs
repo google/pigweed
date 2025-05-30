@@ -38,7 +38,7 @@ impl TargetInterface for Target {
             use cortex_m_semihosting::debug::*;
             use unittest_core::TestsResult;
 
-            exit(match unittest_core::run_all_tests() {
+            exit(match unittest_core::run_all_tests!() {
                 TestsResult::AllPassed => EXIT_SUCCESS,
                 TestsResult::SomeFailed => EXIT_FAILURE,
             });

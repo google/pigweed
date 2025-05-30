@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+load("//pw_kernel:flags.bzl", "KERNEL_TEST_DEPS", "KERNEL_TEST_RUSTC_FLAGS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -22,31 +23,7 @@ rust_library(
         "lib.rs",
         "unsafe_list.rs",
     ],
+    rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
-    deps = ["//pw_kernel/lib/foreign_box"],
-)
-
-rust_test(
-    name = "unsafe_list_test",
-    srcs = ["tests/unsafe_list_test.rs"],
-    tags = ["kernel"],
-    use_libtest_harness = False,
-    deps = [
-        ":list",
-        "//pw_kernel/lib/unittest",
-        "//pw_kernel/target:linker_script",
-    ],
-)
-
-rust_test(
-    name = "foreign_list_test",
-    srcs = ["tests/foreign_list_test.rs"],
-    tags = ["kernel"],
-    use_libtest_harness = False,
-    deps = [
-        ":list",
-        "//pw_kernel/lib/foreign_box",
-        "//pw_kernel/lib/unittest",
-        "//pw_kernel/target:linker_script",
-    ],
+    deps = ["//pw_kernel/lib/foreign_box"] + KERNEL_TEST_DEPS,
 )

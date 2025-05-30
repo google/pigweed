@@ -13,7 +13,7 @@
 # the License.
 
 load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
 
@@ -27,7 +27,6 @@ platform(
     flags = flags_from_dict(
         KERNEL_COMMON_FLAGS | {
             "//pw_kernel/config:kernel_config": ":config",
-            "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
             "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_stdio",
             # For simplicity have the host use basic logger rather than tokenized logger.
             "//pw_log/rust:pw_log_backend": "//pw_kernel/subsys/console:pw_log_backend_basic",
@@ -46,19 +45,17 @@ rust_binary(
     deps = COMMON_DEPS,
 )
 
-# When building as a unit test runner, this target will be depended upon by
-# other libraries (in other words, it won't be the root of the dependency
-# graph). Declaring this as a `rust_binary` would result in it being built, but
-# not linked against the other libraries in the build graph.
-rust_library(
+rust_test(
     name = "unittest_runner",
     srcs = ["target.rs"],
-    crate_name = "unittest_runner",
     edition = "2021",
-    rustc_flags = ["--cfg=test"],
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
-    deps = COMMON_DEPS + ["//pw_kernel/lib/unittest:unittest_core"],
+    use_libtest_harness = False,
+    deps = COMMON_DEPS + [
+        "//pw_kernel/lib/unittest:unittest_core",
+        "//pw_log/rust:pw_log",
+    ],
 )
 
 rust_library(

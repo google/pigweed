@@ -32,3 +32,13 @@ KERNEL_DEVICE_COMMON_FLAGS = dicts.add(KERNEL_COMMON_FLAGS, {
     # for host builds.
     "@rules_rust//rust/settings:lto": "fat",
 })
+
+KERNEL_TEST_RUSTC_FLAGS = select({
+    "//pw_kernel:tests_enabled_setting": ["--cfg=test"],
+    "//conditions:default": [],
+})
+
+KERNEL_TEST_DEPS = select({
+    "//pw_kernel:tests_enabled_setting": ["//pw_kernel/lib/unittest"],
+    "//conditions:default": [],
+})

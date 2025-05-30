@@ -15,6 +15,7 @@
 build:k_common -c opt
 build:k_common --build_tag_filters=-do_not_build
 test:k_common --test_tag_filters=-integration,-do_not_build,-do_not_run_test
+test:k_common --@pigweed//pw_kernel:enable_tests=true
 
 # Lint configuration
 # ==================

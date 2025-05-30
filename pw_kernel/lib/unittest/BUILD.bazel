@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_proc_macro", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_proc_macro")
+load("//pw_kernel:flags.bzl", "KERNEL_TEST_RUSTC_FLAGS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,11 +37,11 @@ rust_library(
     proc_macro_deps = [
         ":unittest_proc_macro",
     ],
+    rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [
         ":unittest_core",
-        ":unittest_runner",
     ],
 )
 
@@ -51,36 +52,5 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_bytes/rust:pw_bytes",
-        "@pigweed//pw_log/rust:pw_log",
     ],
-)
-
-rust_library(
-    name = "unittest_test",
-    srcs = ["unittest_test.rs"],
-    tags = ["kernel"],
-    visibility = ["//visibility:public"],
-)
-
-rust_test(
-    name = "unittest_test_test",
-    srcs = ["tests/unittest_test_test.rs"],
-    tags = ["kernel"],
-    use_libtest_harness = False,
-    visibility = ["//visibility:public"],
-    deps = [
-        ":unittest",
-        ":unittest_test",
-        "//pw_kernel/target:linker_script",
-        "//pw_log/rust:pw_log",
-        "@rust_crates//:cortex-m-rt",
-        "@rust_crates//:cortex-m-semihosting",
-        "@rust_crates//:panic-halt",
-    ],
-)
-
-label_flag(
-    name = "unittest_runner",
-    build_setting_default = "//pw_kernel/target/host:unittest_runner",
-    tags = ["kernel"],
 )

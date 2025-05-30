@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_library")
+load("//pw_kernel:flags.bzl", "KERNEL_TEST_DEPS", "KERNEL_TEST_RUSTC_FLAGS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -80,6 +81,7 @@ rust_library(
         "//pw_kernel/macros:arm_cortex_m_macro",
         "@rust_crates//:paste",
     ],
+    rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     deps = [
         "//pw_kernel/config:kernel_config",
@@ -98,7 +100,7 @@ rust_library(
         "@pigweed//pw_build/constraints/arm:cortex-m33": CORTEX_M_DEPS,
         "@platforms//cpu:riscv32": RISCV_DEPS,
         "//conditions:default": [],
-    }),
+    }) + KERNEL_TEST_DEPS,
 )
 
 rust_doc(

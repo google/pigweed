@@ -57,13 +57,63 @@ pub enum TestsResult {
     SomeFailed,
 }
 
-pub fn run_bare_metal_tests() -> TestsResult {
-    run_tests(TestSet::BareMetal)
+// We use macros for `run_bare_metal_tests` and `run_all_tests` so that we don't
+// have to take a dependency on `pw_log`, and can instead rely on those macros'
+// callers taking dependencies on `pw_log`. Specifically, `declare_loggers!` is
+// evaluated in the callers' context.
+//
+// This allows us to use this crate to test crates which are transitive
+// dependencies of `pw_log`.
+
+#[macro_export]
+macro_rules! run_bare_metal_tests {
+    () => {{
+        let (log_start, log_error, log_pass) = $crate::declare_loggers!();
+        $crate::run_bare_metal_tests(log_start, log_error, log_pass)
+    }};
 }
 
-pub fn run_all_tests() -> TestsResult {
-    let bare_metal_result = run_tests(TestSet::BareMetal);
-    let kernel_result = run_tests(TestSet::Kernel);
+#[macro_export]
+macro_rules! run_all_tests {
+    () => {{
+        let (log_start, log_error, log_pass) = $crate::declare_loggers!();
+        $crate::run_all_tests(log_start, log_error, log_pass)
+    }};
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! declare_loggers {
+    () => {
+        (
+            |test: &$crate::Test| pw_log::info!("🔄 [{}] RUNNING", test.name as &str),
+            |test: &$crate::Test, e: $crate::TestError| {
+                pw_log::error!("❌ [{}] FAILED", test.name as &str);
+                pw_log::error!("❌ ├─ {}:{}:", e.file as &str, e.line as u32);
+                pw_log::error!("❌ └─ {}", e.message as &str);
+            },
+            |test: &$crate::Test| pw_log::info!("✅ [{}] PASSED", test.name as &str),
+        )
+    };
+}
+
+#[doc(hidden)]
+pub fn run_bare_metal_tests(
+    log_start: impl Fn(&Test),
+    log_error: impl Fn(&Test, TestError),
+    log_pass: impl Fn(&Test),
+) -> TestsResult {
+    run_tests(TestSet::BareMetal, log_start, log_error, log_pass)
+}
+
+#[doc(hidden)]
+pub fn run_all_tests(
+    log_start: impl Fn(&Test),
+    log_error: impl Fn(&Test, TestError),
+    log_pass: impl Fn(&Test),
+) -> TestsResult {
+    let bare_metal_result = run_tests(TestSet::BareMetal, &log_start, &log_error, &log_pass);
+    let kernel_result = run_tests(TestSet::Kernel, log_start, log_error, log_pass);
 
     use TestsResult::*;
     match (bare_metal_result, kernel_result) {
@@ -72,21 +122,24 @@ pub fn run_all_tests() -> TestsResult {
     }
 }
 
-fn run_tests(set: TestSet) -> TestsResult {
+fn run_tests(
+    set: TestSet,
+    log_start: impl Fn(&Test),
+    log_error: impl Fn(&Test, TestError),
+    log_pass: impl Fn(&Test),
+) -> TestsResult {
     let mut result = TestsResult::AllPassed;
     iter_tests().for_each(|test| {
         if test.set != set {
             return;
         }
 
-        pw_log::info!("🔄 [{}] RUNNING", test.name as &str);
+        log_start(test);
         if let Err(e) = (test.test_fn)() {
-            pw_log::error!("❌ [{}] FAILED", test.name as &str);
-            pw_log::error!("❌ ├─ {}:{}:", e.file as &str, e.line as u32);
-            pw_log::error!("❌ └─ {}", e.message as &str);
+            log_error(test, e);
             result = TestsResult::SomeFailed;
         } else {
-            pw_log::info!("✅ [{}] PASSED", test.name as &str);
+            log_pass(test);
         }
     });
     result
@@ -112,10 +165,10 @@ pub enum TestSet {
 }
 
 pub struct Test {
-    name: &'static str,
-    test_fn: TestFn,
-    set: TestSet,
-    next: Option<&'static Test>,
+    pub name: &'static str,
+    pub test_fn: TestFn,
+    pub set: TestSet,
+    pub next: Option<&'static Test>,
 }
 
 impl Test {

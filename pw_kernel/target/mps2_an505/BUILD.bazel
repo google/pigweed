@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 load("//pw_kernel:flags.bzl", "KERNEL_DEVICE_COMMON_FLAGS")
@@ -31,7 +31,6 @@ platform(
     flags = flags_from_dict(
         KERNEL_DEVICE_COMMON_FLAGS | {
             "//pw_kernel/config:kernel_config": ":config",
-            "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
             "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
             "//pw_kernel/target:linker_script": ":linker_script",
         },
@@ -44,11 +43,17 @@ constraint_value(
     visibility = ["//visibility:public"],
 )
 
+TARGET_COMPATIBLE_WITH = select({
+    ":target_mps2_an505": [],
+    "//conditions:default": ["@platforms//:incompatible"],
+})
+
 system_image(
     name = "kernel_only_demo",
     kernel = ":target",
     platform = ":mps2_an505",
     tags = ["kernel"],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
 )
 
 rust_binary_no_panics_test(
@@ -66,6 +71,7 @@ system_image(
     kernel = ":userspace_target",
     platform = ":mps2_an505",
     tags = ["kernel"],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
 )
 
 rust_binary_no_panics_test(
@@ -91,9 +97,7 @@ rust_binary(
     srcs = SRCS,
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
-    ],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
     visibility = ["//visibility:public"],
     deps = [
         "//pw_kernel/apps/kernel_only_demo:demo",
@@ -107,29 +111,20 @@ rust_binary(
     ],
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
-    ],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
     visibility = ["//visibility:public"],
     deps = [
         "//pw_log/rust:pw_log",
     ] + COMMON_DEPS,
 )
 
-# When building as a unit test runner, this target will be depended upon by
-# other libraries (in other words, it won't be the root of the dependency
-# graph). Declaring this as a `rust_binary` would result in it being built, but
-# not linked against the other libraries in the build graph.
-rust_library(
+rust_test(
     name = "unittest_runner",
     srcs = SRCS,
-    crate_name = "unittest_runner",
     edition = "2021",
-    rustc_flags = ["--cfg=test"],
     tags = ["kernel"],
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
-    ],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    use_libtest_harness = False,
     deps = COMMON_DEPS + [
         "//pw_kernel/lib/unittest:unittest_core",
         "@pigweed//pw_log/rust:pw_log",
@@ -141,9 +136,7 @@ rust_library(
     name = "config",
     srcs = ["config.rs"],
     crate_name = "kernel_config",
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
-    ],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
         "//pw_kernel/config:kernel_config_interface",
     ],

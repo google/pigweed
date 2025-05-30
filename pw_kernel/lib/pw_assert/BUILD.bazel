@@ -13,7 +13,8 @@
 # the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+load("//pw_kernel:flags.bzl", "KERNEL_TEST_DEPS", "KERNEL_TEST_RUSTC_FLAGS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -44,18 +45,7 @@ rust_library(
         ":debug_assertions_enabled": ["debug_assertions"],
         "//conditions:default": [],
     }),
+    rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
-    deps = ["//pw_log/rust:pw_log"],
-)
-
-rust_test(
-    name = "pw_assert_test",
-    srcs = ["tests/pw_assert_test.rs"],
-    tags = ["kernel"],
-    use_libtest_harness = False,
-    deps = [
-        ":pw_assert",
-        "//pw_kernel/lib/unittest",
-        "//pw_kernel/target:linker_script",
-    ],
+    deps = ["//pw_log/rust:pw_log"] + KERNEL_TEST_DEPS,
 )
