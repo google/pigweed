@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_multibuf/multibuf.h"
+#include "pw_multibuf/multibuf_v1.h"
 
 #include <algorithm>
 #include <cstring>

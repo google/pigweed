@@ -16,7 +16,8 @@
 #include "pw_allocator/allocator.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_multibuf/allocator.h"
-#include "pw_multibuf/multibuf.h"
+#include "pw_multibuf/config.h"
+#include "pw_multibuf/multibuf_v1.h"
 
 namespace pw::multibuf {
 
@@ -26,7 +27,7 @@ namespace internal {
 
 /// A ``ChunkRegionTracker`` for the allocated regions within a
 /// ``SimpleAllocator``'s data area.
-class LinkedRegionTracker final
+class PW_MULTIBUF_DEPRECATED LinkedRegionTracker final
     : public ChunkRegionTracker,
       public IntrusiveList<LinkedRegionTracker>::Item {
  public:
@@ -56,7 +57,7 @@ class LinkedRegionTracker final
 }  // namespace internal
 
 /// A simple first-fit ``MultiBufAllocator``.
-class SimpleAllocator : public MultiBufAllocator {
+class PW_MULTIBUF_DEPRECATED SimpleAllocator : public MultiBufAllocator {
  public:
   /// Creates a new ``SimpleAllocator``.
   ///

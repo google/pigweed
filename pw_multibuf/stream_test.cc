@@ -15,7 +15,7 @@
 #include "pw_multibuf/stream.h"
 
 #include "pw_bytes/array.h"
-#include "pw_multibuf/multibuf.h"
+#include "pw_multibuf/multibuf_v1.h"
 #include "pw_multibuf_private/test_utils.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"

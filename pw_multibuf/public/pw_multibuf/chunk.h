@@ -18,6 +18,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
+#include "pw_multibuf/config.h"
 #include "pw_sync/mutex.h"
 
 namespace pw::multibuf {
@@ -44,7 +45,7 @@ class OwnedChunk;
 /// header and footer space can later be reclaimed using the `ClaimPrefix` and
 /// `ClaimSuffix` methods. The region itself is only released once there are no
 /// remaining Chunks within it.
-class Chunk {
+class PW_MULTIBUF_DEPRECATED Chunk {
  public:
   Chunk() = delete;
   // Not copyable or movable.
@@ -268,7 +269,7 @@ class Chunk {
 ///   refers. This can be implemented straightforwardly by delegating to an
 ///   existing generic allocator such as `malloc` or a
 ///   `pw::allocator::Allocator` implementation.
-class ChunkRegionTracker {
+class PW_MULTIBUF_DEPRECATED ChunkRegionTracker {
  public:
   /// Creates the first `Chunk` referencing a whole region of memory.
   ///
@@ -320,7 +321,7 @@ class ChunkRegionTracker {
 ///
 /// Note: `OwnedChunk` may acquire a `pw::sync::Mutex` during destruction, and
 /// so must not be destroyed within ISR contexts.
-class OwnedChunk {
+class PW_MULTIBUF_DEPRECATED OwnedChunk {
  public:
   OwnedChunk() : inner_(nullptr) {}
   OwnedChunk(OwnedChunk&& other) noexcept : inner_(other.inner_) {

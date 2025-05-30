@@ -21,13 +21,14 @@
 #include "pw_allocator/synchronized_allocator.h"
 #include "pw_allocator/testing.h"
 #include "pw_assert/assert.h"
+#include "pw_multibuf/config.h"
 #include "pw_multibuf/simple_allocator.h"
 
 namespace pw::multibuf::test {
 
 /// Simple, self-contained `pw::multibuf::MultiBufAllocator` for test use.
 template <size_t kDataSizeBytes = 1024, size_t kMetaSizeBytes = kDataSizeBytes>
-class SimpleAllocatorForTest : public SimpleAllocator {
+class PW_MULTIBUF_DEPRECATED SimpleAllocatorForTest : public SimpleAllocator {
  public:
   /// Size of the data area.
   static constexpr size_t data_size_bytes() { return kDataSizeBytes; }

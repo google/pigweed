@@ -15,14 +15,15 @@
 
 #include <cstddef>
 
-#include "pw_multibuf/multibuf.h"
+#include "pw_multibuf/config.h"
+#include "pw_multibuf/multibuf_v1.h"
 #include "pw_stream/stream.h"
 
 namespace pw::multibuf {
 
 /// A readable, writable, and seekable ``Stream`` implementation backed by a
 /// ``MultiBuf``.
-class Stream : public stream::SeekableReaderWriter {
+class PW_MULTIBUF_DEPRECATED Stream : public stream::SeekableReaderWriter {
  public:
   Stream(MultiBuf& multibuf)
       : multibuf_(multibuf),

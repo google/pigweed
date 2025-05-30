@@ -15,12 +15,39 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_async2/backend.gni")
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_multibuf_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
+}
+
+pw_source_set("config") {
+  public = [ "public/pw_multibuf/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_multibuf_CONFIG ]
+}
+
+config("v1_config") {
+  defines = [ "PW_MULTIBUF_VERSION=1" ]
+}
+
+pw_source_set("pw_multibuf") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/multibuf.h" ]
+  public_deps = [
+    ":config",
+    ":multibuf_v1",
+  ]
 }
 
 pw_source_set("chunk") {
@@ -28,6 +55,7 @@ pw_source_set("chunk") {
   public = [ "public/pw_multibuf/chunk.h" ]
   sources = [ "chunk.cc" ]
   public_deps = [
+    ":config",
     "$dir_pw_sync:mutex",
     dir_pw_assert,
     dir_pw_bytes,
@@ -42,6 +70,7 @@ pw_source_set("header_chunk_region_tracker") {
   public = [ "public/pw_multibuf/header_chunk_region_tracker.h" ]
   public_deps = [
     ":chunk",
+    ":config",
     dir_pw_allocator,
     dir_pw_bytes,
   ]
@@ -55,6 +84,7 @@ pw_test("header_chunk_region_tracker_test") {
     dir_pw_status,
   ]
   sources = [ "header_chunk_region_tracker_test.cc" ]
+  configs = [ ":v1_config" ]
 }
 
 pw_source_set("single_chunk_region_tracker") {
@@ -62,6 +92,7 @@ pw_source_set("single_chunk_region_tracker") {
   public = [ "public/pw_multibuf/single_chunk_region_tracker.h" ]
   public_deps = [
     ":chunk",
+    ":config",
     dir_pw_assert,
     dir_pw_bytes,
   ]
@@ -73,6 +104,7 @@ pw_test("single_chunk_region_tracker_test") {
     ":single_chunk_region_tracker",
   ]
   sources = [ "single_chunk_region_tracker_test.cc" ]
+  configs = [ ":v1_config" ]
 
   # TODO: b/260624583 - Fix this for //targets/rp2040
   enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "pico_executable"
@@ -85,26 +117,29 @@ pw_test("chunk_test") {
     "$dir_pw_allocator:testing",
   ]
   sources = [ "chunk_test.cc" ]
+  configs = [ ":v1_config" ]
 }
 
-pw_source_set("pw_multibuf") {
+pw_source_set("multibuf_v1") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_multibuf/multibuf.h" ]
-  sources = [ "multibuf.cc" ]
+  public = [ "public/pw_multibuf/multibuf_v1.h" ]
+  sources = [ "multibuf_v1.cc" ]
   public_deps = [
     ":chunk",
+    ":config",
     dir_pw_preprocessor,
     dir_pw_status,
   ]
 }
 
-pw_test("multibuf_test") {
+pw_test("multibuf_v1_test") {
   deps = [
     ":internal_test_utils",
-    ":pw_multibuf",
+    ":multibuf_v1",
     dir_pw_bytes,
   ]
-  sources = [ "multibuf_test.cc" ]
+  sources = [ "multibuf_v1_test.cc" ]
+  configs = [ ":v1_config" ]
 }
 
 pw_source_set("allocator") {
@@ -112,7 +147,8 @@ pw_source_set("allocator") {
   public = [ "public/pw_multibuf/allocator.h" ]
   sources = [ "allocator.cc" ]
   public_deps = [
-    ":pw_multibuf",
+    ":config",
+    ":multibuf_v1",
     "$dir_pw_containers:intrusive_forward_list",
     "$dir_pw_result",
     "$dir_pw_sync:interrupt_spin_lock",
@@ -125,6 +161,7 @@ pw_source_set("allocator_async") {
   sources = [ "allocator_async.cc" ]
   public_deps = [
     ":allocator",
+    ":config",
     "$dir_pw_async2:dispatcher",
     "$dir_pw_async2:poll",
   ]
@@ -140,6 +177,7 @@ pw_test("allocator_test") {
     "$dir_pw_async2:poll",
   ]
   sources = [ "allocator_test.cc" ]
+  configs = [ ":v1_config" ]
 }
 
 pw_source_set("simple_allocator") {
@@ -148,7 +186,8 @@ pw_source_set("simple_allocator") {
   sources = [ "simple_allocator.cc" ]
   public_deps = [
     ":allocator",
-    ":pw_multibuf",
+    ":config",
+    ":multibuf_v1",
     "$dir_pw_allocator:allocator",
     "$dir_pw_containers:intrusive_list",
   ]
@@ -163,13 +202,15 @@ pw_test("simple_allocator_test") {
     "$dir_pw_allocator:testing",
   ]
   sources = [ "simple_allocator_test.cc" ]
+  configs = [ ":v1_config" ]
 }
 
 pw_source_set("stream") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_multibuf/stream.h" ]
   public_deps = [
-    ":pw_multibuf",
+    ":config",
+    ":multibuf_v1",
     dir_pw_status,
     dir_pw_stream,
   ]
@@ -183,13 +224,14 @@ pw_test("stream_test") {
     ":stream",
   ]
   sources = [ "stream_test.cc" ]
+  configs = [ ":v1_config" ]
 }
 
 pw_source_set("from_span") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_multibuf/from_span.h" ]
   public_deps = [
-    ":pw_multibuf",
+    ":multibuf_v1",
     dir_pw_allocator,
     dir_pw_function,
   ]
@@ -202,6 +244,7 @@ pw_test("from_span_test") {
     "$dir_pw_allocator:testing",
   ]
   sources = [ "from_span_test.cc" ]
+  configs = [ ":v1_config" ]
 }
 
 pw_source_set("testing") {
@@ -220,7 +263,7 @@ pw_source_set("internal_test_utils") {
   sources = [ "pw_multibuf_private/test_utils.h" ]
   public_deps = [
     ":header_chunk_region_tracker",
-    ":pw_multibuf",
+    ":multibuf_v1",
     "$dir_pw_allocator:testing",
     dir_pw_assert,
     dir_pw_bytes,
@@ -234,7 +277,7 @@ pw_test_group("tests") {
     ":chunk_test",
     ":from_span_test",
     ":header_chunk_region_tracker_test",
-    ":multibuf_test",
+    ":multibuf_v1_test",
     ":simple_allocator_test",
     ":single_chunk_region_tracker_test",
     ":stream_test",

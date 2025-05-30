@@ -18,12 +18,13 @@
 #include "pw_async2/dispatcher.h"  // IWYU pragma: keep
 #include "pw_async2/poll.h"
 #include "pw_multibuf/allocator.h"
+#include "pw_multibuf/config.h"
 
 namespace pw::multibuf {
 
 class MultiBufAllocationFuture;
 
-class MultiBufAllocatorAsync {
+class PW_MULTIBUF_DEPRECATED MultiBufAllocatorAsync {
   // : public MultiBufAllocator::MoreMemoryDelegate {
  public:
   MultiBufAllocatorAsync(MultiBufAllocator& mbuf_allocator)
@@ -86,7 +87,7 @@ class MultiBufAllocatorAsync {
 ///
 /// See ``pw::async2`` for details on ``Pend`` and how it is used to build
 /// asynchronous tasks.
-class MultiBufAllocationFuture
+class PW_MULTIBUF_DEPRECATED MultiBufAllocationFuture
     : public MultiBufAllocator::MemoryAvailableDelegate {
  public:
   constexpr explicit MultiBufAllocationFuture(MultiBufAllocator& allocator)

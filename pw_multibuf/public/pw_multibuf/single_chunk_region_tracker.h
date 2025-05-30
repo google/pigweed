@@ -21,13 +21,15 @@
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_multibuf/chunk.h"
+#include "pw_multibuf/config.h"
 
 namespace pw::multibuf {
 
 /// A `ChunkRegionTracker` that uses inline memory to create a single `Chunk`
 /// with the only caveat that the provided `Chunk` cannot be split. All attempts
 /// will result in `std::nullopt`.
-class SingleChunkRegionTracker : public ChunkRegionTracker {
+class PW_MULTIBUF_DEPRECATED SingleChunkRegionTracker
+    : public ChunkRegionTracker {
  public:
   /// Constructs a region tracker with a single `Chunk` that maps to `region`,
   /// which must outlive this tracker and any `OwnedChunk` it creates.

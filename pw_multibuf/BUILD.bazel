@@ -28,12 +28,44 @@ package(
 licenses(["notice"])
 
 cc_library(
+    name = "pw_multibuf",
+    hdrs = ["public/pw_multibuf/multibuf.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":config",
+        ":multibuf_v1",
+    ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
+)
+
+cc_library(
+    name = "config",
+    hdrs = ["public/pw_multibuf/config.h"],
+    strip_include_prefix = "public",
+    deps = [":config_override"],
+)
+
+cc_library(
+    name = "v1_test_config",
+    defines = [
+        "PW_MULTIBUF_VERSION=1",
+        "PW_MULTIBUF_WARN_DEPRECATED=0",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
     name = "chunk",
     srcs = ["chunk.cc"],
     hdrs = ["public/pw_multibuf/chunk.h"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
+        ":config",
         "//pw_assert:assert",
         "//pw_bytes",
         "//pw_preprocessor",
@@ -48,6 +80,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":chunk",
+        ":config",
         "//pw_allocator:allocator",
         "//pw_bytes",
     ],
@@ -59,6 +92,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":chunk",
+        ":config",
         "//pw_assert:assert",
         "//pw_bytes",
     ],
@@ -71,6 +105,7 @@ pw_cc_test(
     deps = [
         ":chunk",
         ":header_chunk_region_tracker",
+        ":v1_test_config",
         "//pw_allocator:testing",
     ],
 )
@@ -82,6 +117,7 @@ pw_cc_test(
     deps = [
         ":chunk",
         ":header_chunk_region_tracker",
+        ":v1_test_config",
         "//pw_allocator:testing",
         "//pw_status",
     ],
@@ -98,29 +134,32 @@ pw_cc_test(
     deps = [
         ":chunk",
         ":single_chunk_region_tracker",
+        ":v1_test_config",
     ],
 )
 
 cc_library(
-    name = "pw_multibuf",
-    srcs = ["multibuf.cc"],
-    hdrs = ["public/pw_multibuf/multibuf.h"],
+    name = "multibuf_v1",
+    srcs = ["multibuf_v1.cc"],
+    hdrs = ["public/pw_multibuf/multibuf_v1.h"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":chunk",
+        ":config",
         "//pw_preprocessor",
         "//pw_status",
     ],
 )
 
 pw_cc_test(
-    name = "multibuf_test",
-    srcs = ["multibuf_test.cc"],
+    name = "multibuf_v1_test",
+    srcs = ["multibuf_v1_test.cc"],
     features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
-        ":pw_multibuf",
+        ":multibuf_v1",
+        ":v1_test_config",
         "//pw_assert:check",
         "//pw_bytes",
     ],
@@ -136,7 +175,8 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        ":pw_multibuf",
+        ":config",
+        ":multibuf_v1",
         "//pw_containers:intrusive_forward_list",
         "//pw_result",
         "//pw_sync:interrupt_spin_lock",
@@ -156,6 +196,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":allocator",
+        ":config",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
     ],
@@ -169,6 +210,7 @@ pw_cc_test(
     deps = [
         ":allocator",
         ":allocator_async",
+        ":v1_test_config",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
     ],
@@ -183,7 +225,8 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":allocator",
-        ":pw_multibuf",
+        ":config",
+        ":multibuf_v1",
         "//pw_allocator:allocator",
         "//pw_bytes:alignment",
         "//pw_containers:intrusive_list",
@@ -196,6 +239,7 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         ":simple_allocator",
+        ":v1_test_config",
         "//pw_allocator:null_allocator",
         "//pw_allocator:testing",
         "//pw_async2:dispatcher",
@@ -209,7 +253,8 @@ cc_library(
     hdrs = ["public/pw_multibuf/stream.h"],
     strip_include_prefix = "public",
     deps = [
-        ":pw_multibuf",
+        ":config",
+        ":multibuf_v1",
         "//pw_status",
         "//pw_stream",
     ],
@@ -221,8 +266,9 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
-        ":pw_multibuf",
+        ":multibuf_v1",
         ":stream",
+        ":v1_test_config",
     ],
 )
 
@@ -232,7 +278,8 @@ cc_library(
     hdrs = ["public/pw_multibuf/from_span.h"],
     strip_include_prefix = "public",
     deps = [
-        ":pw_multibuf",
+        ":config",
+        ":multibuf_v1",
         "//pw_allocator:allocator",
         "//pw_function",
     ],
@@ -244,6 +291,7 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         ":from_span",
+        ":v1_test_config",
         "//pw_allocator:testing",
     ],
 )
@@ -255,6 +303,7 @@ cc_library(
     features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
+        ":config",
         ":simple_allocator",
         "//pw_allocator:synchronized_allocator",
         "//pw_allocator:testing",
@@ -271,8 +320,9 @@ cc_library(
     includes = ["pw_multibuf_private"],
     visibility = ["//visibility:private"],
     deps = [
+        ":config",
         ":header_chunk_region_tracker",
-        ":pw_multibuf",
+        ":multibuf_v1",
         "//pw_allocator:testing",
         "//pw_assert:check",
         "//pw_bytes",
@@ -286,9 +336,10 @@ filegroup(
         "public/pw_multibuf/allocator.h",
         "public/pw_multibuf/allocator_async.h",
         "public/pw_multibuf/chunk.h",
+        "public/pw_multibuf/config.h",
         "public/pw_multibuf/from_span.h",
         "public/pw_multibuf/header_chunk_region_tracker.h",
-        "public/pw_multibuf/multibuf.h",
+        "public/pw_multibuf/multibuf_v1.h",
         "public/pw_multibuf/simple_allocator.h",
         "public/pw_multibuf/simple_allocator_for_test.h",
         "public/pw_multibuf/single_chunk_region_tracker.h",

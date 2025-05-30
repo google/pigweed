@@ -20,7 +20,7 @@
 #include "pw_allocator/testing.h"
 #include "pw_assert/check.h"
 #include "pw_multibuf/header_chunk_region_tracker.h"
-#include "pw_multibuf/multibuf.h"
+#include "pw_multibuf/multibuf_v1.h"
 
 namespace pw::multibuf::test_utils {
 
