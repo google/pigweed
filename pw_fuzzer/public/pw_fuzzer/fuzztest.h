@@ -601,86 +601,9 @@ struct ContainerOfImpl<containers::FlatMap<K, V, kArraySize>> {
 };
 
 /// Transforms a domain that produces containers into a domain that produces
-/// @cpp_class{pw::BasicInlineDeque}s.
-///
-/// The domains returned by @cpp_func{pw::fuzzer::BasicDequeOf} and
-/// `Arbitrary<BasicInlineDeque>` do not create FuzzTest containers. This method
-/// can be used to apply container methods such as `WithMinSize` or
-/// `UniqueElementsContainerOf` before building a deque from that container.
-///
-/// @param[in] inner  Domain that produces containers.
-///
-/// @retval    Domain that produces `@cpp_class{pw::BasicInlineDeque}`s.
-template <typename SizeType,
-          size_t kCapacity,
-          int&... ExplicitArgumentBarrier,
-          typename Inner>
-auto MapToBasicDeque(Inner inner) {
-  using Container = typename Inner::value_type;
-  static_assert(internal::IsContainer<Container>::value);
-  using T = typename Container::value_type;
-  return Map(
-      [](const Container& items) {
-        return BasicInlineDeque<T, SizeType, kCapacity>(items.begin(),
-                                                        items.end());
-      },
-      std::move(inner));
-}
-
-/// Returns a FuzzTest domain that produces @cpp_class{pw::BasicInlineDeque}s.
-///
-/// Use this or @cpp_func{pw::fuzzer::DequeOf} in place of `fuzztest::DequeOf`.
-/// The deque's maximum size is set by the template parameter.
-///
-/// Alternatively, you can use `Arbitrary<BasicInlineDeque<T, kCapacity>>`.
-///
-/// @param[in] inner  Domain that produces values of type `T`.
-///
-/// @retval    Domain that produces values of type
-///            `BasicInlineDeque<T, SizeType, kCapacity>`.
-template <typename SizeType,
-          size_t kCapacity,
-          int&... ExplicitArgumentBarrier,
-          typename Inner>
-auto BasicDequeOf(Inner inner) {
-  return MapToBasicDeque<SizeType, kCapacity>(
-      VectorOf<kCapacity>(std::move(inner)));
-}
-
-// BasicDequeFrom(VectorOf<kCapacity>(Arbitrary<int>()))
-/// Implementation of @cpp_func{pw::fuzzer::Arbitrary} for
-/// @cpp_class{pw::BasicInlineDeque}.
-template <typename T, typename SizeType, size_t kCapacity>
-struct ArbitraryImpl<BasicInlineDeque<T, SizeType, kCapacity>> {
-  auto operator()() {
-    return BasicDequeOf<SizeType, kCapacity>(Arbitrary<T>());
-  }
-};
-
-/// Implementation of @cpp_func{pw::fuzzer::ContainerOf} for
-/// @cpp_class{pw::containers::BasicInlineDeque}.
-///
-/// Since inline deques have a static capacity, the returned domains do not
-/// produce FuzzTest containers, but aggregates. As a result, container methods
-/// such as `WithMaxSize` cannot be applied. Instead, use
-/// @cpp_func{pw::fuzzer::MapToDeque} or @cpp_func{pw::fuzzer::MapToBasicDeque}
-/// to apply constraints to the set of keys and values.
-///
-/// @param[in]  inner   Domain the produces values of type `T`.
-///
-/// @retval     Domain that produces `@cpp_class{pw::BasicInlineDeque}`s.
-template <typename T, typename SizeType, size_t kCapacity>
-struct ContainerOfImpl<BasicInlineDeque<T, SizeType, kCapacity>> {
-  template <int&... ExplicitArgumentBarrier, typename Inner>
-  auto operator()(Inner inner) {
-    return BasicDequeOf<SizeType, kCapacity>(std::move(inner));
-  }
-};
-
-/// Transforms a domain that produces containers into a domain that produces
 /// @cpp_class{pw::InlineDeque}s.
 ///
-/// The domains returned by @cpp_func{pw::fuzzer::equeOf} and
+/// The domains returned by @cpp_func{pw::fuzzer::DequeOf} and
 /// `Arbitrary<InlineDeque>` do not create FuzzTest containers. This method
 /// can be used to apply container methods such as `WithMinSize` or
 /// `UniqueElementsContainerOf` before building a deque from that container.
@@ -690,23 +613,29 @@ struct ContainerOfImpl<BasicInlineDeque<T, SizeType, kCapacity>> {
 /// @retval    Domain that produces `@cpp_class{pw::InlineDeque}`s.
 template <size_t kCapacity, int&... ExplicitArgumentBarrier, typename Inner>
 auto MapToDeque(Inner inner) {
-  return MapToBasicDeque<uint16_t, kCapacity>(std::move(inner));
+  using Container = typename Inner::value_type;
+  static_assert(internal::IsContainer<Container>::value);
+  using T = typename Container::value_type;
+  return Map(
+      [](const Container& items) {
+        return InlineDeque<T, kCapacity>(items.begin(), items.end());
+      },
+      std::move(inner));
 }
 
 /// Returns a FuzzTest domain that produces @cpp_class{pw::InlineDeque}s.
 ///
-/// Use this or @cpp_func{pw::fuzzer::BasicDequeOf} in place of
-/// `fuzztest::DequeOf`. The deque's maximum size is set by the template
-/// parameter.
+/// Use this or @cpp_func{pw::fuzzer::DequeOf} in place of `fuzztest::DequeOf`.
+/// The deque's maximum size is set by the template parameter.
 ///
 /// Alternatively, you can use `Arbitrary<InlineDeque<T, kCapacity>>`.
 ///
 /// @param[in] inner  Domain that produces values of type `T`.
 ///
-/// @retval    Domain that produces values of type `InlineDeque<T, kCapacity>`.
+/// @retval    Domain that produces values of type @cpp_class{pw::InlineDeque}
 template <size_t kCapacity, int&... ExplicitArgumentBarrier, typename Inner>
 auto DequeOf(Inner inner) {
-  return BasicDequeOf<uint16_t, kCapacity>(std::move(inner));
+  return MapToDeque<kCapacity>(VectorOf<kCapacity>(std::move(inner)));
 }
 
 /// Implementation of @cpp_func{pw::fuzzer::Arbitrary} for
@@ -716,80 +645,23 @@ struct ArbitraryImpl<InlineDeque<T, kCapacity>> {
   auto operator()() { return DequeOf<kCapacity>(Arbitrary<T>()); }
 };
 
-/// Transforms a domain that produces containers into a domain that produces
-/// @cpp_class{pw::BasicInlineQueue}s.
-///
-/// The domains returned by @cpp_func{pw::fuzzer::BasicQueueOf} and
-/// `Arbitrary<BasicInlineQueue>` do not create FuzzTest containers. This method
-/// can be used to apply container methods such as `WithMinSize` or
-/// `UniqueElementsContainerOf` before building a queue from that container.
-///
-/// @param[in] inner  Domain that produces containers.
-///
-/// @retval    Domain that produces `@cpp_class{pw::BasicInlineQueue}`s.
-template <typename SizeType,
-          size_t kCapacity,
-          int&... ExplicitArgumentBarrier,
-          typename Inner>
-auto MapToBasicQueue(Inner inner) {
-  using Container = typename Inner::value_type;
-  static_assert(internal::IsContainer<Container>::value);
-  using T = typename Container::value_type;
-  return Map(
-      [](const Container& items) {
-        return BasicInlineQueue<T, SizeType, kCapacity>(items.begin(),
-                                                        items.end());
-      },
-      std::move(inner));
-}
-
-/// Returns a FuzzTest domain that produces @cpp_class{pw::BasicInlineQueue}s.
-///
-/// Use this, @cpp_func{pw::fuzzer::QueueOf}, or
-/// @cpp_func{pw::fuzzer::ScopedListOf} in place of `fuzztest::ListOf`. The
-/// queue's maximum size is set by the template parameter.
-///
-/// Alternatively, you can use `Arbitrary<BasicInlineQueue<T, kCapacity>>`.
-///
-/// @param[in] inner  Domain that produces values of type `T`.
-///
-/// @retval    Domain that produces values of type
-///            `BasicInlineQueue<T, SizeType, kCapacity>`.
-template <typename SizeType,
-          size_t kCapacity,
-          int&... ExplicitArgumentBarrier,
-          typename Inner>
-auto BasicQueueOf(Inner inner) {
-  return MapToBasicQueue<SizeType, kCapacity>(
-      VectorOf<kCapacity>(std::move(inner)));
-}
-
-/// Implementation of @cpp_func{pw::fuzzer::Arbitrary} for
-/// @cpp_class{pw::BasicInlineQueue}.
-template <typename T, typename SizeType, size_t kCapacity>
-struct ArbitraryImpl<BasicInlineQueue<T, SizeType, kCapacity>> {
-  auto operator()() {
-    return BasicQueueOf<SizeType, kCapacity>(Arbitrary<T>());
-  }
-};
-
 /// Implementation of @cpp_func{pw::fuzzer::ContainerOf} for
-/// @cpp_class{pw::containers::BasicInlineQueue}.
+/// @cpp_class{pw::containers::InlineDeque}.
 ///
-/// Since inline queues have a static capacity, the returned domains do not
+/// Since inline deques have a static capacity, the returned domains do not
 /// produce FuzzTest containers, but aggregates. As a result, container methods
 /// such as `WithMaxSize` cannot be applied. Instead, use
-/// @cpp_func{pw::fuzzer::MapToQueue} or @cpp_func{pw::fuzzer::MapToBasicQueue}
+/// @cpp_func{pw::fuzzer::MapToDeque} or @cpp_func{pw::fuzzer::MapToDeque}
 /// to apply constraints to the set of keys and values.
 ///
 /// @param[in]  inner   Domain the produces values of type `T`.
 ///
-/// @retval     Domain that produces `@cpp_class{pw::BasicInlineQueue}`s.
-template <typename T, typename SizeType, size_t kCapacity>
-struct ContainerOfImpl<BasicInlineQueue<T, SizeType, kCapacity>> {
+/// @retval     Domain that produces `@cpp_class{pw::InlineDeque}`s.
+template <typename T, size_t kCapacity>
+struct ContainerOfImpl<InlineDeque<T, kCapacity>> {
   template <int&... ExplicitArgumentBarrier, typename Inner>
   auto operator()(Inner inner) {
-    return BasicQueueOf<SizeType, kCapacity>(std::move(inner));
+    return DequeOf<kCapacity>(std::move(inner));
   }
 };
 
@@ -806,12 +678,19 @@ struct ContainerOfImpl<BasicInlineQueue<T, SizeType, kCapacity>> {
 /// @retval    Domain that produces `@cpp_class{pw::InlineQueue}`s.
 template <size_t kCapacity, int&... ExplicitArgumentBarrier, typename Inner>
 auto MapToQueue(Inner inner) {
-  return MapToBasicQueue<uint16_t, kCapacity>(std::move(inner));
+  using Container = typename Inner::value_type;
+  static_assert(internal::IsContainer<Container>::value);
+  using T = typename Container::value_type;
+  return Map(
+      [](const Container& items) {
+        return InlineQueue<T, kCapacity>(items.begin(), items.end());
+      },
+      std::move(inner));
 }
 
 /// Returns a FuzzTest domain that produces @cpp_class{pw::InlineQueue}s.
 ///
-/// Use this, @cpp_func{pw::fuzzer::BasicQueueOf}, or
+/// Use this, @cpp_func{pw::fuzzer::QueueOf}, or
 /// @cpp_func{pw::fuzzer::ScopedListOf} in place of `fuzztest::ListOf`. The
 /// queue's maximum size is set by the template parameter.
 ///
@@ -819,10 +698,11 @@ auto MapToQueue(Inner inner) {
 ///
 /// @param[in] inner  Domain that produces values of type `T`.
 ///
-/// @retval    Domain that produces values of type `InlineQueue<T, kCapacity>`.
+/// @retval    Domain that produces values of type
+///            `InlineQueue<T, kCapacity>`.
 template <size_t kCapacity, int&... ExplicitArgumentBarrier, typename Inner>
 auto QueueOf(Inner inner) {
-  return BasicQueueOf<uint16_t, kCapacity>(std::move(inner));
+  return MapToQueue<kCapacity>(VectorOf<kCapacity>(std::move(inner)));
 }
 
 /// Implementation of @cpp_func{pw::fuzzer::Arbitrary} for
@@ -830,6 +710,26 @@ auto QueueOf(Inner inner) {
 template <typename T, size_t kCapacity>
 struct ArbitraryImpl<InlineQueue<T, kCapacity>> {
   auto operator()() { return QueueOf<kCapacity>(Arbitrary<T>()); }
+};
+
+/// Implementation of @cpp_func{pw::fuzzer::ContainerOf} for
+/// @cpp_class{pw::containers::InlineQueue}.
+///
+/// Since inline queues have a static capacity, the returned domains do not
+/// produce FuzzTest containers, but aggregates. As a result, container methods
+/// such as `WithMaxSize` cannot be applied. Instead, use
+/// @cpp_func{pw::fuzzer::MapToQueue} or @cpp_func{pw::fuzzer::MapToQueue}
+/// to apply constraints to the set of keys and values.
+///
+/// @param[in]  inner   Domain the produces values of type `T`.
+///
+/// @retval     Domain that produces `@cpp_class{pw::InlineQueue}`s.
+template <typename T, size_t kCapacity>
+struct ContainerOfImpl<InlineQueue<T, kCapacity>> {
+  template <int&... ExplicitArgumentBarrier, typename Inner>
+  auto operator()(Inner inner) {
+    return QueueOf<kCapacity>(std::move(inner));
+  }
 };
 
 /// Associates an `IntrusiveList<T>` with a `Vector<T>` that stores its `Item`s.
@@ -897,7 +797,7 @@ auto MapToScopedList(Inner inner) {
 
 /// Returns a FuzzTest domain that produces @cpp_class{pw::fuzzer::ScopedList}s.
 ///
-/// Use this, @cpp_func{pw::fuzzer::BasicQueueOf}, or
+/// Use this, @cpp_func{pw::fuzzer::QueueOf}, or
 /// @cpp_func{pw::fuzzer::QueueOf} in place of `fuzztest::ListOf`. The list's
 /// maximum size is set by the template parameter.
 ///

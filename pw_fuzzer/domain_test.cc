@@ -406,28 +406,12 @@ FUZZ_TEST(DomainTest, TakeDeque).WithDomains(DequeOf<kSize>(Arbitrary<int>()));
 FUZZ_TEST(ArbitraryTest, TakeDeque)
     .WithDomains(Arbitrary<InlineDeque<int, kSize>>());
 
-void TakeBasicDeque(const BasicInlineDeque<int, unsigned short, kSize>& deque) {
-  EXPECT_EQ(deque.max_size(), kSize);
-}
-FUZZ_TEST(DomainTest, TakeBasicDeque)
-    .WithDomains(BasicDequeOf<unsigned short, kSize>(Arbitrary<int>()));
-FUZZ_TEST(ArbitraryTest, TakeBasicDeque)
-    .WithDomains(Arbitrary<BasicInlineDeque<int, unsigned short, kSize>>());
-
 void TakeQueue(const InlineQueue<int, kSize>& queue) {
   EXPECT_EQ(queue.max_size(), kSize);
 }
 FUZZ_TEST(DomainTest, TakeQueue).WithDomains(QueueOf<kSize>(Arbitrary<int>()));
 FUZZ_TEST(ArbitraryTest, TakeQueue)
     .WithDomains(Arbitrary<InlineQueue<int, kSize>>());
-
-void TakeBasicQueue(const BasicInlineQueue<int, unsigned short, kSize>& queue) {
-  EXPECT_EQ(queue.max_size(), kSize);
-}
-FUZZ_TEST(DomainTest, TakeBasicQueue)
-    .WithDomains(BasicQueueOf<unsigned short, kSize>(Arbitrary<int>()));
-FUZZ_TEST(ArbitraryTest, TakeBasicQueue)
-    .WithDomains(Arbitrary<BasicInlineQueue<int, unsigned short, kSize>>());
 
 // Test item that can be added to an intrusive list.
 class TestItem : public IntrusiveList<TestItem>::Item {
