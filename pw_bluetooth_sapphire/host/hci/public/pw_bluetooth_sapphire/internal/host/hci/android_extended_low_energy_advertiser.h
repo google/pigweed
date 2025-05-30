@@ -49,16 +49,16 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // The number of advertising sets that can be supported is not fixed and the
   // Controller can change it at any time. This method may report an error if
   // the controller cannot currently support another advertising set.
-  void StartAdvertising(const DeviceAddress& address,
-                        const AdvertisingData& data,
-                        const AdvertisingData& scan_rsp,
-                        const AdvertisingOptions& options,
-                        ConnectionCallback connect_callback,
-                        ResultFunction<> result_callback) override;
+  void StartAdvertising(
+      const DeviceAddress& address,
+      const AdvertisingData& data,
+      const AdvertisingData& scan_rsp,
+      const AdvertisingOptions& options,
+      ConnectionCallback connect_callback,
+      ResultFunction<hci_spec::AdvertisingHandle> result_callback) override;
 
   void StopAdvertising() override;
-  void StopAdvertising(const DeviceAddress& address,
-                       bool extended_pdu) override;
+  void StopAdvertising(hci_spec::AdvertisingHandle handle) override;
 
   void OnIncomingConnection(
       hci_spec::ConnectionHandle handle,
@@ -88,7 +88,7 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       pw::bluetooth::emboss::GenericEnableParam enable,
       bool extended_pdu) const override;
 
-  std::optional<CommandPacket> BuildSetAdvertisingParams(
+  std::optional<SetAdvertisingParams> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       const AdvertisingEventProperties& properties,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,

@@ -221,7 +221,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     const AdvertisingData& scan_rsp,
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
-    hci::ResultFunction<> result_callback) {
+    hci::ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
   if (IsAdvertising(address, options.extended_pdu)) {
     // Temporarily disable advertising so we can tweak the parameters
     CommandPacket packet = BuildEnablePacket(
@@ -237,20 +237,20 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
 
   AdvertisingEventProperties properties =
       GetAdvertisingEventProperties(data, scan_rsp, options, connect_callback);
-  std::optional<CommandPacket> set_adv_params_packet =
+  std::optional<SetAdvertisingParams> set_adv_params =
       BuildSetAdvertisingParams(address,
                                 properties,
                                 own_addr_type,
                                 options.interval,
                                 options.extended_pdu);
-  if (!set_adv_params_packet) {
+  if (!set_adv_params.has_value()) {
     bt_log(
         WARN, "hci-le", "failed to start advertising for %s", bt_str(address));
     return;
   }
 
   hci_cmd_runner_->QueueCommand(
-      *set_adv_params_packet,
+      set_adv_params->packet,
       fit::bind_member<&LowEnergyAdvertiser::OnSetAdvertisingParamsComplete>(
           this));
 
@@ -258,34 +258,36 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   // of the SetAdvertisingParams HCI command, we place the remaining advertising
   // setup HCI commands in the result callback here. SequentialCommandRunner
   // doesn't allow enqueuing commands within a callback (during a run).
-  hci_cmd_runner_->RunCommands(
-      [this,
-       address,
-       options,
-       result_cb = std::move(result_callback),
-       connect_cb = std::move(connect_callback)](hci::Result<> result) mutable {
-        if (bt_is_error(result,
-                        WARN,
-                        "hci-le",
-                        "failed to start advertising for %s",
-                        bt_str(address))) {
-          result_cb(result);
-          return;
-        }
+  hci_cmd_runner_->RunCommands([this,
+                                handle = set_adv_params->handle,
+                                address,
+                                options,
+                                result_cb = std::move(result_callback),
+                                connect_cb = std::move(connect_callback)](
+                                   hci::Result<> result) mutable {
+    if (bt_is_error(result,
+                    WARN,
+                    "hci-le",
+                    "failed to start advertising for %s",
+                    bt_str(address))) {
+      result_cb(result.take_error());
+      return;
+    }
 
-        bool success = StartAdvertisingInternalStep2(
-            address, options, std::move(connect_cb), std::move(result_cb));
-        if (!success) {
-          result_cb(ToResult(HostError::kCanceled));
-        }
-      });
+    bool success = StartAdvertisingInternalStep2(
+        handle, address, options, std::move(connect_cb), std::move(result_cb));
+    if (!success) {
+      result_cb(ToResult(HostError::kCanceled).take_error());
+    }
+  });
 }
 
 bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
+    hci_spec::AdvertisingHandle handle,
     const DeviceAddress& address,
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
-    hci::ResultFunction<> result_callback) {
+    hci::ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
   if (address.type() == DeviceAddress::Type::kLERandom) {
     std::optional<CommandPacket> set_random_addr_packet =
         BuildSetAdvertisingRandomAddr(address, options.extended_pdu);
@@ -312,6 +314,7 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
 
   staged_parameters_.reset();
   hci_cmd_runner_->RunCommands([this,
+                                handle,
                                 address,
                                 extended_pdu = options.extended_pdu,
                                 result_cb = std::move(result_callback),
@@ -324,9 +327,10 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
                      bt_str(address))) {
       bt_log(INFO, "hci-le", "advertising enabled for %s", bt_str(address));
       connection_callbacks_[{address, extended_pdu}] = std::move(connect_cb);
+      result_cb(fit::ok(handle));
+    } else {
+      result_cb(result.take_error());
     }
-
-    result_cb(result);
     OnCurrentOperationComplete();
   });
 
@@ -411,18 +415,23 @@ bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(
 }
 
 void LowEnergyAdvertiser::CompleteIncomingConnection(
-    hci_spec::ConnectionHandle handle,
+    hci_spec::ConnectionHandle connection_handle,
     pwemb::ConnectionRole role,
     const DeviceAddress& local_address,
     const DeviceAddress& peer_address,
     const hci_spec::LEConnectionParameters& conn_params,
-    bool extended_pdu) {
+    bool extended_pdu,
+    hci_spec::AdvertisingHandle advertising_handle) {
   // Immediately construct a Connection object. If this object goes out of
   // scope following the error checks below, it will send the a command to
   // disconnect the link.
   std::unique_ptr<LowEnergyConnection> link =
-      std::make_unique<LowEnergyConnection>(
-          handle, local_address, peer_address, conn_params, role, hci());
+      std::make_unique<LowEnergyConnection>(connection_handle,
+                                            local_address,
+                                            peer_address,
+                                            conn_params,
+                                            role,
+                                            hci());
 
   if (!IsAdvertising(local_address, extended_pdu)) {
     bt_log(DEBUG,
@@ -453,7 +462,7 @@ void LowEnergyAdvertiser::CompleteIncomingConnection(
     return;
   }
 
-  StopAdvertising(local_address, extended_pdu);
+  StopAdvertising(advertising_handle);
   connect_callback(std::move(link));
   connection_callbacks_.erase({local_address, extended_pdu});
 }

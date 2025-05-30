@@ -79,7 +79,7 @@ CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
   return packet;
 }
 
-std::optional<CommandPacket>
+std::optional<LowEnergyAdvertiser::SetAdvertisingParams>
 AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     const AdvertisingEventProperties& properties,
@@ -119,7 +119,7 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   // peer_address_type as 0x00
   // (|packet| parameters are initialized to zero above).
 
-  return packet;
+  return SetAdvertisingParams{std::move(packet), handle.value()};
 }
 
 std::optional<CommandPacket>
@@ -289,19 +289,19 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
     const AdvertisingData& scan_rsp,
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
-    ResultFunction<> result_callback) {
+    ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
   if (options.extended_pdu) {
     bt_log(WARN,
            "hci-le",
            "android vendor extensions cannot use extended advertising PDUs");
-    result_callback(ToResult(HostError::kNotSupported));
+    result_callback(ToResult(HostError::kNotSupported).take_error());
     return;
   }
 
   fit::result<HostError> result =
       CanStartAdvertising(address, data, scan_rsp, options, connect_callback);
   if (result.is_error()) {
-    result_callback(ToResult(result.error_value()));
+    result_callback(ToResult(result.error_value()).take_error());
     return;
   }
 
@@ -367,7 +367,7 @@ void AndroidExtendedLowEnergyAdvertiser::StopAdvertising() {
 }
 
 void AndroidExtendedLowEnergyAdvertiser::StopAdvertising(
-    const DeviceAddress& address, bool extended_pdu) {
+    hci_spec::AdvertisingHandle handle) {
   // if there is an operation currently in progress, enqueue this operation and
   // we will get to it the next time we have a chance
   if (!hci_cmd_runner().IsReady()) {
@@ -375,11 +375,16 @@ void AndroidExtendedLowEnergyAdvertiser::StopAdvertising(
         INFO,
         "hci-le",
         "hci cmd runner not ready, queueing stop advertising command for now");
-    op_queue_.push([this, address, extended_pdu]() {
-      StopAdvertising(address, extended_pdu);
-    });
+    op_queue_.push([this, handle]() { StopAdvertising(handle); });
     return;
   }
+
+  std::optional<std::tuple<DeviceAddress, bool>> get_address =
+      advertising_handle_map_.GetAddress(handle);
+  if (!get_address) {
+    return;
+  }
+  DeviceAddress address = std::get<0>(*get_address);
 
   LowEnergyAdvertiser::StopAdvertisingInternal(address, kUseExtendedPdu);
   advertising_handle_map_.RemoveAddress(address, kUseExtendedPdu);
@@ -415,7 +420,7 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
 
   auto view = event.view<android_emb::LEMultiAdvtStateChangeSubeventView>();
   hci_spec::AdvertisingHandle adv_handle = view.advertising_handle().Read();
-  std::optional<DeviceAddress> opt_local_address =
+  std::optional<std::tuple<DeviceAddress, bool>> opt_local_address =
       advertising_handle_map_.GetAddress(adv_handle);
 
   // We use the identity address as the local address if we aren't advertising
@@ -426,7 +431,7 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
       DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
   DeviceAddress local_address = identity_address;
   if (opt_local_address) {
-    local_address = opt_local_address.value();
+    local_address = std::get<DeviceAddress>(opt_local_address.value());
   }
 
   hci_spec::ConnectionHandle connection_handle =
@@ -447,7 +452,8 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
                              local_address,
                              staged.peer_address,
                              staged.conn_params,
-                             kUseExtendedPdu);
+                             kUseExtendedPdu,
+                             adv_handle);
 
   return CommandChannel::EventCallbackResult::kContinue;
 }

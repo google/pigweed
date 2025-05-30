@@ -38,6 +38,8 @@ using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
 
+const uint8_t kAdvertisingHandle = 0x01;
+
 constexpr AdvertisingIntervalRange kTestInterval(
     hci_spec::kLEAdvertisingIntervalMin, hci_spec::kLEAdvertisingIntervalMax);
 
@@ -74,22 +76,24 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
 
   LegacyLowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
-  ResultFunction<> MakeExpectSuccessCallback() {
-    return [this](Result<> status) {
+  ResultFunction<hci_spec::AdvertisingHandle> MakeExpectSuccessCallback() {
+    return [this](Result<hci_spec::AdvertisingHandle> status) {
       last_status_ = status;
       EXPECT_EQ(fit::ok(), status);
     };
   }
 
-  ResultFunction<> MakeExpectErrorCallback() {
-    return [this](Result<> status) {
+  ResultFunction<hci_spec::AdvertisingHandle> MakeExpectErrorCallback() {
+    return [this](Result<hci_spec::AdvertisingHandle> status) {
       last_status_ = status;
       EXPECT_EQ(fit::failed(), status);
     };
   }
 
   // Retrieves the last status, and resets the last status to empty.
-  std::optional<Result<>> MoveLastStatus() { return last_status_; }
+  std::optional<Result<hci_spec::AdvertisingHandle>> last_status() {
+    return last_status_;
+  }
 
   // Makes some fake advertising data.
   // |include_flags| signals whether to include flag encoding size in the data
@@ -160,7 +164,7 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
  private:
   std::unique_ptr<LegacyLowEnergyAdvertiser> advertiser_;
 
-  std::optional<Result<>> last_status_;
+  std::optional<Result<hci_spec::AdvertisingHandle>> last_status_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiserTest);
 };
@@ -184,7 +188,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
                                  MakeExpectSuccessCallback());
   RunUntilIdle();
 
-  EXPECT_TRUE(MoveLastStatus());
+  EXPECT_TRUE(last_status());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
@@ -208,7 +212,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   // Should still be using the random address.
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             test_device()->legacy_advertising_state().own_address_type);
-  EXPECT_TRUE(MoveLastStatus());
+  EXPECT_TRUE(last_status());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_TRUE(ContainersEqual(
       test_device()->legacy_advertising_state().advertised_view(),
@@ -235,7 +239,9 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
                                  nullptr,
                                  MakeExpectSuccessCallback());
   RunUntilIdle();
-  EXPECT_TRUE(MoveLastStatus());
+  ASSERT_TRUE(last_status());
+  ASSERT_TRUE(last_status()->is_ok());
+  hci_spec::AdvertisingHandle adv_handle = last_status()->value();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   // Verify the advertising and scan response data contains the newly populated
@@ -255,7 +261,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
       ContainersEqual(test_device()->legacy_advertising_state().scan_rsp_view(),
                       expected_scan_rsp));
 
-  advertiser()->StopAdvertising(kRandomAddress, /*extended_pdu=*/false);
+  advertiser()->StopAdvertising(adv_handle);
   RunUntilIdle();
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 }
@@ -291,7 +297,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
   advertiser()->StartAdvertising(
       addr, ad, scan_data, new_options, nullptr, MakeExpectSuccessCallback());
   RunUntilIdle();
-  EXPECT_TRUE(MoveLastStatus());
+  EXPECT_TRUE(last_status());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(new_interval.max(),
             test_device()->legacy_advertising_state().interval_max);
@@ -344,7 +350,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest,
   advertiser()->StartAdvertising(
       addr, ad, scan_data, new_options, nullptr, MakeExpectSuccessCallback());
   RunUntilIdle();
-  EXPECT_TRUE(MoveLastStatus());
+  EXPECT_TRUE(last_status());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(new_interval.max(),
             test_device()->legacy_advertising_state().interval_max);
@@ -390,7 +396,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest,
   advertiser()->StartAdvertising(
       addr, ad, scan_data, new_options, nullptr, MakeExpectSuccessCallback());
   RunUntilIdle();
-  EXPECT_TRUE(MoveLastStatus());
+  EXPECT_TRUE(last_status());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(new_interval.max(),
             test_device()->legacy_advertising_state().interval_max);
@@ -477,7 +483,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
                                  nullptr,
                                  MakeExpectErrorCallback());
   RunUntilIdle();
-  auto status = MoveLastStatus();
+  auto status = last_status();
   ASSERT_TRUE(status.has_value());
   ASSERT_TRUE(status->is_error());
   EXPECT_TRUE(status->error_value().is_protocol_error());
@@ -516,13 +522,15 @@ TEST_F(LegacyLowEnergyAdvertiserTest, AllowsRandomAddressChange) {
 
   // The random address cannot be changed while advertising is enabled.
   RunUntilIdle();
-  EXPECT_TRUE(MoveLastStatus());
+  ASSERT_TRUE(last_status());
+  ASSERT_TRUE(last_status()->is_ok());
+  hci_spec::AdvertisingHandle adv_handle = last_status()->value();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_FALSE(advertiser()->AllowsRandomAddressChange());
 
   // The advertiser allows changing the address while advertising is getting
   // stopped.
-  advertiser()->StopAdvertising(kRandomAddress, /*extended_pdu=*/false);
+  advertiser()->StopAdvertising(adv_handle);
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_TRUE(advertiser()->AllowsRandomAddressChange());
 
@@ -546,10 +554,10 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StopWhileStarting) {
                                        options,
                                        nullptr,
                                        MakeExpectErrorCallback());
-  this->advertiser()->StopAdvertising(kPublicAddress, /*extended_pdu=*/false);
+  this->advertiser()->StopAdvertising(kAdvertisingHandle);
 
   this->RunUntilIdle();
-  EXPECT_TRUE(MoveLastStatus());
+  EXPECT_TRUE(last_status());
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 }
 

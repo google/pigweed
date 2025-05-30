@@ -21,6 +21,8 @@
 namespace bt::hci {
 namespace {
 
+using AddressTuple = std::tuple<DeviceAddress, bool>;
+
 TEST(AdvertisingHandleMapTest, LegacyAndExtended) {
   AdvertisingHandleMap handle_map;
   DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
@@ -55,8 +57,10 @@ TEST_P(AdvertisingHandleMapTest, Bidirectional) {
   EXPECT_TRUE(handle_b);
   EXPECT_LE(handle_b.value(), hci_spec::kMaxAdvertisingHandle);
 
-  EXPECT_EQ(address_a, handle_map.GetAddress(handle_a.value()));
-  EXPECT_EQ(address_b, handle_map.GetAddress(handle_b.value()));
+  AddressTuple tuple_a = std::make_tuple(address_a, GetParam());
+  EXPECT_EQ(tuple_a, handle_map.GetAddress(handle_a.value()));
+  AddressTuple tuple_b = std::make_tuple(address_b, GetParam());
+  EXPECT_EQ(tuple_b, handle_map.GetAddress(handle_b.value()));
 }
 
 TEST_P(AdvertisingHandleMapTest, GetHandleDoesntCreateMapping) {
@@ -133,7 +137,7 @@ TEST_P(AdvertisingHandleMapTest, MapHandleSupportHandleReallocation) {
   }
 
   hci_spec::AdvertisingHandle old_handle = 0;
-  std::optional<DeviceAddress> old_address = handle_map.GetAddress(old_handle);
+  std::optional<AddressTuple> old_address = handle_map.GetAddress(old_handle);
   ASSERT_TRUE(old_address);
 
   handle_map.RemoveHandle(old_handle);
@@ -147,7 +151,7 @@ TEST_P(AdvertisingHandleMapTest, MapHandleSupportHandleReallocation) {
   ASSERT_TRUE(new_handle);
   ASSERT_EQ(old_handle, new_handle.value());
 
-  std::optional<DeviceAddress> new_address =
+  std::optional<AddressTuple> new_address =
       handle_map.GetAddress(new_handle.value());
   ASSERT_TRUE(new_address);
   ASSERT_NE(old_address, new_address);
@@ -155,7 +159,7 @@ TEST_P(AdvertisingHandleMapTest, MapHandleSupportHandleReallocation) {
 
 TEST_P(AdvertisingHandleMapTest, GetAddressNonExistent) {
   AdvertisingHandleMap handle_map;
-  std::optional<DeviceAddress> address = handle_map.GetAddress(0);
+  std::optional<AddressTuple> address = handle_map.GetAddress(0);
   EXPECT_FALSE(address);
 }
 
@@ -237,7 +241,7 @@ TEST_P(AdvertisingHandleMapTest, Clear) {
   handle_map.Clear();
   EXPECT_EQ(0u, handle_map.Size());
 
-  std::optional<DeviceAddress> address = handle_map.GetAddress(handle.value());
+  std::optional<AddressTuple> address = handle_map.GetAddress(handle.value());
   EXPECT_FALSE(address);
 }
 

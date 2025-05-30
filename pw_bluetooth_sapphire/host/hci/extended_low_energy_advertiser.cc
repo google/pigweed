@@ -94,7 +94,7 @@ static void WriteAdvertisingEventProperties(
       properties.include_tx_power);
 }
 
-std::optional<CommandPacket>
+std::optional<LowEnergyAdvertiser::SetAdvertisingParams>
 ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     const AdvertisingEventProperties& properties,
@@ -157,7 +157,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   // secondary_adv_max_skip: We use only legacy PDUs, the controller ignores
   // this field in that case
 
-  return packet;
+  return SetAdvertisingParams{std::move(packet), *handle};
 }
 
 std::optional<CommandPacket>
@@ -499,7 +499,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
     const AdvertisingData& scan_rsp,
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
-    ResultFunction<> result_callback) {
+    ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
   // if there is an operation currently in progress, enqueue this operation and
   // we will get to it the next time we have a chance
   if (!hci_cmd_runner().IsReady()) {
@@ -534,7 +534,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
   fit::result<HostError> result =
       CanStartAdvertising(address, data, scan_rsp, options, connect_callback);
   if (result.is_error()) {
-    result_callback(ToResult(result.error_value()));
+    result_callback(ToResult(result.error_value()).take_error());
     return;
   }
 
@@ -581,8 +581,8 @@ void ExtendedLowEnergyAdvertiser::StopAdvertising() {
   std::swap(op_queue_, empty);
 }
 
-void ExtendedLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address,
-                                                  bool extended_pdu) {
+void ExtendedLowEnergyAdvertiser::StopAdvertising(
+    hci_spec::AdvertisingHandle handle) {
   // if there is an operation currently in progress, enqueue this operation and
   // we will get to it the next time we have a chance
   if (!hci_cmd_runner().IsReady()) {
@@ -590,11 +590,16 @@ void ExtendedLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address,
         INFO,
         "hci-le",
         "hci cmd runner not ready, queueing stop advertising command for now");
-    op_queue_.push([this, address, extended_pdu]() {
-      StopAdvertising(address, extended_pdu);
-    });
+    op_queue_.push([this, handle]() { StopAdvertising(handle); });
     return;
   }
+
+  std::optional<std::tuple<DeviceAddress, bool>> get_address =
+      advertising_handle_map_.GetAddress(handle);
+  if (!get_address) {
+    return;
+  }
+  auto [address, extended_pdu] = get_address.value();
 
   LowEnergyAdvertiser::StopAdvertisingInternal(address, extended_pdu);
   advertising_handle_map_.RemoveAddress(address, extended_pdu);
@@ -646,7 +651,7 @@ void ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
   }
 
   hci_spec::AdvertisingHandle adv_handle = params.advertising_handle().Read();
-  std::optional<DeviceAddress> opt_local_address =
+  std::optional<std::tuple<DeviceAddress, bool>> opt_local_address =
       advertising_handle_map_.GetAddress(adv_handle);
 
   // We use the identity address as the local address if we aren't advertising
@@ -657,7 +662,7 @@ void ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
       DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
   DeviceAddress local_address = identity_address;
   if (opt_local_address) {
-    local_address = opt_local_address.value();
+    local_address = std::get<DeviceAddress>(opt_local_address.value());
   }
 
   StagedConnectionParameters staged = staged_parameters_node.mapped();
@@ -667,7 +672,8 @@ void ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
                              local_address,
                              staged.peer_address,
                              staged.conn_params,
-                             staged_advertising_parameters_.extended_pdu);
+                             staged_advertising_parameters_.extended_pdu,
+                             adv_handle);
 
   staged_advertising_parameters_.clear();
 }

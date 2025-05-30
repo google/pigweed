@@ -66,15 +66,15 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
 
   ExtendedLowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
-  ResultFunction<> MakeExpectSuccessCallback() {
-    return [this](Result<> status) {
+  ResultFunction<hci_spec::AdvertisingHandle> MakeExpectSuccessCallback() {
+    return [this](Result<hci_spec::AdvertisingHandle> status) {
       last_status_ = status;
       EXPECT_EQ(fit::ok(), status);
     };
   }
 
-  ResultFunction<> MakeExpectErrorCallback() {
-    return [this](Result<> status) {
+  ResultFunction<hci_spec::AdvertisingHandle> MakeExpectErrorCallback() {
+    return [this](Result<hci_spec::AdvertisingHandle> status) {
       last_status_ = status;
       EXPECT_EQ(fit::failed(), status);
     };
@@ -119,7 +119,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
     return result;
   }
 
-  std::optional<Result<>> GetLastStatus() {
+  std::optional<Result<hci_spec::AdvertisingHandle>> GetLastStatus() {
     if (!last_status_) {
       return std::nullopt;
     }
@@ -140,7 +140,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
   }
 
   std::unique_ptr<ExtendedLowEnergyAdvertiser> advertiser_;
-  std::optional<Result<>> last_status_;
+  std::optional<Result<hci_spec::AdvertisingHandle>> last_status_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiserTest);
 };

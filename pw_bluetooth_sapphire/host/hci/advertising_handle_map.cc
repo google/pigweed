@@ -35,12 +35,10 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
   map_.insert(next_handle.value(), {address, extended_pdu});
   return next_handle;
 }
-
-std::optional<DeviceAddress> AdvertisingHandleMap::GetAddress(
+std::optional<std::tuple<DeviceAddress, bool>> AdvertisingHandleMap::GetAddress(
     hci_spec::AdvertisingHandle handle) const {
   if (map_.contains(handle)) {
-    const auto& [address, extended] = map_.get(handle).value().get();
-    return address;
+    return map_.get(handle).value().get();
   }
 
   return std::nullopt;

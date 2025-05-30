@@ -73,7 +73,7 @@ class AdvertisingHandleMap {
 
   // Convert an AdvertisingHandle to a DeviceAddress. The conversion may fail if
   // there is no DeviceAddress currently mapping to the provided handle.
-  std::optional<DeviceAddress> GetAddress(
+  std::optional<std::tuple<DeviceAddress, bool /*extended_pdu*/>> GetAddress(
       hci_spec::AdvertisingHandle handle) const;
 
   // Remove the mapping between an AdvertisingHandle and the DeviceAddress it
