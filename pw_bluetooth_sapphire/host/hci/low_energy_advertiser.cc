@@ -246,6 +246,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   if (!set_adv_params.has_value()) {
     bt_log(
         WARN, "hci-le", "failed to start advertising for %s", bt_str(address));
+    result_callback(fit::error(HostError::kFailed));
     return;
   }
 

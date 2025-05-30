@@ -173,7 +173,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, AdvertisingHandlesExhausted) {
       this->MakeExpectErrorCallback());
 
   this->RunUntilIdle();
-  ASSERT_FALSE(this->TakeLastStatus());
+  ASSERT_TRUE(this->TakeLastStatus());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(this->advertiser()->MaxAdvertisements(),
             this->advertiser()->NumAdvertisements());
