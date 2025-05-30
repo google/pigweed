@@ -75,6 +75,7 @@ import { shouldSupportCmake } from './cmake';
 import { CompileCommandsWatcher } from './clangd/compileCommandsWatcher';
 import { existsSync, statSync } from 'node:fs';
 import { createBazelInterceptorFile } from './clangd/compileCommandsUtils';
+import { checkClangdVersion } from './clangd/extensionChecker';
 
 interface CommandEntry {
   name: string;
@@ -388,6 +389,15 @@ function buildSystemStatusReason(
 }
 
 export async function activate(context: vscode.ExtensionContext) {
+  // Perform the Clangd version check when the extension activates
+  const clangdOK = await checkClangdVersion();
+
+  if (!clangdOK) {
+    logger.warn(
+      'Pigweed extension is unable to function fully due to Clangd version requirements.',
+    );
+    return;
+  }
   const provider = new WebviewProvider(context.extensionUri);
 
   context.subscriptions.push(
@@ -455,9 +465,6 @@ export async function activate(context: vscode.ExtensionContext) {
         biggestFileTarget,
         clangdActiveFilesCache.writeToSettings,
       );
-      // Due to an unknown clangd extension issue, the clangd refuses to work
-      // on first-ever run, restarting clangd does not work either.
-      await vscode.commands.executeCommand('workbench.action.reloadWindow');
     }
     return OK;
   }, 'didRefresh');

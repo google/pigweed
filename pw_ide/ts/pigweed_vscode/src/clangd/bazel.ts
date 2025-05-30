@@ -69,17 +69,6 @@ export async function initBazelClangdPath(): Promise<boolean> {
     spawnedProcess.on('exit', (code) => {
       if (code === 0) {
         logger.info('Finished ensuring presence of stable clangd symlink');
-        if (!existingClangdPath) {
-          // clangd vscode extension gets stuck in a bad state if it doesn't
-          // find clangd initially and then it doesn't work until we re-open
-          // the window. This is fixed in vscode-clangd here:
-          // https://github.com/clangd/vscode-clangd/pull/749
-          // But hasn't been released in store (discussed here:
-          // https://github.com/clangd/vscode-clangd/issues/776)
-          // Until then, we will just reload the window to get vscode-clangd
-          // out of bad state.
-          vscode.commands.executeCommand('workbench.action.reloadWindow');
-        }
         resolve(true);
       } else {
         const message =
