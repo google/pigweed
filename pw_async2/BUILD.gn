@@ -124,6 +124,25 @@ pw_test("dispatcher_thread_test") {
   sources = [ "dispatcher_thread_test.cc" ]
 }
 
+pw_source_set("pendable") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_async2/pendable.h" ]
+  public_deps = [
+    ":dispatcher",
+    ":poll",
+  ]
+}
+
+pw_test("pendable_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    ":dispatcher",
+    ":pendable",
+    ":poll",
+  ]
+  sources = [ "pendable_test.cc" ]
+}
+
 pw_source_set("pend_func_task") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_async2/pend_func_task.h" ]
@@ -379,6 +398,7 @@ pw_test_group("tests") {
     ":join_test",
     ":poll_test",
     ":pend_func_task_test",
+    ":pendable_test",
     ":pendable_as_task_test",
     ":once_sender_test",
     ":simulated_time_provider_test",

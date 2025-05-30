@@ -94,6 +94,23 @@ pw_add_test(pw_async2.dispatcher_thread_test
     pw_thread.thread
 )
 
+pw_add_library(pw_async2.pendable INTERFACE
+  HEADERS
+    public/pw_async2/pendable.h
+  PUBLIC_DEPS
+    pw_async2.poll
+    pw_async2.dispatcher
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_async2.pendable_test
+  SOURCES
+    pendable_test.cc
+  PRIVATE_DEPS
+    pw_async2.pendable
+)
+
 pw_add_library(pw_async2.pend_func_task INTERFACE
   HEADERS
     public/pw_async2/pend_func_task.h

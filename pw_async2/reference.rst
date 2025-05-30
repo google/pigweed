@@ -79,6 +79,9 @@ Utilities
 
 .. doxygenfunction:: pw::async2::AllocateTask(pw::allocator::Allocator& allocator, Args&&... args)
 
+.. doxygengroup:: pw_async2_pendable_for
+   :content-only:
+
 .. doxygenclass:: pw::async2::CoroOrElseTask
   :members:
 
