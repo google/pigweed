@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/error.gni")
+import("$dir_pw_build/python.gni")
 import("$dir_pw_build/target_types.gni")
 import("freertos.gni")
 
@@ -40,6 +41,11 @@ if (dir_pw_third_party_freertos == "") {
     ]
   }
 } else {
+  FREERTOS_VERSION =
+      exec_script("$dir_pw_third_party/freertos/parse_freertos_version.py",
+                  [ rebase_path("$dir_pw_third_party_freertos/include/task.h",
+                                root_build_dir) ],
+                  "scope")
   config("disable_warnings") {
     cflags = [
       "-Wno-unused-parameter",
@@ -213,6 +219,17 @@ if (dir_pw_third_party_freertos == "") {
     visibility = [ ":arm_cm0" ]
   }
 
+  if (FREERTOS_VERSION.MAJOR > 11 ||
+      (FREERTOS_VERSION.MAJOR == 11 && FREERTOS_VERSION.MINOR >= 1)) {
+    _CM0_SOURCES = [
+      "$dir_pw_third_party_freertos/portable/GCC/ARM_CM0/port.c",
+      "$dir_pw_third_party_freertos/portable/GCC/ARM_CM0/portasm.c",
+    ]
+  } else {
+    _CM0_SOURCES =
+        [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM0/port.c" ]
+  }
+
   pw_source_set("arm_cm0") {
     public_configs = [
       ":arm_cm0_includes",
@@ -220,7 +237,7 @@ if (dir_pw_third_party_freertos == "") {
     ]
     public_deps = [ pw_third_party_freertos_CONFIG ]
     public = [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM0/portmacro.h" ]
-    sources = [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM0/port.c" ]
+    sources = _CM0_SOURCES
     configs = [ ":disable_warnings" ]
   }
 }
@@ -247,4 +264,8 @@ pw_source_set("support") {
     "pw_assert_stack_overflow_hook.cc",
     "static_task_allocation.cc",
   ]
+}
+
+pw_python_script("parse_freertos_version") {
+  sources = [ "parse_freertos_version.py" ]
 }
