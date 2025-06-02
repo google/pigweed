@@ -13,6 +13,8 @@
 // the License.
 
 import * as assert from 'assert';
+import fs from 'fs';
+import os from 'os';
 
 import {
   applyVirtualIncludeFix,
@@ -627,4 +629,90 @@ test('parseBazelBuildCommand_invalidSubcommand_withSpecifiedArgsAndTarget', asyn
   assert.equal(res.args.length, 0);
   assert.equal(res.targets.length, 1);
   assert.equal(res.targets[0], '//pw_status/...');
+});
+
+test('generateCompileCommands_emptyNewCommands_doesNotDeleteExisting', async () => {
+  const mockLogger = new MockLoggerUI();
+  const tempCwd = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'pigweed-vscode-test-'),
+  );
+  const cdbFileDirName = '.compile_commands_test_dir';
+  const platformName = 'test_platform';
+  const cdbFileName = 'compile_commands.json';
+  const isWindows = process.platform === 'win32';
+
+  const bazelExecutable = getReliableBazelExecutable();
+  assert.ok(
+    bazelExecutable,
+    'Bazel executable must be found for this test to run.',
+  );
+
+  // Setup for ensureExternalWorkspacesLink_exists to be a no-op
+  // 1. Create bazel-out symlink structure
+  const bazelOutSymlinkTarget = path.join(
+    tempCwd,
+    'output_base',
+    'execroot',
+    'test_workspace',
+    'bazel-out-dir',
+  );
+  fs.mkdirSync(bazelOutSymlinkTarget, { recursive: true });
+  fs.symlinkSync(bazelOutSymlinkTarget, path.join(tempCwd, 'bazel-out'), 'dir');
+
+  // 2. Create destination for 'external' symlink
+  const externalSymlinkTargetDir = path.join(
+    tempCwd,
+    'output_base',
+    'external',
+  );
+  fs.mkdirSync(externalSymlinkTargetDir, { recursive: true });
+
+  // 3. Create 'external' symlink pointing to the correct destination
+  fs.symlinkSync(
+    externalSymlinkTargetDir,
+    path.join(tempCwd, 'external'),
+    isWindows ? 'junction' : 'dir',
+  );
+
+  // Setup: Create an existing compile_commands.json
+  const fullCdbDirPath = path.join(tempCwd, cdbFileDirName);
+  const platformDirPath = path.join(fullCdbDirPath, platformName);
+  const existingCdbFilePath = path.join(platformDirPath, cdbFileName);
+
+  fs.mkdirSync(platformDirPath, { recursive: true });
+  const existingContent = '[{"file": "old.c", "command": "gcc old.c"}]';
+  fs.writeFileSync(existingCdbFilePath, existingContent);
+
+  // Call generateCompileCommands with empty bazelTargets,
+  // which should lead to an empty compileCommandsPerPlatform internally.
+  await generateCompileCommands(
+    bazelExecutable!,
+    tempCwd,
+    cdbFileDirName,
+    cdbFileName,
+    [], // Empty bazelTargets
+    [],
+    mockLogger as any,
+  );
+
+  // Assert: The existing file should still be there with original content.
+  assert.ok(
+    fs.existsSync(existingCdbFilePath),
+    'Existing CDB file should still exist.',
+  );
+  const newContent = fs.readFileSync(existingCdbFilePath, 'utf-8');
+  assert.strictEqual(
+    newContent,
+    existingContent,
+    'Existing CDB file content should not change.',
+  );
+
+  // Assert that the "No compile commands generated" message was logged
+  assert.ok(
+    mockLogger.getStdout().includes('No compile commands generated.'),
+    'Expected "No compile commands generated." message in stdout',
+  );
+
+  // Cleanup
+  fs.rmSync(tempCwd, { recursive: true, force: true });
 });
