@@ -18,6 +18,20 @@ load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 
 package(default_visibility = ["//visibility:public"])
 
+cc_args(
+    name = "empty_cc_args",
+    actions = [],
+)
+
+label_flag(
+    name = "extra_toolchain_args",
+    build_setting_default = ":empty_cc_args",
+    # This is an injection point used by Pigweed's toolchains.
+    # While anyone should be allowed to set this flag, only Pigweed's
+    # toolchains should be able to read it.
+    visibility = ["//pw_toolchain:__subpackages__"],
+)
+
 # The common set of warnings for clang and arm_gcc.
 cc_args(
     name = "common_warnings",

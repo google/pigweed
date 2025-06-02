@@ -41,6 +41,16 @@ for your device build.
    would prefer more stability in toolchain configurations, consider declaring
    custom toolchains in your project.
 
+Injecting custom flags
+======================
+If you wish to add extra arguments to Pigweed's toolchains, you can set
+the ``--@pigweed//pw_toolchain/cc/args:extra_toolchain_args`` label flag
+to point at a ``cc_args`` or ``cc_args_list`` rule that contains the flags
+you'd like to add.
+
+For platform-specific flags, you can set this flag in your ``platform`` flags
+rather than in a ``.bazelrc`` file.
+
 .. _module-pw_toolchain-bazel-layering-check:
 
 Layering check
