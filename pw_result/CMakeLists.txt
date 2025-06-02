@@ -29,6 +29,7 @@ pw_add_library(pw_result INTERFACE
 pw_add_library(pw_result.expected INTERFACE
   HEADERS
     public/pw_result/expected.h
+    public/pw_result/internal/expected_impl.h
   PUBLIC_INCLUDES
     public
 )
