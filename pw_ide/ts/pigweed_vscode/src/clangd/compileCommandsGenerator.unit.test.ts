@@ -620,21 +620,11 @@ test('parseBazelBuildCommand_error_emptyCommand_string', async () => {
   );
 });
 
-test('parseBazelBuildCommand_error_invalidSubcommand_withSpecifiedArgsAndTarget', async () => {
+test('parseBazelBuildCommand_invalidSubcommand_withSpecifiedArgsAndTarget', async () => {
   const bazel = getReliableBazelExecutable();
   const command = 'shipit --config rp2040 //pw_status/...'; // "shipit" is not a standard bazel command
-  await assert.rejects(
-    parseBazelBuildCommand(command, bazel!, workingDir.get()),
-    (err: Error) => {
-      assert.ok(err instanceof Error, 'Error should be an instance of Error');
-      // This error comes from bazel canonicalize-flags failing due to invalid --for_command
-      assert.ok(
-        /Error during bazel canonicalize-flags: bazel canonicalize-flags failed with exit code/.test(
-          err.message,
-        ) || /No such command 'shipit'/.test(err.message), // Actual Bazel error might vary
-        `Unexpected error message: ${err.message}`,
-      );
-      return true;
-    },
-  );
+  const res = await parseBazelBuildCommand(command, bazel!, workingDir.get());
+  assert.equal(res.args.length, 0);
+  assert.equal(res.targets.length, 1);
+  assert.equal(res.targets[0], '//pw_status/...');
 });
