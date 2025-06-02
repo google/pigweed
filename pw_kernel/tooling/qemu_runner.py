@@ -92,22 +92,40 @@ def _detokenizer(
 ):
     try:
         detokenizer = detokenize.Detokenizer(image)
+        line_buffer = ""
         with open(tokenized_file, 'r', buffering=1) as f:
             while not qemu_finished.is_set():
                 try:
-                    line = f.readline()
-                    if line:
-                        detokenizer.detokenize_text_to_file(
-                            line, sys.stdout.buffer
-                        )
-                        sys.stdout.flush()
-                    else:
-                        time.sleep(0.01)
+                    chunk = f.readline()
+                    if chunk:
+                        # qemu may not write a complete line, so buffer
+                        # the chunks until there is a complete line to
+                        # pass to the detokenizer.
+                        line_buffer += chunk
+
+                        # Use a while loop, as there could also potentially
+                        # be multiple lines printed in-between iterations.
+                        while '\n' in line_buffer:
+                            newline_pos = line_buffer.find('\n') + 1
+                            complete_line = line_buffer[:newline_pos]
+                            detokenizer.detokenize_text_to_file(
+                                complete_line, sys.stdout.buffer
+                            )
+                            sys.stdout.flush()
+
+                            line_buffer = line_buffer[newline_pos:]
                 except BlockingIOError:
                     # If writing to stdout too fast, it's sometimes possible
                     # to get BlockingIOError due to the stdout buffer being
                     # full, so sleep and try again.
                     time.sleep(0.1)
+
+            # detokenize any remaining data in the buffer.
+            if line_buffer:
+                detokenizer.detokenize_text_to_file(
+                    complete_line, sys.stdout.buffer
+                )
+                sys.stdout.flush()
     except OSError as e:
         print(f"Exception opening file {e}", file=sys.stderr)
 
