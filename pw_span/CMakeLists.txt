@@ -19,6 +19,7 @@ pw_add_library(pw_span INTERFACE
   HEADERS
     public/pw_span/span.h
     public/pw_span/internal/span_impl.h
+    public/pw_span/internal/config.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
