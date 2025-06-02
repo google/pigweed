@@ -82,6 +82,7 @@ pw_source_set("pw_chre_backend") {
     "system_timer.cc",
   ]
   deps = [
+    ":chre_headers",
     "$dir_pw_string:format",
     "$pw_external_chre:chre_headers",
   ]
@@ -113,13 +114,18 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
-pw_source_set("chre") {
+pw_source_set("chre_headers") {
   public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_chre/chre.h",
     "public/pw_chre/host_link.h",
   ]
+}
+
+pw_source_set("chre") {
+  public_configs = [ ":public_include_path" ]
   sources = [ "chre.cc" ]
+  public_deps = [ ":chre_headers" ]
   deps = [ "$pw_external_chre" ]
 }
 
