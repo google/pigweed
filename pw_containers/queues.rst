@@ -11,6 +11,20 @@ them from the other. This allows "first in, first out", or FIFO, behavior.
 Pigweed provides both single and double-ended queues that are backed by fixed
 or dynamic storage.
 
+--------------------------------------
+pw::containers::internal::GenericDeque
+--------------------------------------
+These types are not meant to be used directly, but provide a number of common
+methods for all other deque types, and by extension, queues.
+
+.. doxygenclass:: pw::containers::internal::GenericDequeBase
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: pw::containers::internal::GenericDeque
+   :members:
+   :undoc-members:
+
 ----------------
 pw::DynamicDeque
 ----------------
@@ -21,6 +35,7 @@ pw::DynamicDeque
 ---------------
 pw::InlineDeque
 ---------------
+.. doxygentypedef:: pw::BasicInlineDeque
 .. doxygentypedef:: pw::InlineDeque
 
 .. TODO: b/394341806 - Add missing examples
@@ -34,7 +49,7 @@ pw::InlineDeque
 
 API reference
 =============
-.. doxygenclass:: pw::BasicInlineDeque
+.. doxygenclass:: pw::containers::internal::BasicInlineDequeImpl
    :members:
 
 ----------------

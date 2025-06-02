@@ -33,40 +33,51 @@ template <typename T>
 using EnableIfIterable =
     std::enable_if_t<true, decltype(T().begin(), T().end())>;
 
-template <typename SizeType>
+/// Base class for deques.
+///
+/// This type does not depend on the type of the elements being stored in the
+/// container.
+///
+/// @tparam  CountAndCapacityType  Type that encapsulates the containers overall
+///                                capacity and current count of elements.
+///                                Different implementation may add additional
+///                                behavior when the count or capacity changes.
+template <typename CountAndCapacityType>
 class GenericDequeBase {
  public:
-  using size_type = SizeType;
-
-  static_assert(std::is_unsigned_v<size_type>, "size_type must be unsigned");
+  using size_type = typename CountAndCapacityType::size_type;
 
   // Size
 
   [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0; }
 
   /// Returns the number of elements in the deque.
-  constexpr size_type size() const noexcept { return count_; }
+  constexpr size_type size() const noexcept {
+    return count_and_capacity_.count();
+  }
 
   /// Returns the maximum number of elements in the deque.
-  constexpr size_type capacity() const noexcept { return capacity_; }
+  constexpr size_type capacity() const noexcept {
+    return count_and_capacity_.capacity();
+  }
 
  protected:
   // Functions used by deque implementations
 
-  constexpr void MoveAssignIndices(GenericDequeBase& other) noexcept {
-    capacity_ = other.capacity_;
-    head_ = other.head_;
-    tail_ = other.tail_;
-    count_ = other.count_;
+  CountAndCapacityType& count_and_capacity() noexcept {
+    return count_and_capacity_;
+  }
 
-    other.capacity_ = other.head_ = other.tail_ = other.count_ = 0;
+  constexpr void MoveAssignIndices(GenericDequeBase& other) noexcept {
+    count_and_capacity_ = std::move(other.count_and_capacity_);
+    head_ = std::exchange(other.head_, 0);
+    tail_ = std::exchange(other.tail_, 0);
   }
 
   void SwapIndices(GenericDequeBase& other) noexcept {
-    std::swap(capacity_, other.capacity_);
+    std::swap(count_and_capacity_, other.count_and_capacity_);
     std::swap(head_, other.head_);
     std::swap(tail_, other.tail_);
-    std::swap(count_, other.count_);
   }
 
   // Returns if buffer can be resized larger without moving any items. Can
@@ -77,20 +88,22 @@ class GenericDequeBase {
   bool CanShrinkBuffer() const { return head_ == 0; }
 
   void HandleNewBuffer(size_type new_capacity) {
-    capacity_ = new_capacity;
+    count_and_capacity_.SetCapacity(new_capacity);
     head_ = 0;
-    tail_ = size() == new_capacity ? 0 : count_;  // handle full buffers
+    tail_ = size() == new_capacity
+                ? 0
+                : count_and_capacity_.count();  // handle full buffers
   }
 
   void HandleExtendedBuffer(size_type new_capacity) {
-    capacity_ = new_capacity;
+    count_and_capacity_.SetCapacity(new_capacity);
     if (tail_ == 0) {  // "unwrap" the tail if needed
-      tail_ = head_ + count_;
+      tail_ = head_ + count_and_capacity_.count();
     }
   }
 
   void HandleShrunkBuffer(size_type new_capacity) {
-    capacity_ = new_capacity;
+    count_and_capacity_.SetCapacity(new_capacity);
     if (tail_ == new_capacity) {  // wrap the tail if needed
       tail_ = 0;
     }
@@ -102,9 +115,12 @@ class GenericDequeBase {
   friend class GenericDeque;
 
   explicit constexpr GenericDequeBase(size_type initial_capacity) noexcept
-      : capacity_(initial_capacity), head_(0), tail_(0), count_(0) {}
+      : count_and_capacity_(initial_capacity), head_(0), tail_(0) {}
 
-  constexpr void ClearIndices() { head_ = tail_ = count_ = 0; }
+  constexpr void ClearIndices() {
+    count_and_capacity_.SetCount(0);
+    head_ = tail_ = 0;
+  }
 
   // Returns the absolute index based on the relative index beyond the
   // head offset.
@@ -127,19 +143,19 @@ class GenericDequeBase {
 
   constexpr void PushBack() {
     IncrementWithWrap(tail_);
-    count_ += 1;
+    count_and_capacity_.IncrementCount();
   }
   constexpr void PushFront() {
     DecrementWithWrap(head_);
-    count_ += 1;
+    count_and_capacity_.IncrementCount();
   }
   constexpr void PopFront() {
     IncrementWithWrap(head_);
-    count_ -= 1;
+    count_and_capacity_.DecrementCount();
   }
   constexpr void PopBack() {
     DecrementWithWrap(tail_);
-    count_ -= 1;
+    count_and_capacity_.DecrementCount();
   }
 
   constexpr void IncrementWithWrap(size_type& index) const {
@@ -157,24 +173,23 @@ class GenericDequeBase {
     index--;
   }
 
-  size_type capacity_;
+  CountAndCapacityType count_and_capacity_;
   size_type head_;  // Inclusive offset for the front.
   size_type tail_;  // Non-inclusive offset for the back.
-  size_type count_;
 };
 
-// Generic array-based deque class. Uses CRTP to access the underlying array and
-// handle potentially resizing it.
-//
-// Extended by pw::InlineDeque and pw::DynamicDeque.
-template <typename Derived, typename ValueType, typename SizeType>
-class GenericDeque : public GenericDequeBase<SizeType> {
+/// Generic array-based deque class.
+///
+/// Uses CRTP to access the underlying array and handle potentially resizing it.
+/// Extended by pw::InlineDeque and pw::DynamicDeque.
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
  private:
-  using Base = GenericDequeBase<SizeType>;
+  using Base = GenericDequeBase<CountAndCapacityType>;
 
  public:
   using value_type = ValueType;
-  using size_type = typename GenericDequeBase<SizeType>::size_type;
+  using size_type = typename CountAndCapacityType::size_type;
   using difference_type = ptrdiff_t;
   using reference = value_type&;
   using const_reference = const value_type&;
@@ -329,7 +344,7 @@ class GenericDeque : public GenericDequeBase<SizeType> {
 
  protected:
   explicit constexpr GenericDeque(size_type initial_capacity) noexcept
-      : GenericDequeBase<SizeType>(initial_capacity) {}
+      : GenericDequeBase<CountAndCapacityType>(initial_capacity) {}
 
   // Infallible assignment operators
 
@@ -444,9 +459,10 @@ class GenericDeque : public GenericDequeBase<SizeType> {
 
 // Function implementations
 
-template <typename Derived, typename ValueType, typename SizeType>
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
 template <typename It, int&..., typename>
-void GenericDeque<Derived, ValueType, SizeType>::assign(It start, It finish) {
+void GenericDeque<Derived, ValueType, CountAndCapacityType>::assign(It start,
+                                                                    It finish) {
   // Can't safely check std::distance for InputIterator, so use push_back().
   if constexpr (Derived::kFixedCapacity ||
                 std::is_same_v<
@@ -461,8 +477,8 @@ void GenericDeque<Derived, ValueType, SizeType>::assign(It start, It finish) {
   }
 }
 
-template <typename Derived, typename ValueType, typename SizeType>
-bool GenericDeque<Derived, ValueType, SizeType>::try_assign(
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_assign(
     size_type count, const value_type& value) {
   if (!CheckCapacity(count)) {
     return false;
@@ -474,10 +490,10 @@ bool GenericDeque<Derived, ValueType, SizeType>::try_assign(
   return true;
 }
 
-template <typename Derived, typename ValueType, typename SizeType>
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
 template <typename It, int&..., typename>
-bool GenericDeque<Derived, ValueType, SizeType>::try_assign(It start,
-                                                            It finish) {
+bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_assign(
+    It start, It finish) {
   // Requires at least a forward iterator to safely check std::distance.
   static_assert(std::is_convertible_v<
                 typename std::iterator_traits<It>::iterator_category,
@@ -497,9 +513,10 @@ bool GenericDeque<Derived, ValueType, SizeType>::try_assign(It start,
   return true;
 }
 
-template <typename Derived, typename ValueType, typename SizeType>
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
 constexpr std::pair<span<const ValueType>, span<const ValueType>>
-GenericDeque<Derived, ValueType, SizeType>::contiguous_data() const {
+GenericDeque<Derived, ValueType, CountAndCapacityType>::contiguous_data()
+    const {
   if (empty()) {
     return {span<const value_type>(), span<const value_type>()};
   }
@@ -517,9 +534,9 @@ GenericDeque<Derived, ValueType, SizeType>::contiguous_data() const {
   }
 }
 
-template <typename Derived, typename ValueType, typename SizeType>
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
 template <typename... Args>
-bool GenericDeque<Derived, ValueType, SizeType>::try_emplace_back(
+bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_emplace_back(
     Args&&... args) {
   if (!CheckCapacityAddOne()) {
     return false;
@@ -528,8 +545,8 @@ bool GenericDeque<Derived, ValueType, SizeType>::try_emplace_back(
   return true;
 }
 
-template <typename Derived, typename ValueType, typename SizeType>
-void GenericDeque<Derived, ValueType, SizeType>::pop_back() {
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+void GenericDeque<Derived, ValueType, CountAndCapacityType>::pop_back() {
   PW_ASSERT(!empty());
   if constexpr (!std::is_trivially_destructible_v<value_type>) {
     std::destroy_at(&back());
@@ -537,9 +554,9 @@ void GenericDeque<Derived, ValueType, SizeType>::pop_back() {
   Base::PopBack();
 }
 
-template <typename Derived, typename ValueType, typename SizeType>
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
 template <typename... Args>
-bool GenericDeque<Derived, ValueType, SizeType>::try_emplace_front(
+bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_emplace_front(
     Args&&... args) {
   if (!CheckCapacityAddOne()) {
     return false;
@@ -549,8 +566,8 @@ bool GenericDeque<Derived, ValueType, SizeType>::try_emplace_front(
   return true;
 }
 
-template <typename Derived, typename ValueType, typename SizeType>
-void GenericDeque<Derived, ValueType, SizeType>::pop_front() {
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+void GenericDeque<Derived, ValueType, CountAndCapacityType>::pop_front() {
   PW_ASSERT(!empty());
   if constexpr (!std::is_trivially_destructible_v<value_type>) {
     std::destroy_at(&front());
@@ -558,8 +575,8 @@ void GenericDeque<Derived, ValueType, SizeType>::pop_front() {
   Base::PopFront();
 }
 
-template <typename Derived, typename ValueType, typename SizeType>
-bool GenericDeque<Derived, ValueType, SizeType>::try_resize(
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_resize(
     size_type new_size, const value_type& value) {
   if (size() < new_size) {
     if (!CheckCapacity(new_size)) {
