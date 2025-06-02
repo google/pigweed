@@ -203,9 +203,10 @@ export class InactiveFileDecorationProvider
     // Firing this event notifies VSC that decorations for these specific files have changed.
     // Only fire if there are changes or if the feature was toggled (to clear old ones).
     if (updatedUris.size > 0) {
-      didChangeFileDecorations.fire(
-        [...updatedUris.values()].map((it) => Uri.parse(it, true)),
-      );
+      // Doing a bulk .fire doesn't seem to always reflect change in UI for some reason.
+      for (const uriStr of updatedUris) {
+        didChangeFileDecorations.fire([Uri.parse(uriStr, true)]);
+      }
     }
 
     // After updating file decorations, also update the banner in the active editor,
