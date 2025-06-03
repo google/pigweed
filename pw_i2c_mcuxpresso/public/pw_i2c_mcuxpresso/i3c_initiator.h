@@ -154,7 +154,7 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
       PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   pw::Status DoTransferFor(span<const Message> messages,
-                           chrono::SystemClock::duration timeout)
+                           chrono::SystemClock::duration timeout) override
       PW_LOCKS_EXCLUDED(mutex_);
 
   pw::Result<i3c_bus_type_t> ValidateAndDetermineProtocol(
