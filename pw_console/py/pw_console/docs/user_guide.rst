@@ -483,32 +483,30 @@ under the :guilabel:`[Window]` menu.
 
 The active window can be moved and resized with the following keys. There are
 also menu options under :guilabel:`[View]` for the same actions. Additionally,
-windows can be resized with the mouse by click dragging on the :guilabel:`====`
-text on the far right side of any toolbar.
+windows can be resized with the mouse by click dragging on the :guilabel:`-==-`
+text on the far right side of any toolbar or on the window group splits.
 
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Enlarge window height                         :kbd:`Alt-=`
 Shrink window height                          :kbd:`Alt--`
                                               (:kbd:`Alt` and :kbd:`Minus`)
-Enlarge vertical split width                  :kbd:`Alt-,`
-Shrink vertical split width                   :kbd:`Alt-.`
+Grow window height                            :kbd:`Alt-=`
 Reset window sizes                            :kbd:`Ctrl-u`
 
-Move window up                                :kbd:`Ctrl-Alt-Up`
-Move window down                              :kbd:`Ctrl-Alt-Down`
-Move window left                              :kbd:`Ctrl-Alt-Left`
-Move window right                             :kbd:`Ctrl-Alt-Right`
+Move window up in group                       :kbd:`Ctrl-Alt-Up`
+Move window down in group                     :kbd:`Ctrl-Alt-Down`
+Move window to previous group                 :kbd:`Ctrl-Alt-Left`
+Move window to next group                     :kbd:`Ctrl-Alt-Right`
 ============================================  =====================
 
-Moving windows left and right will create a new vertical splits. Each vertical
-stack can contain multiple windows and show windows as a stack or tabbed
-view.
+Moving windows to different groups will create new vertical or horizontal
+splits. Each group can contain multiple windows and show windows as a stack or
+tabbed view.
 
-For example here we have 3 window panes in a single stack. If you focus on Log
-Window 1 and move it to the right a new stack is formed in a vertical
-split. This can be done repeatedly to form additional window stacks.
+For example here we have 3 window panes in a single group. If you focus on Log
+Window 1 and move it to the next group a new vertical split is created. This can
+be done repeatedly to form additional window groups.
 
 ::
 
@@ -527,6 +525,12 @@ split. This can be done repeatedly to form additional window stacks.
   |                                  |     |                |                 |
   | Python Input                     |     | Python Input   |                 |
   +----------------------------------+     +----------------+-----------------+
+
+::
+   Group 1                                  Group 1         | Group 2
+   1: Log Window 1                          1: Log Window 1 | 1: Log Window 1
+   2: Log Window 2                          2: Python Repl  |
+   3: Python Repl
 
 Color Depth
 -----------
@@ -718,19 +722,19 @@ Example Config
        APP: 'bg:#ff6c6b #000000 bold'
        WIFI: '#555555'
 
-   # Each window column is normally aligned side by side in vertical splits. You
+   # Each window group is normally aligned side by side in vertical splits. You
    # can change this to one group of windows on top of the other with horizontal
-   # splits using this method
+   # splits using this method.
 
    # Default: vertical
-   window_column_split_method: vertical
+   window_group_split_method: vertical
 
    # Window Layout
    windows:
-     # First window column (vertical split)
-     # Each split should have a unique name and include either
+     # First window group
+     # Each group should have a unique name and include either
      # 'stacked' or 'tabbed' to select a window pane display method.
-     Split 1 stacked:
+     Group 1 stacked:
        # Items here are window titles, each should be unique.
        # Window 1
        Device Logs:
@@ -743,8 +747,8 @@ Example Config
        Host Logs:
          hidden: True
 
-     # Second window column
-     Split 2 tabbed:
+     # Second window group
+     Group 2 tabbed:
        # This is a duplicate of the existing 'Device Logs' window.
        # The title is 'NEW DEVICE'
        NEW DEVICE:
@@ -765,8 +769,8 @@ Example Config
            all:
              string: 'FLASH'
 
-     # Third window column
-     Split 3 tabbed:
+     # Third window group
+     Group 3 tabbed:
        # This is a brand new log Window
        Keyboard Logs - IBM:
          loggers:

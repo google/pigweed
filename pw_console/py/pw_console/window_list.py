@@ -271,17 +271,29 @@ class WindowList:
             fragments.append(separator)
         return fragments
 
-    def switch_to_tab(self, index: int):
-        self.focused_pane_index = index
+    def reset_tabbed_window_visibility(self) -> None:
+        if self.display_mode != DisplayMode.TABBED:
+            return
+        if not self.active_panes:
+            return
 
         # Make the selected tab visible and hide the rest.
         for i, pane in enumerate(self.active_panes):
             pane.show_pane = False
-            if i == index:
+            if i == self.focused_pane_index:
                 pane.show_pane = True
 
-        # refresh_ui() will focus on the new tab container.
-        self.refresh_ui()
+    def switch_to_tab(self, index: int, refresh: bool = True) -> None:
+        if self.display_mode != DisplayMode.TABBED:
+            return
+
+        self.focused_pane_index = index
+
+        self.reset_tabbed_window_visibility()
+
+        if refresh:
+            # refresh_ui() will focus on the new tab container.
+            self.refresh_ui()
 
     def set_display_mode(self, mode: DisplayMode):
         old_display_mode = self.display_mode
@@ -517,7 +529,7 @@ class WindowList:
         target_pane = self.active_panes[self.resize_target_pane_index]
 
         diff = ypos - self.resize_current_row
-        if not self.window_manager.vertical_window_list_spliting():
+        if not self.window_manager.vertical_window_list_splitting():
             # The mouse ypos value includes rows from other window lists. If
             # horizontal splitting is active we need to check the diff relative
             # to the starting y position row. Subtract the start y position and

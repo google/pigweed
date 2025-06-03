@@ -540,14 +540,14 @@ Window Management
      - |checkbox|
 
    * - 13
-     - Click the :guilabel:`View > Move Window Right`
+     - Click the :guilabel:`View > Move Window to Next Group`
      - | 3 panes are visible:
        | 1 Log panes on the left
        | 1 Log and Repl pane on the right
      - |checkbox|
 
    * - 14
-     - | Click the menu :guilabel:`Windows > Column 2 View Modes`
+     - | Click the menu :guilabel:`Windows > Group 2 View Modes`
        | Then click :guilabel:`[ ] Tabbed Windows`
      - | 2 panes are visible:
        | 1 Log panes on the left
@@ -598,7 +598,7 @@ Mouse Window Resizing
      - |checkbox|
 
    * - 4
-     - Click the :guilabel:`View > Move Window Right`
+     - Click the :guilabel:`View > Move Window to Next Group`
      - :guilabel:`Fake Device` should appear in a right side split
      - |checkbox|
 
@@ -615,7 +615,7 @@ Mouse Window Resizing
 
    * - 7
      - | Focus on the :guilabel:`Python Repl` window
-       | Click the :guilabel:`View > Move Window Left`
+       | Click the :guilabel:`View > Move Window to Previous Group`
      - | :guilabel:`Python Repl` should appear in a left side split
        | There should be 3 vertical splits in total
      - |checkbox|

@@ -541,9 +541,9 @@ class CommandRunner:
 
         # Actions that launch new command runners, close_dialog should not run.
         for command_text in [
-            '[File] > Insert Repl Snippet',
-            '[File] > Insert Repl History',
-            '[File] > Open Logger',
+            '[Edit] > Insert Repl Snippet',
+            '[Edit] > Insert Repl History',
+            '[File] > Open Python Logger',
         ]:
             if command_text in self.selected_item_title:
                 close_dialog = False
@@ -560,6 +560,8 @@ class CommandRunner:
             # This focuses on a save dialog bor.
             'Save/Export a copy',
             '[Windows] > Floating ',
+            # Each window submenu has a focus window option.
+            ' > Focus Window',
         ]:
             if command_text in self.selected_item_title:
                 close_dialog_first = True

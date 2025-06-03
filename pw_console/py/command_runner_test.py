@@ -93,7 +93,7 @@ class TestCommandRunner(unittest.TestCase):
             ]
 
             # Check some common menu items exist.
-            self.assertIn('[File] > Open Logger', flattened_menu_items)
+            self.assertIn('[File] > Open Python Logger', flattened_menu_items)
             self.assertIn(
                 '[File] > Themes > UI Themes > High Contrast',
                 flattened_menu_items,
@@ -125,7 +125,9 @@ class TestCommandRunner(unittest.TestCase):
 
             def get_completions() -> list[CommandRunnerItem]:
                 return [
-                    CommandRunnerItem('[File] > Open Logger', empty_handler),
+                    CommandRunnerItem(
+                        '[File] > Open Python Logger', empty_handler
+                    ),
                     CommandRunnerItem(
                         '[Windows] > 1: Host Logs > Show/Hide', empty_handler
                     ),
@@ -165,7 +167,7 @@ class TestCommandRunner(unittest.TestCase):
             self.assertEqual(
                 first_item_style, 'class:command-runner-selected-item'
             )
-            self.assertIn('[File] > Open Logger', first_item_text)
+            self.assertIn('[File] > Open Python Logger', first_item_text)
 
             # Type: file open
             command_runner.input_field.buffer.text = 'file open'
@@ -250,7 +252,9 @@ class TestCommandRunner(unittest.TestCase):
             )
             self.assertEqual(len(result_items), 3)
             # First line - not selected
-            self.assertEqual(result_items[0], ('', '[File] > Open Logger\n'))
+            self.assertEqual(
+                result_items[0], ('', '[File] > Open Python Logger\n')
+            )
             # Second line - is selected
             self.assertEqual(
                 result_items[1],
@@ -302,7 +306,8 @@ class TestCommandRunner(unittest.TestCase):
             command_runner._make_regexes.assert_called_once()  # pylint: disable=protected-access
 
             self.assertIn(
-                '[View] > Move Window Right', command_runner.selected_item_title
+                '[View] > Move Window to Next Group',
+                command_runner.selected_item_title,
             )
             # Run the Move Window Right action
             command_runner._run_selected_item()  # pylint: disable=protected-access

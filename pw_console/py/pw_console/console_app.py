@@ -578,7 +578,7 @@ class ConsoleApp:
 
     def open_command_runner_loggers(self) -> None:
         self.command_runner.set_completions(
-            window_title='Open Logger',
+            window_title='Open Python Logger',
             load_completions=self._create_logger_completions,
         )
         if not self.command_runner_is_open():
@@ -726,15 +726,8 @@ class ConsoleApp:
                 '[File]',
                 children=[
                     MenuItem(
-                        'Insert Repl Snippet',
-                        handler=self.open_command_runner_snippets,
-                    ),
-                    MenuItem(
-                        'Insert Repl History',
-                        handler=self.open_command_runner_history,
-                    ),
-                    MenuItem(
-                        'Open Logger', handler=self.open_command_runner_loggers
+                        'Open Python Logger',
+                        handler=self.open_command_runner_loggers,
                     ),
                     MenuItem(
                         'Log Table View',
@@ -779,7 +772,9 @@ class ConsoleApp:
                         children=themes_submenu,
                     ),
                     MenuItem('-'),
-                    MenuItem('Exit', handler=self.exit_console),
+                    MenuItem(
+                        'Exit             Ctrl-d', handler=self.exit_console
+                    ),
                 ],
             ),
         ]
@@ -788,6 +783,14 @@ class ConsoleApp:
             MenuItem(
                 '[Edit]',
                 children=[
+                    MenuItem(
+                        'Insert Repl Snippet       Ctrl-t',
+                        handler=self.open_command_runner_snippets,
+                    ),
+                    MenuItem(
+                        'Insert Repl History       Ctrl-r',
+                        handler=self.open_command_runner_history,
+                    ),
                     # pylint: disable=line-too-long
                     MenuItem(
                         'Paste to Python Input',
@@ -796,11 +799,11 @@ class ConsoleApp:
                     # pylint: enable=line-too-long
                     MenuItem('-'),
                     MenuItem(
-                        'Copy all Python Output',
+                        'Copy All Python Output',
                         handler=self.repl_pane.copy_all_output_text,
                     ),
                     MenuItem(
-                        'Copy all Python Input',
+                        'Copy All Python Input',
                         handler=self.repl_pane.copy_all_input_text,
                     ),
                     MenuItem('-'),
@@ -815,99 +818,111 @@ class ConsoleApp:
             ),
         ]
 
+        # pylint: disable=line-too-long
         view_menu = [
             MenuItem(
                 '[View]',
                 children=[
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Focus Next Window/Tab   Ctrl-Alt-n',
+                        # [Menu Item                    ][    Keybind]
+                        'Focus Next Window/Tab              Ctrl-Alt-n',
                         handler=self.window_manager.focus_next_pane,
                     ),
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Focus Prev Window/Tab   Ctrl-Alt-p',
+                        # [Menu Item                    ][    Keybind]
+                        'Focus Prev Window/Tab              Ctrl-Alt-p',
                         handler=self.window_manager.focus_previous_pane,
                     ),
                     MenuItem('-'),
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Move Window Up         Ctrl-Alt-Up',
+                        # [Menu Item                    ][    Keybind]
+                        'Move Window Up in Group           Ctrl-Alt-Up',
                         handler=functools.partial(
                             self.run_pane_menu_option,
                             self.window_manager.move_pane_up,
                         ),
                     ),
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Move Window Down     Ctrl-Alt-Down',
+                        # [Menu Item                    ][    Keybind]
+                        'Move Window Down in Group       Ctrl-Alt-Down',
                         handler=functools.partial(
                             self.run_pane_menu_option,
                             self.window_manager.move_pane_down,
                         ),
                     ),
-                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('-'),
                     MenuItem(
-                        'Move Window Left     Ctrl-Alt-Left',
+                        # [Menu Item                    ][    Keybind]
+                        'Move Window to Previous Group   Ctrl-Alt-Left',
                         handler=functools.partial(
                             self.run_pane_menu_option,
-                            self.window_manager.move_pane_left,
+                            self.window_manager.move_pane_to_prev_group,
                         ),
                     ),
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Move Window Right   Ctrl-Alt-Right',
+                        # [Menu Item                    ][    Keybind]
+                        'Move Window to Next Group      Ctrl-Alt-Right',
                         handler=functools.partial(
                             self.run_pane_menu_option,
-                            self.window_manager.move_pane_right,
+                            self.window_manager.move_pane_to_next_group,
                         ),
                     ),
                     MenuItem('-'),
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Shrink Height            Alt-Minus',
+                        # [Menu Item                    ][    Keybind]
+                        'Shrink Window Height                Alt-Minus',
                         handler=functools.partial(
                             self.run_pane_menu_option,
                             self.window_manager.shrink_pane,
                         ),
                     ),
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Enlarge Height               Alt-=',
+                        # [Menu Item                    ][    Keybind]
+                        'Grow Window Height                      Alt-=',
                         handler=functools.partial(
                             self.run_pane_menu_option,
                             self.window_manager.enlarge_pane,
                         ),
                     ),
-                    MenuItem('-'),
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Shrink Column                Alt-,',
+                        # [Menu Item                    ][    Keybind]
+                        'Shrink Group Width/Height               Alt-,',
                         handler=functools.partial(
                             self.run_pane_menu_option,
                             self.window_manager.shrink_split,
                         ),
                     ),
-                    #         [Menu Item             ][Keybind  ]
                     MenuItem(
-                        'Enlarge Column               Alt-.',
+                        # [Menu Item                    ][    Keybind]
+                        'Grow Group Width/Height                 Alt-.',
                         handler=functools.partial(
                             self.run_pane_menu_option,
                             self.window_manager.enlarge_split,
                         ),
                     ),
                     MenuItem('-'),
-                    #         [Menu Item            ][Keybind  ]
                     MenuItem(
-                        'Balance Window Sizes       Ctrl-u',
+                        # [Menu Item                    ][    Keybind]
+                        'Balance Window Sizes                   Ctrl-u',
                         handler=functools.partial(
                             self.run_pane_menu_option,
                             self.window_manager.balance_window_sizes,
                         ),
                     ),
+                    MenuItem('-'),
+                    MenuItem(
+                        '{check} Vertical/Horizontal Group Splitting'.format(
+                            check=to_checkbox_text(
+                                self.window_manager.vertical_window_list_splitting(),
+                                end='',
+                            )
+                        ),
+                        handler=self.window_manager.toggle_vertical_window_list_splitting,
+                    ),
                 ],
             ),
         ]
+        # pylint: enable=line-too-long
 
         window_menu_items = self.window_manager.create_window_menu_items()
 

@@ -303,7 +303,12 @@ class ConsolePrefs(YamlConfigLoaderMixin):
 
     @property
     def window_column_split_method(self) -> str:
-        return self._config.get('window_column_split_method', 'vertical')
+        default_value = 'vertical'
+        legacy_value = self._config.get(
+            'window_column_split_method', default_value
+        )
+        value = self._config.get('window_group_split_method', legacy_value)
+        return value
 
     @property
     def windows(self) -> dict:

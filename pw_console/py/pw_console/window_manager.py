@@ -36,6 +36,7 @@ from prompt_toolkit.widgets import MenuItem
 from pw_console.console_prefs import ConsolePrefs, warn_unknown_window
 from pw_console.log_pane import LogPane
 from pw_console.widgets import (
+    WindowPane,
     WindowPaneToolbar,
     to_checkbox_text,
 )
@@ -193,6 +194,10 @@ class WindowManager:
         self.top_toolbars: list[WindowPaneToolbar] = []
         self.bottom_toolbars: list[WindowPaneToolbar] = []
 
+        self.vertical_splitting = bool(
+            self.application.prefs.window_column_split_method == 'vertical'
+        )
+
         self.resize_mode: bool = False
         self.resize_target_window_list_index: int | None = None
         self.resize_target_window_list: int | None = None
@@ -229,8 +234,14 @@ class WindowManager:
             window_list.width = Dimension(preferred=new_widths[0])
             new_widths = new_widths[1:]
 
-    def vertical_window_list_spliting(self) -> bool:
-        return self.application.prefs.window_column_split_method == 'vertical'
+    def toggle_vertical_window_list_splitting(self) -> None:
+        self.vertical_splitting = not self.vertical_splitting
+        # Reset sizes so interactive resizing will work.
+        self.reset_split_sizes()
+        self.update_root_container_body()
+
+    def vertical_window_list_splitting(self) -> bool:
+        return self.vertical_splitting
 
     def rebalance_window_list_sizes(self) -> None:
         """Adjust relative split sizes to fill available space."""
@@ -256,7 +267,7 @@ class WindowManager:
             for percentage in width_percentages
         ]
 
-        if self.vertical_window_list_spliting():
+        if self.vertical_window_list_splitting():
             new_heights = [
                 self.current_window_manager_height for h in new_heights
             ]
@@ -270,43 +281,43 @@ class WindowManager:
         register = self.application.prefs.register_keybinding
 
         @register('window-manager.move-pane-left', key_bindings)
-        def move_pane_left(_event):
-            """Move window pane left."""
-            self.move_pane_left()
+        def move_pane_to_prev_group(_event):
+            """Move window to prev group."""
+            self.move_pane_to_prev_group()
 
         @register('window-manager.move-pane-right', key_bindings)
-        def move_pane_right(_event):
-            """Move window pane right."""
-            self.move_pane_right()
+        def move_pane_to_next_group(_event):
+            """Move window to next group."""
+            self.move_pane_to_next_group()
 
         @register('window-manager.move-pane-down', key_bindings)
         def move_pane_down(_event):
-            """Move window pane down."""
+            """Move window down in group."""
             self.move_pane_down()
 
         @register('window-manager.move-pane-up', key_bindings)
         def move_pane_up(_event):
-            """Move window pane up."""
+            """Move window up in group."""
             self.move_pane_up()
 
         @register('window-manager.enlarge-pane', key_bindings)
         def enlarge_pane(_event):
-            """Enlarge the active window pane."""
+            """Grow window height."""
             self.enlarge_pane()
 
         @register('window-manager.shrink-pane', key_bindings)
         def shrink_pane(_event):
-            """Shrink the active window pane."""
+            """Shrink window height."""
             self.shrink_pane()
 
         @register('window-manager.shrink-split', key_bindings)
         def shrink_split(_event):
-            """Shrink the current window split."""
+            """Shrink window group height or width."""
             self.shrink_split()
 
         @register('window-manager.enlarge-split', key_bindings)
         def enlarge_split(_event):
-            """Enlarge the current window split."""
+            """Grow window group height or width."""
             self.enlarge_split()
 
         @register('window-manager.focus-prev-pane', key_bindings)
@@ -348,7 +359,7 @@ class WindowManager:
         for window_list in self.window_lists:
             window_list.update_container()
 
-        vertical_split = self.vertical_window_list_spliting()
+        vertical_split = self.vertical_window_list_splitting()
 
         window_containers = []
         for i, window_list in enumerate(self.window_lists):
@@ -511,7 +522,8 @@ class WindowManager:
                 return
         return
 
-    def move_pane_left(self):
+    def move_pane_to_prev_group(self):
+        """Move a pane to the previous window group."""
         (
             active_window_list,
             active_pane,
@@ -540,8 +552,11 @@ class WindowManager:
         target_window_list.add_pane(active_pane, add_at_beginning=True)
         target_window_list.reset_pane_sizes()
         self.delete_empty_window_lists()
+        self.focus_on_pane(target_window_list, active_pane)
+        self.reset_tab_focus()
 
-    def move_pane_right(self):
+    def move_pane_to_next_group(self):
+        """Move a pane to the next window group."""
         (
             active_window_list,
             active_pane,
@@ -568,6 +583,20 @@ class WindowManager:
         target_window_list.add_pane(active_pane, add_at_beginning=True)
         target_window_list.reset_pane_sizes()
         self.delete_empty_window_lists()
+        self.focus_on_pane(target_window_list, active_pane)
+        self.reset_tab_focus()
+
+    def __repr__(self) -> str:
+        window_list_repr = []
+        for i, wl in enumerate(self.window_lists):
+            window_list_repr.append(
+                f'WindowList {i}: '
+                f'mode:{wl.display_mode} '
+                f'focused_pane_index:{wl.focused_pane_index})'
+            )
+            for p in wl.active_panes:
+                window_list_repr.append(f'  {p}')
+        return '\n'.join(window_list_repr)
 
     def move_pane_up(self):
         (
@@ -590,6 +619,7 @@ class WindowManager:
         active_window_list.move_pane_down()
 
     def shrink_pane(self):
+        """Grow the window pane height or group split size."""
         (
             active_window_list,
             _active_pane,
@@ -597,9 +627,15 @@ class WindowManager:
         if not active_window_list:
             return
 
-        active_window_list.shrink_pane()
+        # If windows are in stacked mode change window pane height.
+        if active_window_list.display_mode == DisplayMode.STACK:
+            active_window_list.shrink_pane()
+        # If in tabbed mode shrink the group height.
+        else:
+            self.shrink_split()
 
     def enlarge_pane(self):
+        """Grow the window pane height or group split size."""
         (
             active_window_list,
             _active_pane,
@@ -607,7 +643,12 @@ class WindowManager:
         if not active_window_list:
             return
 
-        active_window_list.enlarge_pane()
+        # If windows are in stacked mode change window pane height.
+        if active_window_list.display_mode == DisplayMode.STACK:
+            active_window_list.enlarge_pane()
+        # If in tabbed mode increase the group height.
+        else:
+            self.enlarge_split()
 
     def shrink_split(self):
         if len(self.window_lists) < 2:
@@ -681,7 +722,7 @@ class WindowManager:
         if not next_window_list:
             return
 
-        if self.vertical_window_list_spliting():
+        if self.vertical_window_list_splitting():
             # Get current width
             old_value = window_list.width.preferred
             next_old_value = next_window_list.width.preferred  # type: ignore
@@ -704,7 +745,7 @@ class WindowManager:
         if new_value < 3 or next_new_value < 3 or old_value == new_value:
             return
 
-        if self.vertical_window_list_spliting():
+        if self.vertical_window_list_splitting():
             # Set new width
             window_list.width.preferred = new_value
             next_window_list.width.preferred = next_new_value  # type: ignore
@@ -715,7 +756,7 @@ class WindowManager:
             window_list.rebalance_window_heights()
             next_window_list.rebalance_window_heights()
 
-    def toggle_pane(self, pane):
+    def toggle_pane(self, pane) -> None:
         """Toggle a pane on or off."""
         window_list, _pane_index = self.find_window_list_and_pane_index(pane)
 
@@ -737,6 +778,27 @@ class WindowManager:
             if pane.show_pane:
                 self.application.application.layout.focus(pane)
                 break
+
+    def focus_on_pane(
+        self, window_list: WindowList, pane_to_focus: WindowPane
+    ) -> None:
+        """Focus on the a given window_list and pane."""
+        if window_list.display_mode == DisplayMode.TABBED:
+            # Switch to the correct tab index.
+            for index, pane in enumerate(window_list.active_panes):
+                if pane == pane_to_focus:
+                    window_list.switch_to_tab(index)
+                    break
+            return
+
+        # Otherwise just focus on the pane directly.
+        self.application.focus_on_container(pane_to_focus)
+
+    def reset_tab_focus(self) -> None:
+        """Check for tabbed windows and unhide only the focused tab."""
+        for window_list in self.window_lists:
+            if window_list.display_mode == DisplayMode.TABBED:
+                window_list.reset_tabbed_window_visibility()
 
     def check_for_all_hidden_panes_and_unhide(self) -> None:
         """Scan for window_lists containing only hidden panes."""
@@ -775,7 +837,7 @@ class WindowManager:
         ]
 
         diff = ypos - self.resize_current_row
-        if self.vertical_window_list_spliting():
+        if self.vertical_window_list_splitting():
             diff = xpos - self.resize_current_column
         if diff == 0:
             return
@@ -1080,7 +1142,7 @@ class WindowManager:
             menu_items = []
             menu_items.append(
                 MenuItem(
-                    'Column {index} View Modes'.format(
+                    'Group {index} View Mode'.format(
                         index=window_list_index + 1
                     ),
                     children=[
@@ -1100,21 +1162,39 @@ class WindowManager:
                     ],
                 )
             )
-            menu_items.extend(
-                MenuItem(
-                    '{index}: {title}'.format(
-                        index=pane_index + 1,
-                        title=pane.menu_title(),
-                    ),
-                    children=[
+
+            for pane_index, pane in enumerate(window_list.active_panes):
+                window_list_menu_items: list[MenuItem] = []
+                # If tabbed mode or if the pane is visible, show focus window.
+                if (
+                    window_list.display_mode == DisplayMode.TABBED
+                    or pane.show_pane
+                ):
+                    window_list_menu_items.append(
+                        MenuItem(
+                            'Focus Window',
+                            handler=functools.partial(
+                                self.focus_on_pane,
+                                window_list,
+                                pane,
+                            ),
+                        )
+                    )
+
+                # Allow hide/unhide in stacked mode.
+                if window_list.display_mode == DisplayMode.STACK:
+                    window_list_menu_items.append(
                         MenuItem(
                             '{check} Show/Hide Window'.format(
                                 check=to_checkbox_text(pane.show_pane, end='')
                             ),
                             handler=functools.partial(self.toggle_pane, pane),
-                        ),
-                    ]
-                    + [
+                        )
+                    )
+
+                # Add the rest of the pane defined menu options.
+                window_list_menu_items.extend(
+                    [
                         MenuItem(
                             text,
                             handler=functools.partial(
@@ -1122,10 +1202,20 @@ class WindowManager:
                             ),
                         )
                         for text, handler in pane.get_window_menu_options()
-                    ],
+                    ]
                 )
-                for pane_index, pane in enumerate(window_list.active_panes)
-            )
+
+                # Add the toplevel pane submenu.
+                menu_items.append(
+                    MenuItem(
+                        '{index}: {title}'.format(
+                            index=pane_index + 1,
+                            title=pane.menu_title(),
+                        ),
+                        children=window_list_menu_items,
+                    )
+                )
+
             if window_list_index + 1 < len(self.window_lists):
                 menu_items.append(MenuItem('-'))
             root_menu_items.extend(menu_items)
