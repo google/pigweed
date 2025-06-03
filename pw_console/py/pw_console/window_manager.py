@@ -33,7 +33,7 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseButton
 from prompt_toolkit.widgets import MenuItem
 
-from pw_console.console_prefs import ConsolePrefs, error_unknown_window
+from pw_console.console_prefs import ConsolePrefs, warn_unknown_window
 from pw_console.log_pane import LogPane
 from pw_console.widgets import (
     WindowPaneToolbar,
@@ -933,18 +933,22 @@ class WindowManager:
             pane.height.preferred = new_height
 
     def _set_window_list_display_modes(self, prefs: ConsolePrefs) -> None:
-        # Set column display modes
-        for column_index, column_type in enumerate(prefs.window_column_modes):
-            mode = DisplayMode.STACK
-            if 'tabbed' in column_type:
-                mode = DisplayMode.TABBED
-            self.window_lists[column_index].set_display_mode(mode)
+        # Get display modes from the config.
+        modes = [
+            DisplayMode.TABBED if 'tabbed' in column_type else DisplayMode.STACK
+            for column_type in prefs.window_column_modes
+        ]
+
+        # Apply modes to the current window lists starting from the beginning.
+        for mode, window_list in zip(modes, self.window_lists):
+            window_list.set_display_mode(mode)
 
     def _create_new_log_pane_with_options(
         self, window_title, window_options, existing_pane_titles
-    ) -> LogPane:
+    ) -> LogPane | None:
         if 'loggers' not in window_options and 'command' not in window_options:
-            error_unknown_window(window_title, existing_pane_titles)
+            warn_unknown_window(window_title, existing_pane_titles)
+            return None
 
         if 'command' in window_options:
             process_log_name = None
@@ -987,7 +991,7 @@ class WindowManager:
         ]
 
         # Keep track of original non-duplicated pane titles
-        already_added_panes = []
+        newly_added_panes: list[str] = []
 
         for column_index, column in enumerate(
             prefs.windows.items()
@@ -1000,6 +1004,10 @@ class WindowManager:
             # Set column display mode to stacked by default.
             self.window_lists[column_index].display_mode = DisplayMode.STACK
 
+            if not windows:
+                # Empty window list, ignore.
+                continue
+
             # Add windows to the this column (window_list)
             for window_title, window_dict in windows.items():
                 window_options = window_dict if window_dict else {}
@@ -1011,20 +1019,24 @@ class WindowManager:
                 # Check if this pane is brand new, ready to be added, or should
                 # be duplicated.
                 if (
-                    window_title not in already_added_panes
+                    window_title not in newly_added_panes
                     and window_title not in collected_panes
                 ):
                     # New pane entirely
                     new_pane = self._create_new_log_pane_with_options(
-                        window_title, window_options, existing_pane_titles
+                        window_title,
+                        window_options,
+                        (existing_pane_titles + newly_added_panes),
                     )
-                    already_added_panes.append(window_title)
+                    if not new_pane:
+                        continue
+                    newly_added_panes.append(window_title)
                     # Add the new pane to the list of what can be duplicated.
                     collected_panes[window_title] = new_pane
 
-                elif window_title not in already_added_panes:
+                elif window_title not in newly_added_panes:
                     # First time adding this pane
-                    already_added_panes.append(window_title)
+                    newly_added_panes.append(window_title)
                     new_pane = collected_panes[window_title]
 
                 elif window_title in collected_panes:
@@ -1045,6 +1057,9 @@ class WindowManager:
                         # Auto-start the websocket log server if requested.
                         if window_options.get('view_in_web', False):
                             new_pane.toggle_websocket_server()
+
+        # Remove any empty window lists from the config.
+        self.delete_empty_window_lists()
 
         # Update column display modes.
         self._set_window_list_display_modes(prefs)

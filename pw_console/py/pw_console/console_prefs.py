@@ -19,6 +19,7 @@ import dataclasses
 from functools import cached_property
 import os
 from pathlib import Path
+import sys
 from typing import Callable
 
 from prompt_toolkit.key_binding import KeyBindings
@@ -69,14 +70,6 @@ _DEFAULT_PROJECT_USER_FILE = Path('$PW_PROJECT_ROOT/.pw_console.user.yaml')
 _DEFAULT_USER_FILE = Path('$HOME/.pw_console.yaml')
 
 
-class UnknownWindowTitle(Exception):
-    """Exception for window titles not present in the window manager layout."""
-
-
-class EmptyWindowList(Exception):
-    """Exception for window lists with no content."""
-
-
 class EmptyPreviousPreviousDescription(Exception):
     """Previous snippet description is empty for 'description: USE_PREVIOUS'."""
 
@@ -121,41 +114,47 @@ class CodeSnippet:
         return CodeSnippet(title=title, code=code, description=description)
 
 
-def error_unknown_window(
+def warn_unknown_window(
     window_title: str, existing_pane_titles: list[str]
 ) -> None:
-    """Raise an error when the window config has an unknown title.
+    """Print a warning when a window config has an unknown title.
 
     If a window title does not already exist on startup it must have a loggers:
-    or duplicate_of: option set."""
+    command: or duplicate_of: option set."""
 
     pane_title_text = '  ' + '\n  '.join(existing_pane_titles)
     existing_pane_title_example = 'Window Title'
     if existing_pane_titles:
         existing_pane_title_example = existing_pane_titles[0]
-    raise UnknownWindowTitle(
-        f'\n\n"{window_title}" does not exist.\n'
+
+    print(
+        f'WARNING: The window "{window_title}" '
+        'specified in a pw_console.yaml file does not exist.\n'
         'Existing windows include:\n'
         f'{pane_title_text}\n'
-        'If this window should be a duplicate of one of the above,\n'
-        f'add "duplicate_of: {existing_pane_title_example}" to your config.\n'
-        'If this is a brand new window, include a "loggers:" or '
-        '"command:" section.\n'
-        'See also: '
-        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config'
+        'If this window should be a duplicate of one of the above:\n'
+        f'  Add "duplicate_of: {existing_pane_title_example}" to your config.\n'
+        'If this is a brand new window:\n'
+        '  Add a "loggers:" or "command:" section to the window spec.\n'
+        'For examples see: \n'
+        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config\n',
+        end=None,
+        file=sys.stderr,
     )
 
 
-def error_empty_window_list(
+def warn_empty_window_list(
     window_list_title: str,
 ) -> None:
-    """Raise an error if a window list is empty."""
-
-    raise EmptyWindowList(
-        f'\n\nError: The window layout heading "{window_list_title}" contains '
-        'no windows.\n'
-        'See also: '
-        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config'
+    """Print a warning if a window list is empty."""
+    print(
+        f'WARNING: The window layout heading "{window_list_title}" '
+        'specified in a pw_console.yaml file '
+        'contains no windows.\n'
+        'For examples see: \n'
+        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config\n',
+        end=None,
+        file=sys.stderr,
     )
 
 
@@ -360,7 +359,8 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         titles = []
         for window_list_title, column in self.windows.items():
             if not column:
-                error_empty_window_list(window_list_title)
+                warn_empty_window_list(window_list_title)
+                continue
 
             for window_key_title, window_dict in column.items():
                 window_options = window_dict if window_dict else {}
