@@ -85,6 +85,7 @@ Status DmaUartMcuxpressoNonBlocking::Init() {
   rx_data_.data_copied = 0;
   rx_data_.ring_buffer_read_idx = 0;
   rx_data_.ring_buffer_write_idx = 0;
+  rx_data_.data_loss = false;
 
   {
     // We need exclusive access to INPUTMUX registers, as it is used by many DMA
@@ -258,6 +259,12 @@ Status DmaUartMcuxpressoNonBlocking::DoRead(
   size_t max_bytes = rx_buffer.size();
   if (min_bytes == 0 || max_bytes == 0 || min_bytes > max_bytes) {
     return Status::InvalidArgument();
+  }
+
+  // Has the ring buffer overflowed?
+  if (rx_data_.data_loss) {
+    DoClearPendingReceiveBytes();
+    return Status::DataLoss();
   }
 
   // We must grab the interrupt lock before reading the `valid` flag to avoid
@@ -490,8 +497,11 @@ void DmaUartMcuxpressoNonBlocking::HandleCompletedRxIntoRingBuffer() {
   rx_data_.ring_buffer_write_idx += rx_data_.transfer.dataSize;
   rx_data_.data_received += rx_data_.transfer.dataSize;
 
-  PW_DCHECK_UINT_LE(rx_data_.data_received - rx_data_.data_copied,
-                    rx_data_.ring_buffer.size_bytes());
+  // Has the ring buffer overflowed?
+  if (rx_data_.data_received - rx_data_.data_copied >
+      rx_data_.ring_buffer.size_bytes()) {
+    rx_data_.data_loss = true;
+  }
   PW_DCHECK_UINT_LE(rx_data_.ring_buffer_write_idx,
                     rx_data_.ring_buffer.size_bytes());
   if (rx_data_.ring_buffer_write_idx == rx_data_.ring_buffer.size_bytes()) {
@@ -659,19 +669,28 @@ size_t DmaUartMcuxpressoNonBlocking::DoConservativeReadAvailable() {
 Status DmaUartMcuxpressoNonBlocking::DoClearPendingReceiveBytes() {
   std::lock_guard lock(interrupt_lock_);
 
+  if (!initialized_) {
+    return OkStatus();
+  }
+
   if (rx_data_.request.valid) {
-    // It doesn't make sense to clear the receive buffer when a read request
-    // is in flight.
     return Status::FailedPrecondition();
   }
 
-  // Note: This only clears the ring buffer, not any bytes from the current
-  // DMA transaction. Those bytes could be quite old, and this function could
-  // be improved to also cancel the in-flight RX transfer.
-  size_t bytes_pending = rx_data_.data_received - rx_data_.data_copied;
-  rx_data_.ring_buffer_read_idx += bytes_pending;
-  rx_data_.ring_buffer_read_idx %= rx_data_.ring_buffer.size();
-  rx_data_.data_copied = rx_data_.data_received;
+  // We know a DMA into the ring buffer is in-flight because we are in a
+  // critical section and rx_data_.request.valid is false.
+  // Cancel the in-flight DMA.
+  USART_TransferAbortReceiveDMA(config_.usart_base, &uart_dma_handle_);
+
+  // Reset the ring buffer state.
+  rx_data_.data_received = 0;
+  rx_data_.data_copied = 0;
+  rx_data_.ring_buffer_read_idx = 0;
+  rx_data_.ring_buffer_write_idx = 0;
+  rx_data_.data_loss = false;
+
+  // Restart the DMA.
+  TriggerReadDmaIntoRingBuffer();
 
   return OkStatus();
 }

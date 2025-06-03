@@ -88,6 +88,7 @@ class DmaUartMcuxpressoNonBlocking final : public UartNonBlocking {
     size_t ring_buffer_write_idx{};  // Ring buffer writer index
     size_t data_received{};       // Increments when data enters the ring buffer
     size_t data_copied{};         // Increments when data exits the ring buffer
+    bool data_loss{};             // Set when the ring buffer overflows
     usart_transfer_t transfer{};  // USART RX transfer structure
 
     // User read request data
