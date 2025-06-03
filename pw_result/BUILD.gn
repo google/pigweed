@@ -58,6 +58,10 @@ pw_source_set("expected") {
 }
 
 pw_test("expected_test") {
-  deps = [ ":expected" ]
+  deps = [
+    ":expected",
+    "$dir_pw_status",
+    "$dir_pw_string",
+  ]
   sources = [ "expected_test.cc" ]
 }

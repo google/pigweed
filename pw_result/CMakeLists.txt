@@ -50,6 +50,8 @@ pw_add_test(pw_result.expected_test
     expected_test.cc
   PRIVATE_DEPS
     pw_result.expected
+    pw_string
+    pw_status
   GROUPS
     modules
     pw_result

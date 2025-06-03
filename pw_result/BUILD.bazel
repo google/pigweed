@@ -58,7 +58,12 @@ pw_cc_test(
 pw_cc_test(
     name = "expected_test",
     srcs = ["expected_test.cc"],
-    deps = [":expected"],
+    deps = [
+        ":expected",
+        "//pw_status",
+        "//pw_string:builder",
+        "//pw_string:string",
+    ],
 )
 
 pw_cc_test(
