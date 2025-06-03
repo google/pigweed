@@ -277,6 +277,18 @@ class WatchAppPrefs(ProjectBuilderPrefs):
         return default
 
     @property
+    def recolor_log_lines_to_match_level(self) -> bool:
+        return False
+
+    @property
+    def column_width(self) -> dict[str, int]:
+        return {'time': 8}
+
+    @property
+    def column_visibility(self) -> dict[str, bool]:
+        return {}
+
+    @property
     def show_python_file(self) -> bool:
         return self._config.get('show_python_file', False)
 
