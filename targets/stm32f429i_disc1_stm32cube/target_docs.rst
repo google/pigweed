@@ -74,7 +74,6 @@ via the Pigweed console:
 .. code-block:: console
 
    $ pw-system-console -d /dev/{ttyX} -b 115200 \
-   > --proto-globs pw_rpc/echo.proto \
    > --token-databases \
    > out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf
 
