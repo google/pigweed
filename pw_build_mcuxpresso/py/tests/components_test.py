@@ -16,12 +16,99 @@
 import pathlib
 import unittest
 import xml.etree.ElementTree
-from itertools import chain
 
-from pw_build_mcuxpresso.components import Project
+from pw_build_mcuxpresso import components
 
-# pylint: disable=missing-function-docstring
-# pylint: disable=line-too-long
+
+class GetComponentTest(unittest.TestCase):
+    """get_component tests."""
+
+    def test_without_basepath(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+
+        (component, base_path) = components.get_component(root, 'test')
+
+        self.assertIsInstance(component, xml.etree.ElementTree.Element)
+        self.assertEqual(component.tag, 'component')
+        self.assertEqual(base_path, None)
+
+    def test_with_basepath(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test" package_base_path="test">
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+
+        (component, base_path) = components.get_component(root, 'test')
+
+        self.assertIsInstance(component, xml.etree.ElementTree.Element)
+        self.assertEqual(component.tag, 'component')
+        self.assertEqual(base_path, pathlib.Path('test'))
+
+    def test_component_not_found(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="other">
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+
+        (component, base_path) = components.get_component(root, 'test')
+
+        self.assertEqual(component, None)
+        self.assertEqual(base_path, None)
+
+    def test_with_device_cores(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test" package_base_path="test" device_cores="CORE0">
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+
+        (component, base_path) = components.get_component(
+            root, 'test', device_core='CORE0'
+        )
+
+        self.assertIsInstance(component, xml.etree.ElementTree.Element)
+        self.assertEqual(component.tag, 'component')
+        self.assertEqual(base_path, pathlib.Path('test'))
+
+    def test_device_core_not_found(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test" package_base_path="test" device_cores="CORE0">
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+
+        (component, base_path) = components.get_component(
+            root, 'test', device_core='CORE1'
+        )
+
+        self.assertEqual(component, None)
+        self.assertEqual(base_path, None)
 
 
 class ParseDefinesTest(unittest.TestCase):
@@ -40,16 +127,10 @@ class ParseDefinesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        defines = project.components["test"].defines
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        defines = components.parse_defines(root, 'test')
 
-        self.assertCountEqual(
-            defines, ['TEST_WITH_VALUE=1', 'TEST_WITHOUT_VALUE']
-        )
+        self.assertEqual(defines, ['TEST_WITH_VALUE=1', 'TEST_WITHOUT_VALUE'])
 
     def test_no_defines(self):
         test_manifest_xml = '''
@@ -60,14 +141,10 @@ class ParseDefinesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        defines = project.components["test"].defines
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        defines = components.parse_defines(root, 'test')
 
-        self.assertCountEqual(defines, [])
+        self.assertEqual(defines, [])
 
     def test_device_cores(self):
         test_manifest_xml = '''
@@ -83,14 +160,10 @@ class ParseDefinesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None, "CORE0")
-        defines = project.components["test"].defines
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        defines = components.parse_defines(root, 'test', device_core='CORE0')
 
-        self.assertCountEqual(defines, ['TEST_WITH_CORE', 'TEST_WITHOUT_CORES'])
+        self.assertEqual(defines, ['TEST_WITH_CORE', 'TEST_WITHOUT_CORES'])
 
 
 class ParseIncludePathsTest(unittest.TestCase):
@@ -109,15 +182,11 @@ class ParseIncludePathsTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        include_paths = project.components["test"].include_dirs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        include_paths = components.parse_include_paths(root, 'test')
 
-        self.assertCountEqual(
-            include_paths, [pathlib.Path("example"), pathlib.Path("asm")]
+        self.assertEqual(
+            include_paths, [pathlib.Path('example'), pathlib.Path('asm')]
         )
 
     def test_with_base_path(self):
@@ -133,14 +202,10 @@ class ParseIncludePathsTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        include_paths = project.components["test"].include_dirs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        include_paths = components.parse_include_paths(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             include_paths,
             [pathlib.Path('src/example'), pathlib.Path('src/asm')],
         )
@@ -157,14 +222,10 @@ class ParseIncludePathsTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        include_paths = project.components["test"].include_dirs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        include_paths = components.parse_include_paths(root, 'test')
 
-        self.assertCountEqual(include_paths, [])
+        self.assertEqual(include_paths, [])
 
     def test_no_include_paths(self):
         test_manifest_xml = '''
@@ -175,14 +236,10 @@ class ParseIncludePathsTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        include_paths = project.components["test"].include_dirs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        include_paths = components.parse_include_paths(root, 'test')
 
-        self.assertCountEqual(include_paths, [])
+        self.assertEqual(include_paths, [])
 
     def test_device_cores(self):
         test_manifest_xml = '''
@@ -200,14 +257,12 @@ class ParseIncludePathsTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        include_paths = components.parse_include_paths(
+            root, 'test', device_core='CORE0'
         )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None, "CORE0")
-        include_paths = project.components["test"].include_dirs
 
-        self.assertCountEqual(
+        self.assertEqual(
             include_paths,
             [pathlib.Path('with_core'), pathlib.Path('without_cores')],
         )
@@ -229,14 +284,10 @@ class ParseHeadersTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        headers = project.components["test"].headers
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        headers = components.parse_headers(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             headers,
             [
                 pathlib.Path('include/test.h'),
@@ -257,14 +308,10 @@ class ParseHeadersTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        headers = project.components["test"].headers
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        headers = components.parse_headers(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             headers,
             [
                 pathlib.Path('src/include/test.h'),
@@ -287,14 +334,10 @@ class ParseHeadersTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        headers = project.components["test"].headers
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        headers = components.parse_headers(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             headers,
             [
                 pathlib.Path('include/test.h'),
@@ -311,14 +354,10 @@ class ParseHeadersTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        headers = project.components["test"].headers
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        headers = components.parse_headers(root, 'test')
 
-        self.assertCountEqual(headers, [])
+        self.assertEqual(headers, [])
 
     def test_device_cores(self):
         test_manifest_xml = '''
@@ -340,14 +379,10 @@ class ParseHeadersTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None, "CORE0")
-        headers = project.components["test"].headers
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        headers = components.parse_headers(root, 'test', device_core='CORE0')
 
-        self.assertCountEqual(
+        self.assertEqual(
             headers,
             [
                 pathlib.Path('with_core/test.h'),
@@ -372,14 +407,10 @@ class ParseSourcesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        sources = project.components["test"].sources
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        sources = components.parse_sources(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             sources, [pathlib.Path('src/main.cc'), pathlib.Path('src/test.cc')]
         )
 
@@ -396,14 +427,10 @@ class ParseSourcesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        sources = project.components["test"].sources
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        sources = components.parse_sources(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             sources,
             [pathlib.Path('src/app/main.cc'), pathlib.Path('src/app/test.cc')],
         )
@@ -429,14 +456,10 @@ class ParseSourcesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        sources = project.components["test"].sources
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        sources = components.parse_sources(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             sources,
             [
                 pathlib.Path('shared/test.cc'),
@@ -458,14 +481,10 @@ class ParseSourcesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        sources = project.components["test"].sources
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        sources = components.parse_sources(root, 'test')
 
-        self.assertCountEqual(sources, [])
+        self.assertEqual(sources, [])
 
     def test_no_sources(self):
         test_manifest_xml = '''
@@ -476,14 +495,10 @@ class ParseSourcesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        sources = project.components["test"].sources
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        sources = components.parse_sources(root, 'test')
 
-        self.assertCountEqual(sources, [])
+        self.assertEqual(sources, [])
 
     def test_device_cores(self):
         test_manifest_xml = '''
@@ -504,14 +519,10 @@ class ParseSourcesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None, "CORE0")
-        sources = project.components["test"].sources
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        sources = components.parse_sources(root, 'test', device_core='CORE0')
 
-        self.assertCountEqual(
+        self.assertEqual(
             sources,
             [
                 pathlib.Path('with_core/main.cc'),
@@ -528,7 +539,7 @@ class ParseLibsTest(unittest.TestCase):
         <manifest>
           <components>
             <component id="test">
-              <source toolchain="armgcc" relative_path="gcc" type="lib">
+              <source relative_path="gcc" type="lib">
                 <files mask="libtest.a"/>
                 <files mask="libtest_arm.a"/>
               </source>
@@ -536,14 +547,10 @@ class ParseLibsTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        libs = project.components["test"].libs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        libs = components.parse_libs(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             libs,
             [pathlib.Path('gcc/libtest.a'), pathlib.Path('gcc/libtest_arm.a')],
         )
@@ -553,7 +560,7 @@ class ParseLibsTest(unittest.TestCase):
         <manifest>
           <components>
             <component id="test" package_base_path="src">
-              <source toolchain="armgcc" relative_path="gcc" type="lib">
+              <source relative_path="gcc" type="lib">
                 <files mask="libtest.a"/>
                 <files mask="libtest_arm.a"/>
               </source>
@@ -561,14 +568,10 @@ class ParseLibsTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        libs = project.components["test"].libs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        libs = components.parse_libs(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             libs,
             [
                 pathlib.Path('src/gcc/libtest.a'),
@@ -581,53 +584,22 @@ class ParseLibsTest(unittest.TestCase):
         <manifest>
           <components>
             <component id="test">
-              <source toolchain="armgcc" relative_path="gcc" type="lib">
+              <source relative_path="gcc" type="lib">
                 <files mask="libtest.a"/>
               </source>
-              <source toolchain="armgcc" relative_path="arm" type="lib">
+              <source relative_path="arm" type="lib">
                 <files mask="libtest_arm.a"/>
               </source>
             </component>
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        libs = project.components["test"].libs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        libs = components.parse_libs(root, 'test')
 
-        self.assertCountEqual(
+        self.assertEqual(
             libs,
             [pathlib.Path('gcc/libtest.a'), pathlib.Path('arm/libtest_arm.a')],
-        )
-
-    def test_multiple_toolchains(self):
-        test_manifest_xml = '''
-        <manifest>
-          <components>
-            <component id="test">
-              <source toolchain="armgcc" relative_path="gcc" type="lib">
-                <files mask="libtest.a"/>
-              </source>
-              <source toolchain="mcuxpresso" relative_path="arm" type="lib">
-                <files mask="libtest_mcux.a"/>
-              </source>
-            </component>
-          </components>
-        </manifest>
-        '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        libs = project.components["test"].libs
-
-        self.assertCountEqual(
-            libs,
-            [pathlib.Path('gcc/libtest.a')],
         )
 
     def test_no_libs(self):
@@ -639,42 +611,34 @@ class ParseLibsTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        libs = project.components["test"].libs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        libs = components.parse_libs(root, 'test')
 
-        self.assertCountEqual(libs, [])
+        self.assertEqual(libs, [])
 
     def test_device_cores(self):
         test_manifest_xml = '''
         <manifest>
           <components>
             <component id="test">
-              <source toolchain="armgcc" relative_path="with_core" type="lib" device_cores="CORE0">
+              <source relative_path="with_core" type="lib" device_cores="CORE0">
                 <files mask="libtest.a"/>
               </source>
-              <source toolchain="armgcc" relative_path="without_core" type="lib"
+              <source relative_path="without_core" type="lib"
                       device_cores="CORE1">
                 <files mask="libtest.a"/>
               </source>
-              <source toolchain="armgcc" relative_path="without_cores" type="lib">
+              <source relative_path="without_cores" type="lib">
                 <files mask="libtest.a"/>
               </source>
             </component>
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None, "CORE0")
-        libs = project.components["test"].libs
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        libs = components.parse_libs(root, 'test', device_core='CORE0')
 
-        self.assertCountEqual(
+        self.assertEqual(
             libs,
             [
                 pathlib.Path('with_core/libtest.a'),
@@ -695,19 +659,13 @@ class ParseDependenciesTest(unittest.TestCase):
                 <component_dependency value="foo"/>
               </dependencies>
             </component>
-            <component id="foo">
-            </component>
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        dependencies = project.components["test"].dependencies
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        dependencies = components.parse_dependencies(root, 'test')
 
-        self.assertCountEqual(dependencies, {'foo'})
+        self.assertEqual(dependencies, ['foo'])
 
     def test_all(self):
         test_manifest_xml = '''
@@ -722,25 +680,15 @@ class ParseDependenciesTest(unittest.TestCase):
                 </all>
               </dependencies>
             </component>
-            <component id="foo">
-            </component>
-            <component id="bar">
-            </component>
-            <component id="baz">
-            </component>
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], None)
-        dependencies = project.components["test"].dependencies
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        dependencies = components.parse_dependencies(root, 'test')
 
-        self.assertCountEqual(dependencies, {'foo', 'bar', 'baz'})
+        self.assertEqual(dependencies, ['foo', 'bar', 'baz'])
 
-    def test_any_of(self):
+    def test_any_of_ignored(self):
         test_manifest_xml = '''
         <manifest>
           <components>
@@ -753,25 +701,15 @@ class ParseDependenciesTest(unittest.TestCase):
                 </any_of>
               </dependencies>
             </component>
-            <component id="foo">
-            </component>
-            <component id="bar">
-            </component>
-            <component id="baz">
-            </component>
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["test", "foo"], None)
-        dependencies = project.components["test"].dependencies
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        dependencies = components.parse_dependencies(root, 'test')
 
-        self.assertCountEqual(dependencies, {'foo'})
+        self.assertEqual(dependencies, [])
 
-    def test_any_of_inside_all(self):
+    def test_any_of_inside_all_ignored(self):
         test_manifest_xml = '''
         <manifest>
           <components>
@@ -791,33 +729,13 @@ class ParseDependenciesTest(unittest.TestCase):
                 </all>
               </dependencies>
             </component>
-            <component id="foo">
-            </component>
-            <component id="bar">
-            </component>
-            <component id="baz">
-            </component>
-            <component id="frodo">
-            </component>
-            <component id="bilbo">
-            </component>
-            <component id="gandalf">
-            </component>
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project(
-            [manifest], pathlib.Path.cwd(), ["test", "frodo", "bilbo"], None
-        )
-        dependencies = project.components["test"].dependencies
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        dependencies = components.parse_dependencies(root, 'test')
 
-        self.assertCountEqual(
-            dependencies, {'foo', 'bar', 'baz', 'frodo', 'bilbo'}
-        )
+        self.assertEqual(dependencies, ['foo', 'bar', 'baz'])
 
     def test_no_dependencies(self):
         test_manifest_xml = '''
@@ -828,14 +746,236 @@ class ParseDependenciesTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project([manifest], pathlib.Path.cwd(), ["*"], ["gandalf"])
-        dependencies = project.components["test"].dependencies
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        dependencies = components.parse_dependencies(root, 'test')
 
-        self.assertCountEqual(dependencies, [])
+        self.assertEqual(dependencies, [])
+
+
+class CheckDependenciesTest(unittest.TestCase):
+    """check_dependencies tests."""
+
+    def test_any_of_satisfied(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <component_dependency value="foo"/>
+                  <component_dependency value="bar"/>
+                  <component_dependency value="baz"/>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'foo'], exclude=None
+        )
+
+        self.assertEqual(satisfied, True)
+
+    def test_any_of_not_satisfied(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <component_dependency value="foo"/>
+                  <component_dependency value="bar"/>
+                  <component_dependency value="baz"/>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test'], exclude=None
+        )
+
+        self.assertEqual(satisfied, False)
+
+    def test_any_of_satisfied_by_exclude(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <component_dependency value="foo"/>
+                  <component_dependency value="bar"/>
+                  <component_dependency value="baz"/>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test'], exclude=['foo']
+        )
+
+        self.assertEqual(satisfied, True)
+
+    def test_any_of_all_satisfied(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <all>
+                    <component_dependency value="foo"/>
+                    <component_dependency value="bar"/>
+                    <component_dependency value="baz"/>
+                  </all>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'foo', 'bar', 'baz'], exclude=None
+        )
+
+        self.assertEqual(satisfied, True)
+
+    def test_any_of_all_not_satisfied(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <all>
+                    <component_dependency value="foo"/>
+                    <component_dependency value="bar"/>
+                    <component_dependency value="baz"/>
+                  </all>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'foo', 'bar'], exclude=None
+        )
+
+        self.assertEqual(satisfied, False)
+
+    def test_any_of_all_satisfied_by_exclude(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <all>
+                    <component_dependency value="foo"/>
+                    <component_dependency value="bar"/>
+                    <component_dependency value="baz"/>
+                  </all>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'foo', 'bar'], exclude=['baz']
+        )
+
+        self.assertEqual(satisfied, True)
+
+    def test_any_of_all_or_one_satisfied(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <all>
+                    <component_dependency value="foo"/>
+                    <component_dependency value="bar"/>
+                    <component_dependency value="baz"/>
+                  </all>
+                  <component_dependency value="frodo"/>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'frodo'], exclude=None
+        )
+
+        self.assertEqual(satisfied, True)
+
+    def test_any_of_all_or_one_not_satisfied(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <all>
+                    <component_dependency value="foo"/>
+                    <component_dependency value="bar"/>
+                    <component_dependency value="baz"/>
+                  </all>
+                  <component_dependency value="frodo"/>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test'], exclude=None
+        )
+
+        self.assertEqual(satisfied, False)
+
+    def test_any_of_all_or_one_satisfied_by_exclude(self):
+        test_manifest_xml = '''
+        <manifest>
+          <components>
+            <component id="test">
+              <dependencies>
+                <any_of>
+                  <all>
+                    <component_dependency value="foo"/>
+                    <component_dependency value="bar"/>
+                    <component_dependency value="baz"/>
+                  </all>
+                  <component_dependency value="frodo"/>
+                </any_of>
+              </dependencies>
+            </component>
+          </components>
+        </manifest>
+        '''
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test'], exclude=['frodo']
+        )
+
+        self.assertEqual(satisfied, True)
 
 
 class ProjectTest(unittest.TestCase):
@@ -935,7 +1075,7 @@ class ProjectTest(unittest.TestCase):
               <source relative_path="src" type="src">
                 <files mask="frodo.cc"/>
               </source>
-              <source toolchain="armgcc" relative_path="./" type="lib">
+              <source relative_path="./" type="lib">
                 <files mask="libonering.a"/>
               </source>
               <include_paths>
@@ -960,74 +1100,46 @@ class ProjectTest(unittest.TestCase):
           </components>
         </manifest>
         '''
-        manifest = (
-            xml.etree.ElementTree.fromstring(test_manifest_xml),
-            pathlib.Path.cwd() / "manifest.xml",
-        )
-        project = Project(
-            [manifest],
-            pathlib.Path.cwd(),
-            ["test", "frodo"],
-            ["baz"],
-            "CORE0",
-        )
-        components = project.components.values()
-
-        component_ids = (component.id for component in components)
-        self.assertCountEqual(
-            component_ids, ['test', 'frodo', 'bilbo', 'foo', 'bar']
+        root = xml.etree.ElementTree.fromstring(test_manifest_xml)
+        project = components.Project(
+            root,
+            ['test', 'frodo'],
+            exclude=['baz', 'bilbo'],
+            device_core='CORE0',
         )
 
-        defines = chain.from_iterable(
-            component.defines for component in components
-        )
-        self.assertCountEqual(defines, ['FRODO', 'BILBO', 'FOO', 'BAR'])
-
-        include_dirs = chain.from_iterable(
-            component.include_dirs for component in components
-        )
-        self.assertCountEqual(
-            include_dirs,
+        self.assertEqual(project.component_ids, ['test', 'frodo', 'foo', 'bar'])
+        self.assertEqual(project.defines, ['FRODO', 'FOO', 'BAR'])
+        self.assertEqual(
+            project.include_dirs,
             [
                 pathlib.Path('frodo/include'),
-                pathlib.Path('bilbo/include'),
                 pathlib.Path('foo/include'),
                 pathlib.Path('bar/include'),
             ],
         )
-
-        headers = chain.from_iterable(
-            component.headers for component in components
-        )
-        self.assertCountEqual(
-            headers,
+        self.assertEqual(
+            project.headers,
             [
                 pathlib.Path('frodo/include/frodo.h'),
-                pathlib.Path('bilbo/include/bilbo.h'),
                 pathlib.Path('foo/include/foo.h'),
                 pathlib.Path('foo/include/core0.h'),
                 pathlib.Path('foo/include/common.h'),
                 pathlib.Path('bar/include/bar.h'),
             ],
         )
-
-        sources = chain.from_iterable(
-            component.sources for component in components
-        )
-        self.assertCountEqual(
-            sources,
+        self.assertEqual(
+            project.sources,
             [
                 pathlib.Path('frodo/src/frodo.cc'),
-                pathlib.Path('bilbo/src/bilbo.cc'),
                 pathlib.Path('foo/src/foo.cc'),
                 pathlib.Path('foo/src/core0.cc'),
                 pathlib.Path('foo/src/common.cc'),
                 pathlib.Path('bar/src/bar.cc'),
             ],
         )
-
-        libs = chain.from_iterable(component.libs for component in components)
-        self.assertCountEqual(libs, [pathlib.Path('frodo/libonering.a')])
+        self.assertEqual(project.libs, [pathlib.Path('frodo/libonering.a')])
+        self.assertTrue(project.dependencies_satisfied)
 
 
 if __name__ == '__main__':
