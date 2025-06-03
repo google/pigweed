@@ -165,6 +165,11 @@ class TestLogFilter(unittest.TestCase):
                         '3 Some exception',
                         dict(extra_metadata_fields={'planet': 'Earth'}),
                     ),
+                    (
+                        '3 A line with earth in the message',
+                        # Set planet to None, this log should not match.
+                        dict(extra_metadata_fields={'planet': None}),
+                    ),
                 ],
                 [  # expected_matched_lines
                     '3 Log another item',
@@ -196,6 +201,29 @@ class TestLogFilter(unittest.TestCase):
                 ],
                 'planet',  # field
                 True,  # invert
+            ),
+            (
+                'regex with field and no matches',
+                SearchMatcher.REGEX,
+                'mars',  # input_text
+                [  # input_lines
+                    (
+                        '5 Log another item',
+                        dict(extra_metadata_fields={'planet': 'Earth'}),
+                    ),
+                    (
+                        '5 Some exception',
+                        dict(extra_metadata_fields={'planet': 'Earth'}),
+                    ),
+                    (
+                        '5 Yet another exception for mars',
+                        dict(extra_metadata_fields={'planet': None}),
+                    ),
+                ],
+                # expected_matched_lines
+                [],
+                'planet',  # field
+                False,  # invert
             ),
         ]
     )
