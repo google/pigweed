@@ -18,7 +18,6 @@ package {
 
 cc_library_static {
     name: "pw_spi_linux",
-    cpp_std: "c++20",
     cmake_snapshot_supported: true,
     vendor_available: true,
     defaults: [
@@ -52,7 +51,6 @@ cc_library_static {
 
 cc_binary {
     name: "pw_spi_linux_cli",
-    cpp_std: "c++20",
     cmake_snapshot_supported: true,
     vendor_available: true,
     defaults: [

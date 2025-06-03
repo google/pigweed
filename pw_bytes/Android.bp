@@ -18,7 +18,6 @@ package {
 
 cc_library_static {
     name: "pw_bytes",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_target_support",
     ],

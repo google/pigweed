@@ -25,7 +25,9 @@ filegroup {
 
 cc_library_headers {
     name: "pw_rpc_raw_include_dirs",
-    cpp_std: "c++20",
+    defaults: [
+        "pw_android_cpp_version",
+    ],
     export_include_dirs: [
         "public",
     ],
@@ -60,7 +62,9 @@ cc_library_headers {
 // see pw_rpc_defaults, pw_rpc_defaults
 cc_defaults {
     name: "pw_rpc_raw_defaults",
-    cpp_std: "c++20",
+    defaults: [
+        "pw_android_cpp_version",
+    ],
     header_libs: [
         "pw_rpc_raw_include_dirs",
     ],

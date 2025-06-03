@@ -14,7 +14,6 @@
 
 cc_library_static {
     name: "pw_stream_uart_linux",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_backends",
         "pw_android_common_target_support_no_windows",

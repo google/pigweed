@@ -111,7 +111,6 @@ cc_library_headers {
 // see pw_rpc_nanopb_defaults, pw_rpc_raw_defaults
 cc_defaults {
     name: "pw_rpc_defaults",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_backends",
     ],
@@ -585,7 +584,6 @@ genrule {
 
 cc_library_static {
     name: "pw_rpc_echo_service_nanopb",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_target_support",
     ],
@@ -620,7 +618,6 @@ genrule {
 
 cc_library_static {
     name: "pw_rpc_echo_service_pwpb",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_target_support",
     ],

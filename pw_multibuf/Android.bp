@@ -22,7 +22,6 @@ filegroup {
 
 cc_library_static {
     name: "pw_multibuf",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_backends",
         "pw_android_common_target_support",
@@ -63,7 +62,6 @@ cc_library_static {
 
 cc_library_static {
     name: "pw_multibuf_allocator",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_backends",
         "pw_android_common_target_support",

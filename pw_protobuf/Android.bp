@@ -18,7 +18,6 @@ package {
 
 cc_library_static {
     name: "pw_protobuf",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_backends",
         "pw_android_common_target_support",
@@ -72,7 +71,6 @@ cc_library_static {
 
 cc_library_headers {
     name: "pw_protobuf_pwpb",
-    cpp_std: "c++20",
     defaults: [
         "pw_android_common_target_support",
     ],

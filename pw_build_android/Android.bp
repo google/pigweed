@@ -16,12 +16,20 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
+// Supported C++ version for Pigweed Android modules.
+cc_defaults {
+    name: "pw_android_cpp_version",
+    cpp_std: "c++20",
+}
+
 // List of Common Android backends and build flags used by Pigweed modules.
 // Do not modify this to swap a different backend. Instead see the
 // pw_build_android documentation for how to use custom backends.
 cc_defaults {
     name: "pw_android_common_backends",
-    cpp_std: "c++20",
+    defaults: [
+        "pw_android_cpp_version",
+    ],
 
     // Note for maintainers:
     // Update the build flags in the documentation when updating this list.
@@ -55,6 +63,10 @@ cc_defaults {
 
 cc_defaults {
     name: "pw_android_common_target_support_no_windows",
+    defaults: [
+        "pw_android_cpp_version",
+    ],
+
     cmake_snapshot_supported: true,
     host_supported: true,
     native_bridge_supported: true,
@@ -73,7 +85,7 @@ cc_defaults {
         linux_bionic: {
             enabled: true,
         },
-    }
+    },
 }
 
 // List of common flags and support for Pigweed modules.
@@ -82,6 +94,7 @@ cc_defaults {
     defaults: [
         "pw_android_common_target_support_no_windows",
     ],
+
     target: {
         windows: {
             enabled: true,
