@@ -397,10 +397,12 @@ def upload_pigweed_pypi_distribution(
 
     dist_path = dist_output_path / 'dist'
     upload_files = sorted(dist_path.glob('*'))
-    expected_files = [
-        dist_path / f'pigweed-{version_number}.tar.gz',
-        dist_path / f'pigweed-{version_number}-py3-none-any.whl',
-    ]
+    expected_files = sorted(
+        [
+            dist_path / f'pigweed-{version_number}.tar.gz',
+            dist_path / f'pigweed-{version_number}-py3-none-any.whl',
+        ]
+    )
     if upload_files != expected_files:
         raise PresubmitFailure(
             'Unexpected dist files found for upload. Skipping upload.\n'
