@@ -231,11 +231,8 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   AdvertisingEventProperties properties =
       GetAdvertisingEventProperties(data, scan_rsp, options, connect_callback);
   std::optional<SetAdvertisingParams> set_adv_params =
-      BuildSetAdvertisingParams(address,
-                                properties,
-                                own_addr_type,
-                                options.interval,
-                                options.extended_pdu);
+      BuildSetAdvertisingParams(
+          address, properties, own_addr_type, options.interval);
   if (!set_adv_params.has_value()) {
     bt_log(
         WARN, "hci-le", "failed to start advertising for %s", bt_str(address));

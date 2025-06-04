@@ -151,8 +151,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   BuildSetAdvertisingParams(const DeviceAddress&,
                             const AdvertisingEventProperties&,
                             pwemb::LEOwnAddressType,
-                            const hci::AdvertisingIntervalRange&,
-                            bool) override {
+                            const hci::AdvertisingIntervalRange&) override {
     return std::nullopt;
   }
 

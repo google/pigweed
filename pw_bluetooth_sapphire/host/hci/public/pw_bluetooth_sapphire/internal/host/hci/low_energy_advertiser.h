@@ -229,8 +229,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
       const DeviceAddress& address,
       const AdvertisingEventProperties& properties,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
-      const AdvertisingIntervalRange& interval,
-      bool extended_pdu) = 0;
+      const AdvertisingIntervalRange& interval) = 0;
 
   // Build the HCI command packet to set the random address to use for the
   // flavor of low energy advertising being implemented. If no command packet is

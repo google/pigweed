@@ -111,8 +111,7 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress&,
     const AdvertisingEventProperties& properties,
     pwemb::LEOwnAddressType own_address_type,
-    const AdvertisingIntervalRange& interval,
-    bool /*extended_pdu*/) {
+    const AdvertisingIntervalRange& interval) {
   auto packet =
       CommandPacket::New<pwemb::LESetAdvertisingParametersCommandWriter>(
           hci_spec::kLESetAdvertisingParameters);

@@ -93,8 +93,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const DeviceAddress& address,
       const AdvertisingEventProperties& properties,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
-      const AdvertisingIntervalRange& interval,
-      bool extended_pdu) override;
+      const AdvertisingIntervalRange& interval) override;
 
   std::optional<CommandPacket> BuildSetAdvertisingRandomAddr(
       hci_spec::AdvertisingHandle advertising_handle) const override;

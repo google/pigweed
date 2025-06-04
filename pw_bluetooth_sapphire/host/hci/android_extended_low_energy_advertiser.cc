@@ -76,10 +76,9 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     const AdvertisingEventProperties& properties,
     pwemb::LEOwnAddressType own_address_type,
-    const AdvertisingIntervalRange& interval,
-    bool extended_pdu) {
+    const AdvertisingIntervalRange& interval) {
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.MapHandle(address, extended_pdu);
+      advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN,
            "hci-le",
@@ -126,10 +125,10 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingRandomAddr(
       android_hci::kLEMultiAdvtSetRandomAddrSubopcode);
   view.adv_handle().Write(advertising_handle);
 
-  std::optional<std::tuple<DeviceAddress, bool>> address =
+  std::optional<DeviceAddress> address =
       advertising_handle_map_.GetAddress(advertising_handle);
   PW_CHECK(address);
-  view.random_address().CopyFrom(std::get<0>(*address).value().view());
+  view.random_address().CopyFrom(address->value().view());
 
   return packet;
 }
@@ -376,7 +375,7 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
 
   auto view = event.view<android_emb::LEMultiAdvtStateChangeSubeventView>();
   hci_spec::AdvertisingHandle adv_handle = view.advertising_handle().Read();
-  std::optional<std::tuple<DeviceAddress, bool>> opt_local_address =
+  std::optional<DeviceAddress> opt_local_address =
       advertising_handle_map_.GetAddress(adv_handle);
 
   // We use the identity address as the local address if we aren't advertising
@@ -387,7 +386,7 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
       DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
   DeviceAddress local_address = identity_address;
   if (opt_local_address) {
-    local_address = std::get<DeviceAddress>(opt_local_address.value());
+    local_address = opt_local_address.value();
   }
 
   hci_spec::ConnectionHandle connection_handle =

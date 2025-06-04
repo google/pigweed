@@ -19,7 +19,7 @@
 namespace bt::hci {
 
 std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
-    const DeviceAddress& address, bool extended_pdu) {
+    const DeviceAddress& address) {
   if (Size() == capacity_) {
     return std::nullopt;
   }
@@ -27,12 +27,11 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
   auto next_handle = NextHandle();
   PW_CHECK(next_handle);
 
-  auto [_, success] =
-      map_.try_emplace(next_handle.value(), address, extended_pdu);
+  auto [_, success] = map_.try_emplace(next_handle.value(), address);
   PW_CHECK(success);
   return next_handle;
 }
-std::optional<std::tuple<DeviceAddress, bool>> AdvertisingHandleMap::GetAddress(
+std::optional<DeviceAddress> AdvertisingHandleMap::GetAddress(
     hci_spec::AdvertisingHandle handle) const {
   auto iter = map_.find(handle);
   if (iter == map_.end()) {

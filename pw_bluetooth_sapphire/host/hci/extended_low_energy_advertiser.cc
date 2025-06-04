@@ -94,8 +94,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     const AdvertisingEventProperties& properties,
     pwemb::LEOwnAddressType own_address_type,
-    const AdvertisingIntervalRange& interval,
-    bool extended_pdu) {
+    const AdvertisingIntervalRange& interval) {
   auto packet = hci::CommandPacket::New<
       pwemb::LESetExtendedAdvertisingParametersV1CommandWriter>(
       hci_spec::kLESetExtendedAdvertisingParameters);
@@ -103,7 +102,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle =
-      advertising_handle_map_.MapHandle(address, extended_pdu);
+      advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN,
            "hci-le",
@@ -163,12 +162,12 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingRandomAddr(
       hci_spec::kLESetAdvertisingSetRandomAddress);
   auto view = packet.view_t();
 
-  std::optional<std::tuple<DeviceAddress, bool>> address =
+  std::optional<DeviceAddress> address =
       advertising_handle_map_.GetAddress(advertising_handle);
   PW_CHECK(address);
 
   view.advertising_handle().Write(advertising_handle);
-  view.random_address().CopyFrom(std::get<0>(*address).value().view());
+  view.random_address().CopyFrom(address->value().view());
 
   return packet;
 }
@@ -609,7 +608,7 @@ void ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
   }
 
   hci_spec::AdvertisingHandle adv_handle = params.advertising_handle().Read();
-  std::optional<std::tuple<DeviceAddress, bool>> opt_local_address =
+  std::optional<DeviceAddress> opt_local_address =
       advertising_handle_map_.GetAddress(adv_handle);
 
   // We use the identity address as the local address if we aren't advertising
@@ -620,7 +619,7 @@ void ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
       DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
   DeviceAddress local_address = identity_address;
   if (opt_local_address) {
-    local_address = std::get<DeviceAddress>(opt_local_address.value());
+    local_address = opt_local_address.value();
   }
 
   StagedConnectionParameters staged = staged_parameters_node.mapped();

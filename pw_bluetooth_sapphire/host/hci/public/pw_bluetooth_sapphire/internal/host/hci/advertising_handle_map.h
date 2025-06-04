@@ -60,11 +60,11 @@ class AdvertisingHandleMap {
   // doesn't already exist. The conversion may fail if there are already
   // hci_spec::kMaxAdvertisingHandles in the container.
   std::optional<hci_spec::AdvertisingHandle> MapHandle(
-      const DeviceAddress& address, bool extended_pdu);
+      const DeviceAddress& address);
 
   // Convert an AdvertisingHandle to a DeviceAddress. The conversion may fail if
   // there is no DeviceAddress currently mapping to the provided handle.
-  std::optional<std::tuple<DeviceAddress, bool /*extended_pdu*/>> GetAddress(
+  std::optional<DeviceAddress> GetAddress(
       hci_spec::AdvertisingHandle handle) const;
 
   // Remove the mapping between an AdvertisingHandle and the DeviceAddress it
@@ -73,8 +73,8 @@ class AdvertisingHandleMap {
   // with the same AdvertisingHandle will fail because the mapping no longer
   // exists.
   //
-  // If the given handle doesn't map to any (DeviceAddress, bool) tuple, this
-  // function does nothing.
+  // If the given handle doesn't map to any DeviceAddress, this function does
+  // nothing.
   void RemoveHandle(hci_spec::AdvertisingHandle handle) { map_.erase(handle); }
 
   // Get the maximum number of mappings the AdvertisingHandleMap will support.
@@ -118,9 +118,7 @@ class AdvertisingHandleMap {
   // handle.
   hci_spec::AdvertisingHandle last_handle_ = kStartHandle;
 
-  std::unordered_map<hci_spec::AdvertisingHandle,
-                     std::tuple<DeviceAddress, bool>>
-      map_;
+  std::unordered_map<hci_spec::AdvertisingHandle, DeviceAddress> map_;
 };
 
 }  // namespace bt::hci
