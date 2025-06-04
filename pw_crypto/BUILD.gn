@@ -43,6 +43,7 @@ pw_test_group("tests") {
     ":aes_test",
     ":sha256_test",
     ":sha256_mock_test",
+    ":ecdh_test",
     ":ecdsa_test",
   ]
 }
@@ -219,4 +220,34 @@ pw_test("aes_test") {
     "$dir_pw_containers:vector",
   ]
   sources = [ "aes_test.cc" ]
+}
+
+pw_facade("ecdh") {
+  backend = pw_crypto_ECDH_BACKEND
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_crypto/ecdh.h" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_result",
+    "$dir_pw_status",
+  ]
+}
+
+config("buildonly_config") {
+  include_dirs = [ "public_overrides/buildonly" ]
+}
+
+pw_source_set("ecdh_buildonly") {
+  sources = [ "ecdh_buildonly.cc" ]
+  public = [ "public_overrides/buildonly/pw_crypto/ecdh_backend.h" ]
+  public_configs = [ ":buildonly_config" ]
+  public_deps = [ ":ecdh.facade" ]
+}
+
+# This test targets the specific backend pointed to by
+# pw_crypto_ECDH_BACKEND.
+pw_test("ecdh_test") {
+  enable_if = pw_crypto_ECDH_BACKEND != ""
+  deps = [ ":ecdh" ]
+  sources = [ "ecdh_test.cc" ]
 }

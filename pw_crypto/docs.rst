@@ -123,6 +123,53 @@ AES
        // Handle errors.
    }
 
+----
+ECDH
+----
+1. Generating a keypair and computing a shared symmetric key.
+
+.. warning::
+   Ensure that the backend is initialized and configured correctly with a
+   cryptographically secure pseudo-random number generator (CSPRNG). The details
+   for doing this are specific to each backend.
+
+.. code-block:: cpp
+
+   #include "pw_crypto/ecdh.h"
+
+   // Import the public key from the other party.
+   PW_TRY_ASSIGN(
+      auto public_key,
+      pw::crypto::ecdh::P256PublicKey::Import(other_x, other_y, endian));
+   PW_TRY_ASSIGN(auto keypair,
+                 pw::crypto::ecdh::P256Keypair::Generate());
+
+   std::byte shared_key[32];
+   if (!keypair.ComputeDiffieHellman(public_key, shared_key)) {
+      // handle errors.
+   }
+
+
+2. Import a pre-existing keypair (for testing purposes) and computing a
+   shared symmetric key.
+
+.. code-block:: cpp
+
+   #include "pw_crypto/ecdh.h"
+
+   // Import the public key from the other party.
+   PW_TRY_ASSIGN(
+      auto public_key,
+      pw::crypto::ecdh::P256PublicKey::Import(other_x, other_y, endian));
+   PW_TRY_ASSIGN(auto keypair,
+      pw::crypto::ecdh::P256Keypair::ImportForTesting(
+         private_key, x, y, endian));
+
+   std::byte shared_key[32];
+   if (!keypair.ComputeDiffieHellman(public_key, shared_key)) {
+      // handle errors.
+   }
+
 -------------
 Configuration
 -------------

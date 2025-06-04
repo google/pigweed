@@ -220,6 +220,45 @@ pw_cc_test(
     ],
 )
 
+pw_facade(
+    name = "ecdh",
+    hdrs = ["public/pw_crypto/ecdh.h"],
+    backend = ":ecdh_backend",
+    features = ["-conversion_warnings"],
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
+label_flag(
+    name = "ecdh_backend",
+    build_setting_default = ":unspecified_ecdh_backend",
+)
+
+host_backend_alias(
+    name = "unspecified_ecdh_backend",
+    backend = ":ecdh_buildonly",
+)
+
+cc_library(
+    name = "ecdh_buildonly",
+    srcs = ["ecdh_buildonly.cc"],
+    hdrs = [
+        "public_overrides/buildonly/pw_crypto/ecdh_backend.h",
+    ],
+    strip_include_prefix = "public_overrides/buildonly",
+    deps = [":ecdh.facade"],
+)
+
+pw_cc_test(
+    name = "ecdh_test",
+    srcs = ["ecdh_test.cc"],
+    deps = [":ecdh"],
+)
+
 filegroup(
     name = "doxygen",
     srcs = [

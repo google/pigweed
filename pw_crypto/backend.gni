@@ -16,4 +16,5 @@ declare_args() {
   pw_crypto_SHA256_BACKEND = ""
   pw_crypto_ECDSA_BACKEND = ""
   pw_crypto_AES_BACKEND = ""
+  pw_crypto_ECDH_BACKEND = ""
 }
