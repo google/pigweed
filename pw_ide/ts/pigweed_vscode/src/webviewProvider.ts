@@ -36,6 +36,55 @@ import {
 import { LoggerUI } from './clangd/compileCommandsGeneratorUI';
 import path from 'path';
 
+export async function executeRefreshCompileCommandsManually(buildCmd: string) {
+  const bazelBinary = getReliableBazelExecutable();
+  const cwd = workingDir.get();
+  logging.info(`Generating compile commands for ${buildCmd}`);
+  if (buildCmd.trim() === '' || !bazelBinary) {
+    vscode.window.showWarningMessage(
+      'Build command is empty or Bazel binary not found.',
+    );
+    return;
+  }
+  output.show();
+  const inputCmd = `build ${buildCmd}`;
+  const parsedCmd = await parseBazelBuildCommand(
+    inputCmd,
+    bazelBinary,
+    cwd,
+  ).catch((e) => {
+    logging.error(e.message);
+    vscode.window.showErrorMessage(e.message);
+  });
+
+  if (!parsedCmd) {
+    logging.info('Unable to parse build command.');
+    return;
+  }
+
+  await settings.bazelCompileCommandsManualBuildCommand(buildCmd);
+
+  logging.info(`Command was parsed to: ${JSON.stringify(parsedCmd)}`);
+
+  // Delete and recreate the compile_commands directory.
+  const fullCdbDirPath = path.join(workingDir.get(), CDB_FILE_DIR);
+  deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
+  mkdirSync(fullCdbDirPath, { recursive: true });
+
+  logging.info('Cleaned compile_commands directory.');
+  const logger = new LoggerUI(logging);
+  await generateCompileCommandsWithStatus(
+    bazelBinary,
+    workingDir.get(),
+    CDB_FILE_DIR,
+    CDB_FILE_NAME,
+    parsedCmd.targets,
+    parsedCmd.args,
+    logger,
+  );
+  saveLastBazelCommandInUserSettings(workingDir.get(), inputCmd, logger);
+}
+
 export class WebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'pigweed.webview';
 
@@ -140,51 +189,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         case 'refreshCompileCommandsManually': {
           const buildCmd = data.data;
-          const bazelBinary = getReliableBazelExecutable();
-          const cwd = workingDir.get();
-          logging.info(`Generating compile commands for ${buildCmd}`);
-          if (buildCmd.trim() === '' || !bazelBinary) break;
-          output.show();
-          const inputCmd = `build ${buildCmd}`;
-          const parsedCmd = await parseBazelBuildCommand(
-            inputCmd,
-            bazelBinary,
-            cwd,
-          ).catch((e) => {
-            logging.error(e.message);
-            vscode.window.showErrorMessage(e.message);
-          });
-
-          if (!parsedCmd) {
-            logging.info('Unable to parse build command.');
-            return;
-          }
-
-          await settings.bazelCompileCommandsManualBuildCommand(buildCmd);
-
-          logging.info(`Command was parsed to: ${JSON.stringify(parsedCmd)}`);
-
-          // Delete and recreate the compile_commands directory.
-          const fullCdbDirPath = path.join(workingDir.get(), CDB_FILE_DIR);
-          deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
-          mkdirSync(fullCdbDirPath, { recursive: true });
-
-          logging.info('Cleaned compile_commands directory.');
-          const logger = new LoggerUI(logging);
-          await generateCompileCommandsWithStatus(
-            bazelBinary,
-            workingDir.get(),
-            CDB_FILE_DIR,
-            CDB_FILE_NAME,
-            parsedCmd.targets,
-            parsedCmd.args,
-            logger,
-          );
-          saveLastBazelCommandInUserSettings(
-            workingDir.get(),
-            inputCmd,
-            logger,
-          );
+          await executeRefreshCompileCommandsManually(buildCmd);
         }
       }
     });

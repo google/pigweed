@@ -67,7 +67,10 @@ import {
   launchTerminal,
   patchBazeliskIntoTerminalPath,
 } from './terminal';
-import { WebviewProvider } from './webviewProvider';
+import {
+  WebviewProvider,
+  executeRefreshCompileCommandsManually,
+} from './webviewProvider';
 
 import { commandRegisterer, VscCommandCallback } from './utils';
 import { shouldSupportGn } from './gn';
@@ -197,6 +200,20 @@ async function registerCommands(
           'This command is currently not supported with Bootstrap projects',
         ),
       projectType: ['bootstrap'],
+    },
+    {
+      name: 'pigweed.refresh-compile-commands',
+      callback: async () => {
+        const lastBuildCmd = settings.bazelCompileCommandsManualBuildCommand();
+        if (lastBuildCmd) {
+          await executeRefreshCompileCommandsManually(lastBuildCmd);
+        } else {
+          vscode.window.showInformationMessage(
+            'No manual build command found. Please set and run once from the Pigweed sidebar.',
+          );
+        }
+      },
+      projectType: ['bazel', 'both'],
     },
     {
       name: 'pigweed.activate-bazelisk-in-terminal',
