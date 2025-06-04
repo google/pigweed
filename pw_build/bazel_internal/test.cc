@@ -12,9 +12,18 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <array>
+
+#include "pw_preprocessor/compiler.h"
+
 // This symbol is defined by the linker script. If the linker script is not
 // correctly used, this will be missing.
 extern int _linker_defined_symbol;
+
+// This symbol is used to create a section with a known size that we can verify
+// in the linker script.
+PW_PLACE_IN_SECTION(".test_section")
+std::array<std::byte, 128> test_symbol = {};
 
 // This file is intentionally very simple and is used only to test that the
 // linker script generator works as expected.

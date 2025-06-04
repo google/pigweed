@@ -65,11 +65,15 @@ SECTIONS
   .code :
   {
     /* Exercise PW_MUST_PLACE macro on our test object file */
-    PW_MUST_PLACE(*/test.pic.o);
+     PW_MUST_PLACE(*test.pic.o(.text*));
   }
   .data :
   {
+    /* Exercise PW_MUST_PLACE_SIZE macro on our test_section, verifying its size */
+    PW_MUST_PLACE_SIZE(KEEP(*test.pic.o(.test_section)), 128);
+
     /* Exercise PW_MUST_NOT_PLACE to assert there are no data entries in our test object file */
-    PW_MUST_NOT_PLACE(*/test.pic.o(.data*));
+    PW_MUST_NOT_PLACE(*test.pic.o(.data*));
+
   }
 }

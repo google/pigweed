@@ -81,6 +81,77 @@
 
 /// @}
 
+/// @defgroup pw_must_place_size
+/// @{
+
+// clang-format off
+/// @cond PRIVATE
+#define ___PW_MUST_PLACE_SIZE(isection, isize, start_sym, end_sym)  \
+    start_sym = .;                                                  \
+    isection                                                        \
+    end_sym = .;                                                    \
+    ASSERT(end_sym - start_sym == isize ,                           \
+           "Error: Pattern did not match expected size");           \
+    ASSERT(end_sym - start_sym == isize, #isection)
+
+#define __PW_MUST_PLACE_SIZE(isection, isize, sym_prefix, unique)   \
+    ___PW_MUST_PLACE_SIZE(isection, isize, sym_prefix ## start_ ## unique, sym_prefix ## end_ ## unique)
+
+#define _PW_MUST_PLACE_SIZE(isection, isize, sym_prefix, unique)    \
+    __PW_MUST_PLACE_SIZE(isection, isize, sym_prefix, unique)
+/// @endcond
+
+/// PW_MUST_PLACE_SIZE is a macro intended for use in linker scripts to ensure
+/// inputs are an expected size.
+///
+/// This is helpful for shared memory placements between multiple cores.
+///
+/// Imagine the following code is consumed while linking for 2 separate cores:
+///
+/// @code
+/// SECTIONS
+/// {
+///   .shared_memory
+///   {
+///     */src/path/libspecial_code.a:shared_memory.o(.bss.shared_memory)
+///   }
+/// }
+/// @endcode
+///
+/// This works but is fragile as it will silently break if the size of
+/// .bss.shared_memory changes on a single core. This may occur if compiler or
+/// other parameters are changed on one core and not the other.
+///
+/// @code
+/// #include "pw_build/must_place.ld.h"
+///
+/// SECTIONS
+/// {
+///   .special_code
+///   {
+///     PW_MUST_PLACE_SIZE(*/src/path/libspecial_code.a:shared_memory.o(.bss.shared_memory), 16)
+///   }
+/// }
+/// @endcode
+///
+/// If the wildcard match results in a different size from what was specified
+/// PW_MUST_PLACE_SIZE will generate an error.
+///
+/// @code
+///   Error: Pattern did not match expected size
+///   */src/path/libspecial_code.a:shared_memory.o(.bss.shared_memory)
+/// @endcode
+///
+/// This could be because you had a typo, the path changed, the symbols changed
+/// in size (either because the symbol was changed or compilation settings were
+/// changed), symbols were dropped due to linker section garbage collection. In
+/// the latter case, you can choose to add ``KEEP()`` around your input to
+/// prevent garbage collection.
+#define PW_MUST_PLACE_SIZE(isection, isize)  \
+    _PW_MUST_PLACE_SIZE(isection, isize, __section_place_, __COUNTER__)
+
+/// @}
+
 /// @defgroup pw_must_not_place
 /// @{
 

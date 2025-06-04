@@ -66,7 +66,10 @@ cc_binary(
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    deps = [":linker_script_test"],
+    deps = [
+        ":linker_script_test",
+        "//pw_preprocessor",
+    ],
 )
 
 # Use cc_library to depend on the linker script, and then use cc_binary to build
@@ -92,7 +95,10 @@ cc_binary(
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    deps = [":lib_linker_script"],
+    deps = [
+        ":lib_linker_script",
+        "//pw_preprocessor",
+    ],
 )
 
 # Verify that the linker script can also be specified directly.
@@ -114,6 +120,7 @@ cc_binary(
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
+    deps = ["//pw_preprocessor"],
 )
 
 pw_elf_to_bin(

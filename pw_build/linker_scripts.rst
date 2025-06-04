@@ -23,6 +23,12 @@ Linker Script Helpers
    :content-only:
    :members:
 
+``PW_MUST_PLACE_SIZE``
+======================
+.. doxygengroup:: pw_must_place_size
+   :content-only:
+   :members:
+
 ``PW_MUST_NOT_PLACE``
 =====================
 .. doxygengroup:: pw_must_not_place
