@@ -50,7 +50,7 @@ class ShmemMcuxpressoStream : public NonSeekableReaderWriter {
         shared_read_buffer_(shared_read_buffer),
         shared_write_buffer_(shared_write_buffer),
         write_timeout_(write_timeout) {}
-  ~ShmemMcuxpressoStream();
+  ~ShmemMcuxpressoStream() override;
 
   void Enable();
   void Disable();
