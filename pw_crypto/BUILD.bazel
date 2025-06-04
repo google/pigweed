@@ -240,23 +240,31 @@ label_flag(
 
 host_backend_alias(
     name = "unspecified_ecdh_backend",
-    backend = ":ecdh_buildonly",
-)
-
-cc_library(
-    name = "ecdh_buildonly",
-    srcs = ["ecdh_buildonly.cc"],
-    hdrs = [
-        "public_overrides/buildonly/pw_crypto/ecdh_backend.h",
-    ],
-    strip_include_prefix = "public_overrides/buildonly",
-    deps = [":ecdh.facade"],
+    backend = ":ecdh_boringssl",
 )
 
 pw_cc_test(
     name = "ecdh_test",
     srcs = ["ecdh_test.cc"],
     deps = [":ecdh"],
+)
+
+cc_library(
+    name = "ecdh_boringssl",
+    srcs = ["ecdh_boringssl.cc"],
+    hdrs = [
+        "public_overrides/boringssl/pw_crypto/ecdh_backend.h",
+    ],
+    implementation_deps = ["//pw_assert:check"],
+    strip_include_prefix = "public_overrides/boringssl",
+    target_compatible_with = incompatible_with_mcu() + select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":ecdh.facade",
+        "@boringssl//:crypto",
+    ],
 )
 
 filegroup(

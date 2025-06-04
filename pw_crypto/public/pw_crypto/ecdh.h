@@ -85,12 +85,12 @@ class P256PublicKeyOps {
   /// Get the X coordinate of the public key as a 256-bit integer in the
   /// specified endianness.
   virtual Status GetX(P256Coordinate buffer, endian endianness) const = 0;
-  Status GetX(P256Coordinate buffer) { return GetX(buffer, endian::big); }
+  Status GetX(P256Coordinate buffer) const { return GetX(buffer, endian::big); }
 
   /// Get the Y coordinate of the public key as a 256-bit integer in the
   /// specified endianness.
   virtual Status GetY(P256Coordinate buffer, endian endianness) const = 0;
-  Status GetY(P256Coordinate buffer) { return GetY(buffer, endian::big); }
+  Status GetY(P256Coordinate buffer) const { return GetY(buffer, endian::big); }
 };
 
 /// A public key for ECDH using the P256 curve. Contains an X and Y coordinate.
@@ -117,6 +117,9 @@ class P256PublicKey final : public P256PublicKeyOps {
   Status GetY(P256Coordinate out, endian endianness) const override {
     return backend::DoGetY(native_, out, endianness);
   }
+
+  Status GetX(P256Coordinate buffer) const { return GetX(buffer, endian::big); }
+  Status GetY(P256Coordinate buffer) const { return GetY(buffer, endian::big); }
 
  private:
   friend class P256Keypair;
@@ -163,6 +166,9 @@ class P256Keypair final : public P256PublicKeyOps {
   Status GetY(P256Coordinate out, endian endianness) const override {
     return backend::DoGetY(native_, out, endianness);
   }
+
+  Status GetX(P256Coordinate buffer) const { return GetX(buffer, endian::big); }
+  Status GetY(P256Coordinate buffer) const { return GetY(buffer, endian::big); }
 
   /// Compute a symmetric key using ECDH.
   Status ComputeDiffieHellman(const P256PublicKey& other_key,

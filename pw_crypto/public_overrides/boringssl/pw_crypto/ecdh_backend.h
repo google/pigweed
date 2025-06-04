@@ -14,11 +14,16 @@
 
 #pragma once
 
-// This is a backend that is only provided to ensure the facade builds correctly
-// and will be removed once real backends are implemented.
+#include <openssl/base.h>
+#include <openssl/ec.h>
+
 namespace pw::crypto::ecdh::backend {
 
-struct NativeP256Keypair {};
-struct NativeP256PublicKey {};
+struct EcKeyDeleter final {
+  void operator()(EC_KEY* key) { EC_KEY_free(key); }
+};
+
+using NativeP256Keypair = std::unique_ptr<EC_KEY, EcKeyDeleter>;
+using NativeP256PublicKey = std::unique_ptr<EC_KEY, EcKeyDeleter>;
 
 }  // namespace pw::crypto::ecdh::backend

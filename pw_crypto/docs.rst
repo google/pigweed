@@ -269,6 +269,7 @@ configured. To do that:
    gn gen out --args='
        dir_pw_third_party_boringssl=getenv("PW_PACKAGE_ROOT")+"/boringssl"
        pw_crypto_AES_BACKEND="//pw_crypto:aes_boringssl"
+       pw_crypto_ECDH_BACKEND="//pw_crypto:ecdh_boringssl"
    '
 
    ninja -C out

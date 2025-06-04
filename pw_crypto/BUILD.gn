@@ -233,15 +233,15 @@ pw_facade("ecdh") {
   ]
 }
 
-config("buildonly_config") {
-  include_dirs = [ "public_overrides/buildonly" ]
-}
-
-pw_source_set("ecdh_buildonly") {
-  sources = [ "ecdh_buildonly.cc" ]
-  public = [ "public_overrides/buildonly/pw_crypto/ecdh_backend.h" ]
-  public_configs = [ ":buildonly_config" ]
-  public_deps = [ ":ecdh.facade" ]
+pw_source_set("ecdh_boringssl") {
+  public_configs = [ ":boringssl_config" ]
+  sources = [ "ecdh_boringssl.cc" ]
+  public = [ "public_overrides/boringssl/pw_crypto/ecdh_backend.h" ]
+  deps = [ "$dir_pw_assert" ]
+  public_deps = [
+    ":ecdh.facade",
+    "$dir_pw_third_party/boringssl",
+  ]
 }
 
 # This test targets the specific backend pointed to by
