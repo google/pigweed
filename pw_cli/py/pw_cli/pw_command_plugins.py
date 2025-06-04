@@ -18,7 +18,7 @@ from pathlib import Path
 import sys
 from typing import Iterable
 
-from pw_cli import arguments, env, plugins
+from pw_cli import env, plugins
 import pw_env_setup.config_file
 
 plugin_registry = plugins.Registry(validator=plugins.callable_with_no_args)
@@ -59,8 +59,6 @@ def _help_command():
         help='command for which to display detailed info',
     )
 
-    print(arguments.format_help(plugin_registry), file=sys.stderr)
-
     for line in plugin_registry.detailed_help(**vars(parser.parse_args())):
         print(line, file=sys.stderr)
 
@@ -81,10 +79,6 @@ def register() -> None:
 
 def errors() -> dict:
     return plugin_registry.errors()
-
-
-def format_help() -> str:
-    return arguments.format_help(plugin_registry)
 
 
 def run(name: str, args: Iterable[str]) -> int:

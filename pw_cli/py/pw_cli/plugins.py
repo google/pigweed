@@ -415,19 +415,6 @@ class Registry(collections.abc.Mapping):
             _LOG.debug('Found plugins file %s', path)
             self.register_file(path)
 
-    def short_help(self) -> str:
-        """Returns a help string for the registered plugins."""
-        width = (
-            max(len(name) for name in self._registry) + 1
-            if self._registry
-            else 1
-        )
-        help_items = '\n'.join(
-            f'  {name:{width}} {plugin.help()}'
-            for name, plugin in sorted(self._registry.items())
-        )
-        return f'supported plugins:\n{help_items}'
-
     def detailed_help(self, plugins: Iterable[str] = ()) -> Iterator[str]:
         """Yields lines of detailed information about commands."""
         if not plugins:

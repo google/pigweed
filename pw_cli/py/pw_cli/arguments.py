@@ -22,7 +22,7 @@ from pathlib import Path
 import sys
 from typing import Any, NoReturn
 
-from pw_cli import argument_types, plugins
+from pw_cli import argument_types
 from pw_cli.branding import banner
 import pw_cli.env
 
@@ -164,11 +164,6 @@ def print_banner() -> None:
     if parsed_env.PW_ENVSETUP_NO_BANNER or parsed_env.PW_ENVSETUP_QUIET:
         return
     print(banner() + '\n', file=sys.stderr)
-
-
-def format_help(registry: plugins.Registry) -> str:
-    """Returns the pw help information as a string."""
-    return f'{arg_parser().format_help()}\n{registry.short_help()}'
 
 
 class _ArgumentParserWithBanner(argparse.ArgumentParser):
