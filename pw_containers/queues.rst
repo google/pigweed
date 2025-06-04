@@ -52,6 +52,17 @@ API reference
 .. doxygenclass:: pw::containers::internal::BasicInlineDequeImpl
    :members:
 
+--------------------
+pw::InlineAsyncDeque
+--------------------
+.. doxygentypedef:: pw::InlineAsyncDeque
+
+API reference
+=============
+.. doxygenclass:: pw::BasicInlineAsyncDeque
+   :members:
+   :undoc-members:
+
 ----------------
 pw::DynamicQueue
 ----------------

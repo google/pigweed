@@ -86,6 +86,17 @@ pw_add_library(pw_containers._deque_common INTERFACE
     pw_span
 )
 
+pw_add_library(pw_containers.async_count_and_capacity INTERFACE
+  HEADERS
+    public/pw_containers/internal/async_count_and_capacity.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+    pw_async2.poll
+    pw_containers._deque_common
+)
+
 pw_add_library(pw_containers.dynamic_deque INTERFACE
   HEADERS
     public/pw_containers/dynamic_deque.h
@@ -107,6 +118,16 @@ pw_add_library(pw_containers.inline_deque INTERFACE
     pw_containers._deque_common
     pw_containers._raw_storage
     pw_toolchain.constexpr_tag
+)
+
+pw_add_library(pw_containers.inline_async_deque INTERFACE
+  HEADERS
+    public/pw_containers/inline_async_deque.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.async_count_and_capacity
+    pw_containers.inline_deque
 )
 
 pw_add_library(pw_containers.dynamic_queue INTERFACE
@@ -361,6 +382,20 @@ pw_add_test(pw_containers.inline_deque_test
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers.inline_deque
     pw_containers._test_helpers
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.inline_async_deque_test
+  SOURCES
+    inline_async_deque_test.cc
+  PRIVATE_DEPS
+    pw_containers.inline_async_deque
+    pw_async2.dispatcher
+    pw_async2.pend_func_task
+    pw_async2.poll
+    pw_status
   GROUPS
     modules
     pw_containers
