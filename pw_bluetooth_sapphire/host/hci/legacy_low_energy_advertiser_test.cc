@@ -219,6 +219,53 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
       expected_ad));
 }
 
+TEST_F(LegacyLowEnergyAdvertiserTest, AdvertiseWithSameAddressFails) {
+  AdvertisingData ad = GetExampleData();
+  AdvertisingData scan_data = GetExampleData();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/false,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/false);
+  SetRandomAddress(kRandomAddress);
+
+  advertiser()->StartAdvertising(kRandomAddress,
+                                 ad,
+                                 scan_data,
+                                 options,
+                                 nullptr,
+                                 MakeExpectSuccessCallback());
+  RunUntilIdle();
+
+  EXPECT_TRUE(last_status());
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+
+  DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
+  ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
+  EXPECT_TRUE(ContainersEqual(
+      test_device()->legacy_advertising_state().advertised_view(),
+      expected_ad));
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
+            test_device()->legacy_advertising_state().own_address_type);
+
+  uint16_t new_appearance = 0x6789;
+  ad.SetAppearance(new_appearance);
+  advertiser()->StartAdvertising(kRandomAddress,
+                                 ad,
+                                 scan_data,
+                                 options,
+                                 nullptr,
+                                 MakeExpectErrorCallback());
+  RunUntilIdle();
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
+            test_device()->legacy_advertising_state().own_address_type);
+  EXPECT_TRUE(last_status());
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_TRUE(ContainersEqual(
+      test_device()->legacy_advertising_state().advertised_view(),
+      expected_ad));
+}
+
 // Tests starting and stopping an advertisement when the TX power is requested.
 // Validates the advertising and scan response data are correctly populated with
 // the TX power.

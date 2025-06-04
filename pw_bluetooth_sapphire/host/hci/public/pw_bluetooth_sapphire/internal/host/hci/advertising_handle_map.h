@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "pw_bluetooth_sapphire/internal/host/common/bidirectional_map.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 
 namespace bt::hci {
@@ -23,9 +22,9 @@ namespace bt::hci {
 // an AdvertisingHandle. An AdvertisingHandle is an eight bit unsigned integer
 // that uniquely identifies an advertising set and vice versa. This means that
 // we frequently need to convert between a DeviceAddress and an
-// AdvertisingHandle. AdvertisingHandleMap provides a 1:1 bidirectional mapping
-// between a DeviceAddress and an AdvertisingHandle, allocating the next
-// available AdvertisingHandle to new DeviceAddresses.
+// AdvertisingHandle. AdvertisingHandleMap provides a mapping from an
+// AdvertisingHandle to a DeviceAddress, allocating the next available
+// AdvertisingHandle.
 //
 // When using extended advertising, there are two types of advertising PDU
 // formats available: legacy PDUs and extended PDUs. Legacy advertising PDUs are
@@ -119,19 +118,8 @@ class AdvertisingHandleMap {
   // handle.
   hci_spec::AdvertisingHandle last_handle_ = kStartHandle;
 
-  struct TupleKeyHasher {
-    size_t operator()(const std::tuple<DeviceAddress, bool>& t) const {
-      std::hash<DeviceAddress> device_address_hasher;
-      std::hash<bool> bool_hasher;
-      const auto& [address, extended_pdu] = t;
-      return device_address_hasher(address) ^ bool_hasher(extended_pdu);
-    }
-  };
-
-  BidirectionalMap<hci_spec::AdvertisingHandle,
-                   std::tuple<DeviceAddress, bool>,
-                   std::hash<hci_spec::AdvertisingHandle>,
-                   TupleKeyHasher>
+  std::unordered_map<hci_spec::AdvertisingHandle,
+                     std::tuple<DeviceAddress, bool>>
       map_;
 };
 

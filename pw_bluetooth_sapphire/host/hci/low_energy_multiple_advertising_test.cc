@@ -109,6 +109,22 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
     return result;
   }
 
+  void SendMultipleAdvertisingPostConnectionEvents(
+      hci_spec::ConnectionHandle conn_handle,
+      hci_spec::AdvertisingHandle adv_handle) {
+    if (std::is_same_v<T, AndroidExtendedLowEnergyAdvertiser>) {
+      test_device()->SendAndroidLEMultipleAdvertisingStateChangeSubevent(
+          conn_handle, adv_handle);
+      return;
+    }
+
+    if (std::is_same_v<T, ExtendedLowEnergyAdvertiser>) {
+      test_device()->SendLEAdvertisingSetTerminatedEvent(conn_handle,
+                                                         adv_handle);
+      return;
+    }
+  }
+
   std::optional<Result<hci_spec::AdvertisingHandle>> last_status() const {
     return last_status_;
   }
@@ -677,6 +693,107 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopWhileStarting) {
 
   EXPECT_FALSE(
       this->test_device()->extended_advertising_state(handle.value()).enabled);
+}
+
+TYPED_TEST(LowEnergyMultipleAdvertisingTest,
+           MultipleAdvertisementsWithSameAddressWithConnections) {
+  this->test_device()->set_num_supported_advertising_sets(2);
+
+  AdvertisingData ad = this->GetExampleData();
+  AdvertisingData scan_data = this->GetExampleData();
+
+  AdvertisingOptions options_0(kTestInterval,
+                               kDefaultNoAdvFlags,
+                               /*init_extended_pdu=*/false,
+                               /*init_anonymous=*/false,
+                               /*init_include_tx_power_level=*/false);
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_0;
+  std::unique_ptr<LowEnergyConnection> link_0;
+  auto conn_cb_0 = [&link_0](auto cb_link) { link_0 = std::move(cb_link); };
+  this->advertiser()->StartAdvertising(
+      kPublicAddress,
+      ad,
+      scan_data,
+      options_0,
+      std::move(conn_cb_0),
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_0 = result; });
+  this->RunUntilIdle();
+  ASSERT_TRUE(result_0);
+  ASSERT_TRUE(result_0->is_ok());
+  hci_spec::AdvertisingHandle handle_0 = result_0->value();
+
+  constexpr AdvertisingIntervalRange interval_1(
+      hci_spec::kLEAdvertisingIntervalMin + 1u,
+      hci_spec::kLEAdvertisingIntervalMax - 1u);
+  AdvertisingOptions options_1(interval_1,
+                               kDefaultNoAdvFlags,
+                               /*init_extended_pdu=*/false,
+                               /*init_anonymous=*/false,
+                               /*init_include_tx_power_level=*/false);
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_1;
+  std::unique_ptr<LowEnergyConnection> link_1;
+  auto conn_cb_1 = [&link_1](auto cb_link) { link_1 = std::move(cb_link); };
+  this->advertiser()->StartAdvertising(
+      kPublicAddress,
+      ad,
+      scan_data,
+      options_1,
+      std::move(conn_cb_1),
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_1 = result; });
+  this->RunUntilIdle();
+  ASSERT_TRUE(result_1);
+  ASSERT_TRUE(result_1->is_ok());
+  hci_spec::AdvertisingHandle handle_1 = result_1->value();
+
+  EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_0));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_1));
+
+  const LEAdvertisingState& adv_state_0 =
+      this->test_device()->extended_advertising_state(handle_0);
+  EXPECT_TRUE(adv_state_0.enabled);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
+            adv_state_0.own_address_type);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin, adv_state_0.interval_min);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax, adv_state_0.interval_max);
+
+  const LEAdvertisingState& adv_state_1 =
+      this->test_device()->extended_advertising_state(handle_1);
+  EXPECT_TRUE(adv_state_1.enabled);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
+            adv_state_1.own_address_type);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin + 1u, adv_state_1.interval_min);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax - 1u, adv_state_1.interval_max);
+
+  const hci_spec::ConnectionHandle conn_handle_0 = 0x0001;
+  const hci_spec::ConnectionHandle conn_handle_1 = 0x0002;
+
+  this->advertiser()->OnIncomingConnection(
+      conn_handle_0,
+      pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
+      kPublicAddress,
+      hci_spec::LEConnectionParameters());
+  this->SendMultipleAdvertisingPostConnectionEvents(conn_handle_0, handle_0);
+  this->RunUntilIdle();
+  ASSERT_TRUE(link_0);
+  EXPECT_EQ(conn_handle_0, link_0->handle());
+  EXPECT_EQ(kPublicAddress, link_0->local_address());
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_0));
+  ASSERT_FALSE(link_1);
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_1));
+
+  this->advertiser()->OnIncomingConnection(
+      conn_handle_1,
+      pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
+      kPublicAddress,
+      hci_spec::LEConnectionParameters());
+  this->SendMultipleAdvertisingPostConnectionEvents(conn_handle_1, handle_1);
+  this->RunUntilIdle();
+  ASSERT_TRUE(link_1);
+  EXPECT_EQ(conn_handle_1, link_1->handle());
+  EXPECT_EQ(kPublicAddress, link_1->local_address());
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_1));
 }
 
 }  // namespace

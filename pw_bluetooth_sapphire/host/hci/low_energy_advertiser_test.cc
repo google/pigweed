@@ -984,54 +984,6 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
   EXPECT_EQ(new_interval.max(), state->interval_max);
 }
 
-TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStartingWithSameAddressFails) {
-  AdvertisingData ad = this->GetExampleData();
-  AdvertisingData scan_data = this->GetExampleData();
-  DeviceAddress addr = kRandomAddress;
-
-  const AdvertisingIntervalRange old_interval = kTestInterval;
-  AdvertisingOptions old_options(old_interval,
-                                 kDefaultNoAdvFlags,
-                                 /*extended_pdu=*/false,
-                                 /*anonymous=*/false,
-                                 /*include_tx_power_level=*/false);
-  const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1,
-                                              kTestInterval.max() - 1);
-  AdvertisingOptions new_options(new_interval,
-                                 kDefaultNoAdvFlags,
-                                 /*extended_pdu=*/false,
-                                 /*anonymous=*/false,
-                                 /*include_tx_power_level=*/false);
-  this->SetRandomAddress(addr);
-
-  std::optional<Result<hci_spec::AdvertisingHandle>> result_0;
-  this->advertiser()->StartAdvertising(
-      addr,
-      ad,
-      scan_data,
-      old_options,
-      nullptr,
-      [&](Result<hci_spec::AdvertisingHandle> result) { result_0 = result; });
-  EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
-
-  std::optional<Result<hci_spec::AdvertisingHandle>> result_1;
-  this->advertiser()->StartAdvertising(
-      addr,
-      ad,
-      scan_data,
-      new_options,
-      nullptr,
-      [&](Result<hci_spec::AdvertisingHandle> result) { result_1 = result; });
-  this->RunUntilIdle();
-  ASSERT_TRUE(result_0.has_value());
-  EXPECT_TRUE(result_0->is_ok());
-  ASSERT_TRUE(result_1.has_value());
-  EXPECT_TRUE(result_1->is_error());
-  EXPECT_TRUE(this->GetControllerAdvertisingState().enabled);
-  EXPECT_EQ(old_interval.max(),
-            this->GetControllerAdvertisingState().interval_max);
-}
-
 TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStopping) {
   AdvertisingData ad = this->GetExampleData();
   AdvertisingData scan_data = this->GetExampleData();
@@ -1152,60 +1104,6 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingConditions) {
   EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
   EXPECT_EQ(0u, this->GetControllerAdvertisingState().advertised_view().size());
   EXPECT_EQ(0u, this->GetControllerAdvertisingState().scan_rsp_view().size());
-}
-
-// - Updates data and params for the same address when advertising already
-TYPED_TEST(LowEnergyAdvertiserTest, AdvertiseUpdateFails) {
-  AdvertisingData ad = this->GetExampleData();
-  AdvertisingData scan_data = this->GetExampleData();
-  AdvertisingOptions options(kTestInterval,
-                             kDefaultNoAdvFlags,
-                             /*extended_pdu=*/false,
-                             /*anonymous=*/false,
-                             /*include_tx_power_level=*/false);
-  this->SetRandomAddress(kRandomAddress);
-
-  this->advertiser()->StartAdvertising(kRandomAddress,
-                                       ad,
-                                       scan_data,
-                                       options,
-                                       nullptr,
-                                       this->MakeExpectSuccessCallback());
-  this->RunUntilIdle();
-
-  EXPECT_TRUE(this->TakeLastStatus());
-  EXPECT_TRUE(this->GetControllerAdvertisingState().enabled);
-
-  // The expected advertising data payload, with the flags.
-  DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
-  ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
-  EXPECT_TRUE(ContainersEqual(
-      this->GetControllerAdvertisingState().advertised_view(), expected_ad));
-
-  EXPECT_EQ(kTestInterval.min(),
-            this->GetControllerAdvertisingState().interval_min);
-  EXPECT_EQ(kTestInterval.max(),
-            this->GetControllerAdvertisingState().interval_max);
-
-  uint16_t new_appearance = 0x6789;
-  ad.SetAppearance(new_appearance);
-
-  const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1,
-                                              kTestInterval.max() - 1);
-  AdvertisingOptions new_options(new_interval,
-                                 kDefaultNoAdvFlags,
-                                 /*extended_pdu=*/false,
-                                 /*anonymous=*/false,
-                                 /*include_tx_power_level=*/false);
-  this->advertiser()->StartAdvertising(kRandomAddress,
-                                       ad,
-                                       scan_data,
-                                       new_options,
-                                       nullptr,
-                                       this->MakeExpectErrorCallback());
-  this->RunUntilIdle();
-  EXPECT_TRUE(this->TakeLastStatus());
-  EXPECT_TRUE(this->GetControllerAdvertisingState().enabled);
 }
 
 // Ensures advertising set data is removed from controller memory after

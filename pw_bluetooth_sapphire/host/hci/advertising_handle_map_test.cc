@@ -74,7 +74,9 @@ TEST_P(AdvertisingHandleMapTest, MapHandleAlreadyExists) {
 
   std::optional<hci_spec::AdvertisingHandle> handle_1 =
       handle_map.MapHandle(address, GetParam());
-  EXPECT_FALSE(handle_1);
+  ASSERT_TRUE(handle_1);
+  EXPECT_LE(handle_1.value(), hci_spec::kMaxAdvertisingHandle);
+  EXPECT_NE(handle_0.value(), handle_1.value());
 }
 
 TEST_P(AdvertisingHandleMapTest, MapHandleMoreThanSupported) {
