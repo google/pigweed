@@ -380,6 +380,18 @@ def init(
     try:
         selfupdate(client)
     except subprocess.CalledProcessError:
+        if platform_normalized() == 'mac':
+            print('rosetta', rosetta, file=sys.stderr)
+            print(
+                'w/ rosetta',
+                platform_arch_normalized(rosetta=True),
+                file=sys.stderr,
+            )
+            print(
+                'w/o rosetta',
+                platform_arch_normalized(rosetta=False),
+                file=sys.stderr,
+            )
         print(
             'CIPD selfupdate failed. Bootstrapping then retrying...',
             file=sys.stderr,
