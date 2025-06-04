@@ -74,19 +74,21 @@ pw::DynamicQueue
 pw::InlineQueue
 ---------------
 .. doxygentypedef:: pw::InlineQueue
+.. doxygenclass:: pw::BasicInlineQueue
+   :members:
 
 .. TODO: b/394341806 - Add missing examples
 .. Example
 .. =======
-.. .. literalinclude:: examples/inline_deque.cc
+.. .. literalinclude:: examples/inline_queue.cc
 ..    :language: cpp
 ..    :linenos:
-..    :start-after: [pw_containers-inline_deque]
-..    :end-before: [pw_containers-inline_deque]
+..    :start-after: [pw_containers-inline_queue]
+..    :end-before: [pw_containers-inline_queue]
 
 API reference
 =============
-.. doxygenclass:: pw::BasicInlineQueue
+.. doxygenclass:: pw::containers::internal::BasicInlineQueueImpl
    :members:
 
 .. _module-pw_containers-queues-inline_var_len_entry_queue:

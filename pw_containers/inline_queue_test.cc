@@ -478,7 +478,7 @@ TEST(InlineQueue, ConstexprMaxSize) {
 #if PW_NC_TEST(InlineQueue_GenericMaxSize_NotConstexpr)
   PW_NC_EXPECT_CLANG(
       "kGenericMaxSize.* must be initialized by a constant expression");
-  PW_NC_EXPECT_GCC("call to non-'constexpr' function .*InlineQueue.*max_size");
+  PW_NC_EXPECT_GCC("call to non-'constexpr' function .*Queue.*max_size");
   [[maybe_unused]] constexpr size_t kGenericMaxSize = generic_queue.max_size();
 #endif  // PW_NC_TEST
 }

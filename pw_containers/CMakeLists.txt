@@ -130,6 +130,15 @@ pw_add_library(pw_containers.inline_async_deque INTERFACE
     pw_containers.inline_deque
 )
 
+pw_add_library(pw_containers._queue_common INTERFACE
+  HEADERS
+    public/pw_containers/internal/generic_queue.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers._deque_common
+)
+
 pw_add_library(pw_containers.dynamic_queue INTERFACE
   HEADERS
     public/pw_containers/dynamic_queue.h
@@ -137,6 +146,7 @@ pw_add_library(pw_containers.dynamic_queue INTERFACE
     public
   PUBLIC_DEPS
     pw_containers.dynamic_queue
+    pw_containers._queue_common
 )
 
 pw_add_library(pw_containers.inline_queue INTERFACE
@@ -146,6 +156,7 @@ pw_add_library(pw_containers.inline_queue INTERFACE
     public
   PUBLIC_DEPS
     pw_containers.inline_deque
+    pw_containers._queue_common
 )
 
 pw_add_library(pw_containers.iterator INTERFACE

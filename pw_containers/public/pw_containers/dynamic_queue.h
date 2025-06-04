@@ -17,6 +17,7 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_containers/dynamic_deque.h"
+#include "pw_containers/internal/generic_queue.h"
 
 namespace pw {
 
@@ -28,13 +29,22 @@ namespace pw {
 ///
 /// @tparam T The type of elements stored in the queue.
 template <typename T, typename SizeType = uint16_t>
-class DynamicQueue {
+class DynamicQueue
+    : public containers::internal::GenericQueue<DynamicQueue<T, SizeType>,
+                                                DynamicDeque<T, SizeType>> {
+ private:
+  using Deque = DynamicDeque<T, SizeType>;
+
  public:
-  using container_type = DynamicDeque<T, SizeType>;
-  using value_type = T;
-  using size_type = typename container_type::size_type;
-  using reference = value_type&;
-  using const_reference = const value_type&;
+  using const_iterator = typename Deque::const_iterator;
+  using const_pointer = typename Deque::const_pointer;
+  using const_reference = typename Deque::const_reference;
+  using difference_type = typename Deque::difference_type;
+  using iterator = typename Deque::iterator;
+  using pointer = typename Deque::pointer;
+  using reference = typename Deque::reference;
+  using size_type = typename Deque::size_type;
+  using value_type = typename Deque::value_type;
 
   /// Constructs a `DynamicQueue` using the provided allocator.
   explicit constexpr DynamicQueue(pw::Allocator& allocator)
@@ -48,49 +58,8 @@ class DynamicQueue {
   constexpr DynamicQueue(DynamicQueue&&) = default;
   DynamicQueue& operator=(DynamicQueue&&) = default;
 
-  /// Checks if the queue is empty.
-  [[nodiscard]] bool empty() const { return deque_.empty(); }
-
-  /// Returns the number of elements in the queue.
-  size_type size() const { return deque_.size(); }
-
-  /// Maximum possible queue `size()`, ignoring limitations of the allocator.
-  size_type max_size() const { return deque_.max_size(); }
-
-  /// Returns the number of elements the queue can hold without attempting to
-  /// allocate.
-  size_type capacity() const { return deque_.capacity(); }
-
-  /// Returns a reference to the first element in the queue.
-  reference front() { return deque_.front(); }
-
-  /// Returns a const reference to the first element in the queue.
-  const_reference front() const { return deque_.front(); }
-
-  /// Returns a reference to the last element in the queue.
-  reference back() { return deque_.back(); }
-
-  /// Returns a const reference to the last element in the queue.
-  const_reference back() const { return deque_.back(); }
-
   /// Removes all elements from the queue.
   void clear() { deque_.clear(); }
-
-  /// Copies an element to the back of the queue. Crashes on allocation failure.
-  void push(const value_type& value) { deque_.push_back(value); }
-
-  /// Moves an element to the back of the queue. Crashes on allocation failure.
-  void push(value_type&& value) { deque_.push_back(std::move(value)); }
-
-  /// Constructs an element in place at the back of the queue. Crashes on
-  /// allocation failure.
-  template <typename... Args>
-  void emplace(Args&&... args) {
-    deque_.emplace_back(std::forward<Args>(args)...);
-  }
-
-  /// Removes the first element from the queue. The queue must not be empty.
-  void pop() { deque_.pop_front(); }
 
   /// Attempts to add an element to the back of the queue.
   [[nodiscard]] bool try_push(const value_type& value) {
@@ -123,7 +92,13 @@ class DynamicQueue {
   void swap(DynamicQueue& other) { deque_.swap(other.deque_); }
 
  private:
-  container_type deque_;
+  template <typename, typename>
+  friend class containers::internal::GenericQueue;
+
+  Deque& deque() { return deque_; }
+  const Deque& deque() const { return deque_; }
+
+  Deque deque_;
 };
 
 }  // namespace pw

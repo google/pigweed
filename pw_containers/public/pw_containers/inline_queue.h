@@ -17,8 +17,15 @@
 #include <utility>
 
 #include "pw_containers/inline_deque.h"
+#include "pw_containers/internal/generic_queue.h"
 
 namespace pw {
+namespace containers::internal {
+
+template <typename Derived, typename Deque>
+class BasicInlineQueueImpl;
+
+}  // namespace containers::internal
 
 template <typename T, typename SizeType, size_t kCapacity>
 class BasicInlineQueue;
@@ -42,24 +49,24 @@ class BasicInlineQueue
                               SizeType,
                               containers::internal::kGenericSized> {
  private:
-  using QueueBase = BasicInlineQueue<ValueType,
-                                     SizeType,
-                                     containers::internal::kGenericSized>;
+  using Base = BasicInlineQueue<ValueType,
+                                SizeType,
+                                containers::internal::kGenericSized>;
 
  public:
-  using typename QueueBase::const_iterator;
-  using typename QueueBase::const_pointer;
-  using typename QueueBase::const_reference;
-  using typename QueueBase::difference_type;
-  using typename QueueBase::iterator;
-  using typename QueueBase::pointer;
-  using typename QueueBase::reference;
-  using typename QueueBase::size_type;
-  using typename QueueBase::value_type;
+  using typename Base::const_iterator;
+  using typename Base::const_pointer;
+  using typename Base::const_reference;
+  using typename Base::difference_type;
+  using typename Base::iterator;
+  using typename Base::pointer;
+  using typename Base::reference;
+  using typename Base::size_type;
+  using typename Base::value_type;
 
   // Constructors
 
-  BasicInlineQueue() noexcept : deque_() {}
+  BasicInlineQueue() noexcept {}
 
   // Explicit zero element constexpr constructor. Using this constructor will
   // place the entire object in .data, which will increase ROM size. Use with
@@ -78,12 +85,11 @@ class BasicInlineQueue
   BasicInlineQueue(InputIterator start, InputIterator finish)
       : deque_(start, finish) {}
 
-  BasicInlineQueue(const std::initializer_list<value_type>& list) {
-    *this = list;
-  }
+  BasicInlineQueue(const std::initializer_list<value_type>& list)
+      : deque_(list) {}
 
   /// Copy constructs for matching capacity.
-  BasicInlineQueue(const BasicInlineQueue& other) { *this = other; }
+  BasicInlineQueue(const BasicInlineQueue& other) : deque_(other) {}
 
   /// Copy constructs for mismatched capacity.
   ///
@@ -95,7 +101,8 @@ class BasicInlineQueue
   }
 
   /// Move constructs for matching capacity.
-  BasicInlineQueue(BasicInlineQueue&& other) { *this = std::move(other); }
+  BasicInlineQueue(BasicInlineQueue&& other)
+      : deque_(std::move(other.deque_)) {}
 
   /// Move constructs for mismatched capacity.
   ///
@@ -107,11 +114,8 @@ class BasicInlineQueue
   }
 
   template <typename T, typename = containers::internal::EnableIfIterable<T>>
-  BasicInlineQueue(const T& other) {
-    *this = other;
-  }
+  BasicInlineQueue(const T& other) : deque_(other.begin(), other.end()) {}
 
-  //
   BasicInlineQueue& operator=(const std::initializer_list<value_type>& list) {
     deque_ = std::move(list);
     return *this;
@@ -165,8 +169,11 @@ class BasicInlineQueue
   template <typename OtherValueType, typename OtherSizeType, size_t kOtherSized>
   friend class BasicInlineQueue;
 
+  template <typename, typename>
+  friend class containers::internal::BasicInlineQueueImpl;
+
   // The deque() function is defined differently for the generic-sized and
-  // known-sized specializations. This data() implementation simply returns the
+  // known-sized specializations. This deque() implementation simply returns the
   // generic-sized deque_. The generic-sized deque() function casts *this to a
   // known zero-sized specialzation to access this exact function.
   BasicInlineDeque<ValueType, SizeType>& deque() { return deque_; }
@@ -181,22 +188,74 @@ class BasicInlineQueue
 // Except for constructors, all other methods should be implemented on this
 // generic-sized specialization.
 template <typename ValueType, typename SizeType>
-class BasicInlineQueue<ValueType,
-                       SizeType,
-                       containers::internal::kGenericSized> {
+class BasicInlineQueue<ValueType, SizeType, containers::internal::kGenericSized>
+    : public containers::internal::BasicInlineQueueImpl<
+          BasicInlineQueue<ValueType,
+                           SizeType,
+                           containers::internal::kGenericSized>,
+          BasicInlineDeque<ValueType, SizeType>> {
  private:
   using Deque = BasicInlineDeque<ValueType, SizeType>;
+  using Base = containers::internal::BasicInlineQueueImpl<
+      BasicInlineQueue<ValueType,
+                       SizeType,
+                       containers::internal::kGenericSized>,
+      Deque>;
 
  public:
-  using const_iterator = typename Deque::const_iterator;
-  using const_pointer = typename Deque::const_pointer;
-  using const_reference = typename Deque::const_reference;
-  using difference_type = typename Deque::difference_type;
-  using iterator = typename Deque::iterator;
-  using pointer = typename Deque::pointer;
-  using reference = typename Deque::reference;
-  using size_type = typename Deque::size_type;
-  using value_type = typename Deque::value_type;
+  using typename Base::const_iterator;
+  using typename Base::const_pointer;
+  using typename Base::const_reference;
+  using typename Base::difference_type;
+  using typename Base::iterator;
+  using typename Base::pointer;
+  using typename Base::reference;
+  using typename Base::size_type;
+  using typename Base::value_type;
+
+ protected:
+  constexpr BasicInlineQueue() noexcept = default;
+
+  // Polymorphic-sized `pw::InlineQueue<T>` may not be used with `unique_ptr`
+  // or `delete`. `delete` could be supported using C++20's destroying delete.
+  ~BasicInlineQueue() = default;
+
+ private:
+  template <typename, typename>
+  friend class containers::internal::GenericQueue;
+
+  // The underlying BasicInlineDeque is not part of the generic-sized class. It
+  // is provided in the derived class from which this instance was constructed.
+  // To access the data, down-cast this to a known max size specialization, and
+  // return a reference to a generic-sized BasicInlineDeque, which is the same
+  // reference for all sizes.
+  Deque& deque() {
+    return static_cast<BasicInlineQueue<value_type, size_type, 0>*>(this)
+        ->deque();
+  }
+  const Deque& deque() const {
+    return static_cast<const BasicInlineQueue<value_type, size_type, 0>*>(this)
+        ->deque();
+  }
+};
+
+namespace containers::internal {
+
+template <typename Derived, typename Deque>
+class BasicInlineQueueImpl : public GenericQueue<Derived, Deque> {
+ private:
+  using Base = GenericQueue<Derived, Deque>;
+
+ public:
+  using typename Base::const_iterator;
+  using typename Base::const_pointer;
+  using typename Base::const_reference;
+  using typename Base::difference_type;
+  using typename Base::iterator;
+  using typename Base::pointer;
+  using typename Base::reference;
+  using typename Base::size_type;
+  using typename Base::value_type;
 
   // Access
 
@@ -205,12 +264,6 @@ class BasicInlineQueue<ValueType,
 
   reference operator[](size_type index) { return deque()[index]; }
   const_reference operator[](size_type index) const { return deque()[index]; }
-
-  reference front() { return deque().front(); }
-  const_reference front() const { return deque().front(); }
-
-  reference back() { return deque().back(); }
-  const_reference back() const { return deque().back(); }
 
   std::pair<span<const value_type>, span<const value_type>> contiguous_data()
       const {
@@ -232,28 +285,11 @@ class BasicInlineQueue<ValueType,
 
   // Size
 
-  [[nodiscard]] bool empty() const noexcept { return deque().empty(); }
-
   [[nodiscard]] bool full() const noexcept { return deque().full(); }
-
-  size_type size() const noexcept { return deque().size(); }
-
-  size_type max_size() const noexcept { return capacity(); }
-
-  size_type capacity() const noexcept { return deque().capacity(); }
 
   // Modify
 
   void clear() noexcept { deque().clear(); }
-
-  void push(const value_type& value) { emplace(value); }
-
-  void push(value_type&& value) { emplace(std::move(value)); }
-
-  template <typename... Args>
-  void emplace(Args&&... args) {
-    deque().emplace_back(std::forward<Args>(args)...);
-  }
 
   void push_overwrite(const value_type& value) { emplace_overwrite(value); }
 
@@ -264,34 +300,14 @@ class BasicInlineQueue<ValueType,
   template <typename... Args>
   void emplace_overwrite(Args&&... args) {
     if (full()) {
-      pop();
+      Base::pop();
     }
-    emplace(std::forward<Args>(args)...);
+    Base::emplace(std::forward<Args>(args)...);
   }
-
-  void pop() { deque().pop_front(); }
-
- protected:
-  constexpr BasicInlineQueue() noexcept = default;
-
-  // Polymorphic-sized `pw::InlineQueue<T>` may not be used with `unique_ptr`
-  // or `delete`. `delete` could be supported using C++20's destroying delete.
-  ~BasicInlineQueue() = default;
 
  private:
-  // The underlying BasicInlineDeque is not part of the generic-sized class. It
-  // is provided in the derived class from which this instance was constructed.
-  // To access the data, down-cast this to a known max size specialization, and
-  // return a reference to a generic-sized BasicInlineDeque, which is the same
-  // reference for all sizes.
-  BasicInlineDeque<ValueType, SizeType>& deque() {
-    return static_cast<BasicInlineQueue<value_type, size_type, 0>*>(this)
-        ->deque();
-  }
-  const BasicInlineDeque<ValueType, SizeType>& deque() const {
-    return static_cast<const BasicInlineQueue<value_type, size_type, 0>*>(this)
-        ->deque();
-  }
+  using Base::deque;
 };
 
+}  // namespace containers::internal
 }  // namespace pw

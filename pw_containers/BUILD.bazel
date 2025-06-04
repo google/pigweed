@@ -243,10 +243,23 @@ cc_library(
 )
 
 cc_library(
+    name = "queue_common",
+    hdrs = ["public/pw_containers/internal/generic_queue.h"],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":deque_common",
+    ],
+)
+
+cc_library(
     name = "dynamic_queue",
     hdrs = ["public/pw_containers/dynamic_queue.h"],
     strip_include_prefix = "public",
-    deps = [":dynamic_deque"],
+    deps = [
+        ":dynamic_deque",
+        ":queue_common",
+    ],
 )
 
 cc_library(
@@ -255,7 +268,10 @@ cc_library(
         "public/pw_containers/inline_queue.h",
     ],
     strip_include_prefix = "public",
-    deps = [":inline_deque"],
+    deps = [
+        ":inline_deque",
+        ":queue_common",
+    ],
 )
 
 cc_library(

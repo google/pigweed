@@ -141,16 +141,29 @@ pw_source_set("inline_async_deque") {
   ]
 }
 
+pw_source_set("queue_common") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/internal/generic_queue.h" ]
+  visibility = [ ":*" ]
+  public_deps = [ ":deque_common" ]
+}
+
 pw_source_set("dynamic_queue") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/dynamic_queue.h" ]
-  deps = [ ":dynamic_deque" ]
+  public_deps = [
+    ":dynamic_deque",
+    ":queue_common",
+  ]
 }
 
 pw_source_set("inline_queue") {
   public_configs = [ ":public_include_path" ]
-  public_deps = [ ":inline_deque" ]
   public = [ "public/pw_containers/inline_queue.h" ]
+  public_deps = [
+    ":inline_deque",
+    ":queue_common",
+  ]
 }
 
 pw_source_set("iterator") {
