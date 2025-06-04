@@ -79,7 +79,7 @@ class UartStreamMcuxpresso : public NonSeekableReaderWriter {
   }
 #endif
 
-  ~UartStreamMcuxpresso();
+  ~UartStreamMcuxpresso() override;
 
   pw::Status Init(uint32_t srcclk);
 
