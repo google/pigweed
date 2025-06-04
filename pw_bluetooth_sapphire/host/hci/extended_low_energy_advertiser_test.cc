@@ -168,14 +168,14 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
                                        conn_cb,
                                        this->MakeExpectSuccessCallback());
   RunUntilIdle();
-  ASSERT_TRUE(this->GetLastStatus());
-  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress, kExtendedPdu));
-
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle);
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(*handle));
+
   const LEAdvertisingState& st =
       this->test_device()->extended_advertising_state(handle.value());
 
@@ -205,17 +205,13 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, ExtendedPDUsConnectable) {
       this->MakeExpectSuccessCallback());
   RunUntilIdle();
 
-  ASSERT_TRUE(this->GetLastStatus());
-  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/true));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                 /*extended_pdu=*/false));
-
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle);
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(*handle));
 
   const LEAdvertisingState& st =
       this->test_device()->extended_advertising_state(handle.value());
@@ -251,17 +247,13 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, ExtendedPDUsScannable) {
                                        this->MakeExpectSuccessCallback());
   RunUntilIdle();
 
-  ASSERT_TRUE(this->GetLastStatus());
-  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/true));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                 /*extended_pdu=*/false));
-
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle);
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(*handle));
 
   const LEAdvertisingState& st =
       this->test_device()->extended_advertising_state(handle.value());
@@ -322,15 +314,13 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingDataFragmented) {
       this->MakeExpectSuccessCallback());
   RunUntilIdle();
 
-  ASSERT_TRUE(this->GetLastStatus());
-  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress, kExtendedPdu));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                 /*extended_pdu=*/false));
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle);
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(*handle));
 
   const LEAdvertisingState& st =
       this->test_device()->extended_advertising_state(handle.value());
@@ -365,15 +355,13 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, ScanResponseDataFragmented) {
                                        this->MakeExpectSuccessCallback());
   RunUntilIdle();
 
-  ASSERT_TRUE(this->GetLastStatus());
-  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress, kExtendedPdu));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                 /*extended_pdu=*/false));
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle);
+  ASSERT_TRUE(this->GetLastStatus());
+  EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(*handle));
 
   const LEAdvertisingState& st =
       this->test_device()->extended_advertising_state(handle.value());

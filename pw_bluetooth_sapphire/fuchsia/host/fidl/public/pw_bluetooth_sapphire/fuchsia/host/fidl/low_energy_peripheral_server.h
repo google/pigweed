@@ -192,9 +192,16 @@ class LowEnergyPeripheralServer
   // - Contains a value while advertising is being (re)enabled and during
   // advertising.
   // - May correspond to an invalidated advertising instance if advertising is
-  // stopped by closing
-  //   the AdvertisingHandle.
+  // stopped by closing the AdvertisingHandle.
   std::optional<AdvertisementInstanceDeprecated> advertisement_deprecated_;
+
+  // Stores a queued StartAdvertising() request while waiting for the current
+  // advertising request to complete.
+  std::optional<std::tuple<
+      fuchsia::bluetooth::le::AdvertisingParameters,
+      ::fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle>,
+      StartAdvertisingCallback>>
+      queued_start_advertising_;
 
   // Map of all active advertisement instances associated with a call to
   // `Advertise`. bt::gap::AdvertisementId cannot be used as a map key because

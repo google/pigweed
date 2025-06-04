@@ -63,14 +63,6 @@ class AdvertisingHandleMap {
   std::optional<hci_spec::AdvertisingHandle> MapHandle(
       const DeviceAddress& address, bool extended_pdu);
 
-  // Convert a DeviceAddress to an AdvertisingHandle. The conversion may fail if
-  // there is no AdvertisingHandle currently mapping to the provided device
-  // address.
-  std::optional<hci_spec::AdvertisingHandle> GetHandle(
-      const DeviceAddress& address, bool extended_pdu) const {
-    return map_.get({address, extended_pdu});
-  }
-
   // Convert an AdvertisingHandle to a DeviceAddress. The conversion may fail if
   // there is no DeviceAddress currently mapping to the provided handle.
   std::optional<std::tuple<DeviceAddress, bool /*extended_pdu*/>> GetAddress(
@@ -80,25 +72,11 @@ class AdvertisingHandleMap {
   // maps to. The container may reuse the AdvertisingHandle for other
   // DeviceAddresses in the future. Immediate future calls to GetAddress(...)
   // with the same AdvertisingHandle will fail because the mapping no longer
-  // exists. Immediate future calls to GetHandle(...) will result in a new
-  // mapping with a new AdvertisingHandle.
+  // exists.
   //
   // If the given handle doesn't map to any (DeviceAddress, bool) tuple, this
   // function does nothing.
   void RemoveHandle(hci_spec::AdvertisingHandle handle) { map_.erase(handle); }
-
-  // Remove the mapping between a DeviceAddress and the AdvertisingHandle it
-  // maps to. The container may reuse the AdvertisingHandle for other
-  // DeviceAddresses in the future. Immediate future calls to GetAddress(...)
-  // with the preivously mapped AdvertisingHandle will fail because the mapping
-  // no longer exists. Immediate future calls to GetHandle(...) will result in a
-  // new mapping with a new AdvertisingHandle.
-  //
-  // If the given (DeviceAddress, bool) tuple doesn't map to any
-  // AdvertisingHandle, this function does nothing.
-  void RemoveAddress(const DeviceAddress& address, bool extended_pdu) {
-    map_.erase({address, extended_pdu});
-  }
 
   // Get the maximum number of mappings the AdvertisingHandleMap will support.
   uint8_t capacity() const { return capacity_; }

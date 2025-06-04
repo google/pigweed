@@ -140,9 +140,8 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
  private:
   hci::CommandPacket BuildEnablePacket(
-      const DeviceAddress&,
-      pw::bluetooth::emboss::GenericEnableParam,
-      bool) const override {
+      hci_spec::AdvertisingHandle,
+      pw::bluetooth::emboss::GenericEnableParam) const override {
     return hci::CommandPacket::New<
         pwemb::LESetExtendedAdvertisingEnableDataWriter>(
         hci_spec::kLESetExtendedAdvertisingEnable);
@@ -158,15 +157,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   }
 
   std::optional<hci::CommandPacket> BuildSetAdvertisingRandomAddr(
-      const DeviceAddress& /*address*/, bool /*extended_pdu*/) const override {
+      hci_spec::AdvertisingHandle) const override {
     return std::nullopt;
   }
 
   std::vector<hci::CommandPacket> BuildSetAdvertisingData(
-      const DeviceAddress&,
+      hci_spec::AdvertisingHandle,
       const AdvertisingData&,
-      AdvFlags,
-      bool) const override {
+      AdvFlags) const override {
     hci::CommandPacket packet =
         hci::CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
             hci_spec::kLESetAdvertisingData);
@@ -176,15 +174,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return packets;
   }
 
-  hci::CommandPacket BuildUnsetAdvertisingData(const DeviceAddress&,
-                                               bool) const override {
+  hci::CommandPacket BuildUnsetAdvertisingData(
+      hci_spec::AdvertisingHandle) const override {
     return hci::CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
         hci_spec::kLESetAdvertisingData);
   }
 
-  std::vector<hci::CommandPacket> BuildSetScanResponse(const DeviceAddress&,
-                                                       const AdvertisingData&,
-                                                       bool) const override {
+  std::vector<hci::CommandPacket> BuildSetScanResponse(
+      hci_spec::AdvertisingHandle, const AdvertisingData&) const override {
     hci::CommandPacket packet =
         hci::CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
             hci_spec::kLESetScanResponseData);
@@ -194,14 +191,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return packets;
   }
 
-  hci::CommandPacket BuildUnsetScanResponse(const DeviceAddress&,
-                                            bool) const override {
+  hci::CommandPacket BuildUnsetScanResponse(
+      hci_spec::AdvertisingHandle) const override {
     return hci::CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
         hci_spec::kLESetScanResponseData);
   }
 
-  hci::CommandPacket BuildRemoveAdvertisingSet(const DeviceAddress&,
-                                               bool) const override {
+  hci::CommandPacket BuildRemoveAdvertisingSet(
+      hci_spec::AdvertisingHandle) const override {
     return hci::CommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
         hci_spec::kLERemoveAdvertisingSet);
   }

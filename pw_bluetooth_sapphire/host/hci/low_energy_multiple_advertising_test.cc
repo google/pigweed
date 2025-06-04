@@ -225,10 +225,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousAdvertisements) {
   // check everything is correct
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/false));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                /*extended_pdu=*/false));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_public_addr.value()));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_random_addr.value()));
 
   const LEAdvertisingState& public_addr_state =
       this->test_device()->extended_advertising_state(
@@ -305,10 +303,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousRandomAdvertisements) {
   // check everything is correct
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kRandomAddress1,
-                                                /*extended_pdu=*/false));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kRandomAddress2,
-                                                /*extended_pdu=*/false));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle1.value()));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle2.value()));
 
   const LEAdvertisingState& addr_state1 =
       this->test_device()->extended_advertising_state(handle1.value());
@@ -378,10 +374,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   // check everything is correct
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/false));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                /*extended_pdu=*/false));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_public_addr.value()));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_random_addr.value()));
 
   // Stop advertising
   this->advertiser()->StopAdvertising();
@@ -390,10 +384,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   // Check that advertiser and controller both report not advertising
   EXPECT_EQ(0u, this->advertiser()->NumAdvertisements());
   EXPECT_FALSE(this->advertiser()->IsAdvertising());
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                 /*extended_pdu=*/false));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                 /*extended_pdu=*/false));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_public_addr.value()));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_random_addr.value()));
 
   const LEAdvertisingState& public_addr_state =
       this->test_device()->extended_advertising_state(
@@ -476,10 +468,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   // check everything is correct
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/false));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                /*extended_pdu=*/false));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_public_addr));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_random_addr));
 
   // Stop advertising the random address
   this->advertiser()->StopAdvertising(handle_random_addr);
@@ -488,10 +478,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   // Check that advertiser and controller both report the same advertising state
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/false));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                 /*extended_pdu=*/false));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_public_addr));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_random_addr));
 
   constexpr uint8_t blank[hci_spec::kMaxLEAdvertisingDataLength] = {0};
 
@@ -540,10 +528,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
     // state
     EXPECT_FALSE(this->advertiser()->IsAdvertising());
     EXPECT_EQ(0u, this->advertiser()->NumAdvertisements());
-    EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                   /*extended_pdu=*/false));
-    EXPECT_FALSE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                   /*extended_pdu=*/false));
+    EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_public_addr));
+    EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_random_addr));
 
     EXPECT_FALSE(public_addr_state.enabled);
     EXPECT_EQ(0,
@@ -610,10 +596,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SuccessiveAdvertisingCalls) {
   ASSERT_TRUE(start_result_1.value().is_ok());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/false));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                /*extended_pdu=*/false));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(start_result_0->value()));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(start_result_1->value()));
 
   this->advertiser()->StopAdvertising(start_result_0->value());
   this->advertiser()->StopAdvertising(start_result_1->value());
@@ -621,10 +605,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SuccessiveAdvertisingCalls) {
   this->RunUntilIdle();
   EXPECT_FALSE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(0u, this->advertiser()->NumAdvertisements());
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                 /*extended_pdu=*/false));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                 /*extended_pdu=*/false));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(start_result_0->value()));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(start_result_1->value()));
 }
 
 TYPED_TEST(LowEnergyMultipleAdvertisingTest, InterleavedAdvertisingCalls) {
@@ -657,12 +639,13 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, InterleavedAdvertisingCalls) {
                                        this->MakeExpectSuccessCallback());
 
   this->RunUntilIdle();
+  std::optional<hci_spec::AdvertisingHandle> handle_1 =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle_1);
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress,
-                                                /*extended_pdu=*/false));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(kRandomAddress,
-                                                 /*extended_pdu=*/false));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_0.value()));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_1.value()));
 }
 
 TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopWhileStarting) {

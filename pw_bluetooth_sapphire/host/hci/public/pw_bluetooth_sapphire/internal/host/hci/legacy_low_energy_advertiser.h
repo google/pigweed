@@ -63,9 +63,8 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
  private:
   CommandPacket BuildEnablePacket(
-      const DeviceAddress& address,
-      pw::bluetooth::emboss::GenericEnableParam enable,
-      bool extended_pdu) const override;
+      hci_spec::AdvertisingHandle advertising_handle,
+      pw::bluetooth::emboss::GenericEnableParam enable) const override;
 
   std::optional<SetAdvertisingParams> BuildSetAdvertisingParams(
       const DeviceAddress& address,
@@ -75,27 +74,25 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       bool extended_pdu) override;
 
   std::optional<CommandPacket> BuildSetAdvertisingRandomAddr(
-      const DeviceAddress& address, bool extended_pdu) const override;
+      hci_spec::AdvertisingHandle advertising_handle) const override;
 
   std::vector<CommandPacket> BuildSetAdvertisingData(
-      const DeviceAddress& address,
+      hci_spec::AdvertisingHandle advertising_handle,
       const AdvertisingData& data,
-      AdvFlags flags,
-      bool extended_pdu) const override;
+      AdvFlags flags) const override;
 
-  CommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
-                                          bool extended_pdu) const override;
+  CommandPacket BuildUnsetAdvertisingData(
+      hci_spec::AdvertisingHandle advertising_handle) const override;
 
   std::vector<CommandPacket> BuildSetScanResponse(
-      const DeviceAddress& address,
-      const AdvertisingData& scan_rsp,
-      bool extended_pdu) const override;
+      hci_spec::AdvertisingHandle advertising_handle,
+      const AdvertisingData& scan_rsp) const override;
 
-  CommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
-                                       bool extended_pdu) const override;
+  CommandPacket BuildUnsetScanResponse(
+      hci_spec::AdvertisingHandle advertising_handle) const override;
 
-  CommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
-                                          bool extended_pdu) const override;
+  CommandPacket BuildRemoveAdvertisingSet(
+      hci_spec::AdvertisingHandle advertising_handle) const override;
 
   // |starting_| is set to true if a start is pending.
   // |staged_params_| are the parameters that will be advertised.

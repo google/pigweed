@@ -222,13 +222,6 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     hci::ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
-  if (IsAdvertising(address, options.extended_pdu)) {
-    // Temporarily disable advertising so we can tweak the parameters
-    CommandPacket packet = BuildEnablePacket(
-        address, pwemb::GenericEnableParam::DISABLE, options.extended_pdu);
-    hci_cmd_runner_->QueueCommand(packet);
-  }
-
   data.Copy(&staged_parameters_.data);
   scan_rsp.Copy(&staged_parameters_.scan_rsp);
 
@@ -269,8 +262,10 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     if (bt_is_error(result,
                     WARN,
                     "hci-le",
-                    "failed to start advertising for %s",
-                    bt_str(address))) {
+                    "failed to start advertising (addr: %s, handle: %d)",
+                    bt_str(address),
+                    handle)) {
+      // TODO: b/421238103 - Erase advertising handle from map.
       result_cb(result.take_error());
       return;
     }
@@ -291,49 +286,48 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
     hci::ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
   if (address.type() == DeviceAddress::Type::kLERandom) {
     std::optional<CommandPacket> set_random_addr_packet =
-        BuildSetAdvertisingRandomAddr(address, options.extended_pdu);
+        BuildSetAdvertisingRandomAddr(handle);
     if (set_random_addr_packet.has_value()) {
       hci_cmd_runner_->QueueCommand(*set_random_addr_packet);
     }
   }
 
-  std::vector<CommandPacket> set_adv_data_packets = BuildSetAdvertisingData(
-      address, staged_parameters_.data, options.flags, options.extended_pdu);
+  std::vector<CommandPacket> set_adv_data_packets =
+      BuildSetAdvertisingData(handle, staged_parameters_.data, options.flags);
   for (auto& packet : set_adv_data_packets) {
     hci_cmd_runner_->QueueCommand(std::move(packet));
   }
 
-  std::vector<CommandPacket> set_scan_rsp_packets = BuildSetScanResponse(
-      address, staged_parameters_.scan_rsp, options.extended_pdu);
+  std::vector<CommandPacket> set_scan_rsp_packets =
+      BuildSetScanResponse(handle, staged_parameters_.scan_rsp);
   for (auto& packet : set_scan_rsp_packets) {
     hci_cmd_runner_->QueueCommand(std::move(packet));
   }
 
-  CommandPacket enable_packet = BuildEnablePacket(
-      address, pwemb::GenericEnableParam::ENABLE, options.extended_pdu);
+  CommandPacket enable_packet =
+      BuildEnablePacket(handle, pwemb::GenericEnableParam::ENABLE);
   hci_cmd_runner_->QueueCommand(enable_packet);
 
   staged_parameters_.reset();
-  hci_cmd_runner_->RunCommands([this,
-                                handle,
-                                address,
-                                extended_pdu = options.extended_pdu,
-                                result_cb = std::move(result_callback),
-                                connect_cb = std::move(connect_callback)](
-                                   Result<> result) mutable {
-    if (!bt_is_error(result,
-                     WARN,
-                     "hci-le",
-                     "failed to start advertising for %s",
-                     bt_str(address))) {
-      bt_log(INFO, "hci-le", "advertising enabled for %s", bt_str(address));
-      connection_callbacks_[{address, extended_pdu}] = std::move(connect_cb);
-      result_cb(fit::ok(handle));
-    } else {
-      result_cb(result.take_error());
-    }
-    OnCurrentOperationComplete();
-  });
+  hci_cmd_runner_->RunCommands(
+      [this,
+       handle,
+       result_cb = std::move(result_callback),
+       connect_cb = std::move(connect_callback)](Result<> result) mutable {
+        if (!bt_is_error(result,
+                         WARN,
+                         "hci-le",
+                         "failed to start advertising for %d",
+                         handle)) {
+          bt_log(INFO, "hci-le", "advertising enabled for %d", handle);
+          connection_callbacks_[handle] = std::move(connect_cb);
+          result_cb(fit::ok(handle));
+        } else {
+          // TODO: b/421238103 - Erase advertising handle from map.
+          result_cb(result.take_error());
+        }
+        OnCurrentOperationComplete();
+      });
 
   return true;
 }
@@ -353,13 +347,14 @@ void LowEnergyAdvertiser::StopAdvertising() {
 
   for (auto itr = connection_callbacks_.begin();
        itr != connection_callbacks_.end();) {
-    const auto& [address, extended_pdu] = itr->first;
+    const hci_spec::AdvertisingHandle advertising_handle = itr->first;
 
-    bool success = EnqueueStopAdvertisingCommands(address, extended_pdu);
+    bool success = EnqueueStopAdvertisingCommands(advertising_handle);
     if (success) {
       itr = connection_callbacks_.erase(itr);
     } else {
-      bt_log(WARN, "hci-le", "cannot stop advertising for %s", bt_str(address));
+      bt_log(
+          WARN, "hci-le", "cannot stop advertising for %d", advertising_handle);
       itr++;
     }
   }
@@ -372,40 +367,40 @@ void LowEnergyAdvertiser::StopAdvertising() {
   }
 }
 
-void LowEnergyAdvertiser::StopAdvertisingInternal(const DeviceAddress& address,
-                                                  bool extended_pdu) {
-  if (!IsAdvertising(address, extended_pdu)) {
+void LowEnergyAdvertiser::StopAdvertisingInternal(
+    hci_spec::AdvertisingHandle advertising_handle) {
+  if (!IsAdvertising(advertising_handle)) {
     return;
   }
 
-  bool success = EnqueueStopAdvertisingCommands(address, extended_pdu);
+  bool success = EnqueueStopAdvertisingCommands(advertising_handle);
   if (!success) {
-    bt_log(WARN, "hci-le", "cannot stop advertising for %s", bt_str(address));
+    bt_log(
+        WARN, "hci-le", "cannot stop advertising for %d", advertising_handle);
     return;
   }
 
-  hci_cmd_runner_->RunCommands([this, address](Result<> result) {
+  hci_cmd_runner_->RunCommands([this, advertising_handle](Result<> result) {
     bt_log(INFO,
            "hci-le",
-           "advertising stopped for %s: %s",
-           bt_str(address),
+           "advertising stopped for %d: %s",
+           advertising_handle,
            bt_str(result));
     OnCurrentOperationComplete();
   });
 
-  connection_callbacks_.erase({address, extended_pdu});
+  connection_callbacks_.erase(advertising_handle);
 }
 
 bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(
-    const DeviceAddress& address, bool extended_pdu) {
-  CommandPacket disable_packet = BuildEnablePacket(
-      address, pwemb::GenericEnableParam::DISABLE, extended_pdu);
+    hci_spec::AdvertisingHandle advertising_handle) {
+  CommandPacket disable_packet =
+      BuildEnablePacket(advertising_handle, pwemb::GenericEnableParam::DISABLE);
   CommandPacket unset_scan_rsp_packet =
-      BuildUnsetScanResponse(address, extended_pdu);
+      BuildUnsetScanResponse(advertising_handle);
   CommandPacket unset_adv_data_packet =
-      BuildUnsetAdvertisingData(address, extended_pdu);
-  CommandPacket remove_packet =
-      BuildRemoveAdvertisingSet(address, extended_pdu);
+      BuildUnsetAdvertisingData(advertising_handle);
+  CommandPacket remove_packet = BuildRemoveAdvertisingSet(advertising_handle);
 
   hci_cmd_runner_->QueueCommand(disable_packet);
   hci_cmd_runner_->QueueCommand(unset_scan_rsp_packet);
@@ -421,7 +416,6 @@ void LowEnergyAdvertiser::CompleteIncomingConnection(
     const DeviceAddress& local_address,
     const DeviceAddress& peer_address,
     const hci_spec::LEConnectionParameters& conn_params,
-    bool extended_pdu,
     hci_spec::AdvertisingHandle advertising_handle) {
   // Immediately construct a Connection object. If this object goes out of
   // scope following the error checks below, it will send the a command to
@@ -434,21 +428,22 @@ void LowEnergyAdvertiser::CompleteIncomingConnection(
                                             role,
                                             hci());
 
-  if (!IsAdvertising(local_address, extended_pdu)) {
+  if (!IsAdvertising(advertising_handle)) {
     bt_log(DEBUG,
            "hci-le",
            "connection received without advertising address (role: %d, local "
            "address: %s, peer "
-           "address: %s, connection parameters: %s)",
+           "address: %s, connection parameters: %s, adv handle: %d)",
            static_cast<uint8_t>(role),
            bt_str(local_address),
            bt_str(peer_address),
-           bt_str(conn_params));
+           bt_str(conn_params),
+           advertising_handle);
     return;
   }
 
   ConnectionCallback connect_callback =
-      std::move(connection_callbacks_[{local_address, extended_pdu}]);
+      std::move(connection_callbacks_[advertising_handle]);
   if (!connect_callback) {
     bt_log(DEBUG,
            "hci-le",
@@ -465,7 +460,7 @@ void LowEnergyAdvertiser::CompleteIncomingConnection(
 
   StopAdvertising(advertising_handle);
   connect_callback(std::move(link));
-  connection_callbacks_.erase({local_address, extended_pdu});
+  connection_callbacks_.erase(advertising_handle);
 }
 
 }  // namespace bt::hci

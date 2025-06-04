@@ -63,44 +63,18 @@ TEST_P(AdvertisingHandleMapTest, Bidirectional) {
   EXPECT_EQ(tuple_b, handle_map.GetAddress(handle_b.value()));
 }
 
-TEST_P(AdvertisingHandleMapTest, GetHandleDoesntCreateMapping) {
-  AdvertisingHandleMap handle_map;
-  EXPECT_EQ(0u, handle_map.Size());
-  EXPECT_TRUE(handle_map.Empty());
-
-  DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
-  std::optional<hci_spec::AdvertisingHandle> handle =
-      handle_map.GetHandle(address, GetParam());
-  EXPECT_EQ(0u, handle_map.Size());
-  EXPECT_TRUE(handle_map.Empty());
-  EXPECT_FALSE(handle);
-
-  handle = handle_map.MapHandle(address, GetParam());
-  EXPECT_EQ(1u, handle_map.Size());
-  EXPECT_FALSE(handle_map.Empty());
-  EXPECT_TRUE(handle);
-  EXPECT_EQ(0u, handle.value());
-
-  handle = handle_map.GetHandle(address, GetParam());
-  EXPECT_EQ(1u, handle_map.Size());
-  EXPECT_FALSE(handle_map.Empty());
-  EXPECT_TRUE(handle);
-}
-
 TEST_P(AdvertisingHandleMapTest, MapHandleAlreadyExists) {
   AdvertisingHandleMap handle_map;
 
   DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
-  std::optional<hci_spec::AdvertisingHandle> expected =
+  std::optional<hci_spec::AdvertisingHandle> handle_0 =
       handle_map.MapHandle(address, GetParam());
-  EXPECT_LE(expected.value(), hci_spec::kMaxAdvertisingHandle);
-  ASSERT_TRUE(expected);
+  EXPECT_LE(handle_0.value(), hci_spec::kMaxAdvertisingHandle);
+  ASSERT_TRUE(handle_0);
 
-  std::optional<hci_spec::AdvertisingHandle> actual =
+  std::optional<hci_spec::AdvertisingHandle> handle_1 =
       handle_map.MapHandle(address, GetParam());
-  EXPECT_LE(actual.value(), hci_spec::kMaxAdvertisingHandle);
-  ASSERT_TRUE(actual);
-  EXPECT_EQ(expected, actual);
+  EXPECT_FALSE(handle_1);
 }
 
 TEST_P(AdvertisingHandleMapTest, MapHandleMoreThanSupported) {
@@ -180,20 +154,6 @@ TEST_P(AdvertisingHandleMapTest, RemoveHandle) {
   EXPECT_TRUE(handle_map.Empty());
 }
 
-TEST_P(AdvertisingHandleMapTest, RemoveAddress) {
-  AdvertisingHandleMap handle_map;
-  EXPECT_TRUE(handle_map.Empty());
-
-  DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
-  handle_map.MapHandle(address, GetParam());
-  EXPECT_EQ(1u, handle_map.Size());
-  EXPECT_FALSE(handle_map.Empty());
-
-  handle_map.RemoveAddress(address, GetParam());
-  EXPECT_EQ(0u, handle_map.Size());
-  EXPECT_TRUE(handle_map.Empty());
-}
-
 TEST_P(AdvertisingHandleMapTest, RemoveHandleNonExistent) {
   AdvertisingHandleMap handle_map;
   DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
@@ -202,30 +162,8 @@ TEST_P(AdvertisingHandleMapTest, RemoveHandleNonExistent) {
   ASSERT_TRUE(handle);
 
   size_t size = handle_map.Size();
-
   handle_map.RemoveHandle(handle.value() + 1);
-
   EXPECT_EQ(size, handle_map.Size());
-  handle = handle_map.MapHandle(address, GetParam());
-  EXPECT_TRUE(handle);
-}
-
-TEST_P(AdvertisingHandleMapTest, RemoveAddressNonExistent) {
-  AdvertisingHandleMap handle_map;
-  DeviceAddress address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
-  std::optional<hci_spec::AdvertisingHandle> handle =
-      handle_map.MapHandle(address, GetParam());
-  ASSERT_TRUE(handle);
-
-  size_t size = handle_map.Size();
-
-  DeviceAddress nonexistent_address =
-      DeviceAddress(DeviceAddress::Type::kLEPublic, {1});
-  handle_map.RemoveAddress(nonexistent_address, GetParam());
-
-  EXPECT_EQ(size, handle_map.Size());
-  handle = handle_map.MapHandle(address, GetParam());
-  EXPECT_TRUE(handle);
 }
 
 TEST_P(AdvertisingHandleMapTest, Clear) {

@@ -419,9 +419,9 @@ TEST_F(LowEnergyPeripheralServerTest,
   EXPECT_TRUE(result1->is_error());
   EXPECT_EQ(fble::PeripheralError::FAILED, result1->error());
   EXPECT_TRUE(result2->is_error());
-  EXPECT_EQ(fble::PeripheralError::FAILED, result2->error());
+  EXPECT_EQ(fble::PeripheralError::NOT_SUPPORTED, result2->error());
   EXPECT_TRUE(result3->is_error());
-  EXPECT_EQ(fble::PeripheralError::FAILED, result3->error());
+  EXPECT_EQ(fble::PeripheralError::NOT_SUPPORTED, result3->error());
 
   // The next request should succeed as normal.
   test_device()->ClearDefaultResponseStatus(
@@ -1324,7 +1324,7 @@ TEST_P(BoolParam, AdvertiseTwiceCausesSecondToFail) {
   EXPECT_FALSE(adv_peripheral_server_0_closed);
   ASSERT_TRUE(adv_result_1.has_value());
   ASSERT_TRUE(adv_result_1->is_error());
-  EXPECT_EQ(adv_result_1->error(), fble::PeripheralError::FAILED);
+  EXPECT_EQ(adv_result_1->error(), fble::PeripheralError::NOT_SUPPORTED);
   EXPECT_TRUE(adv_peripheral_server_1_closed);
 
   // Server 0 should still receive connections.

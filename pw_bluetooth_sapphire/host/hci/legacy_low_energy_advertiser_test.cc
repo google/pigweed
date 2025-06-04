@@ -288,18 +288,31 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
                                  /*include_tx_power_level=*/true);
   SetRandomAddress(addr);
 
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_0;
   advertiser()->StartAdvertising(
-      addr, ad, scan_data, options, nullptr, [](auto) {});
+      addr,
+      ad,
+      scan_data,
+      options,
+      nullptr,
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_0 = result; });
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
-  // This call should override the previous call and succeed with the new
-  // parameters.
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_1;
   advertiser()->StartAdvertising(
-      addr, ad, scan_data, new_options, nullptr, MakeExpectSuccessCallback());
+      addr,
+      ad,
+      scan_data,
+      new_options,
+      nullptr,
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_1 = result; });
   RunUntilIdle();
-  EXPECT_TRUE(last_status());
+  ASSERT_TRUE(result_0.has_value());
+  EXPECT_TRUE(result_0->is_ok());
+  ASSERT_TRUE(result_1.has_value());
+  EXPECT_TRUE(result_1->is_error());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(),
+  EXPECT_EQ(old_interval.max(),
             test_device()->legacy_advertising_state().interval_max);
 
   // Verify the advertising data contains the newly populated TX Power Level.
@@ -316,10 +329,6 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
                       DynamicByteBuffer()));
 }
 
-// Test that the second StartAdvertising call (with no TX Power requested)
-// successfully supersedes the first ongoing StartAdvertising call (with TX
-// Power requested). Validates the advertised data does not include the TX
-// power.
 TEST_F(LegacyLowEnergyAdvertiserTest,
        StartWhileStartingTxPowerRequestedThenNotRequested) {
   AdvertisingData ad = GetExampleData();
@@ -341,21 +350,35 @@ TEST_F(LegacyLowEnergyAdvertiserTest,
                                  /*include_tx_power_level=*/false);
   SetRandomAddress(addr);
 
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_0;
   advertiser()->StartAdvertising(
-      addr, ad, scan_data, options, nullptr, [](auto) {});
+      addr,
+      ad,
+      scan_data,
+      options,
+      nullptr,
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_0 = result; });
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
-  // This call should override the previous call and succeed with the new
-  // parameters.
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_1;
   advertiser()->StartAdvertising(
-      addr, ad, scan_data, new_options, nullptr, MakeExpectSuccessCallback());
+      addr,
+      ad,
+      scan_data,
+      new_options,
+      nullptr,
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_1 = result; });
   RunUntilIdle();
-  EXPECT_TRUE(last_status());
+  ASSERT_TRUE(result_0.has_value());
+  EXPECT_TRUE(result_0->is_ok());
+  ASSERT_TRUE(result_1.has_value());
+  EXPECT_TRUE(result_1->is_error());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(),
+  EXPECT_EQ(old_interval.max(),
             test_device()->legacy_advertising_state().interval_max);
 
-  // Verify the advertising data doesn't contain a new TX Power Level.
+  // Verify the advertising data contains a new TX Power Level.
+  ad.SetTxPower(0x9);
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(ContainersEqual(
@@ -363,9 +386,6 @@ TEST_F(LegacyLowEnergyAdvertiserTest,
       expected_ad));
 }
 
-// Test that the second StartAdvertising call (with TX Power requested)
-// successfully supersedes the first ongoing StartAdvertising call (no TX Power
-// requested). Validates the advertised data includes the TX power.
 TEST_F(LegacyLowEnergyAdvertiserTest,
        StartingWhileStartingTxPowerNotRequestedThenRequested) {
   AdvertisingData ad = GetExampleData();
@@ -387,22 +407,34 @@ TEST_F(LegacyLowEnergyAdvertiserTest,
                                  /*include_tx_power_level=*/true);
   SetRandomAddress(addr);
 
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_0;
   advertiser()->StartAdvertising(
-      addr, ad, scan_data, options, nullptr, [](auto) {});
+      addr,
+      ad,
+      scan_data,
+      options,
+      nullptr,
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_0 = result; });
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
-  // This call should override the previous call and succeed with the new
-  // parameters.
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_1;
   advertiser()->StartAdvertising(
-      addr, ad, scan_data, new_options, nullptr, MakeExpectSuccessCallback());
+      addr,
+      ad,
+      scan_data,
+      new_options,
+      nullptr,
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_1 = result; });
   RunUntilIdle();
-  EXPECT_TRUE(last_status());
+  ASSERT_TRUE(result_0.has_value());
+  EXPECT_TRUE(result_0->is_ok());
+  ASSERT_TRUE(result_1.has_value());
+  EXPECT_TRUE(result_1->is_error());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(),
+  EXPECT_EQ(old_interval.max(),
             test_device()->legacy_advertising_state().interval_max);
 
   // Verify the advertising data doesn't contain a new TX Power Level.
-  ad.SetTxPower(0x9);
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(ContainersEqual(
@@ -413,7 +445,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest,
                       DynamicByteBuffer()));
 }
 
-// Tests that advertising gets enabled successfully with the updated parameters
+// Tests that advertising gets enabled successfully
 // if StartAdvertising is called during a TX Power Level read.
 TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   AdvertisingData ad = GetExampleData();
@@ -438,8 +470,14 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   test_device()->set_tx_power_level_read_response_flag(/*respond=*/false);
   SetRandomAddress(addr);
 
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_0;
   advertiser()->StartAdvertising(
-      addr, ad, scan_data, options, nullptr, MakeExpectErrorCallback());
+      addr,
+      ad,
+      scan_data,
+      options,
+      nullptr,
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_0 = result; });
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   RunUntilIdle();
@@ -447,17 +485,26 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   // the TX Power Level Read response.
 
   // Queue up the next StartAdvertising call.
-  // This call should override the previous call's advertising parameters.
   test_device()->set_tx_power_level_read_response_flag(/*respond=*/true);
+  std::optional<Result<hci_spec::AdvertisingHandle>> result_1;
   advertiser()->StartAdvertising(
-      addr, ad, scan_data, new_options, nullptr, MakeExpectSuccessCallback());
+      addr,
+      ad,
+      scan_data,
+      new_options,
+      nullptr,
+      [&](Result<hci_spec::AdvertisingHandle> result) { result_1 = result; });
 
   // Explicitly respond to the first TX Power Level read command.
   test_device()->OnLEReadAdvertisingChannelTxPower();
 
   RunUntilIdle();
+  ASSERT_TRUE(result_0);
+  EXPECT_TRUE(result_0->is_ok());
+  ASSERT_TRUE(result_1);
+  EXPECT_TRUE(result_1->is_error());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(),
+  EXPECT_EQ(old_interval.max(),
             test_device()->legacy_advertising_state().interval_max);
 }
 

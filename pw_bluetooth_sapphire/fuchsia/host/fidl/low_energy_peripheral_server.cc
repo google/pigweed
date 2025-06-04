@@ -258,18 +258,6 @@ void LowEnergyPeripheralServer::Advertise(
     return;
   }
 
-  // TODO: https://fxbug.dev/42156474 - As a temporary hack until multiple
-  // advertisements is supported, don't allow more than one advertisement. The
-  // current behavior of hci::LegacyLowEnergyAdvertiser is to replace the
-  // current advertisement, which is not the intended behavior of `Advertise`.
-  // NOTE: This is insufficient  when there are multiple Peripheral clients
-  // advertising, but that is the status quo with `StartAdvertising` anyway (the
-  // last advertiser wins).
-  if (!advertisements_.empty()) {
-    callback(fpromise::error(fble::PeripheralError::FAILED));
-    return;
-  }
-
   AdvertisementInstanceId instance_id = next_advertisement_instance_id_++;
 
   // Non-privileged clients should not be able to advertise with a public
@@ -314,8 +302,24 @@ void LowEnergyPeripheralServer::StartAdvertising(
     return;
   }
 
+  if (queued_start_advertising_) {
+    result.set_err(fble::PeripheralError::ABORTED);
+    std::get<StartAdvertisingCallback> (*queued_start_advertising_)(
+        std::move(result));
+    queued_start_advertising_.emplace(
+        std::move(parameters), std::move(token), std::move(callback));
+    return;
+  }
+
   if (advertisement_deprecated_) {
     bt_log(DEBUG, LOG_TAG, "reconfigure existing advertising instance");
+    // If the old advertisement is still pending, queue the new advertisement.
+    if (advertisement_deprecated_->id() == bt::gap::kInvalidAdvertisementId) {
+      queued_start_advertising_.emplace(
+          std::move(parameters), std::move(token), std::move(callback));
+      return;
+    }
+    // Otherwise, immediately replace the old advertisement.
     advertisement_deprecated_.reset();
   }
 
@@ -335,6 +339,26 @@ void LowEnergyPeripheralServer::StartAdvertising(
              bt::gap::kInvalidAdvertisementId);
 
     fble::Peripheral_StartAdvertising_Result result;
+
+    // If an advertisement was queued, cancel this advertisement and start a new
+    // advertisement.
+    if (self->queued_start_advertising_) {
+      {
+        // Stop the advertisement.
+        auto _ = std::move(instance);
+      }
+      self->advertisement_deprecated_.reset();
+      result.set_err(fble::PeripheralError::ABORTED);
+      callback(std::move(result));
+      auto start_advertising =
+          std::move(self->queued_start_advertising_.value());
+      self->queued_start_advertising_.reset();
+      self->StartAdvertising(std::move(std::get<0>(start_advertising)),
+                             std::move(std::get<1>(start_advertising)),
+                             std::move(std::get<2>(start_advertising)));
+      return;
+    }
+
     if (status.is_error()) {
       bt_log(WARN,
              LOG_TAG,
