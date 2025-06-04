@@ -32,7 +32,7 @@ cc_library_static {
     srcs: [
         "chunk.cc",
         "from_span.cc",
-        "multibuf.cc",
+        "multibuf_v1.cc",
     ],
     header_libs: [
         "pw_assert",
