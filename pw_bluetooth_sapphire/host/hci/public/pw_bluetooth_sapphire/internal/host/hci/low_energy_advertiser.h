@@ -336,7 +336,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Continuation function for starting advertising, called automatically via
   // callbacks in StartAdvertisingInternal. Developers should not call this
   // function directly.
-  bool StartAdvertisingInternalStep2(
+  void StartAdvertisingInternalStep2(
       hci_spec::AdvertisingHandle handle,
       const DeviceAddress& address,
       const AdvertisingOptions& options,

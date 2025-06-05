@@ -267,15 +267,12 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
       return;
     }
 
-    bool success = StartAdvertisingInternalStep2(
+    StartAdvertisingInternalStep2(
         handle, address, options, std::move(connect_cb), std::move(result_cb));
-    if (!success) {
-      result_cb(ToResult(HostError::kCanceled).take_error());
-    }
   });
 }
 
-bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
+void LowEnergyAdvertiser::StartAdvertisingInternalStep2(
     hci_spec::AdvertisingHandle handle,
     const DeviceAddress& address,
     const AdvertisingOptions& options,
@@ -325,8 +322,6 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
         }
         OnCurrentOperationComplete();
       });
-
-  return true;
 }
 
 // We have StopAdvertising(address) so one would naturally think to implement
