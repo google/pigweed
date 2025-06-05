@@ -55,11 +55,6 @@ def _elf_reader(elf) -> elf_reader.Elf:
     return elf if isinstance(elf, elf_reader.Elf) else elf_reader.Elf(elf)
 
 
-# Magic number used to indicate the beginning of a tokenized string entry. This
-# value MUST match the value of _PW_TOKENIZER_ENTRY_MAGIC in
-# pw_tokenizer/public/pw_tokenizer/internal/tokenize_string.h.
-_TOKENIZED_ENTRY_MAGIC = 0xBAA98DEE
-_ENTRY = struct.Struct('<4I')
 _TOKENIZED_ENTRY_SECTIONS = re.compile(
     r'[\w.]*\.pw_tokenizer.entries(?:\.[_\d]+)?$'
 )
@@ -76,16 +71,21 @@ def _read_tokenized_entries(
 ) -> Iterator[tokens.TokenizedStringEntry]:
     index = 0
 
-    while index + _ENTRY.size <= len(data):
-        magic, token, domain_len, string_len = _ENTRY.unpack_from(data, index)
+    while index + tokens.ELF_FORMAT.header.size <= len(data):
+        (
+            magic,
+            token,
+            domain_len,
+            string_len,
+        ) = tokens.ELF_FORMAT.header.unpack_from(data, index)
 
-        if magic != _TOKENIZED_ENTRY_MAGIC:
+        if magic != tokens.ELF_FORMAT.magic:
             raise Error(
-                f'Expected magic number 0x{_TOKENIZED_ENTRY_MAGIC:08x}, '
+                f'Expected magic number 0x{tokens.ELF_FORMAT.magic:08x}, '
                 f'found 0x{magic:08x}'
             )
 
-        start = index + _ENTRY.size
+        start = index + tokens.ELF_FORMAT.header.size
         index = start + domain_len + string_len
 
         # Create the entries, trimming null terminators.
@@ -115,6 +115,15 @@ def _database_from_elf(elf, domain: Pattern[str]) -> tokens.Database:
 
     # Read tokenized string entries.
     section_data = reader.dump_section_contents(_TOKENIZED_ENTRY_SECTIONS)
+    if section_data is not None:
+        return tokens.Database(_read_tokenized_entries(section_data, domain))
+
+    return tokens.Database([])
+
+
+def database_from_elf_section(
+    section_data: bytes, domain: Pattern[str]
+) -> tokens.Database:
     if section_data is not None:
         return tokens.Database(_read_tokenized_entries(section_data, domain))
 

@@ -671,6 +671,42 @@ def write_binary(database: Database, fd: BinaryIO) -> None:
     fd.write(string_table)
 
 
+class _ElfFileFormat(NamedTuple):
+    """Attributes of the elf token database file format."""
+
+    # Magic number used to indicate the beginning of a tokenized string entry.
+    # This value MUST match the value of _PW_TOKENIZER_ENTRY_MAGIC in
+    # pw_tokenizer/public/pw_tokenizer/internal/tokenize_string.h.
+    magic: int = 0xBAA98DEE
+    header: struct.Struct = struct.Struct('<4I')
+
+
+ELF_FORMAT = _ElfFileFormat()
+
+
+def write_elf_db_format(database: Database, fd: BinaryIO) -> None:
+    """Writes the database as elf file format to the provided binary file."""
+
+    for entry in sorted(database.entries()):
+        # The token elf database format requires null-terminated strings.
+        # Add a null terminator to the domain and string data.
+        domain_data = entry.domain.encode() + b"\0"
+
+        string_data = entry.string.encode() + b"\0"
+
+        # Pack the header
+        header_data = ELF_FORMAT.header.pack(
+            ELF_FORMAT.magic,
+            entry.token,
+            len(domain_data),
+            len(string_data),
+        )
+
+        fd.write(header_data)
+        fd.write(domain_data)
+        fd.write(string_data)
+
+
 class DatabaseFile(Database):
     """A token database that is associated with a particular file.
 

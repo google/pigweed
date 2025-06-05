@@ -19,11 +19,12 @@ import io
 import logging
 from pathlib import Path
 import shutil
+import re
 import tempfile
 from typing import Iterator
 import unittest
 
-from pw_tokenizer import tokens
+from pw_tokenizer import tokens, database
 from pw_tokenizer.tokens import c_hash, DIR_DB_SUFFIX, _LOG
 
 CSV_DATABASE = '''\
@@ -750,6 +751,25 @@ class TokenDatabaseTest(unittest.TestCase):
             db = tokens.Database(tokens.parse_binary(binary_db))
 
         self.assertEqual(str(db), CSV_DATABASE)
+
+    def test_elf_database_creation(self) -> None:
+        # Create a token database from a binary database.
+        with io.BytesIO(BINARY_DATABASE) as binary_db:
+            csv_db = tokens.Database(tokens.parse_binary(binary_db))
+
+        self.assertEqual(str(csv_db), CSV_DATABASE)
+
+        # Use a BytesIO object to save the elf database format
+        elf_database_section = io.BytesIO()
+        tokens.write_elf_db_format(csv_db, elf_database_section)
+
+        # Create a token database from the elf database section.
+        elf_database = database.database_from_elf_section(
+            elf_database_section.getvalue(), re.compile(".*")
+        )
+
+        # Make sure we have the same number of entries as the first database
+        self.assertEqual(len(csv_db), len(elf_database))
 
 
 class TestDatabaseFile(unittest.TestCase):
