@@ -57,6 +57,11 @@ AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
   StopAdvertising();
 }
 
+void AndroidExtendedLowEnergyAdvertiser::AttachInspect(inspect::Node& parent) {
+  node_ = parent.CreateChild("low_energy_advertiser");
+  advertising_handle_map_.AttachInspect(node_);
+}
+
 CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
     hci_spec::AdvertisingHandle advertising_handle,
     pwemb::GenericEnableParam enable) const {

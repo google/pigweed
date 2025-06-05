@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_bluetooth_sapphire/internal/host/common/inspect.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 
 namespace bt::hci {
@@ -95,7 +96,16 @@ class AdvertisingHandleMap {
   // Remove all mappings in the container
   void Clear() { return map_.clear(); }
 
+  void AttachInspect(inspect::Node& parent);
+
  private:
+  struct Value {
+    DeviceAddress address;
+    inspect::Node node;
+  };
+
+  inspect::Node node_;
+
   // Although not in the range of valid advertising handles (0x00 to 0xEF),
   // kStartHandle is chosen to be 0xFF because adding one to it will overflow to
   // 0, the first valid advertising handle.
@@ -118,7 +128,7 @@ class AdvertisingHandleMap {
   // handle.
   hci_spec::AdvertisingHandle last_handle_ = kStartHandle;
 
-  std::unordered_map<hci_spec::AdvertisingHandle, DeviceAddress> map_;
+  std::unordered_map<hci_spec::AdvertisingHandle, Value> map_;
 };
 
 }  // namespace bt::hci

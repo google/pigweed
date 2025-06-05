@@ -47,6 +47,11 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
   StopAdvertising();
 }
 
+void ExtendedLowEnergyAdvertiser::AttachInspect(inspect::Node& node) {
+  node_ = node.CreateChild("low_energy_advertiser");
+  advertising_handle_map_.AttachInspect(node_);
+}
+
 CommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
     hci_spec::AdvertisingHandle advertising_handle,
     pwemb::GenericEnableParam enable) const {

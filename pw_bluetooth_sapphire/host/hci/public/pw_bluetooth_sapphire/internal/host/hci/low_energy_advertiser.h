@@ -209,6 +209,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Returns the maximum number of advertisements that can be supported
   virtual size_t MaxAdvertisements() const = 0;
 
+  virtual void AttachInspect(inspect::Node& /*parent*/) {}
+
  protected:
   // Return value of BuildSetAdvertisingParams.
   struct SetAdvertisingParams {

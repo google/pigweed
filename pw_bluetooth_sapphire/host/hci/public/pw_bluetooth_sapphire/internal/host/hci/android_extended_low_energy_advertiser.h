@@ -76,6 +76,8 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     return advertising_handle_map_.LastUsedHandleForTesting();
   }
 
+  void AttachInspect(inspect::Node& parent) override;
+
  private:
   struct StagedConnectionParameters {
     pw::bluetooth::emboss::ConnectionRole role;
@@ -133,6 +135,8 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // we stage these parameters.
   std::unordered_map<hci_spec::ConnectionHandle, StagedConnectionParameters>
       staged_connections_map_;
+
+  inspect::Node node_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AndroidExtendedLowEnergyAdvertiser);
 };

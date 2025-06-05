@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
 #include "pw_unit_test/framework.h"
 
 namespace bt::hci {
@@ -160,6 +161,30 @@ TEST(AdvertisingHandleMapTest, Clear) {
   std::optional<DeviceAddress> address = handle_map.GetAddress(handle.value());
   EXPECT_FALSE(address);
 }
+
+#ifndef NINSPECT
+TEST(AdvertisingHandleMapTest, Inspect) {
+  inspect::Inspector inspector;
+  AdvertisingHandleMap handle_map;
+  handle_map.AttachInspect(inspector.GetRoot());
+
+  std::optional<hci_spec::AdvertisingHandle> handle =
+      handle_map.MapHandle(DeviceAddress(DeviceAddress::Type::kLEPublic, {0}));
+  ASSERT_TRUE(handle);
+
+  std::optional<uint64_t> inspect_handle =
+      bt::testing::GetInspectValue<inspect::UintPropertyValue>(
+          inspector,
+          {"advertising_handle_map", "advertising_set_0x0", "handle"});
+  ASSERT_TRUE(inspect_handle.has_value());
+  EXPECT_EQ(inspect_handle, handle);
+  std::optional<std::string> address =
+      bt::testing::GetInspectValue<inspect::StringPropertyValue>(
+          inspector,
+          {"advertising_handle_map", "advertising_set_0x0", "address"});
+  ASSERT_TRUE(address.has_value());
+}
+#endif  // NINSPECT
 
 }  // namespace
 }  // namespace bt::hci

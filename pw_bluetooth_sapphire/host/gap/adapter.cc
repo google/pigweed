@@ -467,20 +467,21 @@ class AdapterImpl final : public Adapter {
                                                 max_filters);
   }
 
-  std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(
-      bool extended) const {
-    if (extended) {
-      return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(
-          hci_, state_.low_energy_state.max_advertising_data_length_);
-    }
-
+  std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(bool extended) {
     // TODO(b/405398246): When we enabled Android vendor extensions, we found
     // that OOBE on smart displays and some other devices stopped working. As
     // a stop gap measure, we disabled multiple advertising via vendor
     // extensions. Once we work out the issues with multiple advertising via
     // vendor extensions, we should re-enable them.
-
-    return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
+    std::unique_ptr<hci::LowEnergyAdvertiser> advertiser;
+    if (extended) {
+      advertiser = std::make_unique<hci::ExtendedLowEnergyAdvertiser>(
+          hci_, state_.low_energy_state.max_advertising_data_length_);
+    } else {
+      advertiser = std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
+    }
+    advertiser->AttachInspect(adapter_node_);
+    return advertiser;
   }
 
   std::unique_ptr<hci::LowEnergyConnector> CreateConnector(

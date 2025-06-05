@@ -16,6 +16,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
 
 // Multiple advertising is supported by the Bluetooth 5.0+ Core Specification as
 // well as Android vendor extensions. This test file contains shared tests for
@@ -25,6 +26,7 @@ namespace bt::hci {
 namespace {
 
 using bt::testing::FakeController;
+using namespace inspect::testing;
 using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using LEAdvertisingState = FakeController::LEAdvertisingState;
@@ -56,6 +58,7 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
     this->test_device()->set_settings(settings);
 
     advertiser_ = std::unique_ptr<T>(CreateAdvertiserInternal());
+    advertiser_->AttachInspect(inspector_.GetRoot());
   }
 
   void TearDown() override {
@@ -139,10 +142,13 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
 
   uint8_t max_advertisements() const { return max_advertisements_; }
 
+  inspect::Inspector& inspector() { return inspector_; }
+
  private:
   std::unique_ptr<T> advertiser_;
   std::optional<Result<hci_spec::AdvertisingHandle>> last_status_;
   uint8_t max_advertisements_ = hci_spec::kMaxAdvertisingHandle + 1;
+  inspect::Inspector inspector_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyMultipleAdvertisingTest);
 };
@@ -795,6 +801,20 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   EXPECT_EQ(kPublicAddress, link_1->local_address());
   EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_1));
 }
+
+#ifndef NINSPECT
+TYPED_TEST(LowEnergyMultipleAdvertisingTest, Inspect) {
+  auto map_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("advertising_handle_map"))));
+
+  auto advertiser_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("low_energy_advertiser"))),
+            ChildrenMatch(ElementsAre(map_matcher)));
+
+  EXPECT_THAT(inspect::ReadFromVmo(this->inspector().DuplicateVmo()).value(),
+              ChildrenMatch(ElementsAre(advertiser_matcher)));
+}
+#endif  // NINSPECT
 
 }  // namespace
 }  // namespace bt::hci

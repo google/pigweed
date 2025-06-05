@@ -27,7 +27,13 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
   auto next_handle = NextHandle();
   PW_CHECK(next_handle);
 
-  auto [_, success] = map_.try_emplace(next_handle.value(), address);
+  Value value;
+  value.address = address;
+  value.node = node_.CreateChild(node_.UniqueName("advertising_set_"));
+  value.node.RecordString("address", address.ToString());
+  value.node.RecordUint("handle", next_handle.value());
+
+  auto [_, success] = map_.try_emplace(next_handle.value(), std::move(value));
   PW_CHECK(success);
   return next_handle;
 }
@@ -37,7 +43,7 @@ std::optional<DeviceAddress> AdvertisingHandleMap::GetAddress(
   if (iter == map_.end()) {
     return std::nullopt;
   }
-  return iter->second;
+  return iter->second.address;
 }
 
 std::optional<hci_spec::AdvertisingHandle>
@@ -61,6 +67,10 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
 
   last_handle_ = handle;
   return handle;
+}
+
+void AdvertisingHandleMap::AttachInspect(inspect::Node& parent) {
+  node_ = parent.CreateChild("advertising_handle_map");
 }
 
 }  // namespace bt::hci
