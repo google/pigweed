@@ -65,20 +65,12 @@ using InlineDeque = BasicInlineDeque<T, uint16_t, kCapacity>;
 
 namespace containers::internal {
 
-// Storage for a queue's data and that ensures entries are `clear`'d before
-// the storage is removed.
-template <typename ValueType,
-          typename CountAndCapacityType,
-          size_t kCapacity,
-          bool kIsTriviallyDestructible>
-class BasicInlineDequeStorage;
-
 template <typename ValueType, typename CountAndCapacityType, size_t kCapacity>
-class BasicInlineDequeImpl : public BasicInlineDequeStorage<
-                                 ValueType,
-                                 CountAndCapacityType,
-                                 kCapacity,
-                                 std::is_trivially_destructible_v<ValueType>> {
+class BasicInlineDequeImpl
+    : public RawStorage<
+          BasicInlineDequeImpl<ValueType, CountAndCapacityType, kGenericSized>,
+          ValueType,
+          kCapacity> {
  private:
   using Base =
       BasicInlineDequeImpl<ValueType, CountAndCapacityType, kGenericSized>;
@@ -224,71 +216,6 @@ class BasicInlineDequeImpl : public BasicInlineDequeStorage<
   static_assert(kCapacity <= std::numeric_limits<size_type>::max());
 };
 
-// Specialization of ``BasicInlineDequeImpl`` for trivially-destructible
-// ``ValueType``. This specialization ensures that no destructor is generated.
-template <typename ValueType, typename CountAndCapacityType, size_t kCapacity>
-class BasicInlineDequeStorage<ValueType, CountAndCapacityType, kCapacity, true>
-    : public BasicInlineDequeImpl<ValueType,
-                                  CountAndCapacityType,
-                                  kGenericSized> {
-  // NOTE: no destructor is added, as `ValueType` is trivially-destructible.
- private:
-  friend class BasicInlineDequeImpl<ValueType, CountAndCapacityType, kCapacity>;
-  friend class BasicInlineDequeImpl<ValueType,
-                                    CountAndCapacityType,
-                                    kGenericSized>;
-
-  using Base =
-      BasicInlineDequeImpl<ValueType, CountAndCapacityType, kGenericSized>;
-
-  constexpr BasicInlineDequeStorage() : Base(kCapacity) {}
-
-  // The data() function is defined differently for the generic-sized and
-  // known-sized specializations. This data() implementation simply returns the
-  // RawStorage's data(). The generic-sized data() function casts *this to a
-  // known zero-sized specialization to access this exact function.
-  typename Base::pointer data() { return raw_storage_.data(); }
-  typename Base::const_pointer data() const { return raw_storage_.data(); }
-
-  // Note that this is offset and aligned the same for all possible
-  // kCapacity values for the same value_type.
-  RawStorage<ValueType, kCapacity> raw_storage_;
-};
-
-// Specialization of ``BasicInlineDequeImpl`` for non-trivially-destructible
-// ``ValueType``. This specialization ensures that the queue is cleared
-// during destruction prior to the invalidation of the `raw_storage_`.
-template <typename ValueType, typename CountAndCapacityType, size_t kCapacity>
-class BasicInlineDequeStorage<ValueType, CountAndCapacityType, kCapacity, false>
-    : public BasicInlineDequeImpl<ValueType,
-                                  CountAndCapacityType,
-                                  kGenericSized> {
- public:
-  ~BasicInlineDequeStorage() { Base::clear(); }
-
- private:
-  friend class BasicInlineDequeImpl<ValueType, CountAndCapacityType, kCapacity>;
-  friend class BasicInlineDequeImpl<ValueType,
-                                    CountAndCapacityType,
-                                    kGenericSized>;
-
-  using Base =
-      BasicInlineDequeImpl<ValueType, CountAndCapacityType, kGenericSized>;
-
-  constexpr BasicInlineDequeStorage() : Base(kCapacity) {}
-
-  // The data() function is defined differently for the generic-sized and
-  // known-sized specializations. This data() implementation simply returns the
-  // RawStorage's data(). The generic-sized data() function casts *this to a
-  // known zero-sized specialization to access this exact function.
-  typename Base::pointer data() { return raw_storage_.data(); }
-  typename Base::const_pointer data() const { return raw_storage_.data(); }
-
-  // Note that this is offset and aligned the same for all possible
-  // kCapacity values for the same value_type.
-  RawStorage<ValueType, kCapacity> raw_storage_;
-};
-
 // Defines the generic-sized BasicInlineDequeImpl<T> specialization, which
 // serves as the base class for BasicInlineDequeImpl<T> of any capacity.
 //
@@ -355,26 +282,25 @@ class BasicInlineDequeImpl<ValueType, CountAndCapacityType, kGenericSized>
   // or `delete`. `delete` could be supported using C++20's destroying delete.
   ~BasicInlineDequeImpl() = default;
 
- private:
-  friend Base;
-
-  static constexpr bool kFixedCapacity = true;  // uses static allocation
+  template <size_t kCapacity>
+  using Derived = RawStorage<
+      BasicInlineDequeImpl<ValueType, CountAndCapacityType, kGenericSized>,
+      ValueType,
+      kCapacity>;
 
   // The underlying RawStorage is not part of the generic-sized class. It is
   // provided in the derived class from which this instance was constructed. To
   // access the data, down-cast this to a known max size specialization, and
   // return the RawStorage's data, which is the same for all sizes.
-  pointer data() {
-    return static_cast<
-               BasicInlineDequeImpl<ValueType, CountAndCapacityType, 0>*>(this)
-        ->data();
-  }
+  pointer data() { return static_cast<Derived<0>*>(this)->data(); }
   const_pointer data() const {
-    return static_cast<
-               const BasicInlineDequeImpl<ValueType, CountAndCapacityType, 0>*>(
-               this)
-        ->data();
+    return static_cast<const Derived<0>*>(this)->data();
   }
+
+ private:
+  friend Base;
+
+  static constexpr bool kFixedCapacity = true;  // uses static allocation
 };
 
 }  // namespace containers::internal

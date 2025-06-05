@@ -27,47 +27,78 @@ using test::CopyOnly;
 using test::Counter;
 using test::MoveOnly;
 
+class Empty {
+ public:
+  constexpr Empty(size_t) {}
+};
+
+class ClearTracker {
+ public:
+  constexpr ClearTracker(size_t) {}
+  void clear() {
+    if (clear_called_) {
+      *clear_called_ = true;
+    }
+  }
+
+  void set_clear_called(bool* clear_called) { clear_called_ = clear_called; }
+
+ private:
+  bool* clear_called_ = nullptr;
+};
+
 TEST(RawStorage, Construct_ZeroSized) {
-  internal::RawStorage<int, 0> array;
+  internal::RawStorage<Empty, int, 0> array;
   EXPECT_EQ(array.max_size(), 0u);
 }
 
 TEST(RawStorage, Construct_NonZeroSized) {
-  internal::RawStorage<int, 3> array;
+  internal::RawStorage<Empty, int, 3> array;
   EXPECT_EQ(array.max_size(), 3u);
 }
 
 TEST(RawStorage, Construct_Constexpr) {
-  constexpr internal::RawStorage<int, 2> kArray;
+  constexpr internal::RawStorage<Empty, int, 2> kArray;
   EXPECT_EQ(kArray.max_size(), 2u);
 }
 
 TEST(RawStorage, Construct_CopyOnly) {
-  internal::RawStorage<CopyOnly, 2> array;
+  internal::RawStorage<Empty, CopyOnly, 2> array;
   EXPECT_EQ(array.max_size(), 2u);
 }
 
 TEST(RawStorage, Construct_MoveOnly) {
-  internal::RawStorage<MoveOnly, 2> array;
+  internal::RawStorage<Empty, MoveOnly, 2> array;
   EXPECT_EQ(array.max_size(), 2u);
 }
 
-TEST(RawStorage, Destruct) {
-  Counter::Reset();
-
+TEST(RawStorage, DestructTrivial) {
+  bool clear_called = false;
   {
-    [[maybe_unused]] internal::RawStorage<Counter, 128> destroyed;
+    internal::RawStorage<ClearTracker, int, 2> array;
+    array.set_clear_called(&clear_called);
+  }
+  EXPECT_FALSE(clear_called);
+}
+
+TEST(RawStorage, DestructNonTrivial) {
+  Counter::Reset();
+  bool clear_called = false;
+  {
+    internal::RawStorage<ClearTracker, Counter, 128> array;
+    array.set_clear_called(&clear_called);
   }
 
   EXPECT_EQ(Counter::created, 0);
   EXPECT_EQ(Counter::destroyed, 0);
+  EXPECT_TRUE(clear_called);
 }
 
-static_assert(sizeof(internal::RawStorage<uint8_t, 42>) ==
+static_assert(sizeof(internal::RawStorage<Empty, uint8_t, 42>) ==
               42 * sizeof(uint8_t));
-static_assert(sizeof(internal::RawStorage<uint16_t, 42>) ==
+static_assert(sizeof(internal::RawStorage<Empty, uint16_t, 42>) ==
               42 * sizeof(uint16_t));
-static_assert(sizeof(internal::RawStorage<uint32_t, 42>) ==
+static_assert(sizeof(internal::RawStorage<Empty, uint32_t, 42>) ==
               42 * sizeof(uint32_t));
 
 }  // namespace
