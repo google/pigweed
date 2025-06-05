@@ -166,6 +166,17 @@ pw_source_set("inline_queue") {
   ]
 }
 
+pw_source_set("inline_async_queue") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/inline_async_queue.h" ]
+  public_deps = [
+    ":async_count_and_capacity",
+    ":inline_async_deque",
+    ":inline_queue",
+    ":queue_common",
+  ]
+}
+
 pw_source_set("iterator") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_polyfill ]
@@ -323,6 +334,7 @@ pw_test_group("tests") {
     ":dynamic_deque_test",
     ":dynamic_queue_test",
     ":inline_async_deque_test",
+    ":inline_async_queue_test",
     ":inline_deque_test",
     ":inline_queue_test",
     ":intrusive_forward_list_test",
@@ -440,6 +452,21 @@ pw_test("inline_queue_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("inline_async_queue_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != "" &&
+              pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+              pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
+              pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != ""
+  sources = [ "inline_async_queue_test.cc" ]
+  deps = [
+    ":inline_async_queue",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_async2:poll",
+    dir_pw_status,
+  ]
 }
 
 pw_test("raw_storage_test") {

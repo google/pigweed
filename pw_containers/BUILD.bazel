@@ -275,6 +275,17 @@ cc_library(
 )
 
 cc_library(
+    name = "inline_async_queue",
+    hdrs = ["public/pw_containers/inline_async_queue.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":async_count_and_capacity",
+        ":inline_async_deque",
+        ":inline_queue",
+    ],
+)
+
+cc_library(
     name = "inline_var_len_entry_queue",
     srcs = ["inline_var_len_entry_queue.c"],
     hdrs = ["public/pw_containers/inline_var_len_entry_queue.h"],
@@ -485,6 +496,20 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "inline_async_queue_test",
+    srcs = [
+        "inline_async_queue_test.cc",
+    ],
+    deps = [
+        ":inline_async_queue",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pend_func_task",
+        "//pw_async2:poll",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
     name = "raw_storage_test",
     srcs = [
         "raw_storage_test.cc",
@@ -600,6 +625,7 @@ filegroup(
         "public/pw_containers/dynamic_queue.h",
         "public/pw_containers/filtered_view.h",
         "public/pw_containers/inline_async_deque.h",
+        "public/pw_containers/inline_async_queue.h",
         "public/pw_containers/inline_deque.h",
         "public/pw_containers/inline_queue.h",
         "public/pw_containers/inline_var_len_entry_queue.h",

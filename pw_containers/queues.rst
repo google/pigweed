@@ -93,6 +93,13 @@ API reference
 
 .. _module-pw_containers-queues-inline_var_len_entry_queue:
 
+--------------------
+pw::InlineAsyncQueue
+--------------------
+.. doxygenclass:: pw::InlineAsyncQueue
+   :members:
+   :undoc-members:
+
 --------------------------
 pw::InlineVarLenEntryQueue
 --------------------------
