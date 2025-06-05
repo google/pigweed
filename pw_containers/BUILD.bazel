@@ -465,6 +465,7 @@ pw_cc_test(
     ],
     deps = [
         ":inline_async_deque",
+        ":test_helpers",
         "//pw_async2:dispatcher",
         "//pw_async2:pend_func_task",
         "//pw_async2:poll",

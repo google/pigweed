@@ -414,10 +414,11 @@ pw_add_test(pw_containers.inline_async_deque_test
   SOURCES
     inline_async_deque_test.cc
   PRIVATE_DEPS
-    pw_containers.inline_async_deque
     pw_async2.dispatcher
     pw_async2.pend_func_task
     pw_async2.poll
+    pw_containers.inline_async_deque
+    pw_containers._test_helpers
     pw_status
   GROUPS
     modules

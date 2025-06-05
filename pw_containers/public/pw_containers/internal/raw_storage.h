@@ -15,6 +15,7 @@
 
 #include <array>
 #include <cstddef>
+#include <limits>
 #include <new>
 #include <type_traits>
 
@@ -57,6 +58,8 @@ class BasicRawStorage : public Base {
   using const_reference = const value_type&;
   using pointer = value_type*;
   using const_pointer = const value_type*;
+
+  static_assert(kCapacity <= std::numeric_limits<size_type>::max());
 
   // Construct
   constexpr BasicRawStorage() noexcept : Base(kCapacity), null_bits_() {}

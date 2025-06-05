@@ -50,11 +50,11 @@ using BasicInlineDeque = containers::internal::BasicInlineDequeImpl<
 /// the max size template parameter (e.g. `InlineDeque<int>`).
 ///
 /// To allow referring to a `pw::InlineDeque` without an explicit maximum size,
-/// all `InlineDeque` classes inherit from the `BasicInlineDequeStorage` class,
-/// which in turn inherits from `InlineDeque<T>`, which stores the maximum size
-/// in a variable. This allows `InlineDeque`s to be used without having to know
-/// their maximum size at compile time. It also keeps code size small since
-/// function implementations are shared for all maximum sizes.
+/// all `InlineDeque` classes inherit from a `RawStorage` class, which in turn
+/// inherits from `InlineDeque<T>`, which stores the maximum size in a variable.
+/// This allows `InlineDeque`s to be used without having to know their maximum
+/// size at compile time. It also keeps code size small since function
+/// implementations are shared for all maximum sizes.
 ///
 /// An `InlineDeque` cannot increase its capacity. Any operations that would
 /// exceed the capacity (e.g. `assign`, `push_back`, `push_front`) fail a
@@ -207,22 +207,13 @@ class BasicInlineDequeImpl
 
   static constexpr size_type max_size() { return capacity(); }
   static constexpr size_type capacity() { return kCapacity; }
-
-  // All other methods are implemented on the generic-sized base class.
-
- private:
-  friend class BasicInlineDequeImpl<value_type, size_type, kGenericSized>;
-
-  static_assert(kCapacity <= std::numeric_limits<size_type>::max());
 };
 
 // Defines the generic-sized BasicInlineDequeImpl<T> specialization, which
 // serves as the base class for BasicInlineDequeImpl<T> of any capacity.
 //
 // Except for constructors and destructors, all other methods should be
-// implemented on this generic-sized specialization. Destructors must
-// only be written for the `BasicInlineDequeStorage` type in order to ensure
-// that `raw_storage_` is still valid at the time of destruction.
+// implemented on this generic-sized specialization.
 //
 // NOTE: this size-polymorphic base class must not be used inside of
 // ``std::unique_ptr`` or ``delete``.

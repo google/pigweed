@@ -18,6 +18,8 @@
 #include "pw_async2/dispatcher.h"
 #include "pw_async2/pend_func_task.h"
 #include "pw_async2/try.h"
+#include "pw_containers/internal/container_tests.h"
+#include "pw_containers/internal/test_helpers.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
@@ -29,6 +31,24 @@ using pw::async2::PendFuncTask;
 using pw::async2::Pending;
 using pw::async2::Poll;
 using pw::async2::Ready;
+
+// Instantiate shared deque tests.
+template <size_t kCapacity>
+class CommonTest
+    : public ::pw::containers::test::CommonTestFixture<CommonTest<kCapacity>> {
+ public:
+  template <typename T>
+  class Container : public pw::InlineAsyncDeque<T, kCapacity> {
+   public:
+    Container(CommonTest&) {}
+  };
+};
+
+using InlineAsyncDequeCommonTest5 = CommonTest<5>;
+using InlineAsyncDequeCommonTest16 = CommonTest<16>;
+
+PW_CONTAINERS_COMMON_DEQUE_TESTS(InlineAsyncDequeCommonTest5);
+PW_CONTAINERS_COMMON_DEQUE_TESTS(InlineAsyncDequeCommonTest16);
 
 TEST(InlineAsyncDequeTest, PendZeroReturnsSuccessImmediately) {
   pw::InlineAsyncDeque<int, 4> deque;
@@ -89,6 +109,18 @@ TEST(InlineAsyncDequeTest, PendWhenUnavailableWaitsUntilClear) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
 
   deque.clear();
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendOnGenericSizedReference) {
+  pw::InlineAsyncDeque<int, 4> deque1;
+  pw::InlineAsyncDeque<int>& deque2 = deque1;
+
+  Dispatcher dispatcher;
+  PendFuncTask task([&](Context& context) -> Poll<> {
+    return deque2.PendAvailable(context, 1);
+  });
+  dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 

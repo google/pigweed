@@ -425,6 +425,7 @@ pw_test("inline_async_deque_test") {
   sources = [ "inline_async_deque_test.cc" ]
   deps = [
     ":inline_async_deque",
+    ":test_helpers",
     "$dir_pw_async2:dispatcher",
     "$dir_pw_async2:pend_func_task",
     "$dir_pw_async2:poll",
