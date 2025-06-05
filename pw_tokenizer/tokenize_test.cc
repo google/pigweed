@@ -21,6 +21,7 @@
 #include <limits>
 
 #include "pw_compilation_testing/negative_compilation.h"
+#include "pw_string/string.h"
 #include "pw_tokenizer/hash.h"
 #include "pw_tokenizer_private/tokenize_test.h"
 #include "pw_unit_test/framework.h"
@@ -580,6 +581,22 @@ TEST_F(TokenizeToBuffer, C_Overflow) {
 
   PW_TOKENIZE_FORMAT_STRING("mydomain", 0, "Hello %.*s", 6, "friend");
 #endif  // PW_NC_TEST
+}
+
+TEST_F(TokenizeToBuffer, LengthDelimitedString) {
+  size_t message_size = sizeof(buffer_);
+
+  // DOCSTAG[pw_tokenizer-length-delimited-example]
+  std::string_view greeting("Hello world", 5);
+  PW_TOKENIZE_TO_BUFFER(buffer_,
+                        &message_size,
+                        "%s, how are you doing?",
+                        pw::InlineString<5>(greeting).c_str());
+  // Detokenizes to "Hello, how are you doing?"
+  // DOCSTAG[pw_tokenizer-length-delimited-example]
+
+  EXPECT_EQ(message_size, sizeof(uint32_t) + 1 + greeting.size());
+  EXPECT_STREQ(reinterpret_cast<const char*>(&buffer_[5]), "Hello");
 }
 
 #define MACRO_THAT_CALLS_ANOTHER_MACRO(action) ANOTHER_MACRO(action)

@@ -335,6 +335,7 @@ pw_cc_test(
         ":pw_tokenizer",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
+        "//pw_string:string",
         "//pw_varint",
     ],
 )

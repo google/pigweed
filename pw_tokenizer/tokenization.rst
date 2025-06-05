@@ -412,6 +412,22 @@ stored as needed.
    - Pass additional arguments, such as metadata, with the tokenized message.
    - Integrate ``pw_tokenizer`` with other systems.
 
+Length-delimited strings
+========================
+The ``%.*s`` ``printf`` format specifier is used for length-delimited strings.
+The string is passed as two arguments: an ``int`` length followed by a ``const
+char*`` string. Unlike ``%s``, the string does not have to be null terminated.
+
+``pw_tokenizer`` does not yet support the ``%.*s`` specifier (see `b/408040194
+<http://pwbug.dev/408040194>`). To tokenize a length-delimited string, make a
+local null-terminated copy first. This can be done with a temporary
+:cpp:type:`pw::InlineString` sized to fit the string.
+
+.. literalinclude:: tokenize_test.cc
+   :language: c++
+   :start-after: pw_tokenizer-length-delimited
+   :end-before: pw_tokenizer-length-delimited
+
 Tokenizing function names
 =========================
 The string literal tokenization functions support tokenizing string literals or
