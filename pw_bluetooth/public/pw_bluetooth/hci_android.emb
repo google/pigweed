@@ -107,8 +107,8 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
   let version_0_95_size = version_0_55_size+6
   $next [+2]         struct                    version_supported:
     -- Specifies the version of the Google feature spec supported
-    0     [+1]  UInt  major_number
-    $next [+1]  UInt  minor_number
+    0     [+1]  UInt  minor_number
+    $next [+1]  UInt  major_number
 
   $next [+2]         UInt                      total_num_of_advt_tracked
     -- Total number of advertisers tracked for OnLost/OnFound purposes
