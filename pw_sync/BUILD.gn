@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
@@ -245,6 +246,17 @@ pw_test_group("tests") {
   ]
 }
 
+pw_source_set("threaded_testing") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/internal/threaded_testing.h" ]
+  public_deps = [
+    ":thread_notification",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    "$dir_pw_unit_test",
+  ]
+}
+
 pw_source_set("lock_testing") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/lock_testing.h" ]
@@ -391,10 +403,13 @@ pw_test("interrupt_spin_lock_facade_test") {
 }
 
 pw_test("thread_notification_facade_test") {
-  enable_if = pw_sync_THREAD_NOTIFICATION_BACKEND != ""
+  enable_if = pw_sync_THREAD_NOTIFICATION_BACKEND != "" &&
+              pw_thread_THREAD_BACKEND != "" &&
+              pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
   sources = [ "thread_notification_facade_test.cc" ]
   deps = [
     ":thread_notification",
+    ":threaded_testing",
     pw_sync_THREAD_NOTIFICATION_BACKEND,
   ]
 }

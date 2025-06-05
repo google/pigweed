@@ -396,6 +396,20 @@ filegroup(
 )
 
 cc_library(
+    name = "threaded_testing",
+    testonly = True,
+    hdrs = ["public/pw_sync/internal/threaded_testing.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":thread_notification",
+        ":virtual_basic_lockable",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
     name = "lock_testing",
     srcs = ["lock_testing.cc"],
     hdrs = ["public/pw_sync/lock_testing.h"],
@@ -548,7 +562,10 @@ pw_cc_test(
     srcs = [
         "thread_notification_facade_test.cc",
     ],
-    deps = [":thread_notification"],
+    deps = [
+        ":thread_notification",
+        ":threaded_testing",
+    ],
 )
 
 pw_cc_test(

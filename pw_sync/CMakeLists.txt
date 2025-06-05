@@ -235,6 +235,18 @@ pw_add_facade(pw_sync.condition_variable INTERFACE
     pw_sync.mutex
 )
 
+pw_add_library(pw_sync.threaded_testing INTERFACE
+  HEADERS
+    public/pw_sync/internal/threaded_testing.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_sync.thread_notification
+    pw_thread.test_thread_context
+    pw_thread.thread
+    pw_unit_test
+)
+
 pw_add_library(pw_sync.lock_testing STATIC
   HEADERS
     public/pw_sync/lock_testing.h
@@ -375,12 +387,14 @@ if(NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL "")
   )
 endif()
 
-if(NOT "${pw_sync.thread_notification_BACKEND}" STREQUAL "")
+if(NOT "${pw_sync.thread_notification_BACKEND}" STREQUAL "" AND
+   NOT "${pw_thread.thread_BACKEND}" STREQUAL "")
   pw_add_test(pw_sync.thread_notification_facade_test
     SOURCES
       thread_notification_facade_test.cc
     PRIVATE_DEPS
       pw_sync.thread_notification
+      pw_sync.threaded_testing
     GROUPS
       modules
       pw_sync
