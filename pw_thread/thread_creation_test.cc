@@ -81,6 +81,17 @@ TEST_F(ThreadCreationTest, ThreadContext) {
 #endif  // PW_NC_TEST
 }
 
+TEST_F(ThreadCreationTest, DefaultThreadContext) {
+  pw::DefaultThreadContext context;
+
+  pw::Thread(context, pw::ThreadAttrs(), TestThread()).join();
+
+  static constexpr pw::ThreadAttrs kDefault;
+  pw::Thread(pw::GetThreadOptions<kDefault>(context), TestThread()).join();
+  pw::Thread(pw::GetThreadOptions(context, pw::ThreadAttrs()), TestThread())
+      .join();
+}
+
 TEST_F(ThreadCreationTest, ThreadContextExternalStack) {
   pw::ThreadContext<> context;
 
