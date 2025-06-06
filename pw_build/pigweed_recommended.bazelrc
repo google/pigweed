@@ -46,3 +46,14 @@ common --strip=never
 # first-party code.
 common --per_file_copt=external/.*,.*\.pb\.cc@-w
 common --host_per_file_copt=external/.*,.*\.pb\.cc@-w
+
+# Names the platform-specific output directories in `bazel-out/` after their
+# associated platform.
+#
+# These names are used by Pigweed's IDE integration to surface available views
+# for code intelligence.
+common --experimental_platform_in_output_dir=True
+
+# Attempt to unify host platform to resolve conflicting action errors.
+# This explicitly sets the host platform. Pigweed uses @local_config_platform//:host
+common --host_platform=@local_config_platform//:host
