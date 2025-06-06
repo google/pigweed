@@ -116,16 +116,19 @@ class LogFilter:
             # Search a single field
             content = fields.get(self.field, log.ansi_stripped_log)
 
-            # The field may be set to None instead of empty string, in that case
+        if content is None or not content:
+            # The field may be set to None or an empty string, in both cases
             # this log should not match.
-            if content is None:
-                return False
+            match = False
+        else:
+            match = bool(
+                self.regex.search(content)  # pylint: disable=no-member
+            )
 
-        match = self.regex.search(content)  # pylint: disable=no-member
-
+        # Reverse the match if invert is turned on.
         if self.invert:
             return not match
-        return bool(match)
+        return match
 
     def highlight_search_matches(
         self, line_fragments, selected=False

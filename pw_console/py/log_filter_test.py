@@ -225,6 +225,37 @@ class TestLogFilter(unittest.TestCase):
                 'planet',  # field
                 False,  # invert
             ),
+            (
+                'inverted regex with field with Nones',
+                SearchMatcher.REGEX,
+                'earth',  # input_text
+                [  # input_lines
+                    (
+                        '6 log1 mercury',
+                        dict(extra_metadata_fields={'planet': 'mercury'}),
+                    ),
+                    (
+                        '6 log2 earth',
+                        dict(extra_metadata_fields={'planet': 'earth'}),
+                    ),
+                    (
+                        '6 log3 mars',
+                        dict(extra_metadata_fields={'planet': 'mars'}),
+                    ),
+                    (
+                        '6 log4 None',
+                        dict(extra_metadata_fields={'planet': None}),
+                    ),
+                ],
+                # expected_matched_lines
+                [
+                    '6 log1 mercury',
+                    '6 log3 mars',
+                    '6 log4 None',
+                ],
+                'planet',  # field
+                True,  # invert
+            ),
         ]
     )
     def test_log_filter_matches(

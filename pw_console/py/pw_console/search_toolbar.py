@@ -179,9 +179,9 @@ class SearchToolbar(ConditionalContainer):
             self.log_pane.log_view.select_next_search_matcher()
 
         @register('search-toolbar.create-filter', key_bindings)
-        def _create_filter(_event: KeyPressEvent) -> None:
+        def _create_filter_shortcut(_event: KeyPressEvent) -> None:
             """Create a filter."""
-            self.create_filter()
+            self._create_filter()
 
         @register('search-toolbar.toggle-invert', key_bindings)
         def _toggle_search_invert(_event: KeyPressEvent) -> None:
@@ -202,9 +202,11 @@ class SearchToolbar(ConditionalContainer):
         self.log_pane.application.focus_on_container(self.log_pane)
 
     def _create_filter(self) -> None:
-        self.input_field.buffer.reset()
-        self.close_search_bar()
-        self.log_view.apply_filter()
+        self._start_search()
+        if self._search_successful:
+            self.input_field.buffer.reset()
+            self.close_search_bar()
+            self.log_view.apply_filter()
 
     def _next_match(self) -> None:
         self.log_view.search_forwards()
@@ -257,11 +259,6 @@ class SearchToolbar(ConditionalContainer):
         next_index = (current_index + 1) % len(fields)
         self._search_field = fields[next_index]
 
-    def create_filter(self) -> None:
-        self._start_search()
-        if self._search_successful:
-            self.log_pane.log_view.apply_filter()
-
     def _search_accept_handler(self, buff: Buffer) -> bool:
         """Function run when hitting Enter in the search bar."""
         self._search_successful = False
@@ -312,6 +309,19 @@ class SearchToolbar(ConditionalContainer):
                 'Enter', 'Search', start_search, base_style=button_style
             )
         )
+        fragments.extend(separator_text)
+
+        fragments.extend(
+            to_keybind_indicator(
+                key='Ctrl-Alt-f',
+                description='Add Filter',
+                mouse_handler=functools.partial(
+                    mouse_handlers.on_click, self._create_filter
+                ),
+                base_style=button_style,
+            )
+        )
+
         fragments.extend(separator_text)
 
         fragments.extend(
@@ -403,7 +413,7 @@ class SearchToolbar(ConditionalContainer):
             return self.log_pane.log_view.search_validator
         return False
 
-    def get_match_count_fragments(self):
+    def get_match_count_fragments(self) -> StyleAndTextTuples:
         """Return formatted text for the match count indicator."""
         focus = functools.partial(mouse_handlers.on_click, self.focus_log_pane)
         two_spaces = ('', '  ', focus)
@@ -421,7 +431,7 @@ class SearchToolbar(ConditionalContainer):
         else:
             match_number = 0
 
-        return [
+        fragments: StyleAndTextTuples = [
             ('class:search-match-count-dialog-title', ' Match ', focus),
             (
                 '',
@@ -432,6 +442,19 @@ class SearchToolbar(ConditionalContainer):
             ),
             two_spaces,
         ]
+
+        if self._search_field:
+            # Add an indicator of which field is being searched.
+            fragments.extend(
+                [
+                    ('', '(Field:'),
+                    ('class:search-bar-setting', self._search_field.title()),
+                    ('', ')'),
+                    two_spaces,
+                ]
+            )
+
+        return fragments
 
     def get_button_fragments(self) -> StyleAndTextTuples:
         """Return formatted text for the action buttons."""
