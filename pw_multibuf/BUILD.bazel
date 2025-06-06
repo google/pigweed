@@ -330,6 +330,58 @@ cc_library(
     ],
 )
 
+## MultiBuf v2
+
+cc_library(
+    name = "v2_config",
+    defines = [
+        "PW_MULTIBUF_VERSION=PW_MULTIBUF_V2",
+    ],
+)
+
+cc_library(
+    name = "chunk_iterator",
+    hdrs = [
+        "public/pw_multibuf/chunk_iterator.h",
+        "public/pw_multibuf/internal/entry.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":chunk",
+        "//pw_assert:assert",
+        "//pw_bytes",
+        "//pw_containers:dynamic_deque",
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_test(
+    name = "chunk_iterator_test",
+    srcs = [
+        "chunk_iterator_test.cc",
+    ],
+    deps = [
+        ":chunk_iterator",
+        ":iterator_testing",
+    ],
+)
+
+cc_library(
+    name = "iterator_testing",
+    testonly = True,
+    hdrs = [
+        "public/pw_multibuf/internal/iterator_testing.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":chunk_iterator",
+        "//pw_allocator:bump_allocator",
+        "//pw_unit_test",
+    ],
+)
+
+## Docs
+
 filegroup(
     name = "doxygen",
     srcs = [

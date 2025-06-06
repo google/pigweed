@@ -298,3 +298,45 @@ pw_add_library(pw_multibuf._internal_test_utils INTERFACE
     pw_multibuf.config
     pw_multibuf.header_chunk_region_tracker
 )
+
+## MultiBuf v2
+
+pw_add_library(pw_multibuf.v2_config INTERFACE
+  PUBLIC_DEFINES
+    PW_MULTIBUF_VERSION=PW_MULTIBUF_V2
+)
+
+pw_add_library(pw_multibuf.chunk_iterator INTERFACE
+  HEADERS
+    public/pw_multibuf/chunk_iterator.h
+    public/pw_multibuf/internal/entry.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert.assert
+    pw_bytes
+    pw_containers.dynamic_deque
+    pw_preprocessor
+)
+
+pw_add_test(pw_multibuf.chunk_iterator_test
+  SOURCES
+    chunk_iterator_test.cc
+  PRIVATE_DEPS
+    pw_multibuf.chunk_iterator
+    pw_multibuf.iterator_testing
+  GROUPS
+    modules
+    pw_multibuf
+)
+
+pw_add_library(pw_multibuf.iterator_testing INTERFACE
+  HEADERS
+    public/pw_multibuf/internal/iterator_testing.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.bump_allocator
+    pw_multibuf.chunk_iterator
+    pw_unit_test
+)

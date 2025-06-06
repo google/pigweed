@@ -271,6 +271,47 @@ pw_source_set("internal_test_utils") {
   visibility = [ ":*" ]
 }
 
+## Multibuf v2
+
+config("v2_config") {
+  defines = [ "PW_MULTIBUF_VERSION=PW_MULTIBUF_V2" ]
+}
+
+pw_source_set("chunk_iterator") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_multibuf/chunk_iterator.h",
+    "public/pw_multibuf/internal/entry.h",
+  ]
+  public_deps = [
+    ":chunk",
+    "$dir_pw_assert:assert",
+    "$dir_pw_containers:dynamic_deque",
+    dir_pw_bytes,
+    dir_pw_preprocessor,
+  ]
+}
+
+pw_test("chunk_iterator_test") {
+  sources = [ "chunk_iterator_test.cc" ]
+  deps = [
+    ":chunk_iterator",
+    ":iterator_testing",
+  ]
+}
+
+pw_source_set("iterator_testing") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/internal/iterator_testing.h" ]
+  public_deps = [
+    ":chunk_iterator",
+    "$dir_pw_allocator:bump_allocator",
+    dir_pw_unit_test,
+  ]
+}
+
+## Test group
+
 pw_test_group("tests") {
   tests = [
     ":allocator_test",
@@ -281,5 +322,8 @@ pw_test_group("tests") {
     ":simple_allocator_test",
     ":single_chunk_region_tracker_test",
     ":stream_test",
+
+    # v2 tests
+    ":chunk_iterator_test",
   ]
 }
