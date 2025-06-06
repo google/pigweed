@@ -137,7 +137,8 @@ def warn_unknown_window(
         'If this is a brand new window:\n'
         '  Add a "loggers:" or "command:" section to the window spec.\n'
         'For examples see: \n'
-        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config\n',
+        'https://pigweed.dev/pw_console/py/pw_console/docs/user_guide.html'
+        '#example-config\n',
         end=None,
         file=sys.stderr,
     )
@@ -152,7 +153,8 @@ def warn_empty_window_list(
         'specified in a pw_console.yaml file '
         'contains no windows.\n'
         'For examples see: \n'
-        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config\n',
+        'https://pigweed.dev/pw_console/py/pw_console/docs/user_guide.html'
+        '#example-config\n',
         end=None,
         file=sys.stderr,
     )

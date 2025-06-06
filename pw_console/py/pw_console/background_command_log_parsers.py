@@ -71,6 +71,8 @@ class FuchsiaJsonLogParser(BackgroundCommandLogParser):
             _fallback_log()
             return
 
+        # Check for a current_boot_timestamp value. This usually appears on the
+        # first log message.
         boot_timestamp_ns = _get_nested_value(
             log,
             'data',
@@ -82,6 +84,7 @@ class FuchsiaJsonLogParser(BackgroundCommandLogParser):
         )
         if boot_timestamp_ns:
             boot_timestamp = boot_timestamp_ns / 1_000_000_000
+            # Save for later log processing.
             self.boot_timestamp = boot_timestamp
 
         level_string = _get_nested_value(
@@ -102,15 +105,22 @@ class FuchsiaJsonLogParser(BackgroundCommandLogParser):
         fields: dict[str, str | int | float | None] = {}
         fields['msg'] = message.rstrip()
 
+        # Check for a timestamp.
         timestamp_ns: int | None = _get_nested_value(
             log, 'data', 'TargetLog', 'metadata', 'timestamp'
         )
-        if timestamp_ns and self.boot_timestamp:
-            fields['timestamp'] = datetime.utcfromtimestamp(
-                self.boot_timestamp + timestamp_ns / 1_000_000_000
-            ).isoformat(sep=' ')
-        else:
-            fields['timestamp'] = timestamp_ns
+        # Set timestamp to the found value or None.
+        fields['timestamp'] = timestamp_ns
+        if timestamp_ns:
+            # If available save the seconds since boot.
+            seconds_since_boot = timestamp_ns / 1_000_000_000
+            fields['seconds'] = seconds_since_boot
+
+            # Repopulate timestamp with UTC time.
+            if self.boot_timestamp:
+                fields['timestamp'] = datetime.utcfromtimestamp(
+                    self.boot_timestamp + seconds_since_boot
+                ).isoformat(sep=' ')
 
         tag_list = _get_nested_value(
             log, 'data', 'TargetLog', 'metadata', 'tags', default=[]
@@ -184,9 +194,12 @@ class AndroidLogcatParser(BackgroundCommandLogParser):
         # Single letter log level.
         r'(?P<log_level_letter>\w)'
         r'\s*'
-        # Optionally capture the tag.
+        # Optionally capture the tag. Tags seem to allow:
+        #   Alphanumeric characters
+        #   These symbols . / -
+        # Followed optionally by 0 or more spaces and a colon character
         r'(?:'
-        r'(?P<tag>[\[\]a-zA-Z0-9-_/]+): '
+        r'(?P<tag>[\[\]a-zA-Z0-9-_/.]+) *: '
         r')?'
         # The rest is the message.
         r'(?P<msg>.*)'
