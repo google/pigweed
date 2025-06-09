@@ -146,6 +146,13 @@ The inline search results UX is Pigweed-specific custom logic. That code
 lives in ``//docs/_static/js/pigweed.js``. If :bug:`363034219` is successfully
 completed then we will remove this custom code from the Pigweed repo.
 
+.. _contrib-docs-website-search-nosearch:
+
+Remove a page from the search results
+=====================================
+To exclude a page from the search results, add ``:nosearch:`` to the top of the
+page's reStructuredText source file.
+
 .. _contrib-docs-website-sitemap:
 
 ------------------
