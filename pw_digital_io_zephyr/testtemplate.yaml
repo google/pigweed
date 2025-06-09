@@ -24,5 +24,6 @@ testcase:
       extra_configs:
         - CONFIG_GPIO=y
         - CONFIG_GPIO_EMUL=y
+        - CONFIG_PIGWEED_SYNC_MUTEX=y
       extra_args:
         - TEST_LIB=pw_digital_io_zephyr.digital_io_test

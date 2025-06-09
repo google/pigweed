@@ -562,9 +562,8 @@ def zephyr_build(ctx: PresubmitContext) -> None:
     )
     # Run twister
     call(
-        sys.executable,
-        '-m',
-        'pw_build.zephyr_twister_runner',
+        'pw',
+        'twister-runner',
         '-vvv',
         '--ninja',
         '--integration',
@@ -575,8 +574,7 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         '--coverage-basedir',
         str(ctx.pw_root),
         *platform_filters,
-        f'-x=TOOLCHAIN_C_FLAGS=--sysroot={sysroot_dir}',
-        f'-x=TOOLCHAIN_LD_FLAGS=--sysroot={sysroot_dir}',
+        f'-x=SYSROOT_DIR={sysroot_dir}',
         '--testsuite-root',
         str(ctx.pw_root),
         env=env,

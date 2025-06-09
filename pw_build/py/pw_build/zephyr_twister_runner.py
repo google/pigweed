@@ -318,5 +318,5 @@ def main():
     subprocess.run(twister_command, check=True)
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()

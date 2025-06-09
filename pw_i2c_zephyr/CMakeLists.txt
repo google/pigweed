@@ -32,6 +32,7 @@ pw_add_library(pw_i2c_zephyr STATIC
     pw_sync.mutex
     zephyr_interface
 )
+zephyr_append_cmake_library(pw_i2c_zephyr)
 
 pw_add_test(pw_i2c_zephyr.initiator_test
   SOURCES
