@@ -723,6 +723,9 @@ export async function parseBazelBuildCommand(
     // More robust parsing might be needed for complex target patterns.
     if (part.startsWith('//') || part.startsWith(':') || part.startsWith('@')) {
       targets.push(part);
+    } else if (part == '--') {
+      // Discard everything after the `--` separator.
+      break;
     } else {
       // Anything else is considered a potential argument for canonicalization
       potentialArgs.push(part);

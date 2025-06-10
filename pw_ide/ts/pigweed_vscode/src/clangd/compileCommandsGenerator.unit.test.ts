@@ -527,6 +527,18 @@ test('parseBazelBuildCommand_target_thenConfigArg', async () => {
   assert.deepEqual(args, ['--config=rp2040']);
 });
 
+test('parseBazelBuildCommand_run_then_arg', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command = 'run //:format -- --check';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//:format']);
+  assert.deepEqual(args, []);
+});
+
 test('parseBazelBuildCommand_arg_target_arg_target', async () => {
   const bazel = getReliableBazelExecutable();
   const command =
