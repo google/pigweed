@@ -228,5 +228,17 @@ TEST(FlatFileSystem, List_FileMissingName) {
   EXPECT_EQ(2u, ValidateExpectedPaths(static_file_system, ctx.responses()));
 }
 
+TEST(FlatFileSystem, List_NameOnlyFileEntry) {
+  NameOnlyFileEntry file{
+      "/data0.bin", 0, FlatFileSystemService::Entry::FilePermissions::READ};
+  std::array<FlatFileSystemService::Entry*, 1> static_file_system{&file};
+
+  PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemServiceWithBuffer<20>, List)
+  ctx(static_file_system);
+  ctx.call(ConstByteSpan());
+
+  EXPECT_EQ(1u, ValidateExpectedPaths(static_file_system, ctx.responses()));
+}
+
 }  // namespace
 }  // namespace pw::file

@@ -133,6 +133,44 @@ class FlatFileSystemService
   const span<Entry*> entries_;
 };
 
+// This allows for static, opaque stub FlatFileSystemService::Entry objects
+// whose relationship with pw_transfer is externally managed and shouldn't
+// report a size or respect delete requests.
+class NameOnlyFileEntry final : public FlatFileSystemService::Entry {
+ public:
+  NameOnlyFileEntry(std::string_view file_name,
+                    Entry::Id file_id,
+                    Entry::FilePermissions permissions)
+      : file_name_(file_name), file_id_(file_id), permissions_(permissions) {}
+
+  StatusWithSize Name(span<char> dest) final {
+    if (file_name_.empty()) {
+      return StatusWithSize(Status::NotFound(), 0);
+    }
+
+    size_t bytes_to_copy = std::min(dest.size_bytes(), file_name_.size());
+    std::memcpy(dest.data(), file_name_.data(), bytes_to_copy);
+    if (bytes_to_copy != file_name_.size()) {
+      return StatusWithSize(Status::ResourceExhausted(), bytes_to_copy);
+    }
+
+    return StatusWithSize(OkStatus(), bytes_to_copy);
+  }
+
+  size_t SizeBytes() final { return 0; }
+
+  Status Delete() final { return Status::Unimplemented(); }
+
+  Entry::FilePermissions Permissions() const final { return permissions_; }
+
+  Entry::Id FileId() const final { return file_id_; }
+
+ private:
+  const std::string_view file_name_;
+  const Entry::Id file_id_;
+  const Entry::FilePermissions permissions_;
+};
+
 // Provides the encoding and file name buffers to a FlatFileSystemService.
 template <unsigned kMaxFileNameLength,
           unsigned kMinGuaranteedEntriesPerResponse = 1>
