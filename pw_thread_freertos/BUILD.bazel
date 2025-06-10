@@ -115,6 +115,12 @@ cc_library(
         "public/pw_thread_freertos/thread_inline.h",
         "public/pw_thread_freertos/thread_native.h",
     ],
+    implementation_deps = [
+        "//pw_assert:check",
+        "//pw_string",
+        # Include standard implementations of FreeRTOS application functions.
+        "//third_party/freertos:support",
+    ],
     strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
@@ -125,7 +131,7 @@ cc_library(
         ":id",
         "//pw_assert:assert",
         "//pw_function",
-        "//pw_string",
+        "//pw_span",
         "//pw_sync:binary_semaphore",
         "//pw_toolchain:constexpr_tag",
     ],

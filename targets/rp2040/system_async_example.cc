@@ -14,7 +14,6 @@
 
 #define PW_LOG_MODULE_NAME "pw_system_async"
 
-#include "FreeRTOS.h"
 #include "pico/stdlib.h"
 #include "pw_channel/rp2_stdio_channel.h"
 #include "pw_multibuf/simple_allocator_for_test.h"

@@ -23,7 +23,8 @@
 /// task and timer task. See https://www.freertos.org/a00110.html for details.
 ///
 /// Link against `"//third_party/freertos:support"` to include these function
-/// implementations.
+/// implementations. The `pw_thread` backend for FreeRTOS may include this
+/// library so downstream users do not have to.
 /// @{
 
 #include <cstdint>
