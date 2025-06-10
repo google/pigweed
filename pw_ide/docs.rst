@@ -12,6 +12,7 @@ pw_ide
 
    guide/index
    design/index
+   testing
 
 Rich, modern IDE and code editor support for embedded systems Projects.
 

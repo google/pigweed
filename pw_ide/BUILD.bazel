@@ -32,6 +32,7 @@ sphinx_docs_library(
         "guide/vscode/index.rst",
         "guide/vscode/legacy.rst",
         "guide/vscode/troubleshooting.rst",
+        "testing.rst",
     ],
     prefix = "pw_ide/",
     target_compatible_with = incompatible_with_mcu(),

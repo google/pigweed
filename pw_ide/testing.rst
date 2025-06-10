@@ -1,0 +1,124 @@
+.. _module-pw_ide-testing:
+
+============================
+Manual Test Procedure
+============================
+.. pigweed-module-subpage::
+   :name: pw_ide
+
+This document outlines manual test procedures for ``pw_ide``.
+
+Add note to the commit message
+==============================
+
+Add a ``Testing:`` line to your commit message and mention the steps
+executed. For example:
+
+.. code-block:: text
+
+   Testing: First Start Experience Steps 1-8
+
+Test Sections
+=============
+
+First Start Experience
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Clean up any existing VSCode, clangd, or Bazel artifacts:
+       | ``rm -rf .vscode .compile_commands .clangd external && bazel clean``
+     - | Workspace is cleaned.
+     - |checkbox|
+
+   * - 2
+     - | Open the ``pw_ide/ts/pigweed_vscode`` directory in VSCode.
+     - | The project opens in VSCode.
+     - |checkbox|
+
+   * - 3
+     - | In the VSCode terminal, run:
+       | ``npm install``
+     - | Dependencies are installed successfully.
+     - |checkbox|
+
+   * - 4
+     - | In the VSCode terminal, run:
+       | ``npm run watch:bundle``
+     - | The extension bundle is built and watch mode starts.
+     - |checkbox|
+
+   * - 5
+     - | Press :kbd:`F5` or select :guilabel:`Run > Start Debugging` from the menu.
+     - | A new VSCode instance (Extension Development Host) launches.
+       | The ``pw_ide`` extension is running in this new instance.
+     - |checkbox|
+
+   * - 6
+     - | If prompted to update clangd, proceed with the update.
+     - | Clangd is updated to the required version.
+       | (If not prompted, clangd is already up-to-date).
+     - |checkbox|
+
+   * - 7
+     - | In the Extension Development Host VSCode instance, open your main Pigweed project directory (the root of the Pigweed repository).
+     - | The Pigweed project opens.
+     - |checkbox|
+
+   * - 8
+     - | Observe ``.cc`` and ``.hpp`` files in the file explorer.
+     - | All ``.cc`` and ``.hpp`` files initially appear inactive (e.g., grayed out or with a specific icon indicating they are not yet part of an active compilation database).
+     - |checkbox|
+
+Bazel Build and C/C++ Intellisense Verification
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These steps assume you have completed the "First Start Experience" steps.
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | In the Extension Development Host VSCode instance, open the Command Palette:
+       | macOS: :kbd:`Cmd-Shift-P`
+       | Linux/Windows: :kbd:`Ctrl-Shift-P`
+       | Type ``Pigweed: Activate Bazelisk Terminal`` and select it.
+     - | A new terminal opens with the Pigweed environment activated.
+       | The terminal prompt may indicate the Pigweed environment (e.g., shows ``(pigweed)`` or similar decorators).
+     - |checkbox|
+
+   * - 2
+     - | In the newly activated Bazelisk terminal, run:
+       | ``bazelisk build //pw_rpc``
+     - | The ``bazelisk build //pw_rpc`` command completes successfully.
+       | Compile commands (e.g. ``compile_commands.json``) are generated or updated in the workspace root.
+     - |checkbox|
+
+   * - 3
+     - | In the VSCode file explorer, navigate to the ``pw_rpc`` directory.
+       | Observe the appearance of ``.cc`` and ``.h`` files within ``pw_rpc``.
+       | Open a file like ``pw_rpc/public/pw_rpc/server.h``.
+     - | ``.cc`` and ``.h`` files within ``pw_rpc`` should now appear active (not grayed out).
+       | Code intelligence features should be functional:
+       | - Includes are recognized (no unexpected squiggles under Pigweed or standard library headers).
+       | - Hovering over symbols provides tooltips with type information.
+       | - "Go to Definition" (e.g., right-click a symbol) navigates correctly.
+     - |checkbox|
+
+.. |checkbox| raw:: html
+
+    <input type="checkbox">
