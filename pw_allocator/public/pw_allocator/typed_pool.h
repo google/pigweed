@@ -102,7 +102,7 @@ class TypedPool : public ChunkPool {
   /// @param[in]  args...     Arguments passed to the object constructor.
   template <int&... kExplicitGuard, typename... Args>
   UniquePtr<T> MakeUnique(Args&&... args) {
-    return Deallocator::WrapUnique<T>(New(std::forward<Args>(args)...));
+    return UniquePtr<T>(New(std::forward<Args>(args)...), *this);
   }
 };
 

@@ -43,6 +43,28 @@ TEST_F(UniquePtrTest, OperatorEqNullptrOnEmptyUniquePtrSucceeds) {
   EXPECT_FALSE(empty != nullptr);
 }
 
+TEST_F(UniquePtrTest, AdoptValueViaConstructor) {
+  {
+    Counter* raw_ptr = allocator_.New<Counter>(5u);
+    pw::UniquePtr<Counter> ptr(raw_ptr, allocator_);
+    EXPECT_EQ(ptr->value(), 5u);
+    EXPECT_EQ(ptr.deallocator(), &allocator_);
+  }
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 1u);
+  EXPECT_EQ(allocator_.deallocate_size(), sizeof(Counter));
+}
+
+TEST_F(UniquePtrTest, AdoptUnboundedArrayViaConstructor) {
+  {
+    Counter* raw_ptr = allocator_.New<Counter[]>(5);
+    pw::UniquePtr<Counter[]> ptr(raw_ptr, 5, allocator_);
+    EXPECT_EQ(ptr.size(), 5u);
+    EXPECT_EQ(ptr.deallocator(), &allocator_);
+  }
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 5u);
+  EXPECT_EQ(allocator_.deallocate_size(), 5 * sizeof(Counter));
+}
+
 TEST_F(UniquePtrTest, OperatorEqNullptrAfterMakeUniqueFails) {
   auto ptr = allocator_.MakeUnique<int>(5);
   EXPECT_TRUE(ptr != nullptr);
@@ -229,26 +251,6 @@ TEST_F(UniquePtrTest, CanSwapWhenBothAreEmpty) {
   ptr1.Swap(ptr2);
   EXPECT_EQ(ptr1, nullptr);
   EXPECT_EQ(ptr2, nullptr);
-}
-
-class UniquePtrTestAllocator
-    : public pw::allocator::test::AllocatorForTest<256> {
- public:
-  template <typename T>
-  pw::UniquePtr<T[]> MakeBespokeArray(size_t size) {
-    return Deallocator::WrapUniqueArray<T>(New<T[]>(size), size);
-  }
-};
-
-TEST_F(UniquePtrTest, DeprecatedWrapUniqueArrayStillWorks) {
-  constexpr static size_t kArraySize = 5;
-  UniquePtrTestAllocator allocator;
-  {
-    auto ptr = allocator.MakeBespokeArray<Counter>(kArraySize);
-    ASSERT_NE(ptr, nullptr);
-    EXPECT_EQ(Counter::TakeNumCtorCalls(), kArraySize);
-  }
-  EXPECT_EQ(Counter::TakeNumDtorCalls(), kArraySize);
 }
 
 // Verify that the UniquePtr implementation is the size of 2 pointers for the

@@ -19,6 +19,7 @@
 
 #include "pw_allocator/config.h"
 #include "pw_allocator/internal/managed_ptr.h"
+#include "pw_allocator/layout.h"
 #include "pw_preprocessor/compiler.h"
 
 namespace pw {
@@ -61,6 +62,37 @@ class UniquePtr : public ::pw::allocator::internal::ManagedPtr<T> {
   /// NOTE: Instances of this type are most commonly constructed using
   /// `Allocator::MakeUnique`.
   constexpr UniquePtr(std::nullptr_t) noexcept : UniquePtr() {}
+
+  /// Constructs a `UniquePtr` from an already-allocated value.
+  ///
+  /// The deallocator MUST be able to deallocate the given `value`. Typically,
+  /// this implies it is the same object that allocated the value.
+  ///
+  /// This constructor "adopts" the value, that is, it assumes responsibility
+  /// for its lifetime. Callers should not access the value directly after this
+  /// call, and MUST not deallocate the value directly or pass it to another
+  /// managed pointer.
+  ///
+  /// NOTE: Instances of this type are most commonly constructed using
+  /// `MakeUnique`. Prefer that method when possible.
+  ///
+  /// @{
+  UniquePtr(element_type* value, Deallocator& deallocator)
+      : Base(value), deallocator_(&deallocator) {
+    static_assert(!std::is_array_v<T>,
+                  "UniquePtr for array type must provide size");
+    if constexpr (allocator::internal::is_bounded_array_v<T>) {
+      size_ = std::extent_v<T>;
+    }
+  }
+
+  UniquePtr(element_type* value, size_t size, Deallocator& deallocator)
+      : Base(value), size_(size), deallocator_(&deallocator) {
+    static_assert(
+        allocator::internal::is_unbounded_array_v<T>,
+        "UniquePtr must not provide size unless type is an unbounded array");
+  }
+  /// @}
 
   /// Move-constructs a `UniquePtr<T>` from a `UniquePtr<U>`.
   ///
@@ -124,26 +156,6 @@ class UniquePtr : public ::pw::allocator::internal::ManagedPtr<T> {
   // Allow UniquePtr<T> to access UniquePtr<U> and vice versa.
   template <typename>
   friend class UniquePtr;
-
-  /// Private constructor that is public only for use with `emplace` and
-  /// other in-place construction functions.
-  ///
-  /// Constructs a `UniquePtr` from an already-allocated value.
-  ///
-  /// NOTE: Instances of this type are most commonly constructed using
-  /// `Deallocator::MakeUnique`.
-  UniquePtr(element_type* value, Deallocator* deallocator)
-      : Base(value), deallocator_(deallocator) {}
-
-  /// Private constructor that is public only for use with `emplace` and
-  /// other in-place construction functions.
-  ///
-  /// Constructs a `UniquePtr` from an already-allocated value and size.
-  ///
-  /// NOTE: Instances of this type are most commonly constructed using
-  /// `Deallocator::MakeUnique`.
-  UniquePtr(element_type* value, size_t size, Deallocator* deallocator)
-      : Base(value), size_(size), deallocator_(deallocator) {}
 
   /// Copies details from another object without releasing it.
   template <typename U>
@@ -220,8 +232,11 @@ void UniquePtr<T>::Swap(UniquePtr<T>& other) {
 template <typename T>
 template <typename U>
 void UniquePtr<T>::CopyFrom(const UniquePtr<U>& other) {
+  static_assert(std::is_array_v<T> == std::is_array_v<U>);
   Base::CopyFrom(other);
-  size_ = other.size_;
+  if constexpr (std::is_array_v<T>) {
+    size_ = other.size_;
+  }
   deallocator_ = other.deallocator_;
 }
 

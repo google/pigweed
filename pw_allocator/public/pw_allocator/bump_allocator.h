@@ -122,7 +122,7 @@ class BumpAllocator : public Allocator {
   /// @param[in]  args...     Arguments passed to the object constructor.
   template <typename T, int&... kExplicitGuard, typename... Args>
   [[nodiscard]] UniquePtr<T> MakeUniqueOwned(Args&&... args) {
-    return WrapUnique<T>(NewOwned<T>(std::forward<Args>(args)...));
+    return UniquePtr<T>(NewOwned<T>(std::forward<Args>(args)...), *this);
   }
 
  private:

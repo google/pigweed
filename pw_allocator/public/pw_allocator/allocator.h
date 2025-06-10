@@ -122,7 +122,7 @@ class Allocator : public Deallocator {
             std::enable_if_t<!std::is_array_v<T>, int> = 0,
             typename... Args>
   [[nodiscard]] UniquePtr<T> MakeUnique(Args&&... args) {
-    return Deallocator::WrapUnique<T>(New<T>(std::forward<Args>(args)...));
+    return UniquePtr<T>(New<T>(std::forward<Args>(args)...), *this);
   }
 
   /// Constructs an array of `size` objects, and wraps it in a `UniquePtr`
@@ -152,7 +152,7 @@ class Allocator : public Deallocator {
             int&... kExplicitGuard,
             std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
   [[nodiscard]] UniquePtr<T> MakeUnique(size_t size, size_t alignment) {
-    return Deallocator::WrapUnique<T>(New<T>(size, alignment), size);
+    return UniquePtr<T>(New<T>(size, alignment), size, *this);
   }
 
   /// Deprecated version of `MakeUnique` with a different name and templated on
