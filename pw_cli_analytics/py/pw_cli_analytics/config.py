@@ -24,11 +24,30 @@ import pw_config_loader.json_config_loader_mixin
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
-_PW_PROJECT_ROOT = Path(os.environ['PW_PROJECT_ROOT'])
+# This may evaluate to None. Some environments (e.g. pip-installed packages)
+# do not expose any environment variables that indicate the project root.
+_PW_PROJECT_ROOT: Path | None = None
+
+# Try to identify project root.
+if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
+    # Code is being `bazel run`.
+    _PW_PROJECT_ROOT = Path(os.environ['BUILD_WORKSPACE_DIRECTORY'])
+elif 'PW_PROJECT_ROOT' in os.environ:
+    # Code is being ran from a bootstrapped environment.
+    _PW_PROJECT_ROOT = Path(os.environ['PW_PROJECT_ROOT'])
+
+# TODO: https://pwbug.dev/423944020 - Figure out how to offer analytics
+# for packaged deployments when _PW_PROJECT_ROOT cannot be located properly.
+DEFAULT_PROJECT_FILE: Path | None = None
+DEFAULT_PROJECT_USER_FILE: Path | None = None
+
+# This case happens when a tool is run outside of the context of a project,
+# or in Bazel.
+if _PW_PROJECT_ROOT is not None:
+    DEFAULT_PROJECT_FILE = _PW_PROJECT_ROOT / 'pigweed.json'
+    DEFAULT_PROJECT_USER_FILE = _PW_PROJECT_ROOT / '.pw_cli_analytics.user.json'
 
 CONFIG_SECTION_TITLE = ('pw', 'pw_cli_analytics')
-DEFAULT_PROJECT_FILE = _PW_PROJECT_ROOT / 'pigweed.json'
-DEFAULT_PROJECT_USER_FILE = _PW_PROJECT_ROOT / '.pw_cli_analytics.user.json'
 DEFAULT_USER_FILE = Path(os.path.expanduser('~/.pw_cli_analytics.json'))
 ENVIRONMENT_VAR = 'PW_CLI_ANALYTICS_CONFIG_FILE'
 
@@ -42,7 +61,7 @@ _DEFAULT_CONFIG = {
     'report_remote_url': False,
     'report_subcommand_name': 'limited',
     'uuid': None,
-    'enabled': None,
+    'enabled': None if _PW_PROJECT_ROOT else False,
 }
 
 

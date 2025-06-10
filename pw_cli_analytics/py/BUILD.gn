@@ -29,7 +29,10 @@ pw_python_package("py") {
     "pw_cli_analytics/cli.py",
     "pw_cli_analytics/config.py",
   ]
-  tests = [ "analytics_test.py" ]
+  tests = [
+    "analytics_config_test.py",
+    "analytics_test.py",
+  ]
   python_deps = [
     "$dir_pw_config_loader/py",
     "$dir_pw_env_setup/py",

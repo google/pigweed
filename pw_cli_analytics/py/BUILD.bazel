@@ -40,10 +40,21 @@ pw_py_test(
     srcs = [
         "analytics_test.py",
     ],
-    env = {
-        "PW_PROJECT_ROOT": "/home/test/project",
-        "PW_ROOT": "/home/test/project/pigweed",
-    },
+    deps = [
+        ":pw_cli_analytics",
+    ],
+)
+
+pw_py_test(
+    name = "analytics_config_test",
+    size = "small",
+    srcs = [
+        "analytics_config_test.py",
+    ],
+    # TODO: https://pwbug.dev/423944020 - BUILD_WORKSPACE_DIRECTORY isn't
+    # set by Bazel for `bazel test` invocations, so this will always fail.
+    # A `bazel run` of this target, however, will pass.
+    tags = ["manual"],
     deps = [
         ":pw_cli_analytics",
     ],
