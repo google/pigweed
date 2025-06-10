@@ -13,17 +13,6 @@
 # the License.
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_config(pw_thread_zephyr_CONFIG)
-
-pw_add_library(pw_thread_zephyr.config INTERFACE
-  HEADERS
-    public/pw_thread_zephyr/config.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    "${pw_thread_zephyr_CONFIG}"
-)
-
 # This target provides the backend for pw::Thread::id & pw::this_thread::get_id.
 pw_add_library(pw_thread_zephyr.id INTERFACE
   HEADERS
@@ -84,7 +73,6 @@ pw_add_library(pw_thread_zephyr.thread STATIC
     pw_span
     pw_string
     pw_thread.thread.facade
-    pw_thread_zephyr.config
   SOURCES
     thread.cc
 )
@@ -108,6 +96,15 @@ pw_add_library(pw_thread_zephyr.yield INTERFACE
 pw_zephyrize_libraries_ifdef(
     CONFIG_PIGWEED_THREAD_YIELD
     pw_thread_zephyr.yield
+)
+
+pw_add_library(pw_thread_zephyr.thread_creation INTERFACE
+  HEADERS
+    public/pw_thread_zephyr/stack.h
+    thread_public_overrides/pw_thread_backend/stack.h
+  PUBLIC_INCLUDES
+    public
+    thread_public_overrides
 )
 
 pw_add_library(pw_thread_zephyr.thread_iteration STATIC

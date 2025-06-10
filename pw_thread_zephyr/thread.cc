@@ -16,13 +16,15 @@
 #include <zephyr/kernel.h>
 #include <zephyr/spinlock.h>
 
+#include "public/pw_thread_zephyr/context.h"
+#include "public/pw_thread_zephyr/options.h"
 #include "pw_assert/check.h"
 #include "pw_preprocessor/compiler.h"
-#include "pw_thread_zephyr/config.h"
 #include "pw_thread_zephyr/context.h"
 #include "pw_thread_zephyr/options.h"
 
-using pw::thread::zephyr::Context;
+using pw::thread::backend::NativeContext;
+using pw::thread::backend::NativeOptions;
 
 namespace pw::thread {
 namespace {
@@ -31,8 +33,8 @@ k_spinlock global_thread_done_lock;
 
 }  // namespace
 
-void Context::ThreadEntryPoint(void* void_context_ptr, void*, void*) {
-  Context& context = *static_cast<Context*>(void_context_ptr);
+void NativeContext::ThreadEntryPoint(void* void_context_ptr, void*, void*) {
+  NativeContext& context = *static_cast<NativeContext*>(void_context_ptr);
 
   // Invoke the user's thread function. This may never return.
   context.fn_();
@@ -40,7 +42,7 @@ void Context::ThreadEntryPoint(void* void_context_ptr, void*, void*) {
 
   k_spinlock_key_t key = k_spin_lock(&global_thread_done_lock);
   if (context.detached()) {
-    context.set_task_handle(nullptr);
+    context.task_handle_ = nullptr;
   } else {
     // Defer cleanup to Thread's join() or detach().
     context.set_thread_done();
@@ -48,40 +50,33 @@ void Context::ThreadEntryPoint(void* void_context_ptr, void*, void*) {
   k_spin_unlock(&global_thread_done_lock, key);
 }
 
-void Context::CreateThread(const zephyr::Options& options,
-                           Function<void()>&& thread_fn,
-                           Context*& native_type_out) {
-  PW_CHECK(options.static_context() != nullptr);
+void NativeContext::CreateThread(Function<void()>&& thread_fn,
+                                 const NativeOptions& options) {
+  PW_CHECK(!fn_);
+  detached_ = false;
+  thread_done_ = false;
+  fn_ = std::move(thread_fn);
+  string::Assign(name_, options.name()).IgnoreError();
 
-  // Use the statically allocated context.
-  native_type_out = options.static_context();
-  // Can't use a context more than once.
-  PW_DCHECK_PTR_EQ(native_type_out->task_handle(), nullptr);
-  // Reset the state of the static context in case it was re-used.
-  native_type_out->set_detached(false);
-  native_type_out->set_thread_done(false);
-  // Copy over the thread name
-  native_type_out->set_name(options.name());
-
-  native_type_out->set_thread_routine(std::move(thread_fn));
-  const k_tid_t task_handle =
-      k_thread_create(&native_type_out->thread_info(),
-                      options.static_context()->stack(),
-                      options.static_context()->available_stack_size(),
-                      Context::ThreadEntryPoint,
-                      options.static_context(),
-                      nullptr,
-                      nullptr,
-                      options.priority(),
-                      options.native_options(),
-                      K_NO_WAIT);
+  // Verify we have a valid stack
+  PW_CHECK_NOTNULL(options.stack().data());
+  const k_tid_t task_handle = k_thread_create(&thread_info_,
+                                              options.stack().data(),
+                                              options.stack().size(),
+                                              NativeContext::ThreadEntryPoint,
+                                              this,
+                                              nullptr,
+                                              nullptr,
+                                              options.priority(),
+                                              options.native_options(),
+                                              K_NO_WAIT);
   PW_CHECK_NOTNULL(task_handle);  // Ensure it succeeded.
-  native_type_out->set_task_handle(task_handle);
+  task_handle_ = task_handle;
 
-  if (IS_ENABLED(CONFIG_THREAD_NAME)) {
+  if constexpr (IS_ENABLED(CONFIG_THREAD_NAME)) {
     // If we can set the name in the native thread, do so
     const int thread_name_set_result =
-        k_thread_name_set(task_handle, native_type_out->name());
+        k_thread_name_set(task_handle, options.name());
     // Of possible return status, we should not fault reading this memory
     // (EFAULT) and we should have this function available as we just checked
     // the configuration in the preprocessor statement above (ENOSYS).
@@ -93,12 +88,19 @@ void Context::CreateThread(const zephyr::Options& options,
   }
 }
 
+NativeContext* NativeOptions::CreateThread(Function<void()>&& thread_fn) {
+  PW_CHECK_NOTNULL(context_);
+
+  context_->CreateThread(std::move(thread_fn), *this);
+  return context_;
+}
+
 Thread::Thread(const thread::Options& facade_options, Function<void()>&& entry)
     : native_type_(nullptr) {
   // Cast the generic facade options to the backend specific option of which
   // only one type can exist at compile time.
-  auto options = static_cast<const zephyr::Options&>(facade_options);
-  Context::CreateThread(options, std::move(entry), native_type_);
+  auto options = static_cast<const NativeOptions&>(facade_options);
+  native_type_ = options.CreateThread(std::move(entry));
 }
 
 void Thread::detach() {
@@ -111,10 +113,10 @@ void Thread::detach() {
   if (thread_done) {
     // The task finished (hit end of Context::ThreadEntryPoint) before we
     // invoked detach, clean up the task handle to allow the Context reuse.
-    native_type_->set_task_handle(nullptr);
+    native_type_->task_handle_ = nullptr;
   } else {
-    // We're detaching before the task finished, defer cleanup to the task at
-    // the end of Context::ThreadEntryPoint.
+    // We're detaching before the task finished, defer cleanup to the task
+    // at the end of Context::ThreadEntryPoint.
   }
 
   k_spin_unlock(&global_thread_done_lock, key);
@@ -129,7 +131,7 @@ void Thread::join() {
 
   PW_CHECK_INT_EQ(0, k_thread_join(native_type_->task_handle_, K_FOREVER));
 
-  native_type_->set_task_handle(nullptr);
+  native_type_->task_handle_ = nullptr;
 
   // Update to no longer represent a thread of execution.
   native_type_ = nullptr;

@@ -65,6 +65,14 @@ config PIGWEED_THREAD_MAX_THREAD_NAME_LEN
     This name allows modifying the storage size of Pigweed created Zephyr
     thread names. Set to 0 if you don't plan on naming your threads.
 
+config PIGWEED_THREAD_DEFAULT_STACK_SIZE
+  int "Size of a standard stack"
+  default 1024
+
+config PIGWEED_THREAD_MINIMUM_STACK_SIZE
+  int "Minimum stack size"
+  default 256
+
 endif # PIGWEED_THREAD
 
 endmenu

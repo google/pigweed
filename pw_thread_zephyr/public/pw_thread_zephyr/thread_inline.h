@@ -34,7 +34,7 @@ inline Thread::id Thread::get_id() const {
   if (native_type_ == nullptr) {
     return Thread::id(nullptr);
   }
-  return Thread::id(native_type_->task_handle());
+  return Thread::id(native_type_->task_handle_);
 }
 
 inline void Thread::swap(Thread& other) {

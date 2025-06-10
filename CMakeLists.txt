@@ -54,6 +54,8 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
       pw_thread.id pw_thread_zephyr.id pw_thread/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD
       pw_thread.thread pw_thread_zephyr.thread pw_thread/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD
+      pw_thread.thread_creation pw_thread_zephyr.thread_creation pw_thread/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE
       pw_sync.binary_semaphore pw_sync_zephyr.binary_semaphore_backend pw_sync/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_COUNTING_SEMAPHORE
