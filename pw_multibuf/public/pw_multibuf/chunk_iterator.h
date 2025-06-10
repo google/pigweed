@@ -28,7 +28,6 @@ namespace pw::multibuf::internal {
 // Forward declarations.
 template <typename, typename>
 class ChunksImpl;
-class ChunksTest;
 
 /// Type for iterating over the chunks added to a multibuf.
 ///

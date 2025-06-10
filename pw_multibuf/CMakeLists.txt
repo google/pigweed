@@ -330,6 +330,28 @@ pw_add_test(pw_multibuf.chunk_iterator_test
     pw_multibuf
 )
 
+pw_add_library(pw_multibuf.byte_iterator INTERFACE
+  HEADERS
+    public/pw_multibuf/byte_iterator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert.assert
+    pw_containers.dynamic_deque
+    pw_multibuf.chunk_iterator
+)
+
+pw_add_test(pw_multibuf.byte_iterator_test
+  SOURCES
+    byte_iterator_test.cc
+  PRIVATE_DEPS
+    pw_multibuf.byte_iterator
+    pw_multibuf.iterator_testing
+  GROUPS
+    modules
+    pw_multibuf
+)
+
 pw_add_library(pw_multibuf.iterator_testing INTERFACE
   HEADERS
     public/pw_multibuf/internal/iterator_testing.h
@@ -337,6 +359,7 @@ pw_add_library(pw_multibuf.iterator_testing INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.bump_allocator
+    pw_multibuf.byte_iterator
     pw_multibuf.chunk_iterator
     pw_unit_test
 )

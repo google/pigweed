@@ -300,10 +300,29 @@ pw_test("chunk_iterator_test") {
   ]
 }
 
+pw_source_set("byte_iterator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/byte_iterator.h" ]
+  deps = [
+    ":chunk_iterator",
+    "$dir_pw_assert:assert",
+    "$dir_pw_containers:dynamic_deque",
+  ]
+}
+
+pw_test("byte_iterator_test") {
+  sources = [ "byte_iterator_test.cc" ]
+  deps = [
+    ":byte_iterator",
+    ":iterator_testing",
+  ]
+}
+
 pw_source_set("iterator_testing") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_multibuf/internal/iterator_testing.h" ]
   public_deps = [
+    ":byte_iterator",
     ":chunk_iterator",
     "$dir_pw_allocator:bump_allocator",
     dir_pw_unit_test,
@@ -324,6 +343,7 @@ pw_test_group("tests") {
     ":stream_test",
 
     # v2 tests
+    ":byte_iterator_test",
     ":chunk_iterator_test",
   ]
 }

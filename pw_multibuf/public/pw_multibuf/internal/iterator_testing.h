@@ -18,6 +18,7 @@
 
 #include "pw_allocator/bump_allocator.h"
 #include "pw_containers/dynamic_deque.h"
+#include "pw_multibuf/byte_iterator.h"
 #include "pw_multibuf/chunk_iterator.h"
 #include "pw_multibuf/internal/entry.h"
 #include "pw_unit_test/framework.h"
@@ -66,7 +67,6 @@ class IteratorTest : public ::testing::Test {
     chunks_ = Chunks(deque_, kNumLayers);
   }
 
-  // constexpr DynamicDeque<Entry>& deque() { return deque_; }
   Chunks<>& chunks() { return chunks_; }
 
   // Fragment 0 is non-empty.
@@ -82,6 +82,11 @@ class IteratorTest : public ::testing::Test {
       default:
         return ByteSpan();
     }
+  }
+
+  std::pair<ByteIterator<uint16_t, false>, ByteIterator<uint16_t, false>>
+  GetByteIterators() {
+    return {{chunks_.begin(), 0}, {chunks_.end(), 0}};
   }
 
  private:

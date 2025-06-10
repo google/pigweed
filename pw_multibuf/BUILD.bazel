@@ -367,6 +367,30 @@ pw_cc_test(
 )
 
 cc_library(
+    name = "byte_iterator",
+    hdrs = [
+        "public/pw_multibuf/byte_iterator.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":chunk_iterator",
+        "//pw_assert:assert",
+        "//pw_containers:dynamic_deque",
+    ],
+)
+
+pw_cc_test(
+    name = "byte_iterator_test",
+    srcs = [
+        "byte_iterator_test.cc",
+    ],
+    deps = [
+        ":byte_iterator",
+        ":iterator_testing",
+    ],
+)
+
+cc_library(
     name = "iterator_testing",
     testonly = True,
     hdrs = [
@@ -374,6 +398,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        ":byte_iterator",
         ":chunk_iterator",
         "//pw_allocator:bump_allocator",
         "//pw_unit_test",
