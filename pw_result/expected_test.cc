@@ -152,6 +152,8 @@ static_assert(
 
 using SmallString = pw::InlineString<2>;
 
+constexpr char kRecoverySentinel = 0x04;  // Arbitrary non-printable sentinel.
+
 SmallString Itoa(int x) {
   SmallString result;
   if ((StringBuilder(result) << x).status() != OkStatus()) {
@@ -194,6 +196,13 @@ expected<char, std::string_view> GetSecondChar(std::string_view s) {
     return unexpected("string too small");
   }
   return s[1];
+}
+
+expected<char, std::string_view> RecoverStringTooSmall(std::string_view err) {
+  if (err == "string too small") {
+    return kRecoverySentinel;
+  }
+  return unexpected(err);
 }
 
 int Decrement(int x) { return x - 1; }
@@ -257,6 +266,18 @@ TEST(ExpectedTest, MonadicOperation) {
   EXPECT_EQ(Consume(f(25)).error_or("no error"), "odd");
   EXPECT_EQ(Consume(f(0)).error_or("no error"), "negative");
   EXPECT_EQ(Consume(f(4)).error_or("no error"), "string too small");
+
+  EXPECT_EQ(f(26).or_else(RecoverStringTooSmall).value_or(0), '4');
+  EXPECT_EQ(f(26).or_else(RecoverStringTooSmall).error_or("no error"),
+            "no error");
+  EXPECT_EQ(f(25).or_else(RecoverStringTooSmall).value_or(0), 0);
+  EXPECT_EQ(f(25).or_else(RecoverStringTooSmall).error_or("no error"), "odd");
+  EXPECT_EQ(f(0).or_else(RecoverStringTooSmall).value_or(0), 0);
+  EXPECT_EQ(f(0).or_else(RecoverStringTooSmall).error_or("no error"),
+            "negative");
+  EXPECT_EQ(f(4).or_else(RecoverStringTooSmall).value_or(0), kRecoverySentinel);
+  EXPECT_EQ(f(4).or_else(RecoverStringTooSmall).error_or("no error"),
+            "no error");
 }
 
 }  // namespace
