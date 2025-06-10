@@ -62,7 +62,7 @@ config PIGWEED_THREAD_MAX_THREAD_NAME_LEN
   int "The maximum length of a Pigweed thread's name"
   default 15
   help
-    This name allows modifying the storate size of Pigweed created Zephyr
+    This name allows modifying the storage size of Pigweed created Zephyr
     thread names. Set to 0 if you don't plan on naming your threads.
 
 endif # PIGWEED_THREAD

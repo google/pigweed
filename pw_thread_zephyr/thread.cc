@@ -78,7 +78,7 @@ void Context::CreateThread(const zephyr::Options& options,
   PW_CHECK_NOTNULL(task_handle);  // Ensure it succeeded.
   native_type_out->set_task_handle(task_handle);
 
-  if constexpr (CONFIG_THREAD_NAME) {
+  if (IS_ENABLED(CONFIG_THREAD_NAME)) {
     // If we can set the name in the native thread, do so
     const int thread_name_set_result =
         k_thread_name_set(task_handle, native_type_out->name());

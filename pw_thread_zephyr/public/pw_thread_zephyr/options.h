@@ -49,7 +49,7 @@ class Options : public thread::Options {
     return *this;
   }
 
-  // Sets the name for the ThreadX thread, note that this will be deep copied
+  // Sets the name for the Zephyr thread, note that this will be deep copied
   // into the context and may be truncated based on
   // PW_THREAD_ZEPHYR_CONFIG_MAX_THREAD_NAME_LEN. This may be set natively
   // in the zephyr thread if CONFIG_THREAD_NAME is set, where it may
