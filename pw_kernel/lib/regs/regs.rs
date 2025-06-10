@@ -218,6 +218,7 @@ macro_rules! rw_reg {
 }
 
 pub mod ops {
+    #[must_use]
     #[inline]
     pub const fn mask(start: usize, end: usize) -> usize {
         let length = end - start + 1;
@@ -229,6 +230,7 @@ pub mod ops {
         }
     }
 
+    #[must_use]
     #[inline]
     pub const fn mask_u32(start: u32, end: u32) -> u32 {
         let length = end - start + 1;
@@ -240,32 +242,38 @@ pub mod ops {
         }
     }
 
+    #[must_use]
     #[inline]
     pub const fn get_bool(value: usize, bit: usize) -> bool {
         (value >> bit) & 0x1 == 0x1
     }
 
+    #[must_use]
     #[inline]
     pub const fn set_bool(value: usize, bit: usize, field_value: bool) -> usize {
         value & !(1 << bit) | (pw_cast::cast!(field_value => usize) << bit)
     }
 
+    #[must_use]
     #[inline]
     pub const fn get_u32(value: u32, start: u32, end: u32) -> u32 {
         (value & mask_u32(start, end)) >> start
     }
 
+    #[must_use]
     #[inline]
     pub const fn set_u32(value: u32, start: u32, end: u32, field_value: u32) -> u32 {
         let mask = mask_u32(start, end);
         (value & !mask) | ((field_value << start) & mask)
     }
 
+    #[must_use]
     #[inline]
     pub const fn get_usize(value: usize, start: usize, end: usize) -> usize {
         (value & mask(start, end)) >> start
     }
 
+    #[must_use]
     #[inline]
     pub const fn set_usize(value: usize, start: usize, end: usize, field_value: usize) -> usize {
         let mask = mask(start, end);

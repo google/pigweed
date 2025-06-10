@@ -33,12 +33,14 @@ impl<T, A: Adapter> Default for ForeignList<T, A> {
 }
 
 impl<T, A: Adapter> ForeignList<T, A> {
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             list: UnsafeList::new(),
         }
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         unsafe { self.list.is_empty() }
     }

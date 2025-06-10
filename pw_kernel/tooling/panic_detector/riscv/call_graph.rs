@@ -19,6 +19,7 @@ use super::InstrA;
 use super::InstrType;
 use super::Reg;
 use anyhow::anyhow;
+use core::ops::Bound;
 use object::elf::STB_GLOBAL;
 use object::elf::STB_LOCAL;
 use object::elf::STB_WEAK;
@@ -30,7 +31,6 @@ use std::collections::btree_map;
 use std::collections::hash_map;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
-use std::ops::Bound;
 use std::rc::Rc;
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Binding {
@@ -58,7 +58,7 @@ pub fn list_functions<'a>(
     let t = elf.elf_symbol_table();
     let mut result = vec![];
     for sym in t.symbols() {
-        let name = std::str::from_utf8(t.symbol_name(E, sym)?)?;
+        let name = core::str::from_utf8(t.symbol_name(E, sym)?)?;
         if sym.st_type() != STT_FUNC || name.is_empty() {
             continue;
         }

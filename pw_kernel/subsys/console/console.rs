@@ -34,6 +34,7 @@ impl Default for Console {
 }
 
 impl Console {
+    #[must_use]
     #[inline]
     pub const fn new() -> Self {
         Self {}

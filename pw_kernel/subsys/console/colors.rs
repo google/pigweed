@@ -29,6 +29,7 @@ pub const MAGENTA: &str = "\x1b[35m";
 pub const CYAN: &str = "\x1b[36m";
 pub const WHITE: &str = "\x1b[37m";
 
+#[must_use]
 pub const fn log_level_tag(level: LogLevel) -> &'static str {
     if cfg!(feature = "color") {
         match level {

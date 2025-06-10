@@ -33,6 +33,7 @@ impl<Clock: crate::Clock> Instant<Clock> {
     pub const MAX: Self = Self::from_ticks(u64::MAX);
     pub const MIN: Self = Self::from_ticks(u64::MIN);
 
+    #[must_use]
     pub const fn from_ticks(ticks: u64) -> Self {
         Self {
             ticks,
@@ -40,10 +41,12 @@ impl<Clock: crate::Clock> Instant<Clock> {
         }
     }
 
+    #[must_use]
     pub const fn ticks(&self) -> u64 {
         self.ticks
     }
 
+    #[must_use]
     pub const fn checked_add_duration(self, duration: Duration<Clock>) -> Option<Self> {
         if let Some(ticks) = self.ticks.checked_add_signed(duration.ticks) {
             Some(Self {
@@ -55,6 +58,7 @@ impl<Clock: crate::Clock> Instant<Clock> {
         }
     }
 
+    #[must_use]
     pub const fn checked_sub_duration(self, duration: Duration<Clock>) -> Option<Self> {
         if let Some(ticks) = self.ticks.checked_add_signed(-duration.ticks) {
             Some(Self {
@@ -154,10 +158,12 @@ impl<Clock: crate::Clock> Duration<Clock> {
         _phantom: PhantomData,
     };
 
+    #[must_use]
     pub const fn ticks(self) -> i64 {
         self.ticks
     }
 
+    #[must_use]
     pub const fn from_secs(secs: i64) -> Self {
         Self {
             ticks: secs * (Clock::TICKS_PER_SEC.cast_signed()),
@@ -165,6 +171,7 @@ impl<Clock: crate::Clock> Duration<Clock> {
         }
     }
 
+    #[must_use]
     pub const fn from_millis(millis: i64) -> Self {
         Self {
             ticks: millis * (Clock::TICKS_PER_SEC.cast_signed()) / 1000,
@@ -172,6 +179,7 @@ impl<Clock: crate::Clock> Duration<Clock> {
         }
     }
 
+    #[must_use]
     pub const fn from_micros(micros: i64) -> Self {
         Self {
             ticks: micros * (Clock::TICKS_PER_SEC.cast_signed()) / 1_000_000,
@@ -179,6 +187,7 @@ impl<Clock: crate::Clock> Duration<Clock> {
         }
     }
 
+    #[must_use]
     pub const fn from_nanos(nanos: i64) -> Self {
         Self {
             ticks: nanos * (Clock::TICKS_PER_SEC.cast_signed()) / 1_000_000_000,
@@ -186,6 +195,7 @@ impl<Clock: crate::Clock> Duration<Clock> {
         }
     }
 
+    #[must_use]
     pub const fn checked_add(self, rhs: Duration<Clock>) -> Option<Self> {
         if let Some(ticks) = self.ticks.checked_add(rhs.ticks) {
             Some(Self {
@@ -197,6 +207,7 @@ impl<Clock: crate::Clock> Duration<Clock> {
         }
     }
 
+    #[must_use]
     pub const fn checked_sub(self, rhs: Duration<Clock>) -> Option<Self> {
         if let Some(ticks) = self.ticks.checked_sub(rhs.ticks) {
             Some(Self {

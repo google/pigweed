@@ -56,6 +56,7 @@ pub struct ThreadBuffer {
 }
 
 impl ThreadBuffer {
+    #[must_use]
     pub const fn new() -> Self {
         ThreadBuffer {
             buffer: [0; size_of::<Thread>()],
@@ -93,6 +94,7 @@ pub struct StaticProcess {
 
 #[allow(dead_code)]
 impl StaticProcess {
+    #[must_use]
     pub const fn new(
         name: &'static str,
         memory_config: <Arch as ArchInterface>::MemoryConfig,
@@ -102,6 +104,7 @@ impl StaticProcess {
         }
     }
 
+    #[must_use]
     pub fn get(&self) -> *mut Process {
         self.process_cell.get()
     }

@@ -50,6 +50,7 @@ impl<T, U: CastFrom<T>> CastInto<U> for T {
 macro_rules! cast {
     ($e:expr) => { $crate::cast!($e => _) };
     ($e:expr => $t:ty) => {{
+        #[allow(clippy::as_underscore)]
         if false {
             // SAFETY: This branch is never taken.
             #[allow(clippy::macro_metavars_in_unsafe)]

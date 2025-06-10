@@ -61,6 +61,7 @@ pub struct Stack {
 
 #[allow(dead_code)]
 impl Stack {
+    #[must_use]
     pub const fn from_slice(slice: &[MaybeUninit<u8>]) -> Self {
         let start: *const MaybeUninit<u8> = slice.as_ptr();
         // Safety: offset based on known size of slice.
@@ -68,6 +69,7 @@ impl Stack {
         Self { start, end }
     }
 
+    #[must_use]
     const fn new() -> Self {
         Self {
             start: core::ptr::null(),
@@ -75,24 +77,29 @@ impl Stack {
         }
     }
 
+    #[must_use]
     pub fn start(&self) -> *const MaybeUninit<u8> {
         self.start
     }
 
+    #[must_use]
     pub fn end(&self) -> *const MaybeUninit<u8> {
         self.end
     }
 
     /// # Safety
     /// Caller must ensure exclusive mutable access to underlying data
+    #[must_use]
     pub unsafe fn end_mut(&self) -> *mut MaybeUninit<u8> {
         self.end as *mut MaybeUninit<u8>
     }
 
+    #[must_use]
     pub fn contains(&self, ptr: *const MaybeUninit<u8>) -> bool {
         ptr >= self.start && ptr < self.end
     }
 
+    #[must_use]
     pub fn aligned_stack_allocation_mut<T: Sized>(
         sp: *mut MaybeUninit<u8>,
         alignment: usize,
@@ -152,6 +159,7 @@ list::define_adapter!(pub ProcessListAdapter => Process.link);
 
 impl Process {
     /// Creates a new, empty, unregistered process.
+    #[must_use]
     pub const fn new(
         name: &'static str,
         memory_config: <Arch as ArchInterface>::MemoryConfig,
@@ -185,6 +193,7 @@ impl Process {
     /// The returned value should not be relied upon as being a valid pointer.
     /// Even in the current implementation, `id` does not expose the pointer's
     /// provenance.
+    #[must_use]
     pub fn id(&self) -> usize {
         core::ptr::from_ref(self).addr()
     }
@@ -229,6 +238,7 @@ list::define_adapter!(pub ProcessThreadListAdapter => Thread.process_link);
 
 impl Thread {
     // Create an empty, uninitialzed thread
+    #[must_use]
     pub fn new(name: &'static str) -> Self {
         Thread {
             process_link: Link::new(),
@@ -352,11 +362,13 @@ impl Thread {
     /// The returned value should not be relied upon as being a valid pointer.
     /// Even in the current implementation, `id` does not expose the pointer's
     /// provenance.
+    #[must_use]
     pub fn id(&self) -> usize {
         core::ptr::from_ref(self).addr()
     }
 
     // An ID that can not be assigned to any thread in the system.
+    #[must_use]
     pub const fn null_id() -> usize {
         // `core::ptr::null::<Self>() as usize` can not be evaluated at const time
         // and a null pointer is defined to be at address 0 (see

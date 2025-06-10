@@ -24,10 +24,10 @@ use crate::riscv::InstrA;
 use crate::riscv::Reg;
 use anyhow::anyhow;
 use anyhow::Context;
+use core::fmt::Debug;
 use object::elf;
 use object::read::elf::{ElfFile32, FileHeader};
 use std::collections::HashSet;
-use std::fmt::Debug;
 use std::path::Path;
 /// Check to see if the elf-file at `elf_path` contains any calls to the
 /// `panic_is_possible`` symbol, and if so, try to find the line numbers where
@@ -96,7 +96,7 @@ fn solve_riscv(elf_mem: &ElfMem, func_repo: &FuncRepo, panic_func: &Function) {
             );
             continue;
         };
-        let Ok(filename) = std::str::from_utf8(filename) else {
+        let Ok(filename) = core::str::from_utf8(filename) else {
             continue;
         };
         println!();
@@ -257,7 +257,7 @@ enum Expr {
     PtrDeref(Box<Expr>),
 }
 impl Debug for Expr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Const(val) => {
                 let val = (*val).cast_signed();
@@ -301,7 +301,7 @@ impl Expr {
                 }
                 if let Expr::Const(_) = &**a {
                     // Always put the constant last.
-                    std::mem::swap(a, b);
+                    core::mem::swap(a, b);
                 }
                 if let Expr::Const(b) = &**b {
                     if *b == 0 {

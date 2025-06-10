@@ -88,16 +88,19 @@ unsafe fn set_element(inner: &UnsafeCell<LinkInner>, offset: usize, value: Optio
 }
 
 impl Link {
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             inner: UnsafeCell::new(LinkInner::new()),
         }
     }
 
+    #[must_use]
     pub fn is_unlinked(&self) -> bool {
         self.get_next() == LinkInner::UNLINKED_VALUE && self.get_prev() == LinkInner::UNLINKED_VALUE
     }
 
+    #[must_use]
     pub fn is_linked(&self) -> bool {
         !self.is_unlinked()
     }
@@ -108,6 +111,7 @@ impl Link {
     }
 
     #[inline]
+    #[must_use]
     fn get_next(&self) -> Option<NonNull<Link>> {
         unsafe { get_element(&self.inner, LinkInner::NEXT_OFFSET) }
     }
@@ -118,6 +122,7 @@ impl Link {
     }
 
     #[inline]
+    #[must_use]
     fn get_prev(&self) -> Option<NonNull<Link>> {
         unsafe { get_element(&self.inner, LinkInner::PREV_OFFSET) }
     }
@@ -162,6 +167,7 @@ macro_rules! define_adapter {
 }
 
 impl<T, A: Adapter> UnsafeList<T, A> {
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             head: None,
@@ -174,6 +180,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     /// # Safety
     /// It is up to the caller to ensure exclusive access to the list and its
     /// members.
+    #[must_use]
     pub unsafe fn is_empty(&self) -> bool {
         self.head.is_none()
     }
