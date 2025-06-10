@@ -241,12 +241,7 @@ platform(
 # This test requires a special configuration. It's run in CI, and can be
 # run manually via:
 #
-#   bazel test --platforms=//pw_grpc:test_platform  //pw_grpc:integration_test
-#
-# deps.bzl contains the bazel repositories used in deps for this integration test.
-# It is generated from go.mod using gazelle:
-#   gazelle update-repos -from_file=go.mod -to_macro=deps.bzl%pw_grpc_deps -prune
-# See https://github.com/bazelbuild/bazel-gazelle?tab=readme-ov-file#update-repos
+#   bazel test --platforms=//pw_grpc:test_platform //pw_grpc:integration_test
 go_test(
     name = "integration_test",
     srcs = ["integration_test.go"],
