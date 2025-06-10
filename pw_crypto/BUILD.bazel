@@ -240,7 +240,7 @@ label_flag(
 
 host_backend_alias(
     name = "unspecified_ecdh_backend",
-    backend = ":ecdh_boringssl",
+    backend = ":ecdh_mbedtls",
 )
 
 pw_cc_test(
@@ -264,6 +264,20 @@ cc_library(
     deps = [
         ":ecdh.facade",
         "@boringssl//:crypto",
+    ],
+)
+
+cc_library(
+    name = "ecdh_mbedtls",
+    srcs = ["ecdh_mbedtls.cc"],
+    hdrs = [
+        "public_overrides/mbedtls/pw_crypto/ecdh_backend.h",
+    ],
+    implementation_deps = ["//pw_assert:check"],
+    strip_include_prefix = "public_overrides/mbedtls",
+    deps = [
+        ":ecdh.facade",
+        "@mbedtls",
     ],
 )
 

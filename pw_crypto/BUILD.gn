@@ -244,6 +244,17 @@ pw_source_set("ecdh_boringssl") {
   ]
 }
 
+pw_source_set("ecdh_mbedtls") {
+  public_configs = [ ":mbedtls_config" ]
+  sources = [ "ecdh_mbedtls.cc" ]
+  public = [ "public_overrides/mbedtls/pw_crypto/ecdh_backend.h" ]
+  deps = [ "$dir_pw_assert" ]
+  public_deps = [
+    ":ecdh.facade",
+    "$pw_external_mbedtls",
+  ]
+}
+
 # This test targets the specific backend pointed to by
 # pw_crypto_ECDH_BACKEND.
 pw_test("ecdh_test") {
