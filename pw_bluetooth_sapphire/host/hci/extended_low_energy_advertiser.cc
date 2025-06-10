@@ -507,10 +507,10 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
     return;
   }
 
-  fit::result<HostError> result =
+  fit::result<HostError> can_start_result =
       CanStartAdvertising(address, data, scan_rsp, options, connect_callback);
-  if (result.is_error()) {
-    result_callback(ToResult(result.error_value()).take_error());
+  if (can_start_result.is_error()) {
+    result_callback(ToResult(can_start_result.error_value()).take_error());
     return;
   }
 
@@ -518,6 +518,19 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
   staged_advertising_parameters_.include_tx_power_level =
       options.include_tx_power_level;
   staged_advertising_parameters_.extended_pdu = options.extended_pdu;
+
+  auto result_cb_wrapper = [this, cb = std::move(result_callback)](
+                               StartAdvertisingInternalResult result) {
+    if (result.is_error()) {
+      auto [error, handle] = result.error_value();
+      if (handle) {
+        advertising_handle_map_.RemoveHandle(handle.value());
+      }
+      cb(fit::error(error));
+      return;
+    }
+    cb(result.take_value());
+  };
 
   // Core Spec, Volume 4, Part E, Section 7.8.58: "the number of advertising
   // sets that can be supported is not fixed and the Controller can change it at
@@ -537,7 +550,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(
                            scan_rsp,
                            options,
                            std::move(connect_callback),
-                           std::move(result_callback));
+                           std::move(result_cb_wrapper));
 }
 
 void ExtendedLowEnergyAdvertiser::StopAdvertising() {

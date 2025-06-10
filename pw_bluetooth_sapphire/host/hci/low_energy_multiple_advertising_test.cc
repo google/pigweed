@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
@@ -126,6 +127,42 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
                                                          adv_handle);
       return;
     }
+  }
+
+  void SimulateSetAdvertisingParametersFailure() {
+    test_device()->SetDefaultAndroidResponseStatus(
+        hci_spec::vendor::android::kLEMultiAdvt,
+        hci_spec::vendor::android::kLEMultiAdvtSetAdvtParamSubopcode,
+        pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
+    test_device()->SetDefaultResponseStatus(
+        hci_spec::kLESetExtendedAdvertisingParameters,
+        pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
+  }
+
+  void ClearSetAdvertisingParametersFailure() {
+    test_device()->ClearDefaultAndroidResponseStatus(
+        hci_spec::vendor::android::kLEMultiAdvt,
+        hci_spec::vendor::android::kLEMultiAdvtSetAdvtParamSubopcode);
+    test_device()->ClearDefaultResponseStatus(
+        hci_spec::kLESetExtendedAdvertisingParameters);
+  }
+
+  void SimulateEnableAdvertisingFailure() {
+    test_device()->SetDefaultAndroidResponseStatus(
+        hci_spec::vendor::android::kLEMultiAdvt,
+        hci_spec::vendor::android::kLEMultiAdvtEnableSubopcode,
+        pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
+    test_device()->SetDefaultResponseStatus(
+        hci_spec::kLESetExtendedAdvertisingEnable,
+        pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
+  }
+
+  void ClearEnableAdvertisingFailure() {
+    test_device()->ClearDefaultAndroidResponseStatus(
+        hci_spec::vendor::android::kLEMultiAdvt,
+        hci_spec::vendor::android::kLEMultiAdvtEnableSubopcode);
+    test_device()->ClearDefaultResponseStatus(
+        hci_spec::kLESetExtendedAdvertisingEnable);
   }
 
   std::optional<Result<hci_spec::AdvertisingHandle>> last_status() const {
@@ -815,6 +852,99 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, Inspect) {
               ChildrenMatch(ElementsAre(advertiser_matcher)));
 }
 #endif  // NINSPECT
+
+TYPED_TEST(
+    LowEnergyMultipleAdvertisingTest,
+    StartAdvertisingFailureDoesNotLeakHandleOnSetAdvertisingParametersFailure) {
+  this->test_device()->set_num_supported_advertising_sets(
+      this->max_advertisements());
+
+  AdvertisingData ad = this->GetExampleData();
+  AdvertisingData scan_data = this->GetExampleData();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*init_extended_pdu=*/false,
+                             /*init_anonymous=*/false,
+                             /*init_include_tx_power_level=*/true);
+
+  this->SimulateSetAdvertisingParametersFailure();
+  this->advertiser()->StartAdvertising(
+      DeviceAddress(DeviceAddress::Type::kLEPublic, {0xFF}),
+      ad,
+      scan_data,
+      options,
+      /*connect_callback=*/nullptr,
+      this->MakeExpectErrorCallback());
+
+  this->RunUntilIdle();
+  ASSERT_TRUE(this->TakeLastStatus());
+  EXPECT_FALSE(this->advertiser()->IsAdvertising());
+  this->ClearSetAdvertisingParametersFailure();
+
+  // Ensure the handle was not leaked by advertising the max number of
+  // advertisements.
+  for (uint8_t i = 0; i < this->advertiser()->MaxAdvertisements(); i++) {
+    this->advertiser()->StartAdvertising(
+        DeviceAddress(DeviceAddress::Type::kLEPublic, {i}),
+        ad,
+        scan_data,
+        options,
+        /*connect_callback=*/nullptr,
+        this->MakeExpectSuccessCallback());
+    this->RunUntilIdle();
+  }
+
+  ASSERT_TRUE(this->TakeLastStatus());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_EQ(this->advertiser()->MaxAdvertisements(),
+            this->advertiser()->NumAdvertisements());
+}
+
+TYPED_TEST(LowEnergyMultipleAdvertisingTest,
+           StartAdvertisingFailureDoesNotLeakHandleOnEnableFailure) {
+  this->test_device()->set_num_supported_advertising_sets(
+      this->max_advertisements());
+
+  AdvertisingData ad = this->GetExampleData();
+  AdvertisingData scan_data = this->GetExampleData();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*init_extended_pdu=*/false,
+                             /*init_anonymous=*/false,
+                             /*init_include_tx_power_level=*/true);
+
+  this->SimulateEnableAdvertisingFailure();
+  this->advertiser()->StartAdvertising(
+      DeviceAddress(DeviceAddress::Type::kLEPublic, {0xFF}),
+      ad,
+      scan_data,
+      options,
+      /*connect_callback=*/nullptr,
+      this->MakeExpectErrorCallback());
+
+  this->RunUntilIdle();
+  ASSERT_TRUE(this->TakeLastStatus());
+  EXPECT_FALSE(this->advertiser()->IsAdvertising());
+  this->ClearEnableAdvertisingFailure();
+
+  // Ensure the handle was not leaked by advertising the max number of
+  // advertisements.
+  for (uint8_t i = 0; i < this->advertiser()->MaxAdvertisements(); i++) {
+    this->advertiser()->StartAdvertising(
+        DeviceAddress(DeviceAddress::Type::kLEPublic, {i}),
+        ad,
+        scan_data,
+        options,
+        /*connect_callback=*/nullptr,
+        this->MakeExpectSuccessCallback());
+    this->RunUntilIdle();
+  }
+
+  ASSERT_TRUE(this->TakeLastStatus());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_EQ(this->advertiser()->MaxAdvertisements(),
+            this->advertiser()->NumAdvertisements());
+}
 
 }  // namespace
 }  // namespace bt::hci

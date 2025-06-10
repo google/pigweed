@@ -221,7 +221,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     const AdvertisingData& scan_rsp,
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
-    hci::ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
+    StartAdvertisingInternalCallback result_callback) {
   data.Copy(&staged_parameters_.data);
   scan_rsp.Copy(&staged_parameters_.scan_rsp);
 
@@ -236,7 +236,9 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   if (!set_adv_params.has_value()) {
     bt_log(
         WARN, "hci-le", "failed to start advertising for %s", bt_str(address));
-    result_callback(fit::error(HostError::kFailed));
+    result_callback(fit::error(
+        std::make_tuple(Error(HostError::kFailed),
+                        std::optional<hci_spec::AdvertisingHandle>())));
     return;
   }
 
@@ -262,8 +264,9 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
                     "failed to start advertising (addr: %s, handle: %d)",
                     bt_str(address),
                     handle)) {
-      // TODO: b/421238103 - Erase advertising handle from map.
-      result_cb(result.take_error());
+      result_cb(fit::error(
+          std::make_tuple(result.error_value(), std::optional(handle))));
+      OnCurrentOperationComplete();
       return;
     }
 
@@ -277,7 +280,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternalStep2(
     const DeviceAddress& address,
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
-    hci::ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
+    StartAdvertisingInternalCallback result_callback) {
   if (address.type() == DeviceAddress::Type::kLERandom) {
     std::optional<CommandPacket> set_random_addr_packet =
         BuildSetAdvertisingRandomAddr(handle);
@@ -308,17 +311,17 @@ void LowEnergyAdvertiser::StartAdvertisingInternalStep2(
        handle,
        result_cb = std::move(result_callback),
        connect_cb = std::move(connect_callback)](Result<> result) mutable {
-        if (!bt_is_error(result,
-                         WARN,
-                         "hci-le",
-                         "failed to start advertising for %d",
-                         handle)) {
+        if (bt_is_error(result,
+                        WARN,
+                        "hci-le",
+                        "failed to start advertising for %d",
+                        handle)) {
+          result_cb(fit::error(
+              std::make_tuple(result.error_value(), std::optional(handle))));
+        } else {
           bt_log(INFO, "hci-le", "advertising enabled for %d", handle);
           connection_callbacks_[handle] = std::move(connect_cb);
           result_cb(fit::ok(handle));
-        } else {
-          // TODO: b/421238103 - Erase advertising handle from map.
-          result_cb(result.take_error());
         }
         OnCurrentOperationComplete();
       });

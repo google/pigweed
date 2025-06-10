@@ -212,6 +212,12 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   virtual void AttachInspect(inspect::Node& /*parent*/) {}
 
  protected:
+  using StartAdvertisingInternalResult =
+      fit::result<std::tuple<Error, std::optional<hci_spec::AdvertisingHandle>>,
+                  hci_spec::AdvertisingHandle>;
+  using StartAdvertisingInternalCallback =
+      fit::callback<void(StartAdvertisingInternalResult result)>;
+
   // Return value of BuildSetAdvertisingParams.
   struct SetAdvertisingParams {
     CommandPacket packet;
@@ -296,13 +302,12 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Unconditionally start advertising (all checks must be performed in the
   // methods that call this one).
-  void StartAdvertisingInternal(
-      const DeviceAddress& address,
-      const AdvertisingData& data,
-      const AdvertisingData& scan_rsp,
-      const AdvertisingOptions& options,
-      ConnectionCallback connect_callback,
-      hci::ResultFunction<hci_spec::AdvertisingHandle> callback);
+  void StartAdvertisingInternal(const DeviceAddress& address,
+                                const AdvertisingData& data,
+                                const AdvertisingData& scan_rsp,
+                                const AdvertisingOptions& options,
+                                ConnectionCallback connect_callback,
+                                StartAdvertisingInternalCallback callback);
 
   // Unconditionally stop advertising (all checks muts be performed in the
   // methods that call this one).
@@ -341,7 +346,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
       const DeviceAddress& address,
       const AdvertisingOptions& options,
       ConnectionCallback connect_callback,
-      hci::ResultFunction<hci_spec::AdvertisingHandle> result_callback);
+      StartAdvertisingInternalCallback result_callback);
 
   // Enqueue onto the HCI command runner the HCI commands necessary to stop
   // advertising and completely remove a given address from the controller's

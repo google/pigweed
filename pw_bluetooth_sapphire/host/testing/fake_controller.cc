@@ -217,6 +217,19 @@ void FakeController::ClearDefaultResponseStatus(hci_spec::OpCode opcode) {
   default_status_map_.erase(opcode);
 }
 
+void FakeController::SetDefaultAndroidResponseStatus(
+    hci_spec::OpCode opcode,
+    uint8_t subopcode,
+    pw::bluetooth::emboss::StatusCode status) {
+  PW_DCHECK(status != pwemb::StatusCode::SUCCESS);
+  default_android_status_map_.emplace(std::make_pair(opcode, subopcode),
+                                      status);
+}
+void FakeController::ClearDefaultAndroidResponseStatus(hci_spec::OpCode opcode,
+                                                       uint8_t subopcode) {
+  default_android_status_map_.erase(std::make_pair(opcode, subopcode));
+}
+
 bool FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
   PW_DCHECK(peer);
 
@@ -589,6 +602,23 @@ bool FakeController::MaybeRespondWithDefaultStatus(hci_spec::OpCode opcode) {
   auto iter = default_status_map_.find(opcode);
   if (iter == default_status_map_.end())
     return false;
+
+  bt_log(INFO,
+         "fake-hci",
+         "responding with error (command: %#.4x, status: %#.2hhx)",
+         opcode,
+         static_cast<unsigned char>(iter->second));
+  RespondWithCommandComplete(static_cast<pwemb::OpCode>(opcode), iter->second);
+  return true;
+}
+
+bool FakeController::MaybeRespondWithDefaultAndroidStatus(
+    hci_spec::OpCode opcode, uint8_t subopcode) {
+  auto iter =
+      default_android_status_map_.find(std::make_pair(opcode, subopcode));
+  if (iter == default_android_status_map_.end()) {
+    return false;
+  }
 
   bt_log(INFO,
          "fake-hci",
@@ -4214,6 +4244,12 @@ void FakeController::OnAndroidLEMultiAdvt(
   const auto& payload = command_packet.payload_data();
 
   uint8_t subopcode = payload.To<uint8_t>();
+
+  if (MaybeRespondWithDefaultAndroidStatus(command_packet.header().opcode,
+                                           subopcode)) {
+    return;
+  }
+
   switch (subopcode) {
     case android_hci::kLEMultiAdvtSetAdvtParamSubopcode: {
       auto params = android_emb::MakeLEMultiAdvtSetAdvtParamCommandView(

@@ -268,6 +268,13 @@ class FakeController final : public ControllerTestDoubleBase,
                                 pw::bluetooth::emboss::StatusCode status);
   void ClearDefaultResponseStatus(hci_spec::OpCode opcode);
 
+  void SetDefaultAndroidResponseStatus(
+      hci_spec::OpCode opcode,
+      uint8_t subopcode,
+      pw::bluetooth::emboss::StatusCode status);
+  void ClearDefaultAndroidResponseStatus(hci_spec::OpCode opcode,
+                                         uint8_t subopcode);
+
   // Returns the current LE scan state.
   const LEScanState& le_scan_state() const { return le_scan_state_; }
 
@@ -657,6 +664,12 @@ class FakeController final : public ControllerTestDoubleBase,
   // an error Command Complete event and returns true. Returns false if no
   // response was set.
   bool MaybeRespondWithDefaultStatus(hci_spec::OpCode opcode);
+
+  // If a default status has been configured for the given opcode and subopcode,
+  // sends back an error Command Complete event and returns true. Returns false
+  // if no response was set.
+  bool MaybeRespondWithDefaultAndroidStatus(hci_spec::OpCode opcode,
+                                            uint8_t subopcode);
 
   // Sends Inquiry Response reports for known BR/EDR devices.
   void SendInquiryResponses();
@@ -1282,6 +1295,21 @@ class FakeController final : public ControllerTestDoubleBase,
   // simulating errors)
   std::unordered_map<hci_spec::OpCode, pw::bluetooth::emboss::StatusCode>
       default_status_map_;
+
+  struct PairHash {
+    std::size_t operator()(
+        const std::pair<hci_spec::OpCode, uint8_t>& p) const {
+      auto h1 = std::hash<hci_spec::OpCode>{}(p.first);
+      auto h2 = std::hash<uint8_t>{}(p.second);
+      return h1 ^ h2;
+    }
+  };
+  // Used to setup default Android Command Complete event status responses (for
+  // simulating errors)
+  std::unordered_map<std::pair<hci_spec::OpCode, uint8_t /*subopcode*/>,
+                     pw::bluetooth::emboss::StatusCode,
+                     PairHash>
+      default_android_status_map_;
 
   // The set of fake peers that are visible.
   std::unordered_map<DeviceAddress, std::unique_ptr<FakePeer>> peers_;

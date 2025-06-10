@@ -101,7 +101,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     AdvertisingData scan_rsp;
     AdvertisingOptions options;
     ConnectionCallback connect_callback;
-    ResultFunction<hci_spec::AdvertisingHandle> result_callback;
+    StartAdvertisingInternalCallback result_callback;
   };
   std::optional<StagedParams> staged_params_;
   bool starting_ = false;

@@ -272,10 +272,10 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
     return;
   }
 
-  fit::result<HostError> result =
+  fit::result<HostError> can_start_result =
       CanStartAdvertising(address, data, scan_rsp, options, connect_callback);
-  if (result.is_error()) {
-    result_callback(ToResult(result.error_value()).take_error());
+  if (can_start_result.is_error()) {
+    result_callback(ToResult(can_start_result.error_value()).take_error());
     return;
   }
 
@@ -315,12 +315,25 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
     copied_scan_rsp.SetTxPower(kTransmitPower);
   }
 
+  auto result_cb_wrapper = [this, cb = std::move(result_callback)](
+                               StartAdvertisingInternalResult result) {
+    if (result.is_error()) {
+      auto [error, handle] = result.error_value();
+      if (handle.has_value()) {
+        advertising_handle_map_.RemoveHandle(handle.value());
+      }
+      cb(fit::error(error));
+      return;
+    }
+    cb(result.take_value());
+  };
+
   StartAdvertisingInternal(address,
                            copied_data,
                            copied_scan_rsp,
                            options,
                            std::move(connect_callback),
-                           std::move(result_callback));
+                           std::move(result_cb_wrapper));
 }
 
 void AndroidExtendedLowEnergyAdvertiser::StopAdvertising() {
