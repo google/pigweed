@@ -60,7 +60,7 @@ must specify values for the following settings:
     and ``@freertos//:no_disable_task_statics``.
 
 In addition, you need to set the ``@freertos//:freertos_config`` label flag to
-point to the library target providing the FreeRTOS config header.  See
+point to the library target providing the FreeRTOS config header. See
 :ref:`docs-build_system-bazel_configuration` for a discussion of how to work
 with our label flags.
 

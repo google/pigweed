@@ -1,0 +1,433 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This is a BUILD.bazel file template for TinyUSB.
+#
+# TODO(b/422199556): Contribute this to upstream TinyUSB.
+
+# buildifier: disable=module-docstring
+package(default_visibility = ["//visibility:public"])
+
+# Label flag that points to the cc_library target providing tusb_config.h
+label_flag(
+    name = "tinyusb_config",
+    build_setting_default = ":default_tinyusb_config",
+)
+
+# Label flag that points to the cc_library target providing descriptors
+label_flag(
+    name = "tinyusb_descriptors",
+    build_setting_default = "@rules_cc//:empty_lib",
+)
+
+# Label flag that points to the cc_library target providing port-layer sources
+label_flag(
+    name = "tinyusb_third_party_port",
+    build_setting_default = "@rules_cc//:empty_lib",
+)
+
+# Label flag that points to the cc_library target providing port-layer headers
+label_flag(
+    name = "tinyusb_third_party_port_headers",
+    build_setting_default = "@rules_cc//:empty_lib",
+)
+
+cc_library(
+    name = "default_tinyusb_config",
+    target_compatible_with = ["@platforms//:incompatible"],
+)
+
+constraint_setting(
+    name = "port",
+)
+
+constraint_value(
+    name = "port_synopsys_stm32",
+    constraint_setting = ":port",
+)
+
+constraint_value(
+    name = "port_third_party",
+    constraint_setting = ":port",
+)
+
+# Main TinyUSB library
+cc_library(
+    name = "tinyusb",
+    srcs = [
+        "src/common/tusb_fifo.c",
+        "src/tusb.c",
+    ],
+    hdrs = [
+        "src/tusb.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [
+        ":device_class_headers",
+        ":device_headers",
+        ":osal",
+        ":tinyusb_config",
+        ":tinyusb_headers",
+        ":tinyusb_port",
+        ":tinyusb_port_headers",
+    ],
+)
+
+cc_library(
+    name = "tinyusb_headers",
+    hdrs = [
+        "src/common/tusb_common.h",
+        "src/common/tusb_compiler.h",
+        "src/common/tusb_debug.h",
+        "src/common/tusb_fifo.h",
+        "src/common/tusb_mcu.h",
+        "src/common/tusb_private.h",
+        "src/common/tusb_types.h",
+        "src/common/tusb_verify.h",
+        "src/tusb.h",
+        "src/tusb_option.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [
+        ":device_class_headers",
+        ":device_headers",
+        ":tinyusb_port_headers",
+    ],
+)
+
+# Port implementations
+cc_library(
+    name = "tinyusb_port",
+    deps = select({
+        ":port_synopsys_stm32": [":synopsys_stm32_port"],
+        ":port_third_party": [":tinyusb_third_party_port"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "synopsys_stm32_port",
+    srcs = [
+        "src/portable/synopsys/dwc2/dcd_dwc2.c",
+        "src/portable/synopsys/dwc2/dwc2_common.c",
+        "src/portable/synopsys/dwc2/hcd_dwc2.c",
+    ],
+    hdrs = [
+        "src/portable/synopsys/dwc2/dwc2_common.h",
+        "src/portable/synopsys/dwc2/dwc2_stm32.h",
+        "src/portable/synopsys/dwc2/dwc2_type.h",
+    ],
+    strip_include_prefix = "src",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":device_headers",
+        ":tinyusb_config",
+        ":tinyusb_headers",
+        "@pigweed//third_party/stm32cube",
+    ],
+)
+
+# Port headers
+cc_library(
+    name = "tinyusb_port_headers",
+    deps = select({
+        ":port_synopsys_stm32": [":synopsys_stm32_port_headers"],
+        ":port_third_party": [":tinyusb_third_party_port_headers"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "synopsys_stm32_port_headers",
+    hdrs = [
+        "src/portable/synopsys/dwc2/dwc2_type.h",
+    ],
+    strip_include_prefix = "src",
+    visibility = ["//visibility:private"],
+)
+
+# OSAL implementation
+cc_library(
+    name = "osal",
+    hdrs = [
+        "src/osal/osal.h",
+    ] + select({
+        "@pigweed//pw_build/constraints/rtos:freertos": [
+            "src/osal/osal_freertos.h",
+        ],
+        "//conditions:default": [
+            "src/osal/osal_none.h",
+        ],
+    }),
+    strip_include_prefix = "src",
+    visibility = ["//visibility:private"],
+    deps = select({
+        "@pigweed//pw_build/constraints/rtos:freertos": [
+            "@freertos",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+# Device libraries
+cc_library(
+    name = "device",
+    srcs = [
+        "src/device/usbd.c",
+        "src/device/usbd_control.c",
+    ],
+    hdrs = [
+        "src/device/dcd.h",
+        "src/device/usbd.h",
+        "src/device/usbd_pvt.h",
+    ],
+    strip_include_prefix = "src",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":osal",
+        ":tinyusb_config",
+        ":tinyusb_descriptors",
+        ":tinyusb_headers",
+        ":tinyusb_port",
+    ],
+)
+
+cc_library(
+    name = "device_headers",
+    hdrs = [
+        "src/device/dcd.h",
+        "src/device/usbd.h",
+        "src/device/usbd_pvt.h",
+    ],
+    strip_include_prefix = "src",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":osal",
+    ],
+)
+
+cc_library(
+    name = "device_class_headers",
+    hdrs = [
+        "src/class/audio/audio.h",
+        "src/class/audio/audio_device.h",
+        "src/class/cdc/cdc.h",
+        "src/class/cdc/cdc_device.h",
+        "src/class/dfu/dfu.h",
+        "src/class/dfu/dfu_device.h",
+        "src/class/hid/hid.h",
+        "src/class/hid/hid_device.h",
+        "src/class/midi/midi.h",
+        "src/class/midi/midi_device.h",
+        "src/class/msc/msc.h",
+        "src/class/msc/msc_device.h",
+        "src/class/usbtmc/usbtmc.h",
+        "src/class/usbtmc/usbtmc_device.h",
+        "src/class/vendor/vendor_device.h",
+        "src/class/video/video.h",
+        "src/class/video/video_device.h",
+        "src/common/tusb_common.h",
+        "src/common/tusb_compiler.h",
+        "src/common/tusb_debug.h",
+        "src/common/tusb_fifo.h",
+        "src/common/tusb_mcu.h",
+        "src/common/tusb_private.h",
+        "src/common/tusb_types.h",
+        "src/common/tusb_verify.h",
+        "src/tusb.h",
+        "src/tusb_option.h",
+    ],
+    strip_include_prefix = "src",
+    visibility = ["//visibility:private"],
+    deps = [":tinyusb_config"],
+)
+
+cc_library(
+    name = "device_audio",
+    srcs = ["src/class/audio/audio_device.c"],
+    hdrs = [
+        "src/class/audio/audio.h",
+        "src/class/audio/audio_device.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "device_cdc",
+    srcs = ["src/class/cdc/cdc_device.c"],
+    hdrs = [
+        "src/class/cdc/cdc.h",
+        "src/class/cdc/cdc_device.h",
+        "src/class/cdc/cdc_rndis.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "device_dfu",
+    srcs = [
+        "src/class/dfu/dfu_device.c",
+        "src/class/dfu/dfu_rt_device.c",
+    ],
+    hdrs = [
+        "src/class/dfu/dfu.h",
+        "src/class/dfu/dfu_device.h",
+        "src/class/dfu/dfu_rt_device.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "device_hid",
+    srcs = ["src/class/hid/hid_device.c"],
+    hdrs = [
+        "src/class/hid/hid.h",
+        "src/class/hid/hid_device.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "device_midi",
+    srcs = ["src/class/midi/midi_device.c"],
+    hdrs = [
+        "src/class/midi/midi.h",
+        "src/class/midi/midi_device.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "device_msc",
+    srcs = ["src/class/msc/msc_device.c"],
+    hdrs = [
+        "src/class/msc/msc.h",
+        "src/class/msc/msc_device.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "device_usbtmc",
+    srcs = ["src/class/usbtmc/usbtmc_device.c"],
+    hdrs = [
+        "src/class/usbtmc/usbtmc.h",
+        "src/class/usbtmc/usbtmc_device.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "device_vendor",
+    srcs = ["src/class/vendor/vendor_device.c"],
+    hdrs = ["src/class/vendor/vendor_device.h"],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "device_video",
+    srcs = ["src/class/video/video_device.c"],
+    hdrs = [
+        "src/class/video/video.h",
+        "src/class/video/video_device.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":device"],
+    alwayslink = 1,
+)
+
+# Host libraries
+cc_library(
+    name = "host",
+    srcs = [
+        "src/host/hub.c",
+        "src/host/usbh.c",
+        "src/host/usbh_control.c",
+    ],
+    hdrs = [
+        "src/host/hcd.h",
+        "src/host/hcd_attr.h",
+        "src/host/hub.h",
+        "src/host/usbh.h",
+        "src/host/usbh_classdriver.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":tinyusb"],
+)
+
+cc_library(
+    name = "host_cdc",
+    srcs = [
+        "src/class/cdc/cdc_host.c",
+        "src/class/cdc/cdc_rndis_host.c",
+    ],
+    hdrs = [
+        "src/class/cdc/cdc.h",
+        "src/class/cdc/cdc_host.h",
+        "src/class/cdc/cdc_rndis.h",
+        "src/class/cdc/cdc_rndis_host.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":host"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "host_hid",
+    srcs = ["src/class/hid/hid_host.c"],
+    hdrs = [
+        "src/class/hid/hid.h",
+        "src/class/hid/hid_host.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":host"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "host_msc",
+    srcs = ["src/class/msc/msc_host.c"],
+    hdrs = [
+        "src/class/msc/msc.h",
+        "src/class/msc/msc_host.h",
+    ],
+    strip_include_prefix = "src",
+    deps = [":host"],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "host_vendor",
+    srcs = ["src/class/vendor/vendor_host.c"],
+    hdrs = ["src/class/vendor/vendor_host.h"],
+    strip_include_prefix = "src",
+    deps = [":host"],
+    alwayslink = 1,
+)
