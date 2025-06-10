@@ -35,8 +35,13 @@ class Counter {
 
   ~Counter() { ++num_dtor_calls_; }
 
-  static size_t GetNumCtorCalls() { return std::exchange(num_ctor_calls_, 0); }
-  static size_t GetNumDtorCalls() { return std::exchange(num_dtor_calls_, 0); }
+  static size_t TakeNumCtorCalls() { return std::exchange(num_ctor_calls_, 0); }
+  static size_t TakeNumDtorCalls() { return std::exchange(num_dtor_calls_, 0); }
+  static void Reset() {
+    // Clear values from any previous test.
+    Counter::TakeNumCtorCalls();
+    Counter::TakeNumDtorCalls();
+  }
 
   size_t value() const { return value_; }
 
@@ -70,15 +75,9 @@ class CounterWithBuffer : public Counter {
   std::array<std::byte, 128> buffer_;
 };
 
-class ManagedPtrTest : public ::testing::Test {
+class TestWithCounters : public ::testing::Test {
  protected:
-  void SetUp() override {
-    // Clear values from any previous test.
-    Counter::GetNumCtorCalls();
-    Counter::GetNumDtorCalls();
-  }
-
-  pw::allocator::test::AllocatorForTest<256> allocator_;
+  TestWithCounters() { Counter::Reset(); }
 };
 
 }  // namespace pw::allocator::test

@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/internal/managed_ptr_testing.h"
+#include "pw_allocator/internal/counter.h"
 
 namespace pw::allocator::test {
 

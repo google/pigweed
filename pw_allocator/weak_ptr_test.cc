@@ -20,14 +20,19 @@
 #include <cstddef>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/internal/managed_ptr_testing.h"
+#include "pw_allocator/internal/counter.h"
 #include "pw_allocator/shared_ptr.h"
+#include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
 
 using pw::allocator::test::Counter;
-using WeakPtrTest = pw::allocator::test::ManagedPtrTest;
+
+class WeakPtrTest : public pw::allocator::test::TestWithCounters {
+ protected:
+  pw::allocator::test::AllocatorForTest<256> allocator_;
+};
 
 TEST_F(WeakPtrTest, DefaultInitializationIsExpired) {
   pw::WeakPtr<int> weak;

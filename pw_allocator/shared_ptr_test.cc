@@ -20,7 +20,8 @@
 #include <cstddef>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/internal/managed_ptr_testing.h"
+#include "pw_allocator/internal/counter.h"
+#include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -28,7 +29,11 @@ namespace {
 using pw::allocator::test::Counter;
 using pw::allocator::test::CounterSink;
 using pw::allocator::test::CounterWithBuffer;
-using SharedPtrTest = pw::allocator::test::ManagedPtrTest;
+
+class SharedPtrTest : public pw::allocator::test::TestWithCounters {
+ protected:
+  pw::allocator::test::AllocatorForTest<256> allocator_;
+};
 
 TEST_F(SharedPtrTest, DefaultInitializationIsNullptr) {
   pw::SharedPtr<int> empty;
@@ -64,8 +69,8 @@ TEST_F(SharedPtrTest, CopyConstructionIncreasesUseCount) {
   EXPECT_EQ(ptr2->value(), 42u);
   EXPECT_EQ(ptr1.use_count(), 2);
   EXPECT_EQ(ptr2.use_count(), 2);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 1U);
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 1U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
 }
 
 TEST_F(SharedPtrTest, CopyAssignmentIncreasesUseCount) {
@@ -77,8 +82,8 @@ TEST_F(SharedPtrTest, CopyAssignmentIncreasesUseCount) {
   EXPECT_EQ(ptr2->value(), 42u);
   EXPECT_EQ(ptr1.use_count(), 2);
   EXPECT_EQ(ptr2.use_count(), 2);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 1U);
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 1U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
 }
 
 TEST_F(SharedPtrTest, MakeSharedForwardsConstructorArguments) {
@@ -91,7 +96,7 @@ TEST_F(SharedPtrTest, MakeSharedForwardsConstructorArguments) {
 TEST_F(SharedPtrTest, MoveConstructsFromSubClassAndFreesTotalSize) {
   auto ptr = allocator_.MakeShared<CounterWithBuffer>();
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 1U);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 1U);
 
   size_t allocated = allocator_.allocate_size();
   EXPECT_GE(allocated, sizeof(CounterWithBuffer));
@@ -102,16 +107,16 @@ TEST_F(SharedPtrTest, MoveConstructsFromSubClassAndFreesTotalSize) {
 
   // The size that is deallocated here should be the size of the larger
   // subclass, not the size of the smaller base class.
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
   base_ptr.reset();
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 1U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 1U);
   EXPECT_EQ(allocator_.deallocate_size(), allocated);
 }
 
 TEST_F(SharedPtrTest, MoveAssignsFromSubClassAndFreesTotalSize) {
   auto ptr = allocator_.MakeShared<CounterWithBuffer>();
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 1U);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 1U);
 
   size_t allocated = allocator_.allocate_size();
   EXPECT_GE(allocated, sizeof(CounterWithBuffer));
@@ -122,20 +127,20 @@ TEST_F(SharedPtrTest, MoveAssignsFromSubClassAndFreesTotalSize) {
 
   // The size that is deallocated here should be the size of the larger
   // subclass, not the size of the smaller base class.
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
   base_ptr.reset();
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 1U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 1U);
   EXPECT_EQ(allocator_.deallocate_size(), allocated);
 }
 
 TEST_F(SharedPtrTest, ArrayConstruction) {
   auto ptr = allocator_.MakeShared<Counter[]>(5);
   EXPECT_NE(ptr.get(), nullptr);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 5u);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 5u);
   for (size_t i = 0; i < 5; ++i) {
     EXPECT_EQ(ptr[i].value(), i);
   }
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
 }
 
 TEST_F(SharedPtrTest, SizeReturnsCorrectSize) {
@@ -146,11 +151,11 @@ TEST_F(SharedPtrTest, SizeReturnsCorrectSize) {
 TEST_F(SharedPtrTest, ArrayConstructionWithAlignment) {
   auto ptr = allocator_.MakeShared<Counter[]>(5, 32);
   EXPECT_NE(ptr.get(), nullptr);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 5u);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 5u);
   for (size_t i = 0; i < 5; ++i) {
     EXPECT_EQ(ptr[i].value(), i);
   }
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
   auto addr = reinterpret_cast<uintptr_t>(ptr.get());
   EXPECT_EQ(addr % 32, 0u);
 }
@@ -163,52 +168,52 @@ TEST_F(SharedPtrTest, SizeReturnsCorrectSizeWhenAligned) {
 TEST_F(SharedPtrTest, FreedExactlyOnce) {
   auto ptr1 = allocator_.MakeShared<Counter>(42u);
   EXPECT_EQ(ptr1.use_count(), 1);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 1U);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 1U);
 
   pw::SharedPtr<Counter> ptr2 = ptr1;
   EXPECT_EQ(ptr1.use_count(), 2);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
 
   {
     pw::SharedPtr<Counter> ptr3(std::move(ptr1));
     EXPECT_EQ(ptr3.use_count(), 2);
-    EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
-    EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+    EXPECT_EQ(Counter::TakeNumCtorCalls(), 0U);
+    EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
 
     ptr2 = nullptr;
     EXPECT_EQ(ptr3.use_count(), 1);
-    EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
-    EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+    EXPECT_EQ(Counter::TakeNumCtorCalls(), 0U);
+    EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
   }
 
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 1U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 1U);
 }
 
 TEST_F(SharedPtrTest, ArrayFreedExactlyOnce) {
   auto ptr1 = allocator_.MakeShared<Counter[]>(5);
   EXPECT_EQ(ptr1.use_count(), 1);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 5U);
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 5U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
 
   pw::SharedPtr<Counter[]> ptr2 = ptr1;
   EXPECT_EQ(ptr1.use_count(), 2);
-  EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumCtorCalls(), 0U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
 
   {
     pw::SharedPtr<Counter[]> ptr3(std::move(ptr1));
     EXPECT_EQ(ptr3.use_count(), 2);
-    EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
-    EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+    EXPECT_EQ(Counter::TakeNumCtorCalls(), 0U);
+    EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
 
     ptr2 = nullptr;
     EXPECT_EQ(ptr3.use_count(), 1);
-    EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
-    EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
+    EXPECT_EQ(Counter::TakeNumCtorCalls(), 0U);
+    EXPECT_EQ(Counter::TakeNumDtorCalls(), 0U);
   }
 
-  EXPECT_EQ(Counter::GetNumDtorCalls(), 5U);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 5U);
 }
 
 TEST_F(SharedPtrTest, OwnerBeforeProvidesPartialOrder) {

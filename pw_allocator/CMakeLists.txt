@@ -518,9 +518,9 @@ pw_add_library(pw_allocator.block_allocator_testing STATIC
     block_allocator_testing.cc
 )
 
-pw_add_library(pw_allocator.managed_ptr_testing STATIC
+pw_add_library(pw_allocator.counter STATIC
   HEADERS
-    public/pw_allocator/internal/managed_ptr_testing.h
+    public/pw_allocator/internal/counter.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -528,7 +528,7 @@ pw_add_library(pw_allocator.managed_ptr_testing STATIC
     pw_allocator.testing
     pw_unit_test
   SOURCES
-    managed_ptr_testing.cc
+    counter.cc
 )
 
 pw_add_library(pw_allocator.test_harness STATIC
@@ -816,7 +816,8 @@ pw_add_test(pw_allocator.shared_ptr_test
     shared_ptr_test.cc
   PRIVATE_DEPS
     pw_allocator
-    pw_allocator.managed_ptr_testing
+    pw_allocator.counter
+    pw_allocator.testing
   GROUPS
     modules
     pw_allocator
@@ -890,7 +891,8 @@ pw_add_test(pw_allocator.unique_ptr_test
     unique_ptr_test.cc
   PRIVATE_DEPS
     pw_allocator
-    pw_allocator.managed_ptr_testing
+    pw_allocator.counter
+    pw_allocator.testing
   GROUPS
     modules
     pw_allocator
@@ -901,7 +903,8 @@ pw_add_test(pw_allocator.weak_ptr_test
     weak_ptr_test.cc
   PRIVATE_DEPS
     pw_allocator
-    pw_allocator.managed_ptr_testing
+    pw_allocator.counter
+    pw_allocator.testing
   GROUPS
     modules
     pw_allocator

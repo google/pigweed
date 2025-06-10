@@ -483,15 +483,15 @@ pw_source_set("block_allocator_testing") {
   sources = [ "block_allocator_testing.cc" ]
 }
 
-pw_source_set("managed_ptr_testing") {
+pw_source_set("counter") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/internal/managed_ptr_testing.h" ]
+  public = [ "public/pw_allocator/internal/counter.h" ]
   public_deps = [
     ":pw_allocator",
     ":testing",
     dir_pw_unit_test,
   ]
-  sources = [ "managed_ptr_testing.cc" ]
+  sources = [ "counter.cc" ]
 }
 
 pw_source_set("test_harness") {
@@ -705,8 +705,9 @@ pw_test("pmr_allocator_test") {
 
 pw_test("shared_ptr_test") {
   deps = [
-    ":managed_ptr_testing",
+    ":counter",
     ":pw_allocator",
+    ":testing",
   ]
   sources = [ "shared_ptr_test.cc" ]
 }
@@ -769,16 +770,18 @@ pw_test("typed_pool_test") {
 
 pw_test("unique_ptr_test") {
   deps = [
-    ":managed_ptr_testing",
+    ":counter",
     ":pw_allocator",
+    ":testing",
   ]
   sources = [ "unique_ptr_test.cc" ]
 }
 
 pw_test("weak_ptr_test") {
   deps = [
-    ":managed_ptr_testing",
+    ":counter",
     ":pw_allocator",
+    ":testing",
   ]
   sources = [ "weak_ptr_test.cc" ]
 }
