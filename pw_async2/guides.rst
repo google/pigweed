@@ -364,6 +364,65 @@ can be tested with simulated time using
 :cpp:class:`pw::async2::SimulatedTimeProvider`. Doing so helps avoid
 timing-dependent test flakes and helps ensure that tests are fast since they
 don't need to wait for real-world time to elapse.
+.. _module-pw_async2-guides-callbacks:
+
+Interacting with async2 from non-async2 code using callbacks
+=============================================================
+In a system gradually or partially adopting ``pw_async2``, there are often cases
+where non-async2 code needs to run asynchronous operations built with
+``pw_async2``.
+
+To facilitate this, ``pw_async2`` provides callback tasks:
+:cpp:class:`pw::async2::OneshotCallbackTask` and
+:cpp:class:`pw::async2::RecurringCallbackTask`.
+
+These tasks invoke a :ref:`pendable function <module-pw_async2-guides-pendables>`,
+forwarding its result to a provided callback on completion.
+
+The two variants of callback tasks are:
+
+* :cpp:class:`pw::async2::OneshotCallbackTask<T>`: Pends the pendable. When
+  it returns ``Ready(value)``, the callback is invoked once with ``value``.
+  After the callback finishes, the ``OneshotCallbackTask`` itself completes and
+  is done. This is useful for single asynchronous requests.
+
+* :cpp:class:`pw::async2::RecurringCallbackTask<T>`: Similar to the oneshot
+  version, but after the callback is invoked, the ``RecurringCallbackTask``
+  continues polling the pendable function. This is suitable for operations that
+  produce a stream of values over time, where you want to process each one.
+
+Example
+-------
+.. code-block:: cpp
+
+   #include "pw_async2/callback_task.h"
+   #include "pw_log/log.h"
+   #include "pw_result/result.h"
+
+   // Assume the async2 part of the system exposes a function to post tasks to
+   // its dispatcher.
+   void PostTaskToDispatcher(pw::async2::Task& task);
+
+   // The async2 function we'd like to call.
+   pw::async2::Poll<pw::Result<int>> ReadValue(pw::async2::Context&);
+
+   // Non-async2 code.
+   int ReadAndPrintAsyncValue() {
+     pw::async2::OneshotCallbackTaskFor<&ReadValue> task([](pw::Result<int> result) {
+       if (result.ok()) {
+         PW_LOG_INFO("Read value: %d", result.value());
+       } else {
+         PW_LOG_ERROR("Failed to read value: %s", result.status().str());
+       }
+     });
+
+     PostTaskToDispatcher(task);
+
+     // In this example, the task is stack allocated, so we would need to wait
+     // for it to complete before it goes out of scope. In a real application,
+     // the task may be a member of a long-lived object or be statically
+     // allocated.
+   }
 
 .. _module-pw_async2-guides-faqs:
 

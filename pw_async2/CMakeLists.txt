@@ -128,6 +128,24 @@ pw_add_test(pw_async2.pend_func_task_test
     pw_async2.pend_func_task
 )
 
+pw_add_library(pw_async2.callback_task INTERFACE
+  HEADERS
+    public/pw_async2/callback_task.h
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+    pw_function
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_async2.callback_task_test
+  SOURCES
+    callback_task_test.cc
+  PRIVATE_DEPS
+    pw_async2.callback_task
+    pw_function
+)
+
 pw_add_library(pw_async2.pendable_as_task INTERFACE
   HEADERS
     public/pw_async2/pendable_as_task.h

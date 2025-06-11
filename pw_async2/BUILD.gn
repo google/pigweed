@@ -161,6 +161,25 @@ pw_test("pend_func_task_test") {
   sources = [ "pend_func_task_test.cc" ]
 }
 
+pw_source_set("callback_task") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_async2/callback_task.h" ]
+  public_deps = [
+    ":dispatcher",
+    dir_pw_function,
+  ]
+}
+
+pw_test("callback_task_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    ":callback_task",
+    ":dispatcher",
+    dir_pw_function,
+  ]
+  sources = [ "callback_task_test.cc" ]
+}
+
 pw_source_set("pendable_as_task") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_async2/pendable_as_task.h" ]

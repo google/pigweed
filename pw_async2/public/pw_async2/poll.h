@@ -252,6 +252,16 @@ constexpr Poll<std::remove_reference_t<T>> Ready(T&& value) {
 /// Returns a value indicating that an operation was not yet able to complete.
 inline constexpr PendingType Pending() { return PendingType(); }
 
+template <typename T>
+struct UnwrapPoll {
+  using Type = T;
+};
+
+template <typename T>
+struct UnwrapPoll<Poll<T>> {
+  using Type = T;
+};
+
 }  // namespace async2
 
 // --- ToString implementations for ``Poll`` types ---

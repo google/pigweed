@@ -223,6 +223,28 @@ pw_cc_test(
 )
 
 cc_library(
+    name = "callback_task",
+    hdrs = [
+        "public/pw_async2/callback_task.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":dispatcher",
+        "//pw_function",
+    ],
+)
+
+pw_cc_test(
+    name = "callback_task_test",
+    srcs = ["callback_task_test.cc"],
+    deps = [
+        ":callback_task",
+        ":dispatcher",
+        "//pw_function",
+    ],
+)
+
+cc_library(
     name = "pendable_as_task",
     hdrs = [
         "public/pw_async2/pendable_as_task.h",
