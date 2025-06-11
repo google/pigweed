@@ -587,6 +587,7 @@ TEST_F(TokenizeToBuffer, LengthDelimitedString) {
   size_t message_size = sizeof(buffer_);
 
   // DOCSTAG[pw_tokenizer-length-delimited-example]
+  // `greeting` is the first 5 characters only ("Hello")
   std::string_view greeting("Hello world", 5);
   PW_TOKENIZE_TO_BUFFER(buffer_,
                         &message_size,
