@@ -47,5 +47,3 @@ target_link_libraries(app
     pw_unit_test.simple_printing_main
     ${TEST_LIB}.lib
 )
-
-zephyr_append_cmake_library(pw_unit_test.simple_printing_main)
