@@ -206,6 +206,7 @@ cc_library(
         ":deque_common",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
+        "//pw_async2:waker_queue",
     ],
 )
 

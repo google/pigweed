@@ -94,6 +94,7 @@ pw_add_library(pw_containers.async_count_and_capacity INTERFACE
   PUBLIC_DEPS
     pw_async2.dispatcher
     pw_async2.poll
+    pw_async2.waker_queue
     pw_containers._deque_common
 )
 

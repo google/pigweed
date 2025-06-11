@@ -223,8 +223,13 @@ class BasicInlineAsyncDeque<ValueType,
   using Base::operator=;
 
   /// Returns `Pending` until space for `num` elements is available.
-  async2::Poll<> PendAvailable(async2::Context& context, size_type num = 1) {
-    return Base::count_and_capacity().PendAvailable(context, num);
+  async2::Poll<> PendHasSpace(async2::Context& context, size_type num = 1) {
+    return Base::count_and_capacity().PendHasSpace(context, num);
+  }
+
+  /// Returns `Pending` until an element is available.
+  async2::Poll<> PendNotEmpty(async2::Context& context) {
+    return Base::count_and_capacity().PendNotEmpty(context);
   }
 
  protected:

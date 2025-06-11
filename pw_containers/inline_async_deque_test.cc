@@ -50,31 +50,31 @@ using InlineAsyncDequeCommonTest16 = CommonTest<16>;
 PW_CONTAINERS_COMMON_DEQUE_TESTS(InlineAsyncDequeCommonTest5);
 PW_CONTAINERS_COMMON_DEQUE_TESTS(InlineAsyncDequeCommonTest16);
 
-TEST(InlineAsyncDequeTest, PendZeroReturnsSuccessImmediately) {
+TEST(InlineAsyncDequeTest, PendHasZeroSpaceReturnsSuccessImmediately) {
   pw::InlineAsyncDeque<int, 4> deque;
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return deque.PendAvailable(context, 0);
+    return deque.PendHasSpace(context, 0);
   });
   dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
-TEST(InlineAsyncDequeTest, PendWhenAvailableReturnsSuccessImmediately) {
+TEST(InlineAsyncDequeTest, PendHasSpaceWhenAvailableReturnsSuccessImmediately) {
   pw::InlineAsyncDeque<int, 4> deque;
   deque.push_back(1);
   deque.push_back(2);
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return deque.PendAvailable(context, 2);
+    return deque.PendHasSpace(context, 2);
   });
   dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
-TEST(InlineAsyncDequeTest, PendWhenUnavailableWaitsUntilPop) {
+TEST(InlineAsyncDequeTest, PendHasSpaceWhenFullWaitsUntilPopFront) {
   pw::InlineAsyncDeque<int, 4> deque;
   deque.push_back(1);
   deque.push_back(2);
@@ -82,7 +82,7 @@ TEST(InlineAsyncDequeTest, PendWhenUnavailableWaitsUntilPop) {
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return deque.PendAvailable(context, 3);
+    return deque.PendHasSpace(context, 3);
   });
   dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
@@ -94,7 +94,27 @@ TEST(InlineAsyncDequeTest, PendWhenUnavailableWaitsUntilPop) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
-TEST(InlineAsyncDequeTest, PendWhenUnavailableWaitsUntilClear) {
+TEST(InlineAsyncDequeTest, PendHasSpaceWhenFullWaitsUntilPopBack) {
+  pw::InlineAsyncDeque<int, 4> deque;
+  deque.push_back(1);
+  deque.push_back(2);
+  deque.push_back(3);
+
+  Dispatcher dispatcher;
+  PendFuncTask task([&](Context& context) -> Poll<> {
+    return deque.PendHasSpace(context, 3);
+  });
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  deque.pop_back();
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  deque.pop_back();
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendHasSpaceWhenFullWaitsUntilClear) {
   pw::InlineAsyncDeque<int, 4> deque;
   deque.push_back(1);
   deque.push_back(2);
@@ -103,7 +123,7 @@ TEST(InlineAsyncDequeTest, PendWhenUnavailableWaitsUntilClear) {
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return deque.PendAvailable(context, 2);
+    return deque.PendHasSpace(context, 2);
   });
   dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
@@ -112,15 +132,143 @@ TEST(InlineAsyncDequeTest, PendWhenUnavailableWaitsUntilClear) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
-TEST(InlineAsyncDequeTest, PendOnGenericSizedReference) {
+TEST(InlineAsyncDequeTest, PendHasSpaceOnGenericSizedReference) {
   pw::InlineAsyncDeque<int, 4> deque1;
   pw::InlineAsyncDeque<int>& deque2 = deque1;
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return deque2.PendAvailable(context, 1);
+    return deque2.PendHasSpace(context, 1);
   });
   dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendHasSpaceWaitsAfterReadyUntilPushFront) {
+  pw::InlineAsyncDeque<int, 4> deque;
+  Dispatcher dispatcher;
+
+  PendFuncTask task1([&](Context& context) -> Poll<> {
+    return deque.PendHasSpace(context, 1);
+  });
+  dispatcher.Post(task1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+
+  PendFuncTask task2([&](Context& context) -> Poll<> {
+    return deque.PendHasSpace(context, 2);
+  });
+  dispatcher.Post(task2);
+
+  // Even though there is room, the queue returns "Pending" until the space
+  // reserved by the first task has been claimed.
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  deque.push_front(1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendHasSpaceWaitsAfterReadyUntilPushBack) {
+  pw::InlineAsyncDeque<int, 4> deque;
+  Dispatcher dispatcher;
+
+  PendFuncTask task1([&](Context& context) -> Poll<> {
+    return deque.PendHasSpace(context, 1);
+  });
+  dispatcher.Post(task1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+
+  PendFuncTask task2([&](Context& context) -> Poll<> {
+    return deque.PendHasSpace(context, 2);
+  });
+  dispatcher.Post(task2);
+
+  // Even though there is room, the queue returns "Pending" until the space
+  // reserved by the first task has been claimed.
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  deque.push_back(1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendNotEmptyWhenNotEmptyReturnsSuccessImmediately) {
+  pw::InlineAsyncDeque<int, 4> deque;
+  deque.push_back(1);
+
+  Dispatcher dispatcher;
+  PendFuncTask task(
+      [&](Context& context) -> Poll<> { return deque.PendNotEmpty(context); });
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendNotEmptyWhenEmptyWaitsUntilPush) {
+  pw::InlineAsyncDeque<int, 4> deque;
+
+  Dispatcher dispatcher;
+  PendFuncTask task(
+      [&](Context& context) -> Poll<> { return deque.PendNotEmpty(context); });
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  deque.push_back(1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendNotEmptyOnGenericSizedReference) {
+  pw::InlineAsyncDeque<int, 4> deque1;
+  pw::InlineAsyncDeque<int>& deque2 = deque1;
+  deque2.push_back(1);
+
+  Dispatcher dispatcher;
+  PendFuncTask task(
+      [&](Context& context) -> Poll<> { return deque2.PendNotEmpty(context); });
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendNotEmptyWaitsAfterReadyUntilPopFront) {
+  pw::InlineAsyncDeque<int, 4> deque;
+  Dispatcher dispatcher;
+  deque.push_back(1);
+  deque.push_back(2);
+
+  PendFuncTask task1(
+      [&](Context& context) -> Poll<> { return deque.PendNotEmpty(context); });
+  dispatcher.Post(task1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+
+  PendFuncTask task2(
+      [&](Context& context) -> Poll<> { return deque.PendNotEmpty(context); });
+  dispatcher.Post(task2);
+
+  // Even though there is an item, the queue returns "Pending" until the item
+  // reserved by the first task has been claimed.
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  deque.pop_front();
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncDequeTest, PendNotEmptyWaitsAfterReadyUntilPopBack) {
+  pw::InlineAsyncDeque<int, 4> deque;
+  Dispatcher dispatcher;
+  deque.push_back(1);
+  deque.push_back(2);
+
+  PendFuncTask task1(
+      [&](Context& context) -> Poll<> { return deque.PendNotEmpty(context); });
+  dispatcher.Post(task1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+
+  PendFuncTask task2(
+      [&](Context& context) -> Poll<> { return deque.PendNotEmpty(context); });
+  dispatcher.Post(task2);
+
+  // Even though there is an item, the queue returns "Pending" until the item
+  // reserved by the first task has been claimed.
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  deque.pop_back();
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 

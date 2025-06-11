@@ -194,8 +194,13 @@ class BasicInlineAsyncQueue<ValueType,
   using typename Base::value_type;
 
   /// Returns `Pending` until space for `num` elements is available.
-  async2::Poll<> PendAvailable(async2::Context& context, size_type num = 1) {
-    return deque().PendAvailable(context, num);
+  async2::Poll<> PendHasSpace(async2::Context& context, size_type num = 1) {
+    return deque().PendHasSpace(context, num);
+  }
+
+  /// Returns `Pending` until an element is available.
+  async2::Poll<> PendNotEmpty(async2::Context& context) {
+    return deque().PendNotEmpty(context);
   }
 
  private:

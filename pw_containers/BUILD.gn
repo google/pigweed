@@ -108,6 +108,7 @@ pw_source_set("async_count_and_capacity") {
     ":deque_common",
     "$dir_pw_async2:dispatcher",
     "$dir_pw_async2:poll",
+    "$dir_pw_async2:waker_queue",
   ]
 }
 

@@ -30,31 +30,31 @@ using pw::async2::Pending;
 using pw::async2::Poll;
 using pw::async2::Ready;
 
-TEST(InlineAsyncQueueTest, PendZeroReturnsSuccessImmediately) {
+TEST(InlineAsyncQueueTest, PendHasZeroSpaceReturnsSuccessImmediately) {
   pw::InlineAsyncQueue<int, 4> queue;
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return queue.PendAvailable(context, 0);
+    return queue.PendHasSpace(context, 0);
   });
   dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
-TEST(InlineAsyncQueueTest, PendWhenAvailableReturnsSuccessImmediately) {
+TEST(InlineAsyncQueueTest, PendHasSpaceWhenAvailableReturnsSuccessImmediately) {
   pw::InlineAsyncQueue<int, 4> queue;
   queue.push(1);
   queue.push(2);
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return queue.PendAvailable(context, 2);
+    return queue.PendHasSpace(context, 2);
   });
   dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
-TEST(InlineAsyncQueueTest, PendWhenUnavailableWaitsUntilPop) {
+TEST(InlineAsyncQueueTest, PendPendHasSpaceWhenFullWaitsUntilPop) {
   pw::InlineAsyncQueue<int, 4> queue;
   queue.push(1);
   queue.push(2);
@@ -62,7 +62,7 @@ TEST(InlineAsyncQueueTest, PendWhenUnavailableWaitsUntilPop) {
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return queue.PendAvailable(context, 3);
+    return queue.PendHasSpace(context, 3);
   });
   dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
@@ -74,7 +74,7 @@ TEST(InlineAsyncQueueTest, PendWhenUnavailableWaitsUntilPop) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
-TEST(InlineAsyncQueueTest, PendWhenUnavailableWaitsUntilClear) {
+TEST(InlineAsyncQueueTest, PendHasSpaceWhenFullWaitsUntilClear) {
   pw::InlineAsyncQueue<int, 4> queue;
   queue.push(1);
   queue.push(2);
@@ -83,7 +83,7 @@ TEST(InlineAsyncQueueTest, PendWhenUnavailableWaitsUntilClear) {
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return queue.PendAvailable(context, 2);
+    return queue.PendHasSpace(context, 2);
   });
   dispatcher.Post(task);
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
@@ -92,15 +92,97 @@ TEST(InlineAsyncQueueTest, PendWhenUnavailableWaitsUntilClear) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
-TEST(InlineAsyncDequeTest, PendOnGenericSizedReference) {
+TEST(InlineAsyncQueueTest, PendHasSpaceOnGenericSizedReference) {
   pw::InlineAsyncQueue<int, 4> queue1;
   pw::InlineAsyncQueue<int>& queue2 = queue1;
 
   Dispatcher dispatcher;
   PendFuncTask task([&](Context& context) -> Poll<> {
-    return queue2.PendAvailable(context, 1);
+    return queue2.PendHasSpace(context, 1);
   });
   dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncQueueTest, PendHasSpaceWaitsAfterReadyUntilPush) {
+  pw::InlineAsyncQueue<int, 4> queue;
+  Dispatcher dispatcher;
+
+  PendFuncTask task1([&](Context& context) -> Poll<> {
+    return queue.PendHasSpace(context, 1);
+  });
+  dispatcher.Post(task1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+
+  PendFuncTask task2([&](Context& context) -> Poll<> {
+    return queue.PendHasSpace(context, 2);
+  });
+  dispatcher.Post(task2);
+
+  // Even though there is room, the queue returns "Pending" until the space
+  // reserved by the first task has been claimed.
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  queue.push(1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncQueueTest, PendNotEmptyWhenNotEmptyReturnsSuccessImmediately) {
+  pw::InlineAsyncQueue<int, 4> queue;
+  queue.push(1);
+
+  Dispatcher dispatcher;
+  PendFuncTask task(
+      [&](Context& context) -> Poll<> { return queue.PendNotEmpty(context); });
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncQueueTest, PendNotEmptyWhenEmptyWaitsUntilPush) {
+  pw::InlineAsyncQueue<int, 4> queue;
+
+  Dispatcher dispatcher;
+  PendFuncTask task(
+      [&](Context& context) -> Poll<> { return queue.PendNotEmpty(context); });
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  queue.push(1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncQueueTest, PendNotEmptyOnGenericSizedReference) {
+  pw::InlineAsyncQueue<int, 4> queue1;
+  pw::InlineAsyncQueue<int>& queue2 = queue1;
+  queue2.push(1);
+
+  Dispatcher dispatcher;
+  PendFuncTask task(
+      [&](Context& context) -> Poll<> { return queue2.PendNotEmpty(context); });
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
+TEST(InlineAsyncQueueTest, PendNotEmptyWaitsAfterReadyUntilPop) {
+  pw::InlineAsyncQueue<int, 4> queue;
+  Dispatcher dispatcher;
+  queue.push(1);
+  queue.push(2);
+
+  PendFuncTask task1(
+      [&](Context& context) -> Poll<> { return queue.PendNotEmpty(context); });
+  dispatcher.Post(task1);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+
+  PendFuncTask task2(
+      [&](Context& context) -> Poll<> { return queue.PendNotEmpty(context); });
+  dispatcher.Post(task2);
+
+  // Even though there is an item, the queue returns "Pending" until the item
+  // reserved by the first task has been claimed.
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
+
+  queue.pop();
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
