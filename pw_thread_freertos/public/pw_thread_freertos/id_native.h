@@ -46,6 +46,8 @@ class NativeId {
     return task_handle_ >= other.task_handle_;
   }
 
+  [[nodiscard]] TaskHandle_t native() const { return task_handle_; }
+
  private:
   TaskHandle_t task_handle_;
 };

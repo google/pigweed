@@ -21,8 +21,7 @@ namespace pw::thread::backend {
 // (note that k_tid_t is just a pointer to the k_thread aka TCB).
 class NativeId {
  public:
-  constexpr NativeId(const k_tid_t thread_id = nullptr)
-      : thread_id_(thread_id) {}
+  constexpr NativeId(k_tid_t thread_id = nullptr) : thread_id_(thread_id) {}
 
   constexpr bool operator==(NativeId other) const {
     return thread_id_ == other.thread_id_;
@@ -43,8 +42,10 @@ class NativeId {
     return thread_id_ >= other.thread_id_;
   }
 
+  [[nodiscard]] k_tid_t native() const { return thread_id_; }
+
  private:
-  const k_tid_t thread_id_;
+  k_tid_t thread_id_;
 };
 
 }  // namespace pw::thread::backend

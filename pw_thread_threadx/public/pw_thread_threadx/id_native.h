@@ -45,6 +45,8 @@ class NativeId {
     return thread_ptr_ >= other.thread_ptr_;
   }
 
+  [[nodiscard]] TX_THREAD* native() const { return thread_ptr_; }
+
  private:
   TX_THREAD* thread_ptr_;
 };

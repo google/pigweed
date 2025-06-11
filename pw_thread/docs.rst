@@ -133,6 +133,11 @@ C++ in one of two ways:
    This is thread safe, not IRQ safe. It is implementation defined whether this
    is safe before the scheduler has started.
 
+Backends may support a `native()` method on their thread id implementation.
+This is present in order to provide a way to pass a native thread handle to
+native RTOS functions. It is non-portable, and not recommended that this be
+used in general, and is provided for the case that no viable alternative exists
+to using the native thread handle directly.
 
 Example
 =======

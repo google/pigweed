@@ -44,6 +44,8 @@ class NativeId {
     return task_ptr_ >= other.task_ptr_;
   }
 
+  [[nodiscard]] OS_TASK* native() const { return task_ptr_; }
+
  private:
   OS_TASK* task_ptr_;
 };
