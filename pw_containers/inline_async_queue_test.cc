@@ -92,4 +92,16 @@ TEST(InlineAsyncQueueTest, PendWhenUnavailableWaitsUntilClear) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
 }
 
+TEST(InlineAsyncDequeTest, PendOnGenericSizedReference) {
+  pw::InlineAsyncQueue<int, 4> queue1;
+  pw::InlineAsyncQueue<int>& queue2 = queue1;
+
+  Dispatcher dispatcher;
+  PendFuncTask task([&](Context& context) -> Poll<> {
+    return queue2.PendAvailable(context, 1);
+  });
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+}
+
 }  // namespace

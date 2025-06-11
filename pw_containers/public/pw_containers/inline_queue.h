@@ -220,22 +220,21 @@ class BasicInlineQueue<ValueType, SizeType, containers::internal::kGenericSized>
   // or `delete`. `delete` could be supported using C++20's destroying delete.
   ~BasicInlineQueue() = default;
 
- private:
+ protected:
   template <typename, typename>
   friend class containers::internal::GenericQueue;
+
+  template <size_t kCapacity>
+  using Derived = BasicInlineQueue<value_type, size_type, kCapacity>;
 
   // The underlying BasicInlineDeque is not part of the generic-sized class. It
   // is provided in the derived class from which this instance was constructed.
   // To access the data, down-cast this to a known max size specialization, and
   // return a reference to a generic-sized BasicInlineDeque, which is the same
   // reference for all sizes.
-  Deque& deque() {
-    return static_cast<BasicInlineQueue<value_type, size_type, 0>*>(this)
-        ->deque();
-  }
+  Deque& deque() { return static_cast<Derived<0>*>(this)->deque(); }
   const Deque& deque() const {
-    return static_cast<const BasicInlineQueue<value_type, size_type, 0>*>(this)
-        ->deque();
+    return static_cast<const Derived<0>*>(this)->deque();
   }
 };
 

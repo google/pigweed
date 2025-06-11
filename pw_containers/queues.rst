@@ -96,9 +96,9 @@ API reference
 --------------------
 pw::InlineAsyncQueue
 --------------------
-.. doxygenclass:: pw::InlineAsyncQueue
+.. doxygentypedef:: pw::InlineAsyncQueue
+.. doxygenclass:: pw::BasicInlineAsyncQueue
    :members:
-   :undoc-members:
 
 --------------------------
 pw::InlineVarLenEntryQueue
