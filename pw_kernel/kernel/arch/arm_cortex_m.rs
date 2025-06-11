@@ -13,6 +13,7 @@
 // the License.
 
 use core::arch::asm;
+
 use cortex_m::peripheral::*;
 use pw_cast::CastInto as _;
 use pw_log::info;

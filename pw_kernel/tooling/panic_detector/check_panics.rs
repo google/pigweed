@@ -14,21 +14,17 @@
 
 // TODO: refactor this file and crate::riscv to separate generic elf code from
 // riscv specific code.
-use crate::find_symbol_address;
-use crate::riscv::call_graph::list_functions;
-use crate::riscv::call_graph::FuncRepo;
-use crate::riscv::call_graph::Function;
-use crate::riscv::DecodedInstr;
-use crate::riscv::ElfMem;
-use crate::riscv::InstrA;
-use crate::riscv::Reg;
-use anyhow::anyhow;
-use anyhow::Context;
 use core::fmt::Debug;
-use object::elf;
-use object::read::elf::{ElfFile32, FileHeader};
 use std::collections::HashSet;
 use std::path::Path;
+
+use anyhow::{anyhow, Context};
+use object::elf;
+use object::read::elf::{ElfFile32, FileHeader};
+
+use crate::find_symbol_address;
+use crate::riscv::call_graph::{list_functions, FuncRepo, Function};
+use crate::riscv::{DecodedInstr, ElfMem, InstrA, Reg};
 /// Check to see if the elf-file at `elf_path` contains any calls to the
 /// `panic_is_possible`` symbol, and if so, try to find the line numbers where
 /// these potential panics originate from.

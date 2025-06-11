@@ -16,11 +16,9 @@
 
 #[doc(hidden)]
 pub mod __private {
-    pub use pw_log_backend_basic_macro::{_pw_log_backend, _pw_logf_backend};
-
     pub use colors::log_level_tag;
-    pub use console;
-    pub use embedded_io;
+    pub use pw_log_backend_basic_macro::{_pw_log_backend, _pw_logf_backend};
+    pub use {console, embedded_io};
 }
 
 // Implement the `pw_log` backend API.

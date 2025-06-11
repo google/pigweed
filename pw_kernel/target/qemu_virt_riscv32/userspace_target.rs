@@ -16,9 +16,8 @@
 
 use console_backend as _;
 use kernel::{self as _, Clock, Duration};
-use time::Clock as _;
-
 use target_common::{declare_target, TargetInterface};
+use time::Clock as _;
 
 const STACK_SIZE_BYTES: usize = 2048;
 

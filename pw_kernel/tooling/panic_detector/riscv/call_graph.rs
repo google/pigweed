@@ -12,26 +12,17 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use super::elf_mem::ElfMem;
-use super::DecodedInstr;
-use super::Instr;
-use super::InstrA;
-use super::InstrType;
-use super::Reg;
-use anyhow::anyhow;
 use core::ops::Bound;
-use object::elf::STB_GLOBAL;
-use object::elf::STB_LOCAL;
-use object::elf::STB_WEAK;
-use object::elf::STT_FUNC;
-use object::read::elf::ElfFile32;
-use object::read::elf::Sym;
-use pw_cast::CastFrom as _;
-use std::collections::btree_map;
-use std::collections::hash_map;
-use std::collections::BTreeMap;
-use std::collections::HashMap;
+use std::collections::{btree_map, hash_map, BTreeMap, HashMap};
 use std::rc::Rc;
+
+use anyhow::anyhow;
+use object::elf::{STB_GLOBAL, STB_LOCAL, STB_WEAK, STT_FUNC};
+use object::read::elf::{ElfFile32, Sym};
+use pw_cast::CastFrom as _;
+
+use super::elf_mem::ElfMem;
+use super::{DecodedInstr, Instr, InstrA, InstrType, Reg};
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Binding {
     Unknown = 0,

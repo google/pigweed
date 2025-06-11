@@ -15,11 +15,9 @@
 
 #[cfg(feature = "arch_arm_cortex_m")]
 use cortex_m_semihosting::hio::hstdout;
-
+use pw_status::{Error, Result};
 #[cfg(feature = "arch_riscv")]
 use riscv_semihosting::hio::hstdout;
-
-use pw_status::{Error, Result};
 
 #[no_mangle]
 pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {

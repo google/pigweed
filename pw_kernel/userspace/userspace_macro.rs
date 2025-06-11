@@ -14,7 +14,8 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{parse, spanned::Spanned, Ident, ItemFn, ReturnType, Type, Visibility};
+use syn::spanned::Spanned;
+use syn::{parse, Ident, ItemFn, ReturnType, Type, Visibility};
 
 fn validate_and_set_entry_ident(
     args: TokenStream,

@@ -16,6 +16,7 @@
 #![feature(naked_functions)]
 
 use core::cell::UnsafeCell;
+
 use foreign_box::ForeignBox;
 use pw_log::info;
 
@@ -30,17 +31,13 @@ mod timer;
 
 pub use arch::{Arch, ArchInterface, MemoryRegion, MemoryRegionType};
 use kernel_config::{KernelConfig, KernelConfigInterface};
-use scheduler::SCHEDULER_STATE;
-pub use scheduler::{
-    sleep_until, start_thread,
-    thread::{Process, Stack, Thread},
-    yield_timeslice,
-};
-pub use timer::{Clock, Duration};
-
+pub use scheduler::thread::{Process, Stack, Thread};
 // Used by the `init_thread!` macro.
 #[doc(hidden)]
 pub use scheduler::thread::{StackStorage, StackStorageExt};
+use scheduler::SCHEDULER_STATE;
+pub use scheduler::{sleep_until, start_thread, yield_timeslice};
+pub use timer::{Clock, Duration};
 
 #[no_mangle]
 #[allow(non_snake_case)]
@@ -141,8 +138,7 @@ macro_rules! init_non_priv_process {
 macro_rules! init_thread {
     ($name:literal, $entry:expr, $stack_size:expr) => {{
         info!("allocating thread: {}", $name as &'static str);
-        use $crate::Stack;
-        use $crate::ThreadBuffer;
+        use $crate::{Stack, ThreadBuffer};
         let mut thread = {
             static mut THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
             #[allow(static_mut_refs)]
@@ -178,8 +174,7 @@ macro_rules! init_non_priv_thread {
             "allocating non-privileged thread: {}, entry {:#x}",
             $name as &'static str, $entry as usize
         );
-        use $crate::Stack;
-        use $crate::ThreadBuffer;
+        use $crate::{Stack, ThreadBuffer};
         let mut thread = {
             static mut THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
             #[allow(static_mut_refs)]

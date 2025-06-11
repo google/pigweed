@@ -15,7 +15,6 @@
 #![no_main]
 
 use console_backend as _;
-
 use target_common::{declare_target, TargetInterface};
 
 const STACK_SIZE_BYTES: usize = 2048;

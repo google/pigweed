@@ -12,6 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use std::collections::{HashMap, HashSet};
+use std::fs::{self, File};
+use std::io::BufWriter;
+use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
+
 use anyhow::{anyhow, bail, Context, Result};
 use clap::Parser;
 use object::build::elf::{
@@ -20,11 +26,6 @@ use object::build::elf::{
 };
 use object::build::{ByteString, Bytes, Id};
 use object::{elf, ReadRef};
-use std::collections::{HashMap, HashSet};
-use std::fs::{self, File};
-use std::io::BufWriter;
-use std::path::{Path, PathBuf};
-use std::sync::LazyLock;
 
 // Don't copy these sections, as the object writer won't allow multiple
 // sections of SYMTAB and STRTAB type.  All other sections should be copied

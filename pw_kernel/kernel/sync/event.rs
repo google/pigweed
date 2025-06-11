@@ -14,7 +14,8 @@
 
 use pw_status::Result;
 
-use crate::{scheduler::WaitQueueLock, timer::Instant};
+use crate::scheduler::WaitQueueLock;
+use crate::timer::Instant;
 
 /// Configuration for the behavior of an [`Event`].
 #[derive(Eq, PartialEq)]

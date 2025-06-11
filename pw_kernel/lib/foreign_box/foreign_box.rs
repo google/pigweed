@@ -15,11 +15,9 @@
 // This module uses the std test harness to allow catching of panics.
 #![cfg_attr(not(test), no_std)]
 
-use core::{
-    marker::PhantomData,
-    ops::{Deref, DerefMut},
-    ptr::NonNull,
-};
+use core::marker::PhantomData;
+use core::ops::{Deref, DerefMut};
+use core::ptr::NonNull;
 
 pub struct ForeignBox<T: ?Sized> {
     inner: NonNull<T>,
@@ -141,10 +139,10 @@ impl<T: ?Sized> DerefMut for ForeignBox<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     // Ensure that the console backend (needed for pw_log) is linked.
     use console_backend as _;
+
+    use super::*;
     #[test]
     fn consume_returns_the_same_pointer() {
         let mut value = 0xdecafbad_u32;

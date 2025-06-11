@@ -15,7 +15,6 @@
 #![no_std]
 
 use pw_tokenizer::tokenize_core_fmt_to_buffer;
-
 use syscall_user::*;
 use userspace::entry;
 

@@ -15,7 +15,6 @@
 use core::arch::naked_asm;
 
 use pw_status::Result;
-
 use syscall_defs::{SysCallId, SysCallInterface, SysCallReturnValue};
 
 pub struct SysCall {}

@@ -14,6 +14,7 @@
 #![no_std]
 
 use core::fmt::{Error, Write};
+
 use embedded_io::ErrorType;
 use pw_status::Result;
 

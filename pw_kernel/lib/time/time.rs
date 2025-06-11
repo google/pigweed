@@ -13,10 +13,8 @@
 // the License.
 #![no_std]
 
-use core::{
-    marker::PhantomData,
-    ops::{Add, Sub},
-};
+use core::marker::PhantomData;
+use core::ops::{Add, Sub};
 
 pub trait Clock: Sized {
     const TICKS_PER_SEC: u64;

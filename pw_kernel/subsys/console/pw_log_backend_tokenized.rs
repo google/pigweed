@@ -17,13 +17,12 @@
 
 #[doc(hidden)]
 pub mod __private {
+    // Re-export for use by the `pw_logf_backend!` macro.
+    pub use colors::log_level_tag;
     use console;
     use pw_status::{Error, Result};
     use pw_stream::{Cursor, Write};
     use pw_tokenizer::MessageWriter;
-
-    // Re-export for use by the `pw_logf_backend!` macro.
-    pub use colors::log_level_tag;
     pub use pw_tokenizer::{tokenize_core_fmt_to_writer, tokenize_printf_to_writer};
 
     // Use 52 to match the default value PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES

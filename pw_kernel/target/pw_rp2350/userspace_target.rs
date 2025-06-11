@@ -14,15 +14,11 @@
 #![no_std]
 #![no_main]
 
-use console_backend as _;
-use kernel as _;
-
-use rp235x_hal as hal;
-
 use hal::fugit::RateExtU32;
 use hal::uart::{DataBits, StopBits, UartConfig};
 use hal::Clock;
 use target_common::{declare_target, TargetInterface};
+use {console_backend as _, kernel as _, rp235x_hal as hal};
 
 #[link_section = ".start_block"]
 #[used]

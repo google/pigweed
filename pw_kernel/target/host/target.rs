@@ -14,8 +14,7 @@
 
 #![no_main]
 
-use console_backend as _;
-use kernel as _;
+use {console_backend as _, kernel as _};
 
 #[no_mangle]
 pub extern "C" fn main() -> core::ffi::c_int {

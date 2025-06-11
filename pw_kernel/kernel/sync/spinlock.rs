@@ -15,9 +15,8 @@
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 
-use crate::arch::{Arch, ArchInterface};
-
 pub use crate::arch::BareSpinLock as BareSpinLockApi;
+use crate::arch::{Arch, ArchInterface};
 
 pub type BareSpinLock = <Arch as ArchInterface>::BareSpinLock;
 

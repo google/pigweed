@@ -16,6 +16,7 @@
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
 use core::sync::atomic::{compiler_fence, Ordering};
+
 use riscv::register::*;
 
 pub struct InterruptGuard {

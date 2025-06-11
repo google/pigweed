@@ -26,10 +26,10 @@ pub use riscv::Arch;
 mod host;
 #[cfg(feature = "arch_host")]
 pub use host::Arch;
-
 use pw_status::Result;
 
-use crate::scheduler::{thread::Stack, SchedulerState};
+use crate::scheduler::thread::Stack;
+use crate::scheduler::SchedulerState;
 use crate::sync::spinlock::SpinLockGuard;
 
 pub type ArchThreadState = <Arch as ArchInterface>::ThreadState;

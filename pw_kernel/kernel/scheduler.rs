@@ -19,12 +19,11 @@ use foreign_box::ForeignBox;
 use list::*;
 use pw_log::info;
 use pw_status::{Error, Result};
+use thread::*;
 
 use crate::arch::{Arch, ArchInterface, ArchThreadState, ThreadState};
 use crate::sync::spinlock::{SpinLock, SpinLockGuard};
 use crate::timer::{Instant, TimerCallback, TimerQueue};
-
-use thread::*;
 
 mod locks;
 pub(crate) mod thread;

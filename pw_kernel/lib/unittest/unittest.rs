@@ -19,8 +19,9 @@ pub use unittest_proc_macro::*;
 
 #[cfg(test)]
 mod tests {
-    use crate as unittest;
     use unittest::test;
+
+    use crate as unittest;
 
     fn add(a: u32, b: u32) -> u32 {
         a + b

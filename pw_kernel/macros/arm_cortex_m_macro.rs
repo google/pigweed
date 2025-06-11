@@ -46,13 +46,10 @@
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{
-    parse::{Parse, ParseStream, Result},
-    parse_macro_input,
-    punctuated::Punctuated,
-    spanned::Spanned,
-    Error, FnArg, Ident, ItemFn, Token, Type,
-};
+use syn::parse::{Parse, ParseStream, Result};
+use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
+use syn::{parse_macro_input, Error, FnArg, Ident, ItemFn, Token, Type};
 
 #[derive(Eq, PartialEq, Hash, Debug)]
 enum KernelMode {

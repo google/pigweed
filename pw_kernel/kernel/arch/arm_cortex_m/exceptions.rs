@@ -13,12 +13,12 @@
 // the License.
 #![allow(non_snake_case)]
 
+use core::ptr::with_exposed_provenance;
+
 #[cfg(not(feature = "user_space"))]
 pub(crate) use arm_cortex_m_macro::kernel_only_exception as exception;
 #[cfg(feature = "user_space")]
 pub(crate) use arm_cortex_m_macro::user_space_exception as exception;
-
-use core::ptr::with_exposed_provenance;
 use pw_cast::{CastFrom as _, CastInto as _};
 use pw_log::info;
 use regs::*;

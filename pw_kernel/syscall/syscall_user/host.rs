@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 use pw_status::Result;
-
 use syscall_defs::SysCallInterface;
 
 pub struct SysCall {}

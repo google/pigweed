@@ -13,10 +13,10 @@
 // the License.
 
 use core::ptr::{with_exposed_provenance, with_exposed_provenance_mut};
+
 use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
-use time::Clock as _;
-use time::Duration;
+use time::{Clock as _, Duration};
 
 use crate::arch::riscv::spinlock::InterruptGuard;
 use crate::scheduler;

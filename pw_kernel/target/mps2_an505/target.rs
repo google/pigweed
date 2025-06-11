@@ -14,10 +14,8 @@
 #![no_std]
 #![no_main]
 
-use console_backend as _;
-use kernel as _;
-
 use target_common::{declare_target, TargetInterface};
+use {console_backend as _, kernel as _};
 
 pub struct Target {}
 

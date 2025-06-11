@@ -14,6 +14,7 @@
 #![no_std]
 
 use core::ptr;
+
 use kernel::sync::spinlock::SpinLock;
 use pw_status::Result;
 

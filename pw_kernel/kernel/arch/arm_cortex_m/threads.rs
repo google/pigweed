@@ -20,7 +20,6 @@ use pw_cast::CastInto as _;
 use pw_status::{Error, Result};
 
 // use pw_log::info;
-
 use crate::arch::arm_cortex_m::exceptions::{
     exception, ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking,
     ExcReturnStack, ExceptionFrame, KernelExceptionFrame, RetPsrVal,
@@ -29,7 +28,8 @@ use crate::arch::arm_cortex_m::protection::MemoryConfig;
 use crate::arch::arm_cortex_m::regs::msr::{ControlVal, Spsel};
 use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
 use crate::arch::{ArchInterface, MemoryConfig as _, MemoryRegionType};
-use crate::scheduler::{self, thread::Stack, SchedulerState, SCHEDULER_STATE};
+use crate::scheduler::thread::Stack;
+use crate::scheduler::{self, SchedulerState, SCHEDULER_STATE};
 use crate::sync::spinlock::SpinLockGuard;
 
 const STACK_ALIGNMENT: usize = 8;

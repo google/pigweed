@@ -37,7 +37,9 @@ use core::ptr::NonNull;
 //
 // TODO: konkers - Understand if we need to annotate the alignment of LinkInner.
 mod inner {
-    use core::{marker::PhantomPinned, mem::offset_of, ptr::NonNull};
+    use core::marker::PhantomPinned;
+    use core::mem::offset_of;
+    use core::ptr::NonNull;
 
     use super::Link;
 
@@ -457,8 +459,9 @@ impl<T, A: Adapter> Default for UnsafeList<T, A> {
 mod tests {
     use core::ptr::NonNull;
 
-    use super::*;
     use unittest::test;
+
+    use super::*;
 
     // `#[repr(C)]` is used to ensure that `link` is at a non-zero offset.
     // Previously, without this, the compiler was putting link at the beginning of

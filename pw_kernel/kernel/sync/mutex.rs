@@ -12,17 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use core::{
-    cell::UnsafeCell,
-    ops::{Deref, DerefMut},
-};
+use core::cell::UnsafeCell;
+use core::ops::{Deref, DerefMut};
 
 use pw_status::Result;
 
-use crate::{
-    scheduler::{thread::Thread, WaitQueueLock},
-    timer::Instant,
-};
+use crate::scheduler::thread::Thread;
+use crate::scheduler::WaitQueueLock;
+use crate::timer::Instant;
 
 const MUTEX_DEBUG: bool = false;
 macro_rules! mutex_debug {

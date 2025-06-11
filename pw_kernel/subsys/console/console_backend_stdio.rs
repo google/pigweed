@@ -11,8 +11,10 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-use pw_status::{Error, Result};
+
 use std::io::{stdout, Write as StdWrite};
+
+use pw_status::{Error, Result};
 
 #[no_mangle]
 pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {

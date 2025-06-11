@@ -16,11 +16,10 @@
 use embedded_io::Write;
 use kernel::sync::spinlock::SpinLock;
 use pw_status::{Error, Result};
-use rp235x_hal::{
-    gpio::{bank0::Gpio12, bank0::Gpio13, FunctionUart, Pin, PullDown},
-    pac::UART0,
-    uart::{self, UartPeripheral},
-};
+use rp235x_hal::gpio::bank0::{Gpio12, Gpio13};
+use rp235x_hal::gpio::{FunctionUart, Pin, PullDown};
+use rp235x_hal::pac::UART0;
+use rp235x_hal::uart::{self, UartPeripheral};
 
 pub type ConsoleUart = UartPeripheral<
     uart::Enabled,

@@ -13,29 +13,12 @@
 // the License.
 
 use super::Instr;
-use crate::riscv::Instr32B;
-use crate::riscv::Instr32I;
-use crate::riscv::Instr32IS;
-use crate::riscv::Instr32J;
-use crate::riscv::Instr32R;
-use crate::riscv::Instr32S;
-use crate::riscv::Instr32U;
-use crate::riscv::Opcode;
-use crate::riscv::Reg;
-use crate::riscv::FUNCT10_ADD;
-use crate::riscv::FUNCT10_AND;
-use crate::riscv::FUNCT10_OR;
-use crate::riscv::FUNCT10_SRAI;
-use crate::riscv::FUNCT10_SRLI;
-use crate::riscv::FUNCT10_SUB;
-use crate::riscv::FUNCT10_XOR;
-use crate::riscv::FUNCT3_BRANCH_EQ;
-use crate::riscv::FUNCT3_BRANCH_NE;
-use crate::riscv::FUNCT3_LOAD_W;
-use crate::riscv::FUNCT3_OP_ADDI;
-use crate::riscv::FUNCT3_OP_ANDI;
-use crate::riscv::FUNCT3_OP_SLI;
-use crate::riscv::FUNCT3_STORE_W;
+use crate::riscv::{
+    Instr32B, Instr32I, Instr32IS, Instr32J, Instr32R, Instr32S, Instr32U, Opcode, Reg,
+    FUNCT10_ADD, FUNCT10_AND, FUNCT10_OR, FUNCT10_SRAI, FUNCT10_SRLI, FUNCT10_SUB, FUNCT10_XOR,
+    FUNCT3_BRANCH_EQ, FUNCT3_BRANCH_NE, FUNCT3_LOAD_W, FUNCT3_OP_ADDI, FUNCT3_OP_ANDI,
+    FUNCT3_OP_SLI, FUNCT3_STORE_W,
+};
 const OP_MASK_5: u16 = 0xe003;
 const OP_MASK_6: u16 = 0xf003;
 const OP_MASK_7: u16 = 0xec03;
@@ -353,9 +336,10 @@ pub fn decompress_instr(instr: u16) -> Option<Instr> {
     None
 }
 mod rv16 {
-    use crate::riscv::{sign_extend_i16, sign_extend_i32, Reg};
     use bitfield_struct::bitfield;
     use pw_cast::try_cast;
+
+    use crate::riscv::{sign_extend_i16, sign_extend_i32, Reg};
     const fn unwrap_or_0(val: Option<u16>) -> u16 {
         match val {
             Some(val) => val,

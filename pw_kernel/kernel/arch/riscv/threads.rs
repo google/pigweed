@@ -21,7 +21,8 @@ use pw_status::Result;
 use crate::arch::riscv::protection::MemoryConfig;
 use crate::arch::riscv::regs::{MStatusVal, PrivilegeLevel};
 use crate::arch::{Arch, ArchInterface};
-use crate::scheduler::{self, thread::Stack, SchedulerState};
+use crate::scheduler::thread::Stack;
+use crate::scheduler::{self, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
 
 const LOG_CONTEXT_SWITCH: bool = false;

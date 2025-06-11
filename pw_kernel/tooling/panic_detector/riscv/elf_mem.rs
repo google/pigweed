@@ -12,12 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use core::ops::Bound;
+use std::collections::BTreeMap;
+
 use anyhow::anyhow;
-use object::{
-    read::elf::{ElfFile32, ProgramHeader},
-    Endian,
-};
-use std::{collections::BTreeMap, ops::Bound};
+use object::read::elf::{ElfFile32, ProgramHeader};
+use object::Endian;
 /// Gives access to the program data (.text, .rodata, etc) in an elf file, based
 /// on the virtual memory address.
 pub struct ElfMem<'a> {

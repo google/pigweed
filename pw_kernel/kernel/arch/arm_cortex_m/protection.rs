@@ -14,10 +14,9 @@
 
 use kernel_config::{CortexMKernelConfigInterface as _, KernelConfig};
 
-use crate::{
-    arch::arm_cortex_m::regs::{mpu::*, Regs},
-    MemoryRegion, MemoryRegionType,
-};
+use crate::arch::arm_cortex_m::regs::mpu::*;
+use crate::arch::arm_cortex_m::regs::Regs;
+use crate::{MemoryRegion, MemoryRegionType};
 
 #[derive(Copy, Clone)]
 struct MpuRegion {
@@ -51,12 +50,14 @@ impl MpuRegion {
                 RbarAp::RoAny,
                 AttrIndex::NormalMemoryRO,
             ),
-            MemoryRegionType::ReadWriteData => (
-                /* xn */ true,
-                RbarSh::NonShareable,
-                RbarAp::RwAny,
-                AttrIndex::NormalMemoryRW,
-            ),
+            MemoryRegionType::ReadWriteData => {
+                (
+                    /* xn */ true,
+                    RbarSh::NonShareable,
+                    RbarAp::RwAny,
+                    AttrIndex::NormalMemoryRW,
+                )
+            }
             MemoryRegionType::ReadOnlyExecutable => {
                 (
                     /* xn */ false,
@@ -73,12 +74,14 @@ impl MpuRegion {
                     AttrIndex::NormalMemoryRW,
                 )
             }
-            MemoryRegionType::Device => (
-                /* xn */ true,
-                RbarSh::OuterShareable,
-                RbarAp::RoAny,
-                AttrIndex::DeviceMemory,
-            ),
+            MemoryRegionType::Device => {
+                (
+                    /* xn */ true,
+                    RbarSh::OuterShareable,
+                    RbarAp::RoAny,
+                    AttrIndex::DeviceMemory,
+                )
+            }
         };
 
         Self {

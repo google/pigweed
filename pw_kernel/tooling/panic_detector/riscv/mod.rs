@@ -19,8 +19,9 @@
 pub mod call_graph;
 mod compression;
 mod elf_mem;
-use bitfield_struct::bitfield;
 use core::fmt::{Debug, Display};
+
+use bitfield_struct::bitfield;
 pub use elf_mem::ElfMem;
 /// Risc-V instruction with address
 #[derive(Clone, Copy)]

@@ -19,9 +19,8 @@ use list::*;
 use pw_log::info;
 use pw_status::Result;
 
-use crate::arch::{Arch, ArchInterface, ThreadState};
-
 use super::SCHEDULER_STATE;
+use crate::arch::{Arch, ArchInterface, ThreadState};
 
 /// The memory backing a thread's stack before it has been started.
 ///
