@@ -52,7 +52,6 @@ system_image(
     kernel = ":target",
     platform = ":pw_rp2350",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
 )
 
 system_image(
@@ -64,7 +63,6 @@ system_image(
     kernel = ":userspace_target",
     platform = ":pw_rp2350",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
 )
 
 SRCS = ["target.rs"]

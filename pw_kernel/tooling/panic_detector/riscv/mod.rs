@@ -82,9 +82,11 @@ impl Instr {
     #[inline(always)]
     pub fn decode(self) -> DecodedInstr {
         if self.is_compressed() {
-            match compression::decompress_instr(pw_cast::try_cast!(self.0 => u16).unwrap()) {
+            // The instr is stored in the lower 16-bits.
+            let instr: u16 = (self.0 & 0xffff) as u16;
+            match compression::decompress_instr(instr) {
                 Some(instr) => instr.decode32(),
-                None => DecodedInstr::Unknown(self.0 & 0xffff),
+                None => DecodedInstr::Unknown(instr.into()),
             }
         } else {
             self.decode32()

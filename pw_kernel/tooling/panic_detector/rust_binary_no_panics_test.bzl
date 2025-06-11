@@ -16,6 +16,17 @@
 
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
+def _disable_tests_transition_impl(settings, _attr):
+    new_settings = dict(settings)
+    new_settings["//pw_kernel:enable_tests"] = False
+    return [new_settings]
+
+disable_tests_transition = transition(
+    implementation = _disable_tests_transition_impl,
+    inputs = [],
+    outputs = ["//pw_kernel:enable_tests"],
+)
+
 def _rust_binary_no_panics_test_impl(ctx):
     binary = ctx.files.binary[0]
     run_script = ctx.actions.declare_file("%s.sh" % ctx.label.name)
@@ -40,7 +51,10 @@ _rust_binary_no_panics_test = rule(
     attrs = {
         "binary": attr.label(
             doc = "rust binary to validate",
-            cfg = "target",
+            # When checking for panics, ensure the binary to
+            # be checked is compiled without the tests, as test
+            # code, is, well, panicky by design...
+            cfg = disable_tests_transition,
             allow_single_file = True,
             mandatory = True,
         ),

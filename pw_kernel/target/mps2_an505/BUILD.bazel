@@ -53,7 +53,6 @@ system_image(
     kernel = ":target",
     platform = ":mps2_an505",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
 )
 
 rust_binary_no_panics_test(
@@ -71,7 +70,6 @@ system_image(
     kernel = ":userspace_target",
     platform = ":mps2_an505",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
 )
 
 rust_binary_no_panics_test(
