@@ -79,8 +79,8 @@ class UniquePtr : public ::pw::allocator::internal::ManagedPtr<T> {
   /// @{
   UniquePtr(element_type* value, Deallocator& deallocator)
       : Base(value), deallocator_(&deallocator) {
-    static_assert(!std::is_array_v<T>,
-                  "UniquePtr for array type must provide size");
+    static_assert(!allocator::internal::is_unbounded_array_v<T>,
+                  "UniquePtr for unbounded array type must provide size");
     if constexpr (allocator::internal::is_bounded_array_v<T>) {
       size_ = std::extent_v<T>;
     }
@@ -217,7 +217,8 @@ void UniquePtr<T>::Reset() noexcept {
     }
   }
   Deallocator* deallocator = deallocator_;
-  Base::Deallocate(deallocator, Release());
+  auto* ptr = const_cast<std::remove_const_t<element_type>*>(Release());
+  Base::Deallocate(deallocator, ptr);
 }
 
 template <typename T>

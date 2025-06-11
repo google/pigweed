@@ -581,6 +581,7 @@ pw_add_test(pw_allocator.allocator_test
     allocator_test.cc
   PRIVATE_DEPS
     pw_allocator
+    pw_allocator.counter
     pw_allocator.testing
   GROUPS
     modules

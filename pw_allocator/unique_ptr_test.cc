@@ -54,6 +54,17 @@ TEST_F(UniquePtrTest, AdoptValueViaConstructor) {
   EXPECT_EQ(allocator_.deallocate_size(), sizeof(Counter));
 }
 
+TEST_F(UniquePtrTest, AdoptBoundedArrayViaConstructor) {
+  {
+    Counter* raw_ptr = allocator_.New<Counter[3]>();
+    pw::UniquePtr<Counter[3]> ptr(raw_ptr, allocator_);
+    EXPECT_EQ(ptr.size(), 3u);
+    EXPECT_EQ(ptr.deallocator(), &allocator_);
+  }
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 3u);
+  EXPECT_EQ(allocator_.deallocate_size(), 3 * sizeof(Counter));
+}
+
 TEST_F(UniquePtrTest, AdoptUnboundedArrayViaConstructor) {
   {
     Counter* raw_ptr = allocator_.New<Counter[]>(5);
