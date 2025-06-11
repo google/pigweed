@@ -664,6 +664,7 @@ pw_cc_test(
     srcs = ["chunk_pool_test.cc"],
     deps = [
         ":chunk_pool",
+        ":counter",
         ":testing",
     ],
 )

@@ -68,6 +68,14 @@ TEST_F(AllocatorTest, NewAndDeleteUnboundedArray) {
   EXPECT_EQ(allocator_.deallocate_size(), 5 * sizeof(Counter));
 }
 
+TEST_F(AllocatorTest, NewAndDeleteArray) {
+  auto* counters = allocator_.New<Counter[3]>();
+  ASSERT_NE(counters, nullptr);
+  allocator_.DeleteArray(counters, 3);
+  EXPECT_EQ(Counter::TakeNumDtorCalls(), 3u);
+  EXPECT_EQ(allocator_.deallocate_size(), 3 * sizeof(Counter));
+}
+
 TEST_F(AllocatorTest, ResizeNull) {
   EXPECT_FALSE(allocator_.Resize(nullptr, sizeof(uintptr_t)));
 }

@@ -62,6 +62,10 @@ TEST_F(TypedPoolTest, AllocateDeallocate) {
   allocator.Deallocate(ptr);
 }
 
+TEST_F(TypedPoolTest, NewDelete) {}
+TEST_F(TypedPoolTest, NewDeleteBoundedArray) {}
+TEST_F(TypedPoolTest, NewDeleteUnboundedArray) {}
+
 TEST_F(TypedPoolTest, MakeUnique) {
   TypedPool<U32> allocator(buffer_);
 
@@ -84,5 +88,9 @@ TEST_F(TypedPoolTest, MakeUnique) {
     ASSERT_NE(ptrs[i], nullptr);
   }
 }
+
+TEST_F(TypedPoolTest, MakeUniqueArrayBounded) {}
+
+TEST_F(TypedPoolTest, MakeUniqueArrayUnbounded) {}
 
 }  // namespace

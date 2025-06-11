@@ -19,6 +19,7 @@
 #include "pw_allocator/capability.h"
 #include "pw_allocator/deallocator.h"
 #include "pw_allocator/layout.h"
+#include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 
@@ -43,9 +44,94 @@ class Pool : public Deallocator {
   /// @retval The allocated memory.
   void* Allocate() { return DoAllocate(); }
 
+  /// Allocates and constructs an object.
+  ///
+  /// This method is similar to ``Allocator::New``, except that it is specific
+  /// to the pool's layout.
+  ///
+  /// @tparam   T   Type of object to allocate. Either `Layout::Of<T>` must
+  ///               match the pool's layout, or `T` must be an unbounded array
+  ///               whose elements a size and alignment that evenly divide the
+  ///               pool's layout's size and alignment respectively.
+  ///
+  /// @{
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<!std::is_array_v<T>, int> = 0,
+            typename... Args>
+  [[nodiscard]] T* New(Args&&... args) {
+    PW_ASSERT(Layout::Of<T>() == layout_);
+    void* ptr = Allocate();
+    return ptr != nullptr ? new (ptr) T(std::forward<Args>(args)...) : nullptr;
+  }
+
+  template <typename T,
+            int&... kExplicitGuard,
+            typename ElementType = std::remove_extent_t<T>,
+            std::enable_if_t<is_bounded_array_v<T>, int> = 0>
+  [[nodiscard]] ElementType* New() {
+    return NewArray<ElementType>(std::extent_v<T>);
+  }
+
+  template <typename T,
+            int&... kExplicitGuard,
+            typename ElementType = std::remove_extent_t<T>,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  [[nodiscard]] ElementType* New() {
+    return NewArray<ElementType>(layout_.size() / sizeof(ElementType));
+  }
+  /// @}
+
+  /// Constructs an object and wraps it in a `UniquePtr`
+  ///
+  /// This method is similar to ``Allocator::MakeUnique``, except that it is
+  /// specific to the pool's layout.
+  ///
+  /// @tparam   T   Type of object to allocate. Either `Layout::Of<T>` must
+  ///               match the pool's layout, or `T` must be an unbounded array
+  ///               whose elements a size and alignment that evenly divide the
+  ///               pool's layout's size and alignment respectively.
+  ///
+  /// @{
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<!std::is_array_v<T>, int> = 0,
+            typename... Args>
+  UniquePtr<T> MakeUnique(Args&&... args) {
+    return UniquePtr<T>(New<T>(std::forward<Args>(args)...), *this);
+  }
+
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_bounded_array_v<T>, int> = 0>
+  UniquePtr<T> MakeUnique() {
+    using ElementType = std::remove_extent_t<T>;
+    return UniquePtr<T>(NewArray<ElementType>(std::extent_v<T>), *this);
+  }
+
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  UniquePtr<T> MakeUnique() {
+    using ElementType = std::remove_extent_t<T>;
+    size_t size = layout_.size() / sizeof(ElementType);
+    return UniquePtr<T>(NewArray<ElementType>(size), size, *this);
+  }
+  /// @}
+
  private:
   /// Virtual `Allocate` function that can be overridden by derived classes.
   virtual void* DoAllocate() = 0;
+
+  // Helper to create arrays.
+  template <typename ElementType>
+  [[nodiscard]] ElementType* NewArray(size_t count) {
+    Layout layout = Layout::Of<ElementType[]>(count);
+    PW_ASSERT(layout.size() == layout_.size());
+    PW_ASSERT(layout.alignment() <= layout_.alignment());
+    void* ptr = DoAllocate();
+    return ptr != nullptr ? new (ptr) ElementType[count] : nullptr;
+  }
 
   const Layout layout_;
 };

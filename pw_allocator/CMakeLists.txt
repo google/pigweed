@@ -671,6 +671,7 @@ pw_add_test(pw_allocator.chunk_pool_test
   SOURCES
     chunk_pool_test.cc
   PRIVATE_DEPS
+    pw_allocator.counter
     pw_allocator.chunk_pool
     pw_allocator.testing
   GROUPS
