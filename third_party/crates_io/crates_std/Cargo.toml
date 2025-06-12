@@ -22,6 +22,7 @@ path = "fake.rs"
 
 [dependencies]
 anyhow = "1.0.95"
+askama = "0.14.0"
 bitfield-struct = "0.10.1"
 clap = { version = "4.5.23", features = ["derive"] }
 cliclack = "0.3.5"
