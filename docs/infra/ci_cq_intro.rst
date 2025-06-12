@@ -114,6 +114,26 @@ are met (``Code-Review +2``, ``OWNERS``-approval, all comments resolved,
 etc.) set the ``Auto-Submit`` label to +1. If submission fails it will be
 retried a couple times with backoff and then the auto submit job will give up.
 
+.. _tests-not-needed:
+
+Tests not needed
+================
+The ``Tests-Not-Needed`` label can be used by a change owner or reviewer to
+indicate that while no tests were added with a change to source code there's no
+need for tests with this change. This label applies to both the ``C++-Tests``
+and the ``Python-Tests`` labels.
+
+If the change owner votes ``Tests-Not-Needed +1`` but the change includes a C++
+test file, then the Gerrit submit requirement will fail. This is to keep people
+from automatically setting ``Tests-Not-Needed +1`` when uploading changes.
+
+Occasionally, a change will modify both C++ and Python files, but only include
+tests for, say, Python. In that case, the ``C++-Tests`` submit requirement will
+require ``Tests-Not-Needed +1`` and the ``Python-Tests`` submit requirement will
+seem to forbid ``Tests-Not-Needed +1``. However, it only forbids it from the
+change owner. To make a change like this submittable, get a reviewer to vote
+``Tests-Not-Needed +1`` and make sure the change owner removes that vote.
+
 .. _further-details:
 
 ---------------
