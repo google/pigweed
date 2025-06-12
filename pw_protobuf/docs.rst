@@ -2057,13 +2057,20 @@ that return the enumeration as the appropriate generated type.
 .. cpp:function:: constexpr bool MyProto::IsValidEnum(MyProto::Enum value)
 
    Validates the value encoded in the wire format against the known set of
-   enumerates.
+   enumerators.
 
-.. cpp:function:: constexpr const char* MyProto::EnumToString(MyProto::Enum value)
+.. cpp:function:: constexpr const char* MyProto::EnumToString(MyProto::Enum value, const char* invalid = "")
 
-   Returns the string representation of the enum value. For example,
-   ``FooToString(Foo::kBarBaz)`` returns ``"BAR_BAZ"``. Returns the empty string
-   if the value is not a valid value.
+   Returns the string representation of the enum value, in UPPER_SNAKE_CASE.
+   Returns ``invalid`` (which defaults to an empty string) if the value is not a
+   valid enumerator.
+
+   Examples:
+
+   * ``FooToString(Foo::kBarBaz)`` returns ``"BAR_BAZ"``.
+
+   * ``FooToString(static_cast<Foo>(666), "cheese")`` returns ``"cheese"``
+     (assuming 666 is an invalid Foo enumerator).
 
 To read enumerations with the lower-level API, you would need to cast the
 retured value from the ``uint32_t``.

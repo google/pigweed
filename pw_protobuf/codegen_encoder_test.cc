@@ -610,8 +610,14 @@ TEST(Codegen, EnumToString) {
   EXPECT_STREQ(test::pwpb::BoolToString(test::pwpb::Bool::kFalse), "FALSE");
   EXPECT_STREQ(test::pwpb::BoolToString(test::pwpb::Bool::kFileNotFound),
                "FILE_NOT_FOUND");
-  EXPECT_STREQ(test::pwpb::BoolToString(static_cast<test::pwpb::Bool>(12893)),
-               "");
+}
+
+TEST(Codegen, EnumToStringInvalid) {
+  constexpr auto kInvalid = static_cast<test::pwpb::Bool>(12893);
+
+  EXPECT_STREQ(test::pwpb::BoolToString(kInvalid), "");
+  EXPECT_STREQ(test::pwpb::BoolToString(kInvalid, "okay"), "okay");
+  EXPECT_EQ(test::pwpb::BoolToString(kInvalid, nullptr), nullptr);
 }
 
 TEST(Codegen, NestedEnumToString) {
@@ -621,9 +627,17 @@ TEST(Codegen, NestedEnumToString) {
   EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(
                    test::pwpb::Pigweed::Pigweed::Binary::kOne),
                "ONE");
-  EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(
-                   static_cast<test::pwpb::Pigweed::Pigweed::Binary>(12893)),
-               "");
+}
+
+TEST(Codegen, NestedEnumToStringInvalid) {
+  constexpr auto kInvalid =
+      static_cast<test::pwpb::Pigweed::Pigweed::Binary>(12893);
+
+  EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(kInvalid), "");
+  EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(kInvalid, "okay"),
+               "okay");
+  EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(kInvalid, nullptr),
+               nullptr);
 }
 
 }  // namespace

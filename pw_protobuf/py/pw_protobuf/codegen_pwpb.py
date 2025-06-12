@@ -3164,17 +3164,18 @@ def generate_to_string_for_enum(
     enum_name = proto_enum.cpp_namespace(root=root)
     output.write_line(
         f'// Returns string names for {enum_name}; '
-        'returns "" for invalid enum values.'
+        'returns `invalid` (defaults to "") for invalid enum values.'
     )
     output.write_line(
-        f'constexpr const char* {enum_name}ToString({enum_name} value) {{'
+        f'constexpr const char* {enum_name}ToString('
+        + f'{enum_name} value, const char* invalid = "") {{'
     )
     with output.indent():
         output.write_line('switch (value) {')
         with output.indent():
             for name, _ in proto_enum.values():
                 output.write_line(f'case {enum_name}::{name}: return "{name}";')
-            output.write_line('default: return "";')
+            output.write_line('default: return invalid;')
         output.write_line('}')
     output.write_line('}')
 
