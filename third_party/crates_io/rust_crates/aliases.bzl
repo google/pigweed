@@ -342,3 +342,14 @@ def make_crate_aliases(name):
         }),
         visibility = ["//visibility:public"],
     )
+    native.alias(
+        name = "toml",
+        target_compatible_with = select({
+            ":std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            ":std": "@crates_std//:toml",
+        }),
+        visibility = ["//visibility:public"],
+    )
