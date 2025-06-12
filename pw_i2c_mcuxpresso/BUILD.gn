@@ -27,6 +27,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public = [ "public/pw_i2c_mcuxpresso/initiator.h" ]
     public_deps = [
       "$dir_pw_chrono:system_clock",
+      "$dir_pw_clock_tree",
       "$dir_pw_i2c:initiator",
       "$dir_pw_status",
       "$dir_pw_sync:interrupt_spin_lock",
@@ -47,6 +48,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     ]
     public_deps = [
       "$dir_pw_chrono:system_clock",
+      "$dir_pw_clock_tree",
       "$dir_pw_i2c:initiator",
       "$dir_pw_result",
       "$dir_pw_status",

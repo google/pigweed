@@ -36,18 +36,24 @@ Usage
 -----
 .. code-block:: cpp
 
+   pw::clock_tree::ClockTree& clock_tree;
+   pw::clock_tree::Element& flexcomm11_clock;
+
    constexpr uint32_t kI2CBaudRate = 100000;
    constexpr McuxpressoInitiator::Config kConfig = {
        .flexcomm_address = I2C11_BASE,
        .clock_name = kCLOCK_Flexcomm11Clk,
        .baud_rate_bps = kI2CBaudRate,
    };
-   McuxpressoInitiator initiator{kConfig};
+   McuxpressoInitiator initiator{kConfig, clock_tree, flexcomm11_clock};
    initiator.Enable();
 
 ``I3cMcuxpressoInitiator`` example usage.
 
 .. code-block:: cpp
+
+   pw::clock_tree::ClockTree& clock_tree;
+   pw::clock_tree::Element& i3c_clock;
 
    constexpr I3cMcuxpressoInitiator::Config kI3c0Config = {
     .base_address = I3C0_BASE,
@@ -59,7 +65,7 @@ Usage
                                       // mixed mode
    };
 
-   I3cMcuxpressoInitiator i3c_0_initiator{kI3c0Config};
+   I3cMcuxpressoInitiator i3c_0_initiator{kI3c0Config, clock_tree, i3c_clock};
 
    // Initialize the i3c core library. After this is called, the
    // initiator can be used for regular i2c communication.

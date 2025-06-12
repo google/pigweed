@@ -16,6 +16,7 @@
 #include <mutex>
 
 #include "fsl_i2c.h"
+#include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
@@ -45,6 +46,8 @@ Status HalStatusToPwStatus(status_t status) {
 void McuxpressoInitiator::Enable() {
   std::lock_guard lock(mutex_);
 
+  PW_CHECK_OK(element_controller_.Acquire());
+
   i2c_master_config_t master_config;
   I2C_MasterGetDefaultConfig(&master_config);
   master_config.baudRate_Bps = config_.baud_rate_bps;
@@ -60,6 +63,7 @@ void McuxpressoInitiator::Enable() {
 void McuxpressoInitiator::Disable() {
   std::lock_guard lock(mutex_);
   I2C_MasterDeinit(base_);
+  element_controller_.Release().IgnoreError();
   enabled_ = false;
 }
 

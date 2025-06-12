@@ -16,6 +16,7 @@
 #include <mutex>
 
 #include "lib/stdcompat/utility.h"
+#include "pw_assert/check.h"
 #include "pw_bytes/span.h"
 #include "pw_log/log.h"
 #include "pw_result/result.h"
@@ -62,6 +63,8 @@ void I3cMcuxpressoInitiator::Enable() {
     return;
   }
 
+  PW_CHECK_OK(element_controller_.Acquire());
+
   i3c_master_config_t masterConfig;
   I3C_MasterGetDefaultConfig(&masterConfig);
 
@@ -92,8 +95,11 @@ void I3cMcuxpressoInitiator::Disable() {
   }
 
   I3C_MasterDeinit(base_);
+  element_controller_.Release().IgnoreError();
   enabled_ = false;
 }
+
+I3cMcuxpressoInitiator::~I3cMcuxpressoInitiator() { Disable(); }
 
 void I3cMcuxpressoInitiator::TransferCompleteCallback(I3C_Type*,
                                                       i3c_master_handle_t*,
