@@ -32,7 +32,7 @@ class AllowedCaller:
     def from_frame_info(frame_info: inspect.FrameInfo) -> 'AllowedCaller':
         """Returns an AllowedCaller based on an inspect.FrameInfo object."""
         self_obj = frame_info.frame.f_locals.get('self', None)
-        global_name_str = frame_info.frame.f_globals.get('__name__', None)
+        global_name_str = frame_info.frame.f_globals.get('__name__', '')
         module_class = None
         if self_obj:
             module_class = self_obj.__class__.__name__

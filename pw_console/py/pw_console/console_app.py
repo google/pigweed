@@ -215,7 +215,7 @@ class ConsoleApp:
 
         # History instance for search toolbars.
         self.search_history: History = ThreadedHistory(
-            FileHistory(self.search_history_filename)
+            FileHistory(str(self.search_history_filename))
         )
 
         # Event loop for executing user repl code.
@@ -1087,7 +1087,7 @@ class ConsoleApp:
     def add_log_handler(
         self,
         window_title: str,
-        logger_instances: Iterable[logging.Logger] | LogStore,
+        logger_instances: Iterable[logging.Logger | str] | LogStore,
         separate_log_panes: bool = False,
         log_level_name: str | None = None,
     ) -> LogPane | None:

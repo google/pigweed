@@ -376,8 +376,9 @@ class PwPtPythonRepl(
                 returncode = proc.poll()
 
             # Print any remaining lines.
-            for output in proc.stdout.readlines():
-                _handle_output(output)
+            if proc.stdout:
+                for output in proc.stdout.readlines():
+                    _handle_output(output)
 
         return returncode
 

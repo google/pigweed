@@ -76,7 +76,7 @@ def _process_logs(
 
 
 def _snapshot_symbolizer_matcher(
-    detokenizer: detokenize.Detokenizer,
+    detokenizer: detokenize.Detokenizer | None,
     # pylint: disable=unused-argument
     snapshot: snapshot_pb2.Snapshot,
 ) -> Symbolizer:

@@ -372,7 +372,7 @@ def _default_launch(
     return _DEFAULT_LAUNCH
 
 
-DEFAULT_SETTINGS_PATH: Callable[[PigweedIdeSettings], Path] = (
+_DEFAULT_SETTINGS_PATH: Callable[[PigweedIdeSettings], Path] = (
     lambda settings: settings.workspace_root / '.vscode'
 )
 
@@ -398,7 +398,9 @@ class VscSettingsType(Enum):
 class VscSettingsManager(EditorSettingsManager[VscSettingsType]):
     """Manages all settings for Visual Studio Code."""
 
-    default_settings_dir = DEFAULT_SETTINGS_PATH
+    default_settings_dir: Callable[
+        [PigweedIdeSettings], Path
+    ] = _DEFAULT_SETTINGS_PATH
     file_format = Json5FileFormat()
 
     types_with_defaults: EditorSettingsTypesWithDefaults = {
@@ -412,7 +414,9 @@ class VscSettingsManager(EditorSettingsManager[VscSettingsType]):
 class VscSettingsManagerNoSideEffects(EditorSettingsManager[VscSettingsType]):
     """This is like VscSettingsManager, but optimized for unit testing."""
 
-    default_settings_dir = DEFAULT_SETTINGS_PATH
+    default_settings_dir: Callable[
+        [PigweedIdeSettings], Path
+    ] = _DEFAULT_SETTINGS_PATH
     file_format = Json5FileFormat()
 
     types_with_defaults: EditorSettingsTypesWithDefaults = {

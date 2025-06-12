@@ -101,7 +101,7 @@ class CodeSnippet:
 
         assert isinstance(value, dict)
 
-        code = value.get('code', None)
+        code = value.get('code', '')
         description = value.get('description', None)
         if description == 'USE_PREVIOUS':
             if not previous_description:

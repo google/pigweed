@@ -1197,7 +1197,7 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
             f'Options: {", ".join(_BUILD_FILES.keys())}'
         ),
         default=_BUILD_FILES.keys(),
-        type=functools.partial(csv_with_choices, _BUILD_FILES.keys()),
+        type=functools.partial(csv_with_choices, list(_BUILD_FILES.keys())),
     )
     parser.add_argument(
         '--languages',
@@ -1206,7 +1206,9 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
             f'Options: {", ".join(_LANGUAGE_GENERATORS.keys())}'
         ),
         default=[],
-        type=functools.partial(csv_with_choices, _LANGUAGE_GENERATORS.keys()),
+        type=functools.partial(
+            csv_with_choices, list(_LANGUAGE_GENERATORS.keys())
+        ),
     )
     if _is_upstream():
         parser.add_argument(

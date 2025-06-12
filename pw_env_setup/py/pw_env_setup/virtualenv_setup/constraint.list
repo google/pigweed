@@ -44,8 +44,8 @@ lockfile==0.12.2
 markupsafe==2.1.3
 mccabe==0.7.0
 multidict==6.1.0
-mypy==1.6.1
-mypy-extensions==1.0.0
+mypy==1.16.0
+mypy-extensions==1.1.0
 mypy-protobuf==3.5.0
 parameterized==0.9.0
 parso==0.8.3
@@ -104,7 +104,7 @@ types-requests==2.31.0.2
 types-setuptools==75.8.2.20250305
 types-six==1.16.9
 types-urllib3==1.26.25.14
-typing-extensions==4.12.2
+typing-extensions==4.14.0
 urllib3==2.0.4
 watchdog==6.0.0
 wcwidth==0.2.6

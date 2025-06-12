@@ -95,13 +95,19 @@ def default_channels(write: Callable[[bytes], Any]) -> list[pw_rpc.Channel]:
     return [pw_rpc.Channel(DEFAULT_CHANNEL_ID, channel_output(write))]
 
 
+def _default_file_output() -> BinaryIO:
+    default_buffer = getattr(sys.stdout, 'buffer', None)
+    if not default_buffer:
+        return sys.__stdout__.buffer  # type: ignore
+    return default_buffer
+
+
 # Writes to stdout by default, but sys.stdout.buffer is not guaranteed to exist
 # (see https://docs.python.org/3/library/io.html#io.TextIOBase.buffer). Defer
 # to sys.__stdout__.buffer if sys.stdout is wrapped with something that does not
 # offer it.
 def write_to_file(
-    data: bytes,
-    output: BinaryIO = getattr(sys.stdout, 'buffer', sys.__stdout__.buffer),
+    data: bytes, output: BinaryIO = _default_file_output()
 ) -> None:
     output.write(data + b'\n')
     output.flush()

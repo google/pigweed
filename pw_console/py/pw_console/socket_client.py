@@ -41,7 +41,9 @@ class SocketClient:
     ]
     # Can be a string, (address, port) for AF_INET or (address, port, flowinfo,
     # scope_id) AF_INET6.
-    _AddressType = str | tuple[str, int] | tuple[str, int, int, int]
+    _AddressType = (
+        str | tuple[str, int] | tuple[str, int, int, int] | tuple[int, bytes]
+    )
 
     def __init__(
         self,
@@ -150,9 +152,8 @@ class SocketClient:
         else:
             raise ValueError(invalid_config_message)
 
-        sock_family, sock_type, _, _, address = socket.getaddrinfo(
-            ip_addr, port, type=socket.SOCK_STREAM
-        )[0]
+        addr_result = socket.getaddrinfo(ip_addr, port, type=socket.SOCK_STREAM)
+        (sock_family, sock_type, _proto, _canonname, address) = addr_result[0]
         init_args = sock_family, sock_type
         return init_args, address
 
