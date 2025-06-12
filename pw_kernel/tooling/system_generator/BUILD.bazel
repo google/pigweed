@@ -1,0 +1,55 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "system_generator",
+    srcs = [
+        "lib.rs",
+        "system_config.rs",
+    ],
+    compile_data = [
+        "templates/armv8m_app.ld.tmpl",
+        "templates/riscv_app.ld.tmpl",
+        "templates/system.rs.tmpl",
+    ],
+    tags = ["kernel"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        "@rust_crates//:anyhow",
+        "@rust_crates//:askama",
+        "@rust_crates//:clap",
+        "@rust_crates//:hashlink",
+        "@rust_crates//:serde",
+        "@rust_crates//:toml",
+    ],
+)
+
+rust_binary(
+    name = "system_generator_bin",
+    srcs = [
+        "main.rs",
+    ],
+    tags = ["kernel"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":system_generator",
+        "@rust_crates//:anyhow",
+        "@rust_crates//:clap",
+    ],
+)

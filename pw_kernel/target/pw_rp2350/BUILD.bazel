@@ -16,6 +16,7 @@ load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 load("//pw_kernel:flags.bzl", "KERNEL_DEVICE_COMMON_FLAGS")
+load("//pw_kernel/tooling:system_codegen.bzl", "system_codegen")
 load("//pw_kernel/tooling:system_image.bzl", "system_image")
 
 platform(
@@ -62,6 +63,7 @@ system_image(
     ],
     kernel = ":userspace_target",
     platform = ":pw_rp2350",
+    system_config = ":userspace_demo_config",
     tags = ["kernel"],
 )
 
@@ -89,10 +91,21 @@ rust_binary(
     ] + COMMON_DEPS,
 )
 
+filegroup(
+    name = "userspace_demo_config",
+    srcs = ["userspace_demo.toml"],
+)
+
+system_codegen(
+    name = "userspace_demo_codegen",
+    system_config = ":userspace_demo_config",
+)
+
 rust_binary(
     name = "userspace_target",
     srcs = [
         "userspace_target.rs",
+        ":userspace_demo_codegen",
     ],
     edition = "2021",
     tags = ["kernel"],

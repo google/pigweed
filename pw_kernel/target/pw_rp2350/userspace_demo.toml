@@ -11,27 +11,29 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-load("@rules_rust//rust:defs.bzl", "rust_binary")
-load("//pw_kernel/tooling:app_linker_script.bzl", "app_linker_script")
 
-rust_binary(
-    name = "two",
-    srcs = [
-        "main.rs",
-    ],
-    edition = "2021",
-    tags = ["kernel"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":linker_script",
-        "//pw_kernel/syscall:syscall_user",
-        "//pw_kernel/userspace",
-    ],
-)
+arch = "armv8m"
 
-app_linker_script(
-    name = "linker_script",
-    app_name = "two",
-    system_config = "//pw_kernel/target:system_config_file",
-    tags = ["kernel"],
-)
+[kernel]
+flash_start_address = 0x10000800
+flash_size_bytes = 261120        # 255Kb
+ram_start_address = 0x20000000
+ram_size_bytes = 65600           # 64 Kb
+
+[apps.one]
+flash_size_bytes = 261120 # 255Kb
+ram_size_bytes = 65600    # 64 Kb
+[apps.one.process]
+name = "process one"
+[[apps.one.process.threads]]
+name = "thread one a"
+stack_size_bytes = 1024
+
+[apps.two]
+flash_size_bytes = 261120 # 255Kb
+ram_size_bytes = 65600    # 64 Kb
+[apps.two.process]
+name = "process two"
+[[apps.two.process.threads]]
+name = "thread two a"
+stack_size_bytes = 1024

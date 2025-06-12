@@ -36,10 +36,9 @@ MEMORY
    */
 
   /* Internal Flash */
-  /* TODO: where?? needed? */
-  FLASH(rx) : ORIGIN = 0x80000000, LENGTH = 1M
+  FLASH(rx) : ORIGIN = 0x80000000, LENGTH = 255K
   /* Internal SRAM */
-  RAM(rwx) : ORIGIN = 0x81000000, LENGTH = 1M
+  RAM(rwx) : ORIGIN = 0x81000000, LENGTH = 64K
 
   /* Each memory region above has an associated .*.unused_space section that
    * overlays the unused space at the end of the memory segment. These segments
@@ -208,7 +207,6 @@ _max_hart_id = 1; /* Two harts present */
 _hart_stack_size = 1K; /* Set stack size per hart to 1KB */
 _stack_start = _stack_high;
 
-
 PROVIDE(InstructionMisaligned = ExceptionHandler);
 PROVIDE(InstructionFault = ExceptionHandler);
 PROVIDE(IllegalInstruction = ExceptionHandler);
@@ -238,7 +236,6 @@ PROVIDE(__pre_init = default_pre_init);
 PROVIDE(_setup_interrupts = default_setup_interrupts);
 PROVIDE(_mp_hook = default_mp_hook);
 PROVIDE(_start_trap = default_start_trap);
-
 
 /* These symbols are used by pw_bloat.bloaty_config to create the memoryregions
  * data source for bloaty in this format (where the optional _N defaults to 0):

@@ -20,19 +20,14 @@
  * sufficient as-is.
  *
  */
-
 ENTRY(_start)
 
 MEMORY
 {
-  /* TODO: b/234892223 - Make it possible for projects to freely customize
-   * memory regions.
-   */
-
   /* Internal Flash */
-  FLASH(rx) : ORIGIN = 0x10700000, LENGTH = 255K
+  FLASH(rx) : ORIGIN = {{config.flash_start_address | to_hex }}, LENGTH = {{config.flash_size_bytes}}
   /* Internal SRAM */
-  RAM(rwx) : ORIGIN = 0x20040000, LENGTH = 64K
+  RAM(rwx) : ORIGIN = {{config.ram_start_address | to_hex }}, LENGTH = {{config.ram_size_bytes}}
 
   /* Each memory region above has an associated .*.unused_space section that
    * overlays the unused space at the end of the memory segment. These segments

@@ -34,6 +34,25 @@ label_flag(
 
 cc_library(
     name = "no_linker_script",
+    tags = ["kernel"],
+)
+
+label_flag(
+    name = "system_config_file",
+    build_setting_default = ":no_system_config_file",
+    tags = ["kernel"],
+)
+
+filegroup(
+    name = "no_system_config_file",
+    tags = ["kernel"],
+)
+
+config_setting(
+    name = "system_config_not_set",
+    flag_values = {
+        ":system_config_file": ":no_system_config_file",
+    },
 )
 
 constraint_setting(

@@ -16,15 +16,19 @@ and any apps.
 """
 
 def _target_transition_impl(_, attr):
-    return {
+    flags = {
         "//command_line_option:platforms": str(attr.platform),
+        str(Label("//pw_kernel/target:system_config_file")): str(attr.system_config),
     }
+
+    return flags
 
 _target_transition = transition(
     implementation = _target_transition_impl,
     inputs = [],
     outputs = [
         "//command_line_option:platforms",
+        str(Label("//pw_kernel/target:system_config_file")),
     ],
 )
 
@@ -33,7 +37,7 @@ def _system_image_impl(ctx):
 
     args = [
         "--kernel",
-        ctx.files.kernel[0].path,
+        ctx.file.kernel.path,
         "--output",
         output.path,
     ]
@@ -67,6 +71,10 @@ system_image = rule(
         "platform": attr.label(
             doc = "Bazel platform to compile image for.",
             mandatory = True,
+        ),
+        "system_config": attr.label(
+            doc = "Optional System config file which defines the system.",
+            allow_single_file = True,
         ),
         "_system_assembler": attr.label(
             executable = True,

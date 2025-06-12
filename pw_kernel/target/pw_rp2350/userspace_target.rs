@@ -19,6 +19,7 @@ use hal::uart::{DataBits, StopBits, UartConfig};
 use hal::Clock;
 use target_common::{declare_target, TargetInterface};
 use {console_backend as _, kernel as _, rp235x_hal as hal};
+mod userspace_demo_codegen;
 
 #[link_section = ".start_block"]
 #[used]
@@ -35,8 +36,6 @@ pub static PICOTOOL_ENTRIES: [hal::binary_info::EntryAddr; 5] = [
 ];
 
 const XTAL_FREQ_HZ: u32 = 12_000_000u32;
-
-const STACK_SIZE_BYTES: usize = 2048;
 
 pub struct Target {}
 
@@ -80,56 +79,7 @@ impl TargetInterface for Target {
     }
 
     fn main() -> ! {
-        // TODO: davidroth - codegen process/thread creation
-        let start_fn_one = 0x10600001_usize;
-        const MEMORY_CONFIG_ONE: <kernel::Arch as kernel::ArchInterface>::MemoryConfig =
-            <kernel::Arch as kernel::ArchInterface>::MemoryConfig::const_new(&[
-                kernel::MemoryRegion {
-                    ty: kernel::MemoryRegionType::ReadOnlyExecutable,
-                    start: 0x10600000,
-                    end: 0x10600000 + 255 * 1024,
-                },
-                kernel::MemoryRegion {
-                    ty: kernel::MemoryRegionType::ReadWriteData,
-                    start: 0x20020000,
-                    end: 0x20020000 + 64 * 1024,
-                },
-            ]);
-        let process_one = kernel::init_non_priv_process!("process one", MEMORY_CONFIG_ONE);
-        let thread_one_main = kernel::init_non_priv_thread!(
-            "main one",
-            process_one,
-            start_fn_one,
-            0x20020000 + 63 * 1024,
-            STACK_SIZE_BYTES
-        );
-
-        let start_fn_two = 0x10700001_usize;
-        const MEMORY_CONFIG_TWO: <kernel::Arch as kernel::ArchInterface>::MemoryConfig =
-            <kernel::Arch as kernel::ArchInterface>::MemoryConfig::const_new(&[
-                kernel::MemoryRegion {
-                    ty: kernel::MemoryRegionType::ReadOnlyExecutable,
-                    start: 0x10700000,
-                    end: 0x10700000 + 255 * 1024,
-                },
-                kernel::MemoryRegion {
-                    ty: kernel::MemoryRegionType::ReadWriteData,
-                    start: 0x20040000,
-                    end: 0x20040000 + 64 * 1024,
-                },
-            ]);
-        let process_two = kernel::init_non_priv_process!("process two", MEMORY_CONFIG_TWO);
-        let thread_two_main = kernel::init_non_priv_thread!(
-            "main two",
-            process_two,
-            start_fn_two,
-            0x20040000 + 63 * 1024,
-            STACK_SIZE_BYTES
-        );
-
-        kernel::start_thread(thread_one_main);
-        kernel::start_thread(thread_two_main);
-
+        userspace_demo_codegen::start();
         loop {}
     }
 }

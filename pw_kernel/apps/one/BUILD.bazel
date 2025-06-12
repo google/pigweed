@@ -12,54 +12,27 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 load("@rules_rust//rust:defs.bzl", "rust_binary")
-load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
-
-package(default_visibility = ["//visibility:public"])
+load("//pw_kernel/tooling:app_linker_script.bzl", "app_linker_script")
 
 rust_binary(
     name = "one",
     srcs = [
         "main.rs",
     ],
-    crate_features = select({
-        "//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
-        "//conditions:default": [],
-    }),
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = select({
-        "//pw_kernel/target/mps2_an505:target_mps2_an505": [],
-        "//pw_kernel/target/pw_rp2350:target_pw_rp2350": [],
-        "//pw_kernel/target/qemu_virt_riscv32:target_qemu_virt_riscv32": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    visibility = ["//visibility:public"],
     deps = [
+        ":linker_script",
         "//pw_kernel/syscall:syscall_user",
         "//pw_kernel/userspace",
         "//pw_tokenizer/rust:pw_tokenizer",
-    ] + select({
-        "//pw_kernel/target/mps2_an505:target_mps2_an505": [":mps2_an505_linker_script"],
-        "//pw_kernel/target/pw_rp2350:target_pw_rp2350": [":pw_rp2350_linker_script"],
-        "//pw_kernel/target/qemu_virt_riscv32:target_qemu_virt_riscv32": [":qemu_virt_riscv32_linker_script"],
-        "//conditions:default": [],
-    }),
+    ],
 )
 
-# TODO: generate linker scripts
-pw_linker_script(
-    name = "mps2_an505_linker_script",
-    linker_script = "mps2-an505.ld",
-    tags = ["kernel"],
-)
-
-pw_linker_script(
-    name = "pw_rp2350_linker_script",
-    linker_script = "pw-rp2350.ld",
-    tags = ["kernel"],
-)
-
-pw_linker_script(
-    name = "qemu_virt_riscv32_linker_script",
-    linker_script = "qemu-virt-riscv32.ld",
+app_linker_script(
+    name = "linker_script",
+    app_name = "one",
+    system_config = "//pw_kernel/target:system_config_file",
     tags = ["kernel"],
 )

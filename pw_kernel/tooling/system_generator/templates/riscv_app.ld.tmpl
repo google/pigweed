@@ -14,8 +14,8 @@
  * the License.
  */
 
-/* This relatively simplified linker script will work with many ARMv7-M and
- * ARMv8-M cores that have on-board memory-mapped RAM and FLASH. For more
+/* This relatively simplified linker script will work with many RISC-V cores
+ * that have on-board memory-mapped RAM and FLASH. For more
  * complex projects and devices, it's possible this linker script will not be
  * sufficient as-is.
  *
@@ -25,14 +25,10 @@ ENTRY(_start)
 
 MEMORY
 {
-  /* TODO: b/234892223 - Make it possible for projects to freely customize
-   * memory regions.
-   */
-
   /* Internal Flash */
-  FLASH(rx) : ORIGIN = 0x10600000, LENGTH = 255K
+  FLASH(rx) : ORIGIN = {{config.flash_start_address | to_hex }}, LENGTH = {{config.flash_size_bytes}}
   /* Internal SRAM */
-  RAM(rwx) : ORIGIN = 0x20020000, LENGTH = 64K
+  RAM(rwx) : ORIGIN = {{config.ram_start_address | to_hex }}, LENGTH = {{config.ram_size_bytes}}
 
   /* Each memory region above has an associated .*.unused_space section that
    * overlays the unused space at the end of the memory segment. These segments
@@ -43,7 +39,7 @@ MEMORY
    * placed in the respective memory region or lld will issue a warning like:
    *
    *   warning: ignoring memory region assignment for non-allocatable section
-   *      '.VECTOR_TABLE.unused_space'
+   *      '.FLASH.unused_space'
    *
    * If this warning occurs, it's also likely that LLD will have created quite
    * large padded regions in the ELF file due to bad cursor operations. This
@@ -96,13 +92,6 @@ SECTIONS
     PROVIDE_HIDDEN(__fini_array_end = .);
   } >FLASH
 
-  /* Used by unwind-arm/ */
-  .ARM : ALIGN(4) {
-    __exidx_start = .;
-    *(.ARM.exidx*)
-    __exidx_end = .;
-  } >FLASH
-
   /* Explicitly initialized global and static data. (.data)*/
   .static_init_ram : ALIGN(4)
   {
@@ -149,12 +138,8 @@ SECTIONS
 
   /* Link-time check for stack overlaps.
    *
-   * The ARMv7-M architecture may require 8-byte alignment of the stack pointer
-   * rather than 4 in some contexts and implementations, so this region is
-   * 8-byte aligned (see ARMv7-M Architecture Reference Manual DDI0403E
-   * section B1.5.7).
    */
-  .stack (NOLOAD) : ALIGN(8)
+  .stack (NOLOAD) :
   {
     /* Set the address that the main stack pointer should be initialized to. */
     pw_boot_stack_low_addr = .;
@@ -175,11 +160,8 @@ SECTIONS
     . = ABSOLUTE(ORIGIN(RAM) + LENGTH(RAM));
   } >RAM
 
-  /* Discard unwind info. */
-  .ARM.extab 0x0 (INFO) :
-  {
-    KEEP(*(.ARM.extab*))
-  }
+  /* Strip unnecessary stuff */
+  /DISCARD/ : { *(.comment .note .eh_frame .eh_frame_hdr) }
 }
 
 /* Symbols used by _start: */
@@ -193,9 +175,6 @@ _pw_static_init_ram_end = _pw_static_init_ram_start + SIZEOF(.static_init_ram);
 /* Region of .zero_init_ram. */
 _pw_zero_init_ram_start = ADDR(.zero_init_ram);
 _pw_zero_init_ram_end = _pw_zero_init_ram_start + SIZEOF(.zero_init_ram);
-
-/* arm-none-eabi expects `end` symbol to point to start of heap for sbrk. */
-PROVIDE(end = _pw_zero_init_ram_end);
 
 /* These symbols are used by pw_bloat.bloaty_config to create the memoryregions
  * data source for bloaty in this format (where the optional _N defaults to 0):
