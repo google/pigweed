@@ -31,6 +31,7 @@ cortex-m = "0.7.7"
 cortex-m-rt = "0.7.5"
 cortex-m-semihosting = "0.5.0"
 embedded-io = { version = "0.6.1", features = ["std"] }
+hashlink = { version = "0.10.0", features = ["serde", "serde_impl"] }
 intrusive-collections = "0.9.7"
 libc = "0.2.169"
 nix = { version = "0.29.0", features = ["fs"] }

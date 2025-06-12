@@ -144,6 +144,17 @@ def make_crate_aliases(name):
         visibility = ["//visibility:public"],
     )
     native.alias(
+        name = "hashlink",
+        target_compatible_with = select({
+            ":std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            ":std": "@crates_std//:hashlink",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
         name = "intrusive-collections",
         target_compatible_with = select({
             ":no_std": [],
