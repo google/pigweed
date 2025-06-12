@@ -231,11 +231,6 @@
             "//pw_kernel/..."
           ],
           [
-            "build",
-            "--config=k_lint",
-            "//pw_kernel/..."
-          ],
-          [
             "test",
             "--config=k_host",
             "//pw_kernel/..."
@@ -263,6 +258,11 @@
           [
             "build",
             "--config=k_rp2350",
+            "//pw_kernel/..."
+          ],
+          [
+            "build",
+            "--config=k_lint",
             "//pw_kernel/..."
           ]
         ],
