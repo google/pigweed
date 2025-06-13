@@ -28,7 +28,8 @@ class PendableAsTaskWithOutput : public Task {
   using OutputType = PendOutputOf<Pendable>;
   PendableAsTaskWithOutput(Pendable& pendable)
       : pendable_(pendable), output_(Pending()) {}
-  OutputType&& TakeOutput() { return std::move(*output_); }
+
+  Poll<OutputType> TakePoll() { return std::move(output_); }
 
  private:
   Poll<> DoPend(Context& cx) final {
@@ -89,7 +90,7 @@ class Dispatcher {
     internal::PendableAsTaskWithOutput<Pendable> task(pendable);
     Post(task);
     if (RunUntilStalled(task).IsReady()) {
-      return task.TakeOutput();
+      return task.TakePoll();
     }
     // Ensure that the task is no longer registered, as it will be destroyed
     // once we return.
@@ -117,7 +118,7 @@ class Dispatcher {
     internal::PendableAsTaskWithOutput<Pendable> task(pendable);
     Post(task);
     native_.DoRunToCompletion(*this, &task);
-    return task.TakeOutput();
+    return task.TakePoll().value();
   }
 
   /// Outputs log statements about the tasks currently registered with this

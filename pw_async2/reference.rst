@@ -88,6 +88,19 @@ Utilities
 .. doxygenclass:: pw::async2::Join
   :members:
 
+.. doxygenclass:: pw::async2::Selector
+  :members:
+
+.. doxygenstruct:: pw::async2::SelectResult
+  :members:
+
+.. doxygenfunction:: pw::async2::VisitSelectResult
+
+.. doxygenstruct:: pw::async2::AllPendablesCompleted
+  :members:
+
+.. doxygenfunction:: pw::async2::Select
+
 .. doxygenclass:: pw::async2::PendFuncAwaitable
   :members:
 

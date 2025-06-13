@@ -392,4 +392,23 @@ pw_add_test(pw_async2.join_test
     pw_async2
 )
 
+pw_add_library(pw_async2.select INTERFACE
+  HEADERS
+    public/pw_async2/select.h
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+)
+
+pw_add_test(pw_async2.select_test
+  SOURCES
+    select_test.cc
+  PRIVATE_DEPS
+    pw_async2.dispatcher
+    pw_async2.pendable
+    pw_async2.select
+  GROUPS
+    modules
+    pw_async2
+)
+
 add_subdirectory(examples)

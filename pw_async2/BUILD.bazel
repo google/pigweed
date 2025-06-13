@@ -511,6 +511,30 @@ pw_cc_test(
     ],
 )
 
+cc_library(
+    name = "select",
+    hdrs = [
+        "public/pw_async2/select.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":dispatcher",
+    ],
+)
+
+pw_cc_test(
+    name = "select_test",
+    srcs = [
+        "select_test.cc",
+    ],
+    deps = [
+        ":dispatcher",
+        ":pendable",
+        ":poll",
+        ":select",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
@@ -545,6 +569,7 @@ filegroup(
         "public/pw_async2/pendable.h",
         "public/pw_async2/pendable_as_task.h",
         "public/pw_async2/poll.h",
+        "public/pw_async2/select.h",
         "public/pw_async2/simulated_time_provider.h",
         "public/pw_async2/system_time_provider.h",
         "public/pw_async2/task.h",
