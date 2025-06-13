@@ -22,11 +22,6 @@ cc_sysroot(
     name = "sysroot",
     sysroot = ":root",
     data = [":root"],
-    allowlist_include_directories = [
-        ":usr-include-arm-linux-gnueabihf",
-        ":usr-include-x86_64-linux-gnu",
-        ":usr-include",
-    ],
 )
 
 directory(

@@ -98,9 +98,6 @@ cc_tool(
         "include/**",
         "lib/clang/**/include/**",
     ]),
-    allowlist_include_directories = [
-        ":lib-clang-include",
-    ],
 )
 
 cc_tool(
@@ -114,13 +111,6 @@ cc_tool(
         "include/**",
         "lib/clang/**/include/**",
     ]),
-    allowlist_include_directories = [
-        # This linux-specific entry can be moved to a cc_args rule if there's
-        # ever a desire for more strict management of this include path.
-        ":include-x86_64-unknown-linux-gnu-c++-v1",
-        ":include-c++-v1",
-        ":lib-clang-include",
-    ],
 )
 
 cc_tool(
