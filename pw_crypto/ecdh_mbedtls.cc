@@ -127,6 +127,10 @@ Status ImportPoint(Point* point,
     return Status::Internal();
   }
 
+  if (kMbedTlsSuccess != mbedtls_ecp_check_pubkey(P256().Get(), point->Get())) {
+    return Status::InvalidArgument();
+  }
+
   return OkStatus();
 }
 
@@ -203,6 +207,11 @@ Status DoImport(NativeP256Keypair& ctx,
                   reinterpret_cast<const unsigned char*>(private_key.data()),
                   private_key.size())) {
     return Status::Internal();
+  }
+
+  if (kMbedTlsSuccess !=
+      mbedtls_ecp_check_privkey(P256().Get(), ctx.private_key.Get())) {
+    return Status::InvalidArgument();
   }
 
   return OkStatus();

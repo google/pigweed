@@ -713,5 +713,78 @@ TEST_F(EcdhP256Test, GenerateAndComputeSharedSecret) {
   EXPECT_EQ(shared_key_alice, shared_key_bob);
 }
 
+TEST_F(EcdhP256Test, PointNotOnCurveFails) {
+  SetUp("PointNotOnCurveFails");
+
+  std::array<std::byte, kP256CoordSize> other_x{};
+  std::array<std::byte, kP256CoordSize> other_y{};
+  std::array<std::byte, kP256CoordSize> x{};
+  std::array<std::byte, kP256CoordSize> y{};
+
+  std::array<std::byte, kP256PrivateKeySize> private_key{};
+
+  // Big-endian.
+  for (const auto& test_case : kNistTestCases) {
+    std::memcpy(other_x.data(), test_case.other_x.data(), kP256CoordSize);
+    std::memcpy(other_y.data(), test_case.other_y.data(), kP256CoordSize);
+    std::memcpy(x.data(), test_case.x.data(), kP256CoordSize);
+    std::memcpy(y.data(), test_case.y.data(), kP256CoordSize);
+    std::memcpy(
+        private_key.data(), test_case.private_key.data(), kP256CoordSize);
+
+    // Modify the points to no longer be on the curve.
+    x[0] = ~x[0];
+    other_x[0] = ~x[0];
+
+    EXPECT_FALSE(P256PublicKey::Import(other_x, other_y, endian::big).ok());
+    EXPECT_FALSE(
+        P256Keypair::ImportForTesting(private_key, x, y, endian::big).ok());
+
+    // Modify local keypair to be valid again, and double check it is valid.
+    x[0] = ~x[0];
+    PW_TEST_EXPECT_OK(
+        P256Keypair::ImportForTesting(private_key, x, y, endian::big));
+
+    // Modify private key to no longer be on the curve.
+    ZeroOut(private_key);
+    EXPECT_FALSE(
+        P256Keypair::ImportForTesting(private_key, x, y, endian::big).ok());
+  }
+
+  // Little-endian.
+  for (const auto& test_case : kNistTestCases) {
+    std::memcpy(other_x.data(), test_case.other_x.data(), kP256CoordSize);
+    std::memcpy(other_y.data(), test_case.other_y.data(), kP256CoordSize);
+    std::memcpy(x.data(), test_case.x.data(), kP256CoordSize);
+    std::memcpy(y.data(), test_case.y.data(), kP256CoordSize);
+    std::memcpy(
+        private_key.data(), test_case.private_key.data(), kP256PrivateKeySize);
+
+    std::reverse(other_x.begin(), other_x.end());
+    std::reverse(other_y.begin(), other_y.end());
+    std::reverse(private_key.begin(), private_key.end());
+    std::reverse(x.begin(), x.end());
+    std::reverse(y.begin(), y.end());
+
+    // Modify the points to no longer be on the curve.
+    x[kP256CoordSize - 1] = ~x[kP256CoordSize - 1];
+    other_x[kP256CoordSize - 1] = ~other_x[kP256CoordSize - 1];
+
+    EXPECT_FALSE(P256PublicKey::Import(other_x, other_y, endian::big).ok());
+    EXPECT_FALSE(
+        P256Keypair::ImportForTesting(private_key, x, y, endian::big).ok());
+
+    // Modify local keypair to be valid again, and double check it is valid.
+    x[kP256CoordSize - 1] = ~x[kP256CoordSize - 1];
+    PW_TEST_EXPECT_OK(
+        P256Keypair::ImportForTesting(private_key, x, y, endian::little));
+
+    // Modify private key to be invalid for P256.
+    ZeroOut(private_key);
+    EXPECT_FALSE(
+        P256Keypair::ImportForTesting(private_key, x, y, endian::little).ok());
+  }
+}
+
 }  // namespace
 }  // namespace pw::crypto::ecdh
