@@ -6,22 +6,20 @@ panic_detector
 .. pigweed-module-subpage::
    :name: pw_kernel
 
-.. _module-pw_kernel-tooling:
+``panic_detector`` scans a Rust binary and uses static analysis to display
+a list of all panic call sites.
 
-panic_detector will scan a rust binary and through static analysis display a list of all panic call sites.
-
-Currently only riscv32 elf files are supported.
+Currently only ``rv32`` ELF files are supported.
 
 -----
 Usage
 -----
-
-panic_detector can be integrated into the bazel build as follows:
+``panic_detector`` can be integrated into the Bazel build as follows:
 
 1. Add panic handler
 --------------------
-
-Add a panic handler to the rust binary which will be used by panic_detector to find the panic call sites.
+Add a panic handler to the Rust binary which will be used by ``panic_detector`` to
+find the panic call sites.
 
 .. code-block:: rust
 
@@ -56,8 +54,7 @@ Add a panic handler to the rust binary which will be used by panic_detector to f
 
 2. Add a test target
 --------------------
-
-Add a test target to bazel for the binary to validate.
+Add a test target to Bazel for the binary to validate.
 
 .. code-block:: bazel
 
@@ -75,13 +72,12 @@ Add a test target to bazel for the binary to validate.
 
 3. Run the bazel test
 ---------------------
+If any panics are detected , ``panic_detector`` prints the locations to ``stdout``.
 
-If any panics are detected panic_detector will print the locations to stdout.
-
-.. code-block:: shell
+.. code-block:: console
 
    $ bazel test //:example_no_panic_test
-   <snip>
+   …
    Found panic ufmt-0.2.0/src/helpers.rs line 58 column 13. Branch trace:
      00103896 lui      a0,0x104           (task0_entry)
      0010389e jal      ra,-1734           (task0_entry)
@@ -89,4 +85,4 @@ If any panics are detected panic_detector will print the locations to stdout.
      001031d2 jalr     ra,ra,-78          (core::panicking::panic_fmt)
      00103192 jal      ra,2               (rust_begin_unwind)
      00103194 addi     sp,sp,-16          (panic_is_possible)
-     <snip>
+     …

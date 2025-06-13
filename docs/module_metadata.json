@@ -523,11 +523,12 @@
     ]
   },
   "pw_kernel": {
-    "tagline": "Kernel experiments",
+    "tagline": "An experimental kernel for embedded systems",
     "status": "experimental",
     "languages": [
       "Rust"
-    ]
+    ],
+    "size": "~10-16 kB"
   },
   "pw_kvs": {
     "tagline": "Lightweight, persistent key-value store",

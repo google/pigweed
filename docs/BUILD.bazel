@@ -403,6 +403,8 @@ sphinx_docs(
     extra_opts = [
         "--silent",
         "--fail-on-warning",
+        "--jobs",
+        "16",
     ],
     formats = [
         "html",

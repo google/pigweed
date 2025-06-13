@@ -54,8 +54,11 @@ config_setting(
 sphinx_docs_library(
     name = "docs",
     srcs = [
-        "cheat_sheet.rst",
+        "design.rst",
         "docs.rst",
+        "guides.rst",
+        "quickstart.rst",
+        "roadmap.rst",
         "//pw_kernel/tooling/panic_detector:docs",
     ],
     prefix = "pw_kernel/",

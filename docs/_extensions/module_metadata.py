@@ -509,6 +509,20 @@ def on_html_page_context(
     context[canonical_url_key] = fix_canonical_url(canonical_url)
 
 
+def should_add_rust_link(module_name: str, languages: list[str] | None) -> bool:
+    if languages is None:
+        return False
+    ignore = [
+        # TODO: https://pwbug.dev/424641732 - Remove this.
+        'pw_kernel',
+    ]
+    if module_name in ignore:
+        return False
+    if 'Rust' not in languages:
+        return False
+    return True
+
+
 def add_links(module_name: str, toctree: Element) -> None:
     """Adds source code and issues URLs to a module's table of contents tree.
 
@@ -525,7 +539,11 @@ def add_links(module_name: str, toctree: Element) -> None:
         `None`. `toctree` is modified in-place.
     """
     languages = get_languages(module_name)
-    if languages is not None and 'Rust' in languages:
+    ignore = [
+        # TODO: https://pwbug.dev/424641732 - Remove this.
+        'pw_kernel',
+    ]
+    if should_add_rust_link(module_name, languages):
         rustdoc = ('Rust API reference', rustdoc_url(module_name))
         toctree['entries'] += [rustdoc]
         toctree['rawentries'] += [rustdoc[0]]
