@@ -16,6 +16,8 @@
 #include <mbedtls/ecdh.h>
 #include <mbedtls/ecp.h>
 
+#include <random>  // Used for SetUpForTesting only.
+
 #include "pw_assert/check.h"
 #include "pw_crypto/ecdh.h"
 #include "pw_status/status.h"
@@ -134,12 +136,32 @@ Status ImportPoint(Point* point,
   return OkStatus();
 }
 
+// Not actually a CSPRNG and seeded deterministically, purely for test. Used
+// in SetUpForTesting ONLY.
+class TestRng final : public backend::Csprng {
+ public:
+  void Seed(size_t seed) {
+    engine_.seed(static_cast<std::mt19937::result_type>(seed));
+  }
+
+ private:
+  GenerateResult Generate(ByteSpan out) override {
+    std::generate(out.begin(), out.end(), [this] {
+      return std::byte(distribution_(engine_));
+    });
+    return GenerateResult::kSuccess;
+  }
+
+  std::mt19937 engine_;
+  std::uniform_int_distribution<unsigned char> distribution_;
+};
+
 }  // namespace
 
 Csprng::~Csprng() {}
 
 void SetCsprng(Csprng* csprng) {
-  PW_CHECK(global_csprng == nullptr);
+  PW_CHECK(global_csprng == nullptr || global_csprng == csprng);
   global_csprng = csprng;
 }
 
@@ -246,6 +268,12 @@ Status ComputeDiffieHellman(const NativeP256Keypair& key,
   }
 
   return OkStatus();
+}
+
+void SetUpForTesting() {
+  static TestRng fake_rng;
+  fake_rng.Seed(std::hash<std::string_view>().operator()("TEST"));
+  SetCsprng(&fake_rng);
 }
 
 }  // namespace pw::crypto::ecdh::backend

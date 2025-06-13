@@ -71,6 +71,7 @@ Status DoImport(NativeP256PublicKey& ctx,
 Status ComputeDiffieHellman(const NativeP256Keypair& key,
                             const NativeP256PublicKey& other_key,
                             P256DhKey out);
+void SetUpForTesting();
 
 }  // namespace backend
 
@@ -183,5 +184,9 @@ class P256Keypair final : public P256PublicKeyOps {
   // Backend-specific type.
   backend::NativeP256Keypair native_;
 };
+
+/// Configure the ECDH backend for testing.
+/// WARNING: Production code MUST NEVER call this!
+inline void SetUpBackendForTesting() { backend::SetUpForTesting(); }
 
 }  // namespace pw::crypto::ecdh

@@ -192,4 +192,7 @@ Status ComputeDiffieHellman(const NativeP256Keypair& key,
   return OkStatus();
 }
 
+// No additional setup required for BoringSSL for testing.
+void SetUpForTesting() {}
+
 }  // namespace pw::crypto::ecdh::backend
