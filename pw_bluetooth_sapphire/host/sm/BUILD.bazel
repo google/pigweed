@@ -98,8 +98,8 @@ cc_library(
         "//pw_bluetooth_sapphire/lib/cpp-string",
         "//pw_crypto:aes",
         "//pw_crypto:aes_cmac",
+        "//pw_crypto:ecdh",
         "//third_party/fuchsia:fit",
-        "@boringssl//:crypto",
     ],
 )
 

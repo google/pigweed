@@ -71,7 +71,17 @@ const DeviceAddress kAddr1(DeviceAddress::Type::kLEPublic,
                            {0x00, 0x00, 0x00, 0x00, 0x00, 0x01});
 const DeviceAddress kAddr2(DeviceAddress::Type::kLEPublic,
                            {0x00, 0x00, 0x00, 0x00, 0x00, 0x02});
-const LocalEcdhKey kDefaultEcdhKey = LocalEcdhKey::Create().value();
+
+LocalEcdhKey GenKey() {
+  static bool backend_set_up = false;
+  if (!backend_set_up) {
+    pw::crypto::ecdh::SetUpBackendForTesting();
+    backend_set_up = true;
+  }
+  return LocalEcdhKey::Create().value();
+}
+
+const LocalEcdhKey kDefaultEcdhKey = GenKey();
 
 using util::PacketSize;
 

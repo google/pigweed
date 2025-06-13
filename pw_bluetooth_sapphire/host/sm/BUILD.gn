@@ -87,7 +87,7 @@ pw_source_set("sm") {
     "$dir_pw_bluetooth_sapphire/host/l2cap",
     "$dir_pw_crypto:aes",
     "$dir_pw_crypto:aes_cmac",
-    "$pw_external_boringssl",
+    "$dir_pw_crypto:ecdh",
     "$pw_external_fuchsia:fit",
     dir_pw_string,
   ]

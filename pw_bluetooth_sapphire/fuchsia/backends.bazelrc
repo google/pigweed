@@ -32,6 +32,7 @@ common:fuchsia --@pigweed//pw_async:task_backend=@pigweed//pw_async_fuchsia:task
 common:fuchsia --@pigweed//pw_async:fake_dispatcher_backend=@pigweed//pw_async_fuchsia:fake_dispatcher
 common:fuchsia --@pigweed//pw_sync:mutex_backend=@pigweed//pw_sync_stl:mutex
 common:fuchsia --@pigweed//pw_crypto:aes_backend=@pigweed//pw_crypto:aes_boringssl
+common:fuchsia --@pigweed//pw_crypto:ecdh_backend=@pigweed//pw_crypto:ecdh_boringssl
 common:fuchsia --@pigweed//pw_sync:interrupt_spin_lock_backend=@pigweed//pw_sync_stl:interrupt_spin_lock
 
 # TODO: https://pwbug.dev/374340793 - This is a temporary workaround for now and

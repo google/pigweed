@@ -128,6 +128,12 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
 
  protected:
   void SetUp() override {
+    static bool backend_set_up = false;
+    if (!backend_set_up) {
+      pw::crypto::ecdh::SetUpBackendForTesting();
+      backend_set_up = true;
+    }
+
     l2cap::testing::FakeChannelTest::SetUp();
     InitializeTransport();
   }
