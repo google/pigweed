@@ -318,6 +318,17 @@ cc_library(
 )
 
 cc_library(
+    name = "dynamic_vector",
+    hdrs = ["public/pw_containers/dynamic_vector.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":dynamic_deque",
+        ":iterator",
+        "//pw_allocator:allocator",
+    ],
+)
+
+cc_library(
     name = "filtered_view",
     hdrs = ["public/pw_containers/filtered_view.h"],
     strip_include_prefix = "public",
@@ -434,6 +445,16 @@ pw_cc_test(
         ":test_helpers",
         ":vector",
         "//pw_compilation_testing:negative_compilation_testing",
+    ],
+)
+
+pw_cc_test(
+    name = "dynamic_vector_test",
+    srcs = ["dynamic_vector_test.cc"],
+    deps = [
+        ":dynamic_vector",
+        ":test_helpers",
+        "//pw_allocator:testing",
     ],
 )
 
@@ -634,6 +655,7 @@ filegroup(
         "public/pw_containers/algorithm.h",
         "public/pw_containers/dynamic_deque.h",
         "public/pw_containers/dynamic_queue.h",
+        "public/pw_containers/dynamic_vector.h",
         "public/pw_containers/filtered_view.h",
         "public/pw_containers/inline_async_deque.h",
         "public/pw_containers/inline_async_queue.h",

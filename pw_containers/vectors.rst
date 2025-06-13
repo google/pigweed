@@ -6,9 +6,7 @@ Vectors
 .. pigweed-module-subpage::
    :name: pw_containers
 
-A vector is a one-dimensional array with a variable length. Pigweed's vector
-type differs from the standard library in that it is backed by a fixed-size
-buffer.
+A vector is a one-dimensional array with a variable length.
 
 ----------
 pw::Vector
@@ -39,7 +37,6 @@ fixed-size buffer.
 .. doxygenclass:: pw::Vector
    :members:
 
-
 Size report
 ===========
 The tables below illustrate the following scenarios:
@@ -55,3 +52,10 @@ The tables below illustrate the following scenarios:
   code being generated.
 
 .. include:: vectors_size_report
+
+-----------------
+pw::DynamicVector
+-----------------
+.. doxygenclass:: pw::DynamicVector
+   :members:
+   :undoc-members:

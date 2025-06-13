@@ -238,6 +238,16 @@ pw_source_set("vector") {
   public = [ "public/pw_containers/vector.h" ]
 }
 
+pw_source_set("dynamic_vector") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/dynamic_vector.h" ]
+  public_deps = [
+    ":dynamic_deque",
+    ":iterator",
+    "$dir_pw_allocator:allocator",
+  ]
+}
+
 pw_source_set("wrapped_iterator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/wrapped_iterator.h" ]
@@ -352,6 +362,7 @@ pw_test_group("tests") {
     ":to_array_test",
     ":inline_var_len_entry_queue_test",
     ":vector_test",
+    ":dynamic_vector_test",
     ":wrapped_iterator_test",
     ":ptr_iterator_test",
   ]
@@ -520,6 +531,15 @@ pw_test("vector_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("dynamic_vector_test") {
+  sources = [ "dynamic_vector_test.cc" ]
+  deps = [
+    ":dynamic_vector",
+    ":test_helpers",
+    "$dir_pw_allocator:testing",
+  ]
 }
 
 pw_test("wrapped_iterator_test") {

@@ -29,7 +29,6 @@ template <typename Container>
 class DequeIterator {
  public:
   using value_type = typename Container::value_type;
-  using size_type = typename Container::size_type;
   using reference =
       typename std::conditional_t<std::is_const_v<Container>,
                                   typename Container::const_reference,
@@ -102,7 +101,7 @@ class DequeIterator {
     return &**this;
   }
 
-  constexpr reference operator[](size_type n) { return *(*this + n); }
+  constexpr reference operator[](difference_type n) { return *(*this + n); }
 
   constexpr friend bool operator==(DequeIterator a, DequeIterator b) {
     return a.container_ == b.container_ && a.pos_ == b.pos_;
@@ -135,20 +134,20 @@ class DequeIterator {
   // Allow non-const iterators to construct const_iterators in conversions.
   friend class DequeIterator<std::remove_const_t<Container>>;
 
+  using size_type = typename Container::size_type;
+
+  static constexpr size_type kEnd = std::numeric_limits<size_type>::max();
+
   constexpr DequeIterator(Container* container, size_type pos)
       : container_(container), pos_(pos) {}
 
   constexpr DequeIterator& Incr(difference_type n) {
-    difference_type difference = n + (pos_ == kEnd ? container_->size() : pos_);
-    PW_DASSERT(difference >= 0);
-
-    size_type new_pos = static_cast<size_type>(difference);
+    size_type new_pos = static_cast<size_type>(
+        static_cast<size_type>(n) + (pos_ == kEnd ? container_->size() : pos_));
     PW_DASSERT(new_pos <= container_->size());
     pos_ = new_pos == container_->size() ? kEnd : new_pos;
     return *this;
   }
-
-  static constexpr size_type kEnd = std::numeric_limits<size_type>::max();
 
   Container* container_;  // pointer to container this iterator is from
   size_type pos_;         // logical index of iterator

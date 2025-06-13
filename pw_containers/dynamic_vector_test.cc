@@ -1,0 +1,285 @@
+// Copyright 2025 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+#include "pw_containers/dynamic_vector.h"
+
+#include "pw_allocator/fault_injecting_allocator.h"
+#include "pw_allocator/testing.h"
+#include "pw_containers/internal/test_helpers.h"
+#include "pw_unit_test/framework.h"
+
+namespace {
+
+using pw::containers::test::Counter;
+
+class DynamicVectorTest : public ::testing::Test {
+ protected:
+  DynamicVectorTest() : allocator_(allocator_for_test_) {}
+
+  pw::allocator::test::AllocatorForTest<1024> allocator_for_test_;
+  pw::allocator::test::FaultInjectingAllocator allocator_;
+};
+
+TEST_F(DynamicVectorTest, BasicOperations) {
+  pw::DynamicVector<Counter> queue(allocator_);
+}
+
+TEST_F(DynamicVectorTest, Constructor) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  EXPECT_TRUE(vec.empty());
+  EXPECT_EQ(vec.size(), 0u);
+  EXPECT_GE(vec.capacity(), 0u);
+}
+
+TEST_F(DynamicVectorTest, Iterators) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({10, 20, 30});
+
+  int expected_value = 10;
+  for (auto it = vec.begin(); it != vec.end(); ++it) {
+    EXPECT_EQ(*it, expected_value);
+    expected_value += 10;
+  }
+  EXPECT_EQ(expected_value, 40);  // Check all elements iterated
+
+  expected_value = 10;
+  for (auto it = vec.cbegin(); it != vec.cend(); ++it) {
+    EXPECT_EQ(*it, expected_value);
+    expected_value += 10;
+  }
+
+  expected_value = 30;
+  for (auto it = vec.rbegin(); it != vec.rend(); ++it) {
+    EXPECT_EQ(*it, expected_value);
+    expected_value -= 10;
+  }
+  EXPECT_EQ(expected_value, 0);  // Check all elements iterated in reverse
+
+  pw::DynamicVector<Counter>::const_iterator it =
+      pw::DynamicVector<Counter>::iterator();
+  EXPECT_NE(it, vec.begin());
+  EXPECT_EQ(vec.begin(), vec.cbegin());
+}
+
+TEST_F(DynamicVectorTest, CapacityMethods) {
+  pw::DynamicVector<Counter> vec(allocator_);
+
+  EXPECT_TRUE(vec.empty());
+  EXPECT_EQ(vec.size(), 0u);
+  EXPECT_GE(vec.capacity(), 0u);
+
+  vec.push_back(1);
+  EXPECT_FALSE(vec.empty());
+  EXPECT_EQ(vec.size(), 1u);
+  EXPECT_GE(vec.capacity(), 1u);
+
+  vec.reserve(10);
+  EXPECT_GE(vec.capacity(), 10u);
+  EXPECT_EQ(vec.size(), 1u);
+
+  EXPECT_TRUE(vec.try_reserve(20));
+  EXPECT_GE(vec.capacity(), 20u);
+  const auto last_capacity = vec.capacity();
+
+  allocator_.DisableAll();
+  EXPECT_FALSE(vec.try_reserve(100));
+  EXPECT_EQ(vec.capacity(), last_capacity);
+
+  vec.push_back(2);
+  vec.shrink_to_fit();
+  EXPECT_EQ(vec.size(), 2u);
+  EXPECT_GE(vec.capacity(), 2u);
+}
+
+TEST_F(DynamicVectorTest, ElementAccess) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({10, 20, 30});
+
+  EXPECT_EQ(vec[0], 10);
+  EXPECT_EQ(vec[1], 20);
+  EXPECT_EQ(vec[2], 30);
+
+  EXPECT_EQ(vec.at(0), 10);
+  EXPECT_EQ(vec.at(1), 20);
+  EXPECT_EQ(vec.at(2), 30);
+
+  EXPECT_EQ(vec.front(), 10);
+  EXPECT_EQ(vec.back(), 30);
+
+  *vec.data() = 5;
+  EXPECT_EQ(vec[0], 5);
+  EXPECT_EQ(*vec.data(), 5);
+
+  const pw::DynamicVector<Counter>& const_vec = vec;
+  EXPECT_EQ(const_vec[0], 5);
+  EXPECT_EQ(const_vec.at(1), 20);
+  EXPECT_EQ(const_vec.front(), 5);
+  EXPECT_EQ(const_vec.back(), 30);
+  EXPECT_EQ(*const_vec.data(), 5);
+}
+
+TEST_F(DynamicVectorTest, AssignCopies) {
+  pw::DynamicVector<Counter> vec(allocator_);
+
+  EXPECT_TRUE(vec.try_assign(3, 7));  // Assign 3 copies of 7
+  EXPECT_EQ(vec.size(), 3u);
+  EXPECT_EQ(vec[0], 7);
+  EXPECT_EQ(vec[1], 7);
+  EXPECT_EQ(vec[2], 7);
+}
+
+TEST_F(DynamicVectorTest, AssignInitializerList) {
+  pw::DynamicVector<Counter> vec(allocator_);
+
+  EXPECT_TRUE(vec.try_assign({10, 20}));
+  EXPECT_EQ(vec.size(), 2u);
+  EXPECT_EQ(vec[0], 10);
+  EXPECT_EQ(vec[1], 20);
+}
+
+TEST_F(DynamicVectorTest, AssignFails) {
+  pw::DynamicVector<Counter> vec(allocator_);
+
+  allocator_.DisableAll();
+  EXPECT_FALSE(vec.try_assign(5, 1));
+  EXPECT_TRUE(vec.empty());
+}
+
+TEST_F(DynamicVectorTest, PushBackMethods) {
+  pw::DynamicVector<Counter> vec(allocator_);
+
+  vec.push_back(10);
+  EXPECT_EQ(vec.size(), 1u);
+  EXPECT_EQ(vec.back(), 10);
+
+  vec.push_back(Counter(20));  // rvalue push
+  EXPECT_EQ(vec.size(), 2u);
+  EXPECT_EQ(vec.back(), 20);
+
+  EXPECT_TRUE(vec.try_push_back(30));
+  EXPECT_EQ(vec.size(), 3u);
+  EXPECT_EQ(vec.back(), 30);
+
+  vec.shrink_to_fit();
+  ASSERT_EQ(vec.size(), vec.capacity());
+
+  allocator_.DisableAll();
+  EXPECT_FALSE(vec.try_push_back(40));
+  EXPECT_EQ(vec.size(), 3u);
+}
+
+TEST_F(DynamicVectorTest, PopBack) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 2, 3});
+  EXPECT_EQ(vec.size(), 3u);
+
+  vec.pop_back();
+  EXPECT_EQ(vec.size(), 2u);
+  EXPECT_EQ(vec.back(), 2);
+
+  vec.pop_back();
+  EXPECT_EQ(vec.size(), 1u);
+  EXPECT_EQ(vec.back(), 1);
+
+  vec.pop_back();
+  EXPECT_TRUE(vec.empty());
+}
+
+TEST_F(DynamicVectorTest, EmplaceBackMethods) {
+  pw::DynamicVector<std::pair<int, char>> vec(allocator_);
+
+  vec.emplace_back(1, 'a');
+  EXPECT_EQ(vec.size(), 1u);
+  EXPECT_EQ(vec.back().first, 1);
+  EXPECT_EQ(vec.back().second, 'a');
+
+  EXPECT_TRUE(vec.try_emplace_back(2, 'b'));
+  EXPECT_EQ(vec.size(), 2u);
+  EXPECT_EQ(vec.back().first, 2);
+  EXPECT_EQ(vec.back().second, 'b');
+
+  vec.shrink_to_fit();
+  ASSERT_EQ(vec.size(), vec.capacity());
+
+  allocator_.DisableAll();
+  EXPECT_FALSE(vec.try_emplace_back(3, 'c'));
+  EXPECT_EQ(vec.size(), 2u);
+}
+
+TEST_F(DynamicVectorTest, ResizeMethods) {
+  pw::DynamicVector<Counter> vec(allocator_);
+
+  vec.resize(5);
+  EXPECT_EQ(vec.size(), 5u);
+  EXPECT_EQ(vec[0], 0);
+
+  vec.resize(2);
+  EXPECT_EQ(vec.size(), 2u);
+
+  vec.resize(4, 99);
+  EXPECT_EQ(vec.size(), 4u);
+  EXPECT_EQ(vec[0], 0);
+  EXPECT_EQ(vec[1], 0);
+  EXPECT_EQ(vec[2], 99);
+  EXPECT_EQ(vec[3], 99);
+
+  EXPECT_TRUE(vec.try_resize(6));
+  EXPECT_EQ(vec.size(), 6u);
+  EXPECT_EQ(vec[4], 0);
+
+  vec.shrink_to_fit();
+  ASSERT_EQ(vec.size(), vec.capacity());
+
+  allocator_.DisableAll();
+  EXPECT_FALSE(vec.try_resize(10));
+  EXPECT_EQ(vec.size(), 6u);
+
+  allocator_.EnableAll();
+  EXPECT_TRUE(vec.try_resize(8, 100));
+  EXPECT_EQ(vec.size(), 8u);
+  EXPECT_EQ(vec[6], 100);
+  EXPECT_EQ(vec[7], 100);
+}
+
+TEST_F(DynamicVectorTest, Clear) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 2, 3});
+  EXPECT_FALSE(vec.empty());
+
+  vec.clear();
+  EXPECT_TRUE(vec.empty());
+  EXPECT_EQ(vec.size(), 0u);
+}
+
+TEST_F(DynamicVectorTest, Swap) {
+  pw::DynamicVector<Counter> vec1(allocator_);
+  vec1.assign({1, 2});
+
+  pw::DynamicVector<Counter> vec2(allocator_);
+  vec2.assign({10, 20, 30});
+
+  EXPECT_EQ(vec1.size(), 2u);
+  EXPECT_EQ(vec1[0], 1);
+  EXPECT_EQ(vec2.size(), 3u);
+  EXPECT_EQ(vec2[0], 10);
+
+  vec1.swap(vec2);
+
+  EXPECT_EQ(vec1.size(), 3u);
+  EXPECT_EQ(vec1[0], 10);
+  EXPECT_EQ(vec2.size(), 2u);
+  EXPECT_EQ(vec2[0], 1);
+}
+
+}  // namespace

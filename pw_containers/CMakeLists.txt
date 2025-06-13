@@ -245,6 +245,17 @@ pw_add_library(pw_containers.vector INTERFACE
     pw_toolchain.constexpr_tag
 )
 
+pw_add_library(pw_containers.dynamic_vector INTERFACE
+  HEADERS
+    public/pw_containers/dynamic_vector.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_containers.dynamic_deque
+    pw_containers.iterator
+)
+
 pw_add_library(pw_containers.wrapped_iterator INTERFACE
   HEADERS
     public/pw_containers/wrapped_iterator.h
@@ -514,6 +525,18 @@ pw_add_test(pw_containers.vector_test
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers._test_helpers
     pw_containers.vector
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.dynamic_vector_test
+  SOURCES
+    dynamic_vector_test.cc
+  PRIVATE_DEPS
+    pw_allocator.testing
+    pw_containers._test_helpers
+    pw_containers.dynamic_vector
   GROUPS
     modules
     pw_containers

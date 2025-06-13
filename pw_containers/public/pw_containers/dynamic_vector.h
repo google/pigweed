@@ -1,0 +1,348 @@
+// Copyright 2025 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+#pragma once
+
+#include <initializer_list>
+#include <iterator>
+
+#include "pw_allocator/allocator.h"
+#include "pw_containers/dynamic_deque.h"
+#include "pw_containers/ptr_iterator.h"
+
+namespace pw {
+
+/// Array-backed list similar to `std::vector`, but optimized for embedded.
+///
+/// Key features of `pw::DynamicVector`.
+///
+/// - Uses a `pw::Allocator` for memory operations.
+/// - Provides the `std::vector` API, but adds `try_*` versions of
+///   operations that crash on allocation failure.
+///   - `assign()` & `try_assign()`.
+///   - `push_back()` & `try_push_back()`
+///   - `emplace_back()` & `try_emplace_back()`
+///   - `resize()` & `try_resize()`.
+/// - Offers `reserve()`/`try_reserve()` and `shrink_to_fit()` to manage memory
+///   usage.
+/// - Never allocates in the constructor. `constexpr` constructible.
+/// - Compact representation when used with a `size_type` of `uint16_t`.
+/// - Uses `pw::Allocator::Resize()` when possible to maximize efficiency.
+///
+/// @note `pw::DynamicVector` is currently implemented as a wrapper around
+/// `pw::DynamicDeque`. Some operations are more expensive than they need to be,
+/// and `DynamicVector` objects are larger than necessary. This overhead will be
+/// eliminated in the future (see <a href="http://pwbug.dev/424613355">
+/// b/424613355</a>).
+template <typename T, typename SizeType = uint16_t>
+class DynamicVector {
+ public:
+  using value_type = T;
+  using size_type = SizeType;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
+  using iterator = containers::PtrIterator<DynamicVector>;
+  using const_iterator = containers::ConstPtrIterator<DynamicVector>;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using allocator_type = Allocator;
+
+  /// Constructs an empty `DynamicVector` using the provided allocator.
+  ///
+  /// @param allocator The allocator to use for memory management.
+  explicit constexpr DynamicVector(Allocator& allocator) : deque_(allocator) {}
+
+  DynamicVector(const DynamicVector&) = delete;
+  DynamicVector& operator=(const DynamicVector&) = delete;
+
+  constexpr DynamicVector(DynamicVector&&) = default;
+  constexpr DynamicVector& operator=(DynamicVector&&) = default;
+
+  // Iterators
+
+  iterator begin() { return iterator(data()); }
+  const_iterator begin() const { return cbegin(); }
+  const_iterator cbegin() const { return const_iterator(data()); }
+
+  iterator end() { return iterator(data() + size()); }
+  const_iterator end() const { return cend(); }
+  const_iterator cend() const { return const_iterator(data() + size()); }
+
+  reverse_iterator rbegin() { return reverse_iterator(end()); }
+  const_reverse_iterator rbegin() const { return crbegin(); }
+  const_reverse_iterator crbegin() const {
+    return const_reverse_iterator(end());
+  }
+
+  reverse_iterator rend() { return reverse_iterator(begin()); }
+  const_reverse_iterator rend() const { return crend(); }
+  const_reverse_iterator crend() const {
+    return const_reverse_iterator(begin());
+  }
+
+  // Capacity
+
+  /// Returns the vector's allocator.
+  constexpr allocator_type& get_allocator() const {
+    return deque_.get_allocator();
+  }
+
+  /// Checks if the vector is empty.
+  bool empty() const { return deque_.empty(); }
+
+  /// Returns the number of elements in the vector.
+  size_type size() const { return deque_.size(); }
+
+  /// Returns the total number of elements that the vector can hold without
+  /// requiring reallocation.
+  size_type capacity() const { return deque_.capacity(); }
+
+  /// Maximum possible value of `size()`, ignoring allocator limitations.
+  size_type max_size() const { return deque_.max_size(); }
+
+  /// Requests that the vector capacity be at least `new_capacity` elements.
+  ///
+  /// Note: This operation is potentially fallible if memory allocation is
+  /// required and fails. Depending on the underlying DynamicDeque
+  /// implementation and Pigweed configuration, allocation failure may result
+  /// in a panic or assertion failure. Use `try_reserve()` for a fallible
+  /// version.
+  ///
+  /// @param new_capacity The minimum desired capacity.
+  void reserve(size_type new_capacity) { deque_.reserve(new_capacity); }
+
+  /// Attempts to request that the vector capacity be at least `new_capacity`
+  /// elements.
+  ///
+  /// Returns `true` on success, or `false` if allocation fails.
+  ///
+  /// @param new_capacity The minimum desired capacity.
+  /// @return `true` if successful, `false` otherwise.
+  [[nodiscard]] bool try_reserve(size_type new_capacity) {
+    return deque_.try_reserve(new_capacity);
+  }
+
+  /// Reduces memory usage by releasing unused capacity.
+  void shrink_to_fit() { deque_.shrink_to_fit(); }
+
+  // Element access
+
+  /// Returns a reference to the element at specified location `pos`.
+  ///
+  /// No bounds checking is performed.
+  ///
+  /// @param pos The index of the element to access.
+  /// @return Reference to the element.
+  reference operator[](size_type pos) { return data()[pos]; }
+
+  /// Returns a const reference to the element at specified location `pos`.
+  ///
+  /// No bounds checking is performed.
+  ///
+  /// @param pos The index of the element to access.
+  /// @return Const reference to the element.
+  const_reference operator[](size_type pos) const { return data()[pos]; }
+
+  /// Returns a reference to the element at specified location `pos`, with
+  /// bounds checking.
+  ///
+  /// Crashes if `pos` is not within the range `[0, size())`.
+  ///
+  /// @param pos The index of the element to access.
+  /// @return Reference to the element.
+  reference at(size_type pos) { return deque_.at(pos); }
+
+  /// Returns a const reference to the element at specified location `pos`, with
+  /// bounds checking.
+  ///
+  /// Crashes if `pos` is not within the range `[0, size())`.
+  ///
+  /// @param pos The index of the element to access.
+  /// @return Const reference to the element.
+  const_reference at(size_type pos) const { return deque_.at(pos); }
+
+  /// Returns a reference to the first element in the vector.
+  ///
+  /// Calling `front()` on an empty vector is undefined behavior.
+  reference front() { return deque_.front(); }
+
+  /// Returns a const reference to the first element in the vector.
+  ///
+  /// Calling `front()` on an empty vector is undefined behavior.
+  const_reference front() const { return deque_.front(); }
+
+  /// Returns a reference to the last element in the vector.
+  ///
+  /// Calling `back()` on an empty vector is undefined behavior.
+  reference back() { return deque_.back(); }
+
+  /// Returns a const reference to the last element in the vector.
+  ///
+  /// Calling `back()` on an empty vector is undefined behavior.
+  const_reference back() const { return deque_.back(); }
+
+  /// Returns a pointer to the underlying array serving as element storage.
+  ///
+  /// The pointer is such that `[data(), data() + size())` is a valid range.
+  ///
+  /// @return A pointer to the first element, or `nullptr` if the vector is
+  /// empty.
+  pointer data() { return deque_.data(); }
+
+  /// Returns a const pointer to the underlying array serving as element
+  /// storage.
+  ///
+  /// @return A const pointer to the first element, or `nullptr` if the vector
+  /// is empty.
+  const_pointer data() const { return deque_.data(); }
+
+  // Modifiers
+
+  /// Assigns new contents to the vector, replacing its current contents.
+  ///
+  /// @param count The number of elements to assign.
+  /// @param value The value to copy.
+  /// @return `true` if successful, `false` otherwise.
+  void assign(size_type count, const value_type& value) {
+    deque_.assign(count, value);
+  }
+
+  [[nodiscard]] bool try_assign(size_type count, const value_type& value) {
+    return deque_.try_assign(count, value);
+  }
+
+  /// Assigns new contents to the vector from an initializer list.
+  ///
+  /// @param init The initializer list to copy elements from.
+  /// @return `true` if successful, `false` otherwise.
+  void assign(std::initializer_list<T> init) { deque_.assign(init); }
+
+  [[nodiscard]] bool try_assign(std::initializer_list<T> init) {
+    return deque_.try_assign(init);
+  }
+
+  /// Adds an element to the back of the vector.
+  ///
+  /// Note: This operation is potentially fallible if memory allocation is
+  /// required and fails. Use `try_push_back()` for a fallible version.
+  void push_back(const value_type& value) { deque_.push_back(value); }
+
+  /// Adds an element to the back of the vector (move version).
+  ///
+  /// Note: This operation is potentially fallible if memory allocation is
+  /// required and fails.
+  void push_back(value_type&& value) { deque_.push_back(std::move(value)); }
+
+  /// Attempts to add an element to the back of the vector.
+  ///
+  /// Returns `true` on success, or `false` if allocation fails.
+  ///
+  /// @param value The value to add.
+  /// @return `true` if successful, `false` otherwise.
+  [[nodiscard]] bool try_push_back(const value_type& value) {
+    return deque_.try_push_back(value);
+  }
+
+  /// Attempts to add an element to the back of the vector (move version).
+  ///
+  /// Returns `true` on success, or `false` if allocation fails.
+  ///
+  /// @param value The value to add.
+  /// @return `true` if successful, `false` otherwise.
+  [[nodiscard]] bool try_push_back(value_type&& value) {
+    return deque_.try_push_back(std::move(value));
+  }
+
+  /// Removes the last element from the vector.
+  ///
+  /// Calling `pop_back()` on an empty vector is undefined behavior.
+  void pop_back() { deque_.pop_back(); }
+
+  /// Constructs an element in place at the back of the vector.
+  ///
+  /// Note: This operation is potentially fallible if memory allocation is
+  /// required and fails. Use `try_emplace_back()` for a fallible version.
+  template <typename... Args>
+  void emplace_back(Args&&... args) {
+    deque_.emplace_back(std::forward<Args>(args)...);
+  }
+
+  /// Attempts to construct an element in place at the back of the vector.
+  ///
+  /// Returns `true` on success, or `false` if allocation fails.
+  ///
+  /// @param args Arguments to forward to the element's constructor.
+  /// @return `true` if successful, `false` otherwise.
+  template <typename... Args>
+  [[nodiscard]] bool try_emplace_back(Args&&... args) {
+    return deque_.try_emplace_back(std::forward<Args>(args)...);
+  }
+
+  // TODO: b/424613355 - Implement insert, emplace, erase
+
+  /// Resizes the vector to contain `count` elements.
+  ///
+  /// If `count` is smaller than the current size, the content is reduced to
+  /// the first `count` elements. If `count` is greater than the current size,
+  /// new elements are appended and default-constructed.
+  ///
+  /// @param count New size of the vector.
+  void resize(size_type count) { deque_.resize(count); }
+
+  /// Resizes the vector to contain `count` elements, value-initializing new
+  /// elements.
+  ///
+  /// If `count` is smaller than the current size, the content is reduced to
+  /// the first `count` elements. If `count` is greater than the current size,
+  /// new elements are appended and copy-constructed from `value`.
+  ///
+  /// @param count New size of the vector.
+  /// @param value Value to initialize new elements with.
+  void resize(size_type count, const value_type& value) {
+    deque_.resize(count, value);
+  }
+
+  /// Attempts to resize the vector to contain `count` elements.
+  ///
+  /// @param count New size of the vector.
+  /// @return `true` if successful, `false` otherwise.
+  [[nodiscard]] bool try_resize(size_type count) {
+    return deque_.try_resize(count);
+  }
+
+  /// Attempts to resize the vector to contain `count` elements,
+  /// value-initializing new elements.
+  ///
+  /// @param count New size of the vector.
+  /// @param value Value to initialize new elements with.
+  /// @return `true` if successful, `false` otherwise.
+  [[nodiscard]] bool try_resize(size_type count, const value_type& value) {
+    return deque_.try_resize(count, value);
+  }
+
+  /// Removes all elements from the vector.
+  void clear() { deque_.clear(); }
+
+  /// Swaps the contents with another DynamicVector.
+  ///
+  /// @param other The other vector to swap with.
+  void swap(DynamicVector& other) { deque_.swap(other.deque_); }
+
+ private:
+  // The underlying DynamicDeque instance that provides the storage.
+  DynamicDeque<T, size_type> deque_;
+};
+
+}  // namespace pw

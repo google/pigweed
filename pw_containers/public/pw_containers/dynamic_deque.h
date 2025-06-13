@@ -117,6 +117,7 @@ class DynamicDeque : public containers::internal::GenericDeque<
     return std::numeric_limits<size_type>::max();
   }
 
+  /// Returns the deque's allocator.
   constexpr allocator_type& get_allocator() const { return *allocator_; }
 
   /// Swaps the contents of two deques. No allocations occur.
@@ -128,6 +129,9 @@ class DynamicDeque : public containers::internal::GenericDeque<
 
  private:
   friend Base;
+
+  template <typename, typename>
+  friend class DynamicVector;  // Allow direct access to data()
 
   static constexpr bool kFixedCapacity = false;  // uses dynamic allocation
 
