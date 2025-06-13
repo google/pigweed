@@ -23,7 +23,6 @@ existing iterator type. It reduces boilerplate by providing ``operator++``,
 aliases (``difference_type``, ``value_type``, etc.). It does not provide the
 dereference operator; that must be supplied by a derived class.
 
-=======
 Example
 =======
 To use it, create a class that derives from ``WrappedIterator`` and define
@@ -38,7 +37,6 @@ values in an array by 2.
    :start-after: [pw_containers-wrapped_iterator]
    :end-before: [pw_containers-wrapped_iterator]
 
-============================
 Basic functional programming
 ============================
 ``WrappedIterator`` may be used in concert with ``FilteredView`` to create a
@@ -55,6 +53,12 @@ functional programming features similar to (though much more cumbersome than)
 in Java 8. ``WrappedIterator`` and ``FilteredView`` require no memory
 allocation, which is helpful when memory is too constrained to process the items
 into a new container.
+
+---------------------------
+pw::containers::PtrIterator
+---------------------------
+.. doxygenclass:: pw::containers::PtrIterator
+.. doxygenclass:: pw::containers::ConstPtrIterator
 
 ------------------------
 pw::containers::to_array

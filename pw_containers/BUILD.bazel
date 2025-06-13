@@ -169,9 +169,12 @@ cc_library(
 
 cc_library(
     name = "iterator",
-    hdrs = ["public/pw_containers/iterator.h"],
+    hdrs = [
+        "public/pw_containers/iterator.h",
+        "public/pw_containers/ptr_iterator.h",
+    ],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
+    deps = ["//pw_polyfill"],
 )
 
 cc_library(
@@ -535,6 +538,12 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "ptr_iterator_test",
+    srcs = ["ptr_iterator_test.cc"],
+    deps = [":iterator"],
+)
+
+pw_cc_test(
     name = "intrusive_forward_list_test",
     srcs = ["intrusive_forward_list_test.cc"],
     deps = [
@@ -640,6 +649,7 @@ filegroup(
         "public/pw_containers/intrusive_multimap.h",
         "public/pw_containers/intrusive_multiset.h",
         "public/pw_containers/intrusive_set.h",
+        "public/pw_containers/ptr_iterator.h",
         "public/pw_containers/vector.h",
     ],
 )

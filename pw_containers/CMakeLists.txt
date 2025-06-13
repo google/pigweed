@@ -175,8 +175,19 @@ pw_add_library(pw_containers.inline_async_queue INTERFACE
 pw_add_library(pw_containers.iterator INTERFACE
   HEADERS
     public/pw_containers/iterator.h
+    public/pw_containers/ptr_iterator.h
   PUBLIC_INCLUDES
     public
+)
+
+pw_add_test(pw_containers.ptr_iterator_test
+  SOURCES
+    ptr_iterator_test.cc
+  PRIVATE_DEPS
+    pw_containers.iterator
+  GROUPS
+    modules
+    pw_containers
 )
 
 pw_add_library(pw_containers._raw_storage INTERFACE

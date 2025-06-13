@@ -181,7 +181,10 @@ pw_source_set("inline_async_queue") {
 pw_source_set("iterator") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_polyfill ]
-  public = [ "public/pw_containers/iterator.h" ]
+  public = [
+    "public/pw_containers/iterator.h",
+    "public/pw_containers/ptr_iterator.h",
+  ]
 }
 
 pw_source_set("raw_storage") {
@@ -350,6 +353,7 @@ pw_test_group("tests") {
     ":inline_var_len_entry_queue_test",
     ":vector_test",
     ":wrapped_iterator_test",
+    ":ptr_iterator_test",
   ]
   group_deps = [ "examples" ]
 }
@@ -524,6 +528,11 @@ pw_test("wrapped_iterator_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("ptr_iterator_test") {
+  sources = [ "ptr_iterator_test.cc" ]
+  deps = [ ":iterator" ]
 }
 
 pw_test("intrusive_forward_list_test") {
