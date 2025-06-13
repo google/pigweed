@@ -25,6 +25,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_containers/internal/traits.h"
+#include "pw_containers/ptr_iterator.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_string/internal/string_impl.h"
 
@@ -304,8 +305,10 @@ class InlineBasicString<T, string_impl::kGeneric> {
   using const_reference = const value_type&;
   using pointer = value_type*;
   using const_pointer = const value_type*;
-  using iterator = value_type*;
-  using const_iterator = const value_type*;
+  using iterator =
+      containers::PtrIterator<InlineBasicString<T, string_impl::kGeneric>>;
+  using const_iterator =
+      containers::ConstPtrIterator<InlineBasicString<T, string_impl::kGeneric>>;
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
@@ -341,6 +344,12 @@ class InlineBasicString<T, string_impl::kGeneric> {
   InlineBasicString(const InlineBasicString&) = default;
 
   InlineBasicString& operator=(const InlineBasicString&) = default;
+
+  // Allow derived fixed-length types to create iterators.
+  static constexpr iterator Iterator(T* data) { return iterator(data); }
+  static constexpr const_iterator Iterator(const T* data) {
+    return const_iterator(data);
+  }
 
   constexpr void PushBack(T* data, T ch);
 

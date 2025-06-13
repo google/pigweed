@@ -139,13 +139,21 @@ constexpr operator string_impl::View<T>() const noexcept {
 
 // Iterators
 
-constexpr iterator begin() noexcept { return &data()[0]; }
-constexpr const_iterator begin() const noexcept { return &data()[0]; }
-constexpr const_iterator cbegin() const noexcept { return &data()[0]; }
+constexpr iterator begin() noexcept {
+  return InlineBasicString<T, string_impl::kGeneric>::Iterator(data());
+}
+constexpr const_iterator begin() const noexcept { return cbegin(); }
+constexpr const_iterator cbegin() const noexcept {
+  return InlineBasicString<T, string_impl::kGeneric>::Iterator(data());
+}
 
-constexpr iterator end() noexcept { return &data()[size()]; }
-constexpr const_iterator end() const noexcept { return &data()[size()]; }
-constexpr const_iterator cend() const noexcept { return &data()[size()]; }
+constexpr iterator end() noexcept {
+  return InlineBasicString<T, string_impl::kGeneric>::Iterator(data() + size());
+}
+constexpr const_iterator end() const noexcept { return cend(); }
+constexpr const_iterator cend() const noexcept {
+  return InlineBasicString<T, string_impl::kGeneric>::Iterator(data() + size());
+}
 
 constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
 constexpr const_reverse_iterator rbegin() const noexcept {
@@ -224,25 +232,21 @@ constexpr InlineBasicString& insert(
       data(), index, other.data(), other.size(), other_index, count));
 }
 
-// Use a templated type rather than `const_iterator` to convince the compiler
-// to prefer `0` as an index rather than as a `nullptr`.
-template <typename U>
-constexpr iterator insert(const U* pos, size_t count, T ch) {
+constexpr iterator insert(const_iterator pos, size_t count, T ch) {
   PW_ASSERT(cbegin() <= pos && pos <= cend());
   size_t index = static_cast<size_t>(pos - cbegin());
   PW_ASSERT(index <= index + count);
   MoveExtend(data(), index, index + count);
   FillExtend(data(), index, ch, count);
-  return begin() + index;
+  return begin() + static_cast<ptrdiff_t>(index);
 }
 
-template <typename U>
-constexpr iterator insert(const U* pos, T ch) {
+constexpr iterator insert(const_iterator pos, T ch) {
   return insert(pos, 1, ch);
 }
 
-template <typename U, class InputIt>
-constexpr iterator insert(const U* pos, InputIt first, InputIt last) {
+template <class InputIt>
+constexpr iterator insert(const_iterator pos, InputIt first, InputIt last) {
   PW_ASSERT(cbegin() <= pos && pos <= cend());
   size_t index = static_cast<size_t>(pos - cbegin());
   size_t count = 0;
@@ -253,11 +257,10 @@ constexpr iterator insert(const U* pos, InputIt first, InputIt last) {
   PW_ASSERT(index <= index + count);
   MoveExtend(data(), index, index + count);
   CopyIteratorExtend(data(), index, first, last);
-  return begin() + index;
+  return begin() + static_cast<ptrdiff_t>(index);
 }
 
-template <typename U>
-constexpr iterator insert(const U* pos, std::initializer_list<T> list) {
+constexpr iterator insert(const_iterator pos, std::initializer_list<T> list) {
   return insert(pos, list.begin(), list.end());
 }
 
@@ -292,21 +295,17 @@ constexpr InlineBasicString& erase(size_t index = 0, size_t count = npos) {
   return static_cast<InlineBasicString&>(MoveExtend(data(), old_index, index));
 }
 
-// Use a templated type rather than `const_iterator` to convince the compiler
-// to prefer `0` as an index rather than as a `nullptr`.
-template <typename U>
-constexpr iterator erase(const U* pos) {
+constexpr iterator erase(const_iterator pos) {
   PW_ASSERT(cbegin() <= pos && pos <= cend());
   size_t index = static_cast<size_t>(pos - cbegin());
   size_t old_index = index + 1;
   if (old_index <= size()) {
     MoveExtend(data(), old_index, index);
   }
-  return old_index <= size() ? begin() + index : end();
+  return old_index <= size() ? begin() + static_cast<ptrdiff_t>(index) : end();
 }
 
-template <typename U>
-constexpr iterator erase(const U* first, const U* last) {
+constexpr iterator erase(const_iterator first, const_iterator last) {
   PW_ASSERT(cbegin() <= first && first <= cend());
   size_t old_index =
       first == cend() ? size() : static_cast<size_t>(first - cbegin());
@@ -316,7 +315,7 @@ constexpr iterator erase(const U* first, const U* last) {
     ++old_index;
   }
   MoveExtend(data(), old_index, index);
-  return old_index <= size() ? begin() + index : end();
+  return old_index <= size() ? begin() + static_cast<ptrdiff_t>(index) : end();
 }
 
 constexpr void push_back(value_type ch) {

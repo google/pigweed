@@ -94,6 +94,7 @@ pw_source_set("string") {
   ]
   public_deps = [
     "$dir_pw_containers:common",
+    "$dir_pw_containers:iterator",
     dir_pw_assert,
   ]
 

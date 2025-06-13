@@ -80,6 +80,7 @@ pw_add_library(pw_string.string INTERFACE
   PUBLIC_DEPS
     pw_assert
     pw_containers._common
+    pw_containers.iterator
 )
 
 pw_add_library(pw_string.to_string STATIC
