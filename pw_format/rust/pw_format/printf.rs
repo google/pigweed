@@ -46,7 +46,7 @@ fn map_specifier(value: char) -> Result<(Primitive, Style), String> {
         'F' => Err("%F is not supported because it does not have a core::fmt analog".to_string()),
         'g' => Err("%g is not supported because it does not have a core::fmt analog".to_string()),
         'G' => Err("%G is not supported because it does not have a core::fmt analog".to_string()),
-        _ => Err(format!("Unsupported format specifier '{}'", value)),
+        _ => Err(format!("Unsupported format specifier '{value}'")),
     }
 }
 
@@ -61,7 +61,7 @@ fn map_flag(value: char) -> Result<Flag, String> {
         ' ' => Ok(Flag::SpaceSign),
         '#' => Ok(Flag::AlternateSyntax),
         '0' => Ok(Flag::LeadingZeros),
-        _ => Err(format!("Unsupported flag '{}'", value)),
+        _ => Err(format!("Unsupported flag '{value}'")),
     }
 }
 

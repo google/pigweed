@@ -21,9 +21,7 @@ edition = "2021"
 path = "fake.rs"
 
 [dependencies]
-compiler_builtins = { version = "0.1.142", features = [
-  "no-f16-f128",
-] }
+compiler_builtins = { version = "0.1.160", features = ["no-f16-f128"] }
 cortex-m = "0.7.7"
 cortex-m-rt = "0.7.5"
 cortex-m-semihosting = "0.5.0"

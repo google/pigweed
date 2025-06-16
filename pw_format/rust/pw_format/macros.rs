@@ -720,8 +720,7 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
             64 => "ll",
             _ => {
                 return Err(Error::new(&format!(
-                    "printf backend does not support {} bit field width",
-                    type_width
+                    "printf backend does not support {type_width} bit field width"
                 )))
             }
         };

@@ -43,9 +43,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "compiler_builtins"
-version = "0.1.142"
+version = "0.1.160"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78013b42e2946a76d348a858fa5a06ca7d6b5cccdfccd660ea7a0aa4a44d40ca"
+checksum = "6376049cfa92c0aa8b9ac95fae22184b981c658208d4ed8a1dc553cd83612895"
 
 [[package]]
 name = "cortex-m"

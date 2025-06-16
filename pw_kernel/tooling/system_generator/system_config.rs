@@ -76,6 +76,6 @@ pub struct ThreadConfig {
 // Custom askama filters
 pub mod filters {
     pub fn to_hex(value: &usize, _: &dyn askama::Values) -> askama::Result<String> {
-        Ok(format!("{:#x}", value))
+        Ok(format!("{value:#x}"))
     }
 }

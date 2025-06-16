@@ -86,10 +86,7 @@ fn solve_riscv(elf_mem: &ElfMem, func_repo: &FuncRepo, panic_func: &Function) {
         );
         // Lookup the string contents from .rodata
         let Some(filename) = elf_mem.get(filename_ptr, filename_len) else {
-            println!(
-                "Couldn't find filename at addr {:x} len={}",
-                filename_ptr, filename_len
-            );
+            println!("Couldn't find filename at addr {filename_ptr:x} len={filename_len}");
             continue;
         };
         let Ok(filename) = core::str::from_utf8(filename) else {
@@ -192,10 +189,7 @@ impl Solver<'_> {
                     return;
                 }
                 if cfg!(feature = "solver_trace") && *expr != old_expr {
-                    println!(
-                        "Expr index {expr_index} changed from {:?} to {:?}",
-                        old_expr, expr
-                    );
+                    println!("Expr index {expr_index} changed from {old_expr:?} to {expr:?}");
                 }
                 let found = matches!(expr, Expr::Const(_) | Expr::GlobalDeref(_));
                 all_consts &= found;
@@ -258,7 +252,7 @@ impl Debug for Expr {
             Self::Const(val) => {
                 let val = (*val).cast_signed();
                 if (-1024..1024).contains(&val) {
-                    write!(f, "Const({})", val)
+                    write!(f, "Const({val})")
                 } else {
                     write!(f, "Const({val:08x})")
                 }

@@ -77,7 +77,7 @@ impl Parse for Attribute {
                 let value = Self::parse_value(input)?;
                 Ok(Attribute::Exception(value))
             }
-            _ => Err(input.error(format!("unknown attribute {}", name_str))),
+            _ => Err(input.error(format!("unknown attribute {name_str}"))),
         }
     }
 }
@@ -317,7 +317,7 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
 
     quote! {
         #[no_mangle]
-        #[naked]
+        #[unsafe(naked)]
         #[link_section = ".trap"]
         pub unsafe extern "C" fn #exception_ident() -> ! {
             unsafe {

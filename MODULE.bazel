@@ -207,7 +207,7 @@ register_toolchains(
 
 # Rust toolchains
 pw_rust = use_extension("//pw_toolchain/rust:extensions.bzl", "pw_rust")
-pw_rust.toolchain(cipd_tag = "git_revisions:afa859f8121bf2985362a2c8414dc71a825ccf2d,03b0f55d9c6319a851a60bb084faca0e32a38f2b")
+pw_rust.toolchain(cipd_tag = "git_revisions:fe5c95d4ae33ec9d7831921e448e2daf8264ea42,7b074fc9362a4a6a5f172dd8936a22fb25eff96b")
 use_repo(pw_rust, "pw_rust_toolchains")
 
 register_toolchains(

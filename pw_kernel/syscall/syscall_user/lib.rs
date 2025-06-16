@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #![no_std]
-#![feature(naked_functions)]
 
 pub use syscall_defs::SysCallInterface;
 

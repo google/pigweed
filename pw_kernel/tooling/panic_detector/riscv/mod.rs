@@ -671,7 +671,7 @@ impl Display for DecodedInstr {
             InstrType::R(i) => write!(f, "{:<8} {}", self.mnemonic(), i),
             InstrType::U(i) => write!(f, "{:<8} {}", self.mnemonic(), i),
             InstrType::Const(_) => write!(f, "{:<8}", self.mnemonic()),
-            InstrType::Unknown(i) => write!(f, "0x{:x}", i),
+            InstrType::Unknown(i) => write!(f, "0x{i:x}"),
         }
     }
 }

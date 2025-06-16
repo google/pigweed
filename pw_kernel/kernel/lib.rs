@@ -13,7 +13,6 @@
 // the License.
 #![no_std]
 #![feature(const_trait_impl)]
-#![feature(naked_functions)]
 
 use core::cell::UnsafeCell;
 

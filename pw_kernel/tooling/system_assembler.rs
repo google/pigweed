@@ -392,7 +392,7 @@ fn get_app_name(path: &Path, index: usize) -> Result<String> {
             valid_name.push('_');
         }
     }
-    valid_name.push_str(format!("_{}", index).as_str());
+    valid_name.push_str(format!("_{index}").as_str());
 
     Ok(valid_name)
 }

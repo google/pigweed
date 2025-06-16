@@ -149,10 +149,10 @@ impl<'a> FuncRepo<'a> {
             .map(|v| v.as_slice())
             .unwrap_or(&[])
     }
-    pub fn get_func_by_symbol(&self, name: &str) -> Option<&Function> {
+    pub fn get_func_by_symbol(&self, name: &str) -> Option<&Function<'_>> {
         self.by_symbol.get(name).map(|v| &**v)
     }
-    pub fn instructions_at_addr(&self, addr: u32) -> Option<(&Function, InstrIterator)> {
+    pub fn instructions_at_addr(&self, addr: u32) -> Option<(&Function<'_>, InstrIterator<'_>)> {
         let (_, func) = self
             .by_addr
             .range((Bound::Unbounded, Bound::Included(addr)))

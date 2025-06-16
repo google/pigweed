@@ -53,7 +53,7 @@ rust_library(
     ]),
     crate_features = ["stdsimd"],
     crate_name = "core",
-    edition = "2021",
+    edition = "2024",
     rustc_flags = [
         "--cap-lints=allow",
     ],

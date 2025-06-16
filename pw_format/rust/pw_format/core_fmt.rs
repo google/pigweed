@@ -97,7 +97,7 @@ fn map_flag(value: char) -> Result<Flag, String> {
         '+' => Ok(Flag::ForceSign),
         '#' => Ok(Flag::AlternateSyntax),
         '0' => Ok(Flag::LeadingZeros),
-        _ => Err(format!("Unsupported flag '{}'", value)),
+        _ => Err(format!("Unsupported flag '{value}'")),
     }
 }
 
@@ -113,7 +113,7 @@ fn map_alignment(value: char) -> Result<Alignment, String> {
         '<' => Ok(Alignment::Left),
         '^' => Ok(Alignment::Center),
         '>' => Ok(Alignment::Right),
-        _ => Err(format!("Unsupported alignment '{}'", value)),
+        _ => Err(format!("Unsupported alignment '{value}'")),
     }
 }
 
