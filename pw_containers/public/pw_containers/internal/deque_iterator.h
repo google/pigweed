@@ -49,16 +49,22 @@ class DequeIterator {
     return {container_, pos_};
   }
 
-  constexpr DequeIterator& operator+=(difference_type n) { return Incr(n); }
-  constexpr DequeIterator& operator-=(difference_type n) { return Incr(-n); }
-  constexpr DequeIterator& operator++() { return Incr(1); }
+  constexpr DequeIterator& operator+=(difference_type n) {
+    pos_ = static_cast<size_type>(pos_ + n);
+    return *this;
+  }
+  constexpr DequeIterator& operator-=(difference_type n) {
+    pos_ = static_cast<size_type>(pos_ - n);
+    return *this;
+  }
+  constexpr DequeIterator& operator++() { return operator+=(1); }
   constexpr DequeIterator operator++(int) {
     DequeIterator it(*this);
     operator++();
     return it;
   }
 
-  constexpr DequeIterator& operator--() { return Incr(-1); }
+  constexpr DequeIterator& operator--() { return operator-=(1); }
   constexpr DequeIterator operator--(int) {
     DequeIterator it = *this;
     operator--();
@@ -81,23 +87,16 @@ class DequeIterator {
 
   constexpr friend difference_type operator-(const DequeIterator& a,
                                              const DequeIterator& b) {
-    return static_cast<difference_type>(a.pos_ == kEnd ? a.container_->size()
-                                                       : a.pos_) -
-           static_cast<difference_type>(b.pos_ == kEnd ? b.container_->size()
-                                                       : b.pos_);
+    return a.pos_ - b.pos_;
   }
 
   constexpr reference operator*() const {
-    PW_DASSERT(pos_ != kEnd);
     PW_DASSERT(pos_ < container_->size());
-
     return container_->at(pos_);
   }
 
   constexpr pointer operator->() const {
-    PW_DASSERT(pos_ != kEnd);
     PW_DASSERT(pos_ < container_->size());
-
     return &**this;
   }
 
@@ -112,19 +111,19 @@ class DequeIterator {
   }
 
   constexpr friend bool operator<(DequeIterator a, DequeIterator b) {
-    return b - a > 0;
+    return a.pos_ < b.pos_;
   }
 
   constexpr friend bool operator>(DequeIterator a, DequeIterator b) {
-    return b < a;
+    return a.pos_ > b.pos_;
   }
 
   constexpr friend bool operator<=(DequeIterator a, DequeIterator b) {
-    return !(a > b);
+    return a.pos_ <= b.pos_;
   }
 
   constexpr friend bool operator>=(DequeIterator a, DequeIterator b) {
-    return !(a < b);
+    return a.pos_ >= b.pos_;
   }
 
  private:
@@ -136,18 +135,8 @@ class DequeIterator {
 
   using size_type = typename Container::size_type;
 
-  static constexpr size_type kEnd = std::numeric_limits<size_type>::max();
-
   constexpr DequeIterator(Container* container, size_type pos)
       : container_(container), pos_(pos) {}
-
-  constexpr DequeIterator& Incr(difference_type n) {
-    size_type new_pos = static_cast<size_type>(
-        static_cast<size_type>(n) + (pos_ == kEnd ? container_->size() : pos_));
-    PW_DASSERT(new_pos <= container_->size());
-    pos_ = new_pos == container_->size() ? kEnd : new_pos;
-    return *this;
-  }
 
   Container* container_;  // pointer to container this iterator is from
   size_type pos_;         // logical index of iterator

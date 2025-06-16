@@ -293,12 +293,10 @@ class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
     return const_iterator(&derived(), 0);
   }
 
-  constexpr iterator end() noexcept {
-    return iterator(&derived(), std::numeric_limits<size_type>::max());
-  }
+  constexpr iterator end() noexcept { return iterator(&derived(), size()); }
   constexpr const_iterator end() const noexcept { return cend(); }
   constexpr const_iterator cend() const noexcept {
-    return const_iterator(&derived(), std::numeric_limits<size_type>::max());
+    return const_iterator(&derived(), size());
   }
 
   // Infallible modify
