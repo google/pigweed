@@ -68,6 +68,23 @@
   TEST_F(f, Modify_ResizeLarger) { Modify_ResizeLarger(); }                   \
   TEST_F(f, Modify_ResizeSmaller) { Modify_ResizeSmaller(); }                 \
   TEST_F(f, Modify_ResizeZero) { Modify_ResizeZero(); }                       \
+  TEST_F(f, Modify_Erase_FirstElement) { Modify_Erase_FirstElement(); }       \
+  TEST_F(f, Modify_Erase_LastElement) { Modify_Erase_LastElement(); }         \
+  TEST_F(f, Modify_Erase_MiddleElement) { Modify_Erase_MiddleElement(); }     \
+  TEST_F(f, Modify_Erase_OnlyElement) { Modify_Erase_OnlyElement(); }         \
+  TEST_F(f, Modify_Erase_AfterPopFront) { Modify_Erase_AfterPopFront(); }     \
+  TEST_F(f, Modify_EraseRange_ZeroElements) {                                 \
+    Modify_EraseRange_ZeroElements();                                         \
+  }                                                                           \
+  TEST_F(f, Modify_EraseRange_OneElement) { Modify_EraseRange_OneElement(); } \
+  TEST_F(f, Modify_EraseRange_ToTheBeginning) {                               \
+    Modify_EraseRange_ToTheBeginning();                                       \
+  }                                                                           \
+  TEST_F(f, Modify_EraseRange_ToTheEnd) { Modify_EraseRange_ToTheEnd(); }     \
+  TEST_F(f, Modify_EraseRange_Everything) { Modify_EraseRange_Everything(); } \
+  TEST_F(f, Modify_EraseRange_AfterPopFront) {                                \
+    Modify_EraseRange_AfterPopFront();                                        \
+  }                                                                           \
                                                                               \
   TEST_F(f, Algorithm_StdMaxElement) { Algorithm_StdMaxElement(); }           \
   TEST_F(f, Algorithm_StdMaxElementConst) { Algorithm_StdMaxElementConst(); } \
@@ -703,6 +720,139 @@ class CommonTestFixture : public ::testing::Test {
 
     EXPECT_EQ(container.size(), 0u);
     EXPECT_TRUE(container.empty());
+  }
+
+  void Modify_Erase_FirstElement() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin());
+    EXPECT_EQ(it, container.begin());
+    EXPECT_EQ(*it, 2);
+    EXPECT_TRUE(Equal(container, std::array{2, 3}));
+    EXPECT_EQ(Counter::destroyed, 1);
+  }
+
+  void Modify_Erase_LastElement() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin() + 2);
+    EXPECT_EQ(it, container.end());
+    EXPECT_TRUE(Equal(container, std::array{1, 2}));
+    EXPECT_EQ(Counter::destroyed, 1);
+  }
+
+  void Modify_Erase_MiddleElement() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin() + 1);
+    EXPECT_EQ(it, container.begin() + 1);
+    EXPECT_EQ(*it, 3);
+    EXPECT_TRUE(Equal(container, std::array{1, 3}));
+    EXPECT_EQ(Counter::destroyed, 1);
+  }
+
+  void Modify_Erase_OnlyElement() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin());
+    EXPECT_EQ(it, container.end());
+    EXPECT_TRUE(container.empty());
+    EXPECT_EQ(Counter::destroyed, 1);
+  }
+
+  void Modify_Erase_AfterPopFront() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3, 4});
+    container.pop_front();
+    container.push_back(5);
+    // container is {2, 3, 4, 5}
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin() + 1);
+    EXPECT_EQ(it, container.begin() + 1);
+    EXPECT_EQ(*it, 4);
+    EXPECT_TRUE(Equal(container, std::array{2, 4, 5}));
+    EXPECT_EQ(Counter::destroyed, 1);
+  }
+
+  void Modify_EraseRange_ZeroElements() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin(), container.cbegin());
+    EXPECT_EQ(it, container.begin());
+    EXPECT_TRUE(Equal(container, std::array{1, 2, 3}));
+    EXPECT_EQ(Counter::destroyed, 0);
+  }
+
+  void Modify_EraseRange_OneElement() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin() + 1, container.cbegin() + 2);
+    EXPECT_EQ(it, container.begin() + 1);
+    EXPECT_EQ(*it, 3);
+    EXPECT_TRUE(Equal(container, std::array{1, 3}));
+    EXPECT_EQ(Counter::destroyed, 1);
+  }
+
+  void Modify_EraseRange_ToTheBeginning() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3, 4});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin(), container.cbegin() + 2);
+    EXPECT_EQ(it, container.begin());
+    EXPECT_EQ(*it, 3);
+    EXPECT_TRUE(Equal(container, std::array{3, 4}));
+    EXPECT_EQ(Counter::destroyed, 2);
+  }
+
+  void Modify_EraseRange_ToTheEnd() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3, 4});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin() + 2, container.cend());
+    EXPECT_EQ(it, container.end());
+    EXPECT_TRUE(Equal(container, std::array{1, 2}));
+    EXPECT_EQ(Counter::destroyed, 2);
+  }
+
+  void Modify_EraseRange_Everything() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3, 4});
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin(), container.cend());
+    EXPECT_EQ(it, container.end());
+    EXPECT_TRUE(container.empty());
+    EXPECT_EQ(Counter::destroyed, 4);
+  }
+
+  void Modify_EraseRange_AfterPopFront() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3, 4, 5});
+    container.pop_front();
+    container.push_back(6);
+    // container is {2, 3, 4, 5, 6}
+    Counter::Reset();
+
+    auto it = container.erase(container.cbegin() + 1, container.cbegin() + 4);
+    EXPECT_EQ(it, container.begin() + 1);
+    EXPECT_EQ(*it, 6);
+    EXPECT_TRUE(Equal(container, std::array{2, 6}));
+    EXPECT_EQ(Counter::destroyed, 3);
   }
 
   void Algorithm_StdMaxElement() {

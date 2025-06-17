@@ -358,6 +358,74 @@ TEST_F(DynamicDequeTest, MaxSize_CapacityClamps) {
   EXPECT_EQ(deque.capacity(), 255u);
 }
 
+TEST_F(DynamicDequeTest, Erase_Wrapped) {
+  pw::DynamicDeque<int> deque(allocator_);
+  deque.reserve(5);
+  deque.assign({1, 2, 3, 4, 5});
+  deque.pop_front();
+  deque.pop_front();
+  deque.pop_front();
+  deque.push_back(6);
+  deque.push_back(7);
+  deque.push_back(8);
+
+  ASSERT_TRUE(Equal(deque, std::array{4, 5, 6, 7, 8}));
+
+  ASSERT_LT(&deque.back(), &deque.front()) << "Must be wrapped";
+
+  pw::DynamicDeque<int>::iterator it = deque.erase(deque.begin() + 2);
+  EXPECT_EQ(*it, 7);
+  ASSERT_TRUE(Equal(deque, std::array{4, 5, 7, 8}));
+
+  it = deque.erase(deque.begin() + 1, deque.begin() + 3);
+  EXPECT_EQ(*it, 8);
+  ASSERT_TRUE(Equal(deque, std::array{4, 8}));
+
+  it = deque.erase(deque.begin() + 1, deque.end());
+  EXPECT_EQ(it, deque.end());
+  ASSERT_TRUE(Equal(deque, std::array{4}));
+}
+
+TEST_F(DynamicDequeTest, Erase_Wrapped_RangeAcrossWrap) {
+  pw::DynamicDeque<int> deque(allocator_);
+  deque.reserve(5);
+  deque.assign({1, 2, 3, 4, 5});
+  deque.pop_front();
+  deque.pop_front();
+  deque.pop_front();
+  deque.push_back(6);
+  deque.push_back(7);
+  deque.push_back(8);
+
+  ASSERT_TRUE(Equal(deque, std::array{4, 5, 6, 7, 8}));
+
+  ASSERT_LT(&deque.back(), &deque.front()) << "Must be wrapped";
+
+  auto it = deque.erase(deque.begin() + 1, deque.begin() + 4);
+  EXPECT_EQ(*it, 8);
+  ASSERT_TRUE(Equal(deque, std::array{4, 8}));
+}
+
+TEST_F(DynamicDequeTest, Erase_Wrapped_All) {
+  pw::DynamicDeque<int> deque(allocator_);
+  deque.reserve(5);
+  deque.assign({1, 2, 3, 4, 5});
+  deque.pop_front();
+  deque.pop_front();
+  deque.pop_front();
+  deque.push_back(6);
+  deque.push_back(7);
+  deque.push_back(8);
+
+  ASSERT_TRUE(Equal(deque, std::array{4, 5, 6, 7, 8}));
+
+  ASSERT_LT(&deque.back(), &deque.front()) << "Must be wrapped";
+
+  pw::DynamicDeque<int>::iterator it = deque.erase(deque.begin(), deque.end());
+  EXPECT_EQ(it, deque.end());
+  ASSERT_TRUE(deque.empty());
+}
+
 TEST_F(DynamicDequeTest, Swap_BothEmpty) {
   pw::DynamicDeque<Counter> container_1(allocator_);
   pw::DynamicDeque<Counter> container_2(null_allocator);
