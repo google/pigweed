@@ -376,6 +376,9 @@ impl Thread {
     }
 }
 
+// TODO: davidroth - Add const assertions to ensure stack sizes aren't too
+// small, once the sizing analysis has been done to understand what a
+// reasonable minimum is.
 #[macro_export]
 macro_rules! init_thread {
     ($name:literal, $entry:expr, $stack_size:expr) => {{
