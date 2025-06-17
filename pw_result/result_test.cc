@@ -31,6 +31,11 @@
 namespace pw {
 namespace {
 
+static_assert(std::is_same_v<decltype(Result<int>().status()), Status>);
+static_assert(std::is_same_v<
+              decltype(static_cast<const Result<int>&>(Result<int>()).status()),
+              Status>);
+
 TEST(Result, CreateOk) {
   Result<const char*> res("hello");
   EXPECT_TRUE(res.ok());

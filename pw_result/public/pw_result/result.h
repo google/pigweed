@@ -431,11 +431,9 @@ class Result : private internal_result::StatusOrData<T>,
 
   // Result<T>::status()
   //
-  // Returns a reference to the current `Status` contained within the
-  // `Result<T>`. If `pw::Result<T>` contains a `T`, then this function returns
-  // `OkStatus()`.
-  constexpr const Status& status() const&;
-  constexpr Status status() &&;
+  // Returns the current `Status` contained within the `Result<T>`. If
+  // `pw::Result<T>` contains a `T`, then this function returns `OkStatus()`.
+  constexpr Status status() const;
 
   // Result<T>::value()
   //
@@ -777,12 +775,8 @@ constexpr Result<T>::Result(std::in_place_t,
     : Base(std::in_place, ilist, std::forward<Args>(args)...) {}
 
 template <typename T>
-constexpr const Status& Result<T>::status() const& {
+constexpr Status Result<T>::status() const {
   return this->status_;
-}
-template <typename T>
-constexpr Status Result<T>::status() && {
-  return ok() ? OkStatus() : std::move(this->status_);
 }
 
 template <typename T>
