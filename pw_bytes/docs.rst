@@ -6,7 +6,85 @@ pw_bytes
 .. pigweed-module::
    :name: pw_bytes
 
-pw_bytes is a collection of utilities for manipulating binary data.
+- **Type-safe**: Work with binary data using ``std::byte``.
+- **Compile-time**: Construct and validate byte arrays at compile time.
+- **Convenient**: Easily handle endianness, alignment, and byte units.
+
+``pw_bytes`` is a collection of utilities for robust and efficient
+manipulation of binary data in C++. It provides tools for constructing
+byte arrays at compile time, handling data alignment, converting
+endianness, and defining byte quantities with clear, standard units.
+
+.. code-block:: cpp
+
+   #include "pw_bytes/array.h"
+   #include "pw_bytes/endian.h"
+   #include "pw_bytes/units.h"
+
+   // Clearly define buffer sizes with IEC units.
+   using namespace pw::bytes::unit_literals;
+   constexpr size_t kTelemetryPacketMaxSize = 1_KiB;
+
+   // Construct byte arrays at compile time.
+   constexpr auto kHeader = pw::bytes::Array<'P', 'W', 'R', 'D'>;
+   constexpr uint32_t kPayloadId = 0x12345678;
+
+   // Combine data with specified endianness.
+   constexpr auto kPacketPrefix = pw::bytes::Concat(
+       kHeader,
+       pw::bytes::CopyInOrder(pw::endian::big, kPayloadId));
+
+   // kPacketPrefix now contains:
+   // {'P', 'W', 'R', 'D', 0x12, 0x34, 0x56, 0x78}
+
+Check out :ref:`module-pw_bytes-guide` for more code samples.
+
+.. admonition:: Is it right for you?
+   :class: tip
+
+   ``pw_bytes`` is useful any time you need to work with raw binary data,
+   manage memory layout precisely, or ensure type safety at the byte level
+   in embedded C++.
+
+   If your project primarily deals with high-level data structures and doesn't
+   require direct byte manipulation, other Pigweed modules or standard library
+   features might be more suitable.
+
+   ``pw_bytes`` utilities are designed to be lightweight and can be beneficial
+   even in less resource-constrained environments by improving code clarity
+   and safety when dealing with binary data.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`rocket` Quickstart & guides
+      :link: module-pw_bytes-guide
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Integrate pw_bytes into your project and learn common use cases
+
+   .. grid-item-card:: :octicon:`code-square` API reference
+      :link: module-pw_bytes-api
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Detailed description of the pw_bytes interface
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` Design & roadmap
+      :link: module-pw_bytes-design
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Learn why pw_bytes is designed the way it is, and upcoming plans
+
+   .. grid-item-card:: :octicon:`graph` Code size analysis
+      :link: module-pw_bytes-code-size
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Understand pw_bytes's code footprint
 
 ------------
 Dependencies
@@ -14,130 +92,6 @@ Dependencies
 * ``pw_preprocessor``
 * ``pw_status``
 * ``pw_span``
-
---------
-Features
---------
-
-pw_bytes/packed_ptr.h
-======================
-Wrapper type that allows storing data in the least significant bits of a
-pointer that would otherwise be unused.
-
-.. doxygenclass:: pw::PackedPtr
-   :members:
-
-pw_bytes/alignment.h
-====================
-Functions for aligning sizes and addresses to memory alignment boundaries.
-
- .. doxygenfunction:: pw::IsAlignedAs(const void* ptr, size_t alignment)
-
- .. doxygenfunction:: pw::IsAlignedAs(const void* ptr)
-
- .. doxygenfunction:: pw::AlignDown(uintptr_t value, size_t alignment)
-
- .. doxygenfunction:: pw::AlignDown(T* value, size_t alignment)
-
- .. doxygenfunction:: pw::AlignUp(uintptr_t value, size_t alignment)
-
- .. doxygenfunction:: pw::AlignUp(T* value, size_t alignment)
-
- .. doxygenfunction:: pw::Padding
-
- .. doxygenfunction:: pw::GetAlignedSubspan
-
-pw_bytes/array.h
-================
-Functions for working with byte arrays, primarily for building fixed-size byte
-arrays at compile time.
-
-pw_bytes/byte_builder.h
-=======================
-.. doxygenclass:: pw::ByteBuilder
-   :members:
-
-.. doxygenclass:: pw::ByteBuffer
-   :members:
-
-Size report: using ByteBuffer
------------------------------
-.. include:: byte_builder_size_report
-
-pw_bytes/bit.h
-================
-Implementation of features provided by C++20's ``<bit>`` header. Supported
-features:
-
-* ``pw::endian`` -- Implementation of the ``std::endian`` enum. If
-  ``std::endian`` is available, ``pw::endian`` is an alias of it.
-
-* Additional functions for bit-level operations.
-
-  .. doxygenfunction:: pw::bytes::SignExtend
-  .. doxygenfunction:: pw::bytes::ExtractBits
-
-pw_bytes/endian.h
-=================
-Functions for converting the endianness of integral values.
-
-pw_bytes/suffix.h
-=================
-This module exports a single ``_b`` literal, making it easier to create
-``std::byte`` values for tests.
-
-.. cpp:function:: constexpr std::byte operator""_b(unsigned long long value)
-
-.. note::
-   This should not be used in header files, as it requires a ``using``
-   declaration that will be publicly exported at whatever level it is
-   used.
-
-Example:
-
-.. code-block:: cpp
-
-   #include "pw_bytes/units.h"
-
-   using ::pw::operator""_b;
-
-   constexpr std::byte kValue = 5_b;
-
-pw_bytes/units.h
-================
-Constants, functions and user-defined literals for specifying a number of bytes
-in powers of two, as defined by IEC 60027-2 A.2 and ISO/IEC 80000:13-2008.
-
-The supported suffixes include:
-
-* ``_B``   for bytes     (1024\ :sup:`0`)
-* ``_KiB`` for kibibytes (1024\ :sup:`1`)
-* ``_MiB`` for mebibytes (1024\ :sup:`2`)
-* ``_GiB`` for gibibytes (1024\ :sup:`3`)
-* ``_TiB`` for tebibytes (1024\ :sup:`4`)
-* ``_PiB`` for pebibytes (1024\ :sup:`5`)
-* ``_EiB`` for exbibytes (1024\ :sup:`6`)
-
-In order to use these you must use a using namespace directive, for example:
-
-.. code-block:: cpp
-
-   #include "pw_bytes/units.h"
-
-   using namespace pw::bytes::unit_literals;
-
-   constexpr size_t kRandomBufferSizeBytes = 1_MiB + 42_KiB;
-
-In some cases, the use of user-defined literals is not permitted because of the
-required using namespace directive. One example of this is in header files,
-where it is undesirable to pollute the namespace. For this situation, there are
-also similar functions:
-
-.. code-block:: cpp
-
-   #include "pw_bytes/units.h"
-
-   constexpr size_t kBufferSizeBytes = pw::bytes::MiB(1) + pw::bytes::KiB(42);
 
 ------
 Zephyr
@@ -150,3 +104,12 @@ Rust API
 --------
 ``pw_bytes``'s Rust API is documented in our
 `rustdoc API docs </rustdoc/pw_bytes/>`_.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   api
+   code_size
+   design
+   guide

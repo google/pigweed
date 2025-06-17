@@ -146,9 +146,14 @@ filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_bytes/alignment.h",
+        "public/pw_bytes/array.h",
         "public/pw_bytes/bit.h",
         "public/pw_bytes/byte_builder.h",
+        "public/pw_bytes/endian.h",
         "public/pw_bytes/packed_ptr.h",
+        "public/pw_bytes/span.h",
+        "public/pw_bytes/suffix.h",
+        "public/pw_bytes/units.h",
     ],
 )
 
@@ -170,7 +175,11 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "Kconfig",
+        "api.rst",
+        "code_size.rst",
+        "design.rst",
         "docs.rst",
+        "guide.rst",
         ":byte_builder_size_report",
     ],
     prefix = "pw_bytes/",

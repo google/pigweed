@@ -221,7 +221,8 @@
     "languages": [
       "C++",
       "Rust"
-    ]
+    ],
+    "size": "0 to 150 bytes"
   },
   "pw_channel": {
     "tagline": "Async, zero-copy API for sending and receiving bytes or datagrams",
