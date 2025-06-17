@@ -81,9 +81,9 @@ def add_project_builder_arguments(
         '--source-path',
         type=Path,
         help=(
-            'Path to the root of the source files. Defaults to the'
-            'current working directory. If running under bazel this'
-            'will be set to the $BUILD_WORKSPACE_DIRECTORY'
+            'Path to the root of the source files. Defaults to the '
+            'current working directory. If running under bazel this '
+            'will be set to the $BUILD_WORKSPACE_DIRECTORY '
             'environment variable.'
         ),
     )
