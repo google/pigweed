@@ -14,7 +14,7 @@
 # pylint: disable=anomalous-backslash-in-string
 """Pigweed RPC Benchmark tools.
 
-The ``benchmark`` folder contains a few utilities\:
+The ``benchmark`` folder contains a few utilities:
 
 #. A host-side client, ``benchmark.py``, containing functions for basic RPC
    statistics gathering and measurement.
