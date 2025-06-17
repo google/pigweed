@@ -19,7 +19,12 @@
 
 #include "pw_assert/assert.h"
 
-namespace pw::containers::internal {
+namespace pw {
+
+template <typename T, typename SizeType>
+class DynamicVector;
+
+namespace containers::internal {
 
 template <typename Derived, typename ValueType, typename SizeType>
 class GenericDeque;
@@ -127,6 +132,9 @@ class DequeIterator {
   }
 
  private:
+  template <typename T, typename SizeType>
+  friend class ::pw::DynamicVector;
+
   template <typename Derived, typename ValueType, typename SizeType>
   friend class GenericDeque;
 
@@ -142,4 +150,5 @@ class DequeIterator {
   size_type pos_;         // logical index of iterator
 };
 
-}  // namespace pw::containers::internal
+}  // namespace containers::internal
+}  // namespace pw

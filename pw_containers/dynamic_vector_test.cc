@@ -217,6 +217,32 @@ TEST_F(DynamicVectorTest, EmplaceBackMethods) {
   EXPECT_EQ(vec.size(), 2u);
 }
 
+TEST_F(DynamicVectorTest, Erase) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 2, 3, 4, 5});
+
+  auto it = vec.erase(vec.begin() + 2);
+  EXPECT_EQ(it, vec.begin() + 2);
+  EXPECT_EQ(*it, 4);
+  EXPECT_EQ(vec.size(), 4u);
+  EXPECT_EQ(vec[0], 1);
+  EXPECT_EQ(vec[1], 2);
+  EXPECT_EQ(vec[2], 4);
+  EXPECT_EQ(vec[3], 5);
+}
+
+TEST_F(DynamicVectorTest, EraseRange) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 2, 3, 4, 5});
+
+  auto it = vec.erase(vec.begin() + 1, vec.begin() + 4);
+  EXPECT_EQ(it, vec.begin() + 1);
+  EXPECT_EQ(*it, 5);
+  EXPECT_EQ(vec.size(), 2u);
+  EXPECT_EQ(vec[0], 1);
+  EXPECT_EQ(vec[1], 5);
+}
+
 TEST_F(DynamicVectorTest, ResizeMethods) {
   pw::DynamicVector<Counter> vec(allocator_);
 

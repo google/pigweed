@@ -290,7 +290,26 @@ class DynamicVector {
     return deque_.try_emplace_back(std::forward<Args>(args)...);
   }
 
-  // TODO: b/424613355 - Implement insert, emplace, erase
+  // TODO: b/424613355 - Implement insert, emplace
+
+  /// Erases the specified element from the vector.
+  ///
+  /// @param pos Iterator to the element to remove.
+  /// @return Iterator following the last removed element.
+  iterator erase(const_iterator pos) {
+    auto deque_it = deque_.erase(ToDequeIterator(pos));
+    return iterator(data() + deque_it.pos_);
+  }
+
+  /// Erases the specified range of elements from the vector.
+  ///
+  /// @param first The first element to erase.
+  /// @param last The last element to erase.
+  /// @return Iterator following the last removed element.
+  iterator erase(const_iterator first, const_iterator last) {
+    auto deque_it = deque_.erase(ToDequeIterator(first), ToDequeIterator(last));
+    return iterator(data() + deque_it.pos_);
+  }
 
   /// Resizes the vector to contain `count` elements.
   ///
@@ -341,6 +360,11 @@ class DynamicVector {
   void swap(DynamicVector& other) { deque_.swap(other.deque_); }
 
  private:
+  typename DynamicDeque<T, size_type>::const_iterator ToDequeIterator(
+      const_iterator it) const {
+    return {&deque_, static_cast<size_type>(it - cbegin())};
+  }
+
   // The underlying DynamicDeque instance that provides the storage.
   DynamicDeque<T, size_type> deque_;
 };
