@@ -41,7 +41,7 @@ impl Uart {
     }
 }
 
-static UART: SpinLock<Uart> = SpinLock::new(Uart {
+static UART: SpinLock<kernel::arch::riscv::spinlock::BareSpinLock, Uart> = SpinLock::new(Uart {
     base_addr: BASE_ADDR,
 });
 

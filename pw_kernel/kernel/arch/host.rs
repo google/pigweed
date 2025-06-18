@@ -15,7 +15,7 @@
 use pw_log::info;
 use pw_status::Result;
 
-use crate::arch::{ArchInterface, MemoryRegionType};
+use crate::arch::MemoryRegionType;
 use crate::scheduler::thread::{Stack, ThreadState};
 use crate::scheduler::{SchedulerContext, SchedulerState};
 use crate::sync::spinlock::{SpinLock, SpinLockGuard};
@@ -29,9 +29,31 @@ pub struct ArchThreadState;
 
 impl SchedulerContext for Arch {
     type ThreadState = ArchThreadState;
+    type BareSpinLock = spinlock::BareSpinLock;
 
-    fn get_scheduler_lock(self) -> &'static SpinLock<SchedulerState<ArchThreadState>> {
-        static LOCK: SpinLock<SchedulerState<ArchThreadState>> =
+    unsafe fn context_switch(
+        self,
+        _sched_state: SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<ArchThreadState>>,
+        _old_thread_state: *mut ArchThreadState,
+        _new_thread_state: *mut ArchThreadState,
+    ) -> SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<ArchThreadState>> {
+        pw_assert::panic!("unimplemented");
+    }
+
+    fn enable_interrupts() {
+        todo!("unimplemented");
+    }
+    fn disable_interrupts() {
+        todo!("");
+    }
+    fn interrupts_enabled() -> bool {
+        todo!("");
+    }
+
+    fn get_scheduler_lock(
+        self,
+    ) -> &'static SpinLock<spinlock::BareSpinLock, SchedulerState<ArchThreadState>> {
+        static LOCK: SpinLock<spinlock::BareSpinLock, SchedulerState<ArchThreadState>> =
             SpinLock::new(SchedulerState::new());
         &LOCK
     }
@@ -40,14 +62,6 @@ impl SchedulerContext for Arch {
 impl ThreadState for ArchThreadState {
     const NEW: Self = Self;
     type MemoryConfig = MemoryConfig;
-
-    unsafe fn context_switch(
-        _sched_state: SpinLockGuard<'_, SchedulerState<ArchThreadState>>,
-        _old_thread_state: *mut ArchThreadState,
-        _new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'_, SchedulerState<ArchThreadState>> {
-        pw_assert::panic!("unimplemented");
-    }
 
     fn initialize_kernel_frame(
         &mut self,
@@ -97,8 +111,7 @@ impl crate::arch::MemoryConfig for MemoryConfig {
     }
 }
 
-impl ArchInterface for Arch {
-    type BareSpinLock = spinlock::BareSpinLock;
+impl crate::KernelContext for Arch {
     type Clock = Clock;
 
     fn early_init() {
@@ -106,14 +119,5 @@ impl ArchInterface for Arch {
     }
     fn init() {
         info!("HOST arch init");
-    }
-    fn enable_interrupts() {
-        todo!("unimplemented");
-    }
-    fn disable_interrupts() {
-        todo!("");
-    }
-    fn interrupts_enabled() -> bool {
-        todo!("");
     }
 }

@@ -101,8 +101,10 @@ impl Default for BareSpinLock {
     }
 }
 
-impl crate::arch::BareSpinLock for BareSpinLock {
+impl crate::sync::spinlock::BareSpinLock for BareSpinLock {
     type Guard<'a> = CortexMSpinLockGuard<'a>;
+
+    const NEW: BareSpinLock = Self::new();
 
     #[inline(always)]
     fn try_lock(&self) -> Option<Self::Guard<'_>> {

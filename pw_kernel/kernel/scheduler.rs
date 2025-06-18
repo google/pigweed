@@ -38,7 +38,36 @@ macro_rules! wait_queue_debug {
 }
 
 pub trait SchedulerContext: 'static + Copy {
+    type BareSpinLock: crate::sync::spinlock::BareSpinLock;
     type ThreadState: ThreadState;
+
+    /// Switches to a new thread.
+    ///
+    /// - `sched_state`: A guard for the global `SchedulerState`
+    ///   - This may be dropped and re-acquired across this function; the
+    ///     returned guard is either still held or newly re-acquired
+    /// - `old_thread_state`: The thread we're moving away from
+    /// - `new_thread_state`: The thread we're moving to; must match
+    ///   `current_thread` and the container for this `ThreadState`
+    #[allow(clippy::missing_safety_doc)]
+    unsafe fn context_switch(
+        self,
+        sched_state: SpinLockGuard<'_, Self::BareSpinLock, SchedulerState<Self::ThreadState>>,
+        old_thread_state: *mut Self::ThreadState,
+        new_thread_state: *mut Self::ThreadState,
+    ) -> SpinLockGuard<'_, Self::BareSpinLock, SchedulerState<Self::ThreadState>>;
+
+    // fill in more arch implementation functions from the kernel here:
+    // arch-specific backtracing
+    #[allow(dead_code)]
+    fn enable_interrupts();
+    #[allow(dead_code)]
+    fn disable_interrupts();
+    #[allow(dead_code)]
+    fn interrupts_enabled() -> bool;
+
+    #[allow(dead_code)]
+    fn idle() {}
 
     // TODO(joshlf): Is there any way to have this operate on `&self` instead of
     // `self`? I tried that, and unsurprisingly it causes lifetime issues. If we
@@ -58,7 +87,9 @@ pub trait SchedulerContext: 'static + Copy {
     // `Box::leak` in order to produce a lock reference with a `'static`
     // lifetime. For the time being, that's probably the best tradeoff given the
     // ergonomic pain of threading through lifetimes.
-    fn get_scheduler_lock(self) -> &'static SpinLock<SchedulerState<Self::ThreadState>>;
+    fn get_scheduler_lock(
+        self,
+    ) -> &'static SpinLock<Self::BareSpinLock, SchedulerState<Self::ThreadState>>;
 }
 
 pub fn start_thread<C: SchedulerContext>(ctx: C, mut thread: ForeignBox<Thread<C::ThreadState>>) {
@@ -87,7 +118,7 @@ pub fn start_thread<C: SchedulerContext>(ctx: C, mut thread: ForeignBox<Thread<C
     sched_state.insert_in_run_queue_tail(thread);
 
     // Add this thread to the scheduler and trigger a reschedule event
-    reschedule(sched_state, id);
+    reschedule(ctx, sched_state, id);
 }
 
 pub fn initialize<C: SchedulerContext>(ctx: C) {
@@ -120,7 +151,7 @@ pub fn bootstrap_scheduler<C: SchedulerContext>(
     let mut temp_arch_thread_state = C::ThreadState::NEW;
     sched_state.current_arch_thread_state = &raw mut temp_arch_thread_state;
 
-    reschedule(sched_state, Thread::<C::ThreadState>::null_id());
+    reschedule(ctx, sched_state, Thread::<C::ThreadState>::null_id());
     pw_assert::panic!("should not reach here");
 }
 
@@ -301,12 +332,17 @@ impl<S: ThreadState> SchedulerState<S> {
     }
 }
 
-impl<S: ThreadState> SpinLockGuard<'_, SchedulerState<S>> {
+impl<L: crate::sync::spinlock::BareSpinLock, S: ThreadState>
+    SpinLockGuard<'_, L, SchedulerState<S>>
+{
     /// Reschedule if preemption is enabled
-    fn try_reschedule(mut self) -> Self {
+    fn try_reschedule<C: SchedulerContext<ThreadState = S, BareSpinLock = L>>(
+        mut self,
+        ctx: C,
+    ) -> Self {
         if self.current_thread().preempt_disable_count == 0 {
             let current_thread_id = self.move_current_thread_to_back();
-            reschedule(self, current_thread_id)
+            reschedule(ctx, self, current_thread_id)
         } else {
             self
         }
@@ -314,10 +350,11 @@ impl<S: ThreadState> SpinLockGuard<'_, SchedulerState<S>> {
 }
 
 #[allow(dead_code)]
-fn reschedule<S: ThreadState>(
-    mut sched_state: SpinLockGuard<SchedulerState<S>>,
+fn reschedule<C: SchedulerContext>(
+    ctx: C,
+    mut sched_state: SpinLockGuard<C::BareSpinLock, SchedulerState<C::ThreadState>>,
     current_thread_id: usize,
-) -> SpinLockGuard<SchedulerState<S>> {
+) -> SpinLockGuard<C::BareSpinLock, SchedulerState<C::ThreadState>> {
     // Caller to reschedule is responsible for removing current thread and
     // put it in the correct run/wait queue.
     pw_assert::assert!(sched_state.current_thread.is_none());
@@ -349,7 +386,7 @@ fn reschedule<S: ThreadState>(
     let old_thread_state = sched_state.current_arch_thread_state;
     let new_thread_state = new_thread.arch_thread_state.get();
     sched_state.set_current_thread(new_thread);
-    unsafe { S::context_switch(sched_state, old_thread_state, new_thread_state) }
+    unsafe { ctx.context_switch(sched_state, old_thread_state, new_thread_state) }
 }
 
 #[allow(dead_code)]
@@ -360,7 +397,7 @@ pub fn yield_timeslice<C: SchedulerContext>(ctx: C) {
     // Yielding always moves the current task to the back of the run queue
     let current_thread_id = sched_state.move_current_thread_to_back();
 
-    reschedule(sched_state, current_thread_id);
+    reschedule(ctx, sched_state, current_thread_id);
 }
 
 #[allow(dead_code)]
@@ -373,7 +410,7 @@ pub fn preempt<C: SchedulerContext>(ctx: C) {
     // up it's time allocation.
     let current_thread_id = sched_state.move_current_thread_to_back();
 
-    reschedule(sched_state, current_thread_id);
+    reschedule(ctx, sched_state, current_thread_id);
 }
 
 // Tick that is called from a timer handler. The scheduler will evaluate if the current thread
@@ -405,7 +442,7 @@ pub fn exit_thread<C: SchedulerContext>(ctx: C) -> ! {
     info!("thread {:#x} exiting", current_thread.id() as usize);
     current_thread.state = State::Stopped;
 
-    reschedule(sched_state, current_thread_id);
+    reschedule(ctx, sched_state, current_thread_id);
 
     // Should not get here
     #[allow(clippy::empty_loop)]

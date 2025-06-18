@@ -13,8 +13,6 @@
 // the License.
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use crate::arch::BareSpinLock as BareSpinLockApi;
-
 pub struct AtomicSpinLockGuard<'a> {
     lock: &'a BareSpinLock,
 }
@@ -48,8 +46,11 @@ impl Default for BareSpinLock {
     }
 }
 
-impl BareSpinLockApi for BareSpinLock {
+impl crate::sync::spinlock::BareSpinLock for BareSpinLock {
     type Guard<'a> = AtomicSpinLockGuard<'a>;
+
+    #[allow(clippy::declare_interior_mutable_const)]
+    const NEW: BareSpinLock = Self::new();
 
     fn try_lock(&self) -> Option<Self::Guard<'_>> {
         self.locked

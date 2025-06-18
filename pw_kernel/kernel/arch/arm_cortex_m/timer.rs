@@ -20,7 +20,7 @@ use crate::arch::arm_cortex_m::regs::Regs;
 use crate::scheduler;
 use crate::sync::spinlock::SpinLock;
 
-static TICKS: SpinLock<u64> = SpinLock::new(0);
+static TICKS: SpinLock<crate::arch::arm_cortex_m::spinlock::BareSpinLock, u64> = SpinLock::new(0);
 const SYSTICK_RELOAD_VALUE: u32 = KernelConfig::SYS_TICK_HZ / KernelConfig::SCHEDULER_TICK_HZ;
 
 pub struct Clock {}

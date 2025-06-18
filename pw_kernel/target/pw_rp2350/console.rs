@@ -30,7 +30,8 @@ pub type ConsoleUart = UartPeripheral<
     ),
 >;
 
-static UART: SpinLock<Option<ConsoleUart>> = SpinLock::new(None);
+static UART: SpinLock<kernel::arch::arm_cortex_m::spinlock::BareSpinLock, Option<ConsoleUart>> =
+    SpinLock::new(None);
 
 #[no_mangle]
 pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {

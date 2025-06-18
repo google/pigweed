@@ -14,22 +14,19 @@
 
 use core::arch::asm;
 
-use riscv;
+use crate::scheduler::SchedulerContext as _;
 
 mod exceptions;
 pub mod protection;
 mod regs;
-mod spinlock;
+pub mod spinlock;
 mod threads;
 mod timer;
-
-use crate::arch::ArchInterface;
 
 #[derive(Copy, Clone)]
 pub struct Arch;
 
-impl ArchInterface for Arch {
-    type BareSpinLock = spinlock::BareSpinLock;
+impl crate::KernelContext for Arch {
     type Clock = timer::Clock;
 
     fn early_init() {
@@ -41,26 +38,6 @@ impl ArchInterface for Arch {
 
     fn init() {
         timer::init();
-    }
-
-    fn enable_interrupts() {
-        unsafe {
-            riscv::register::mstatus::set_mie();
-        }
-    }
-
-    fn disable_interrupts() {
-        unsafe {
-            riscv::register::mstatus::clear_mie();
-        }
-    }
-
-    fn interrupts_enabled() -> bool {
-        riscv::register::mstatus::read().mie()
-    }
-
-    fn idle() {
-        riscv::asm::wfi();
     }
 
     fn panic() -> ! {

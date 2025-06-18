@@ -24,7 +24,7 @@ mod syscall;
 mod target;
 mod timer;
 
-pub use arch::{Arch, ArchInterface, MemoryRegion, MemoryRegionType};
+pub use arch::{Arch, MemoryRegion, MemoryRegionType};
 use kernel_config::{KernelConfig, KernelConfigInterface};
 pub use scheduler::thread::{Process, Stack, Thread};
 #[doc(hidden)]
@@ -38,6 +38,18 @@ pub use timer::{Clock, Duration};
 #[allow(non_snake_case)]
 pub extern "C" fn pw_assert_HandleFailure() -> ! {
     Arch::panic();
+}
+
+pub trait KernelContext: scheduler::SchedulerContext {
+    type Clock: time::Clock;
+
+    fn early_init() {}
+    fn init() {}
+
+    fn panic() -> ! {
+        #[allow(clippy::empty_loop)]
+        loop {}
+    }
 }
 
 pub struct Kernel {}

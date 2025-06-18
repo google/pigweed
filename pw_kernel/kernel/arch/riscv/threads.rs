@@ -20,7 +20,8 @@ use pw_status::Result;
 
 use crate::arch::riscv::protection::MemoryConfig;
 use crate::arch::riscv::regs::{MStatusVal, PrivilegeLevel};
-use crate::arch::{Arch, ArchInterface};
+use crate::arch::riscv::spinlock::BareSpinLock;
+use crate::arch::Arch;
 use crate::scheduler::thread::Stack;
 use crate::scheduler::{self, SchedulerContext, SchedulerState};
 use crate::sync::spinlock::{SpinLock, SpinLockGuard};
@@ -83,28 +84,15 @@ impl ArchThreadState {
 
 impl SchedulerContext for super::Arch {
     type ThreadState = ArchThreadState;
-
-    fn get_scheduler_lock(self) -> &'static SpinLock<SchedulerState<ArchThreadState>> {
-        static LOCK: SpinLock<SchedulerState<ArchThreadState>> =
-            SpinLock::new(SchedulerState::new());
-        &LOCK
-    }
-}
-
-impl crate::scheduler::thread::ThreadState for ArchThreadState {
-    type MemoryConfig = crate::arch::riscv::protection::MemoryConfig;
-    const NEW: Self = Self {
-        frame: core::ptr::null_mut(),
-        #[cfg(feature = "user_space")]
-        memory_config: core::ptr::null(),
-    };
+    type BareSpinLock = BareSpinLock;
 
     #[inline(never)]
     unsafe fn context_switch<'a>(
-        sched_state: SpinLockGuard<'a, SchedulerState<ArchThreadState>>,
+        self,
+        sched_state: SpinLockGuard<'a, BareSpinLock, SchedulerState<ArchThreadState>>,
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'a, SchedulerState<ArchThreadState>> {
+    ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<ArchThreadState>> {
         debug_if!(
             LOG_CONTEXT_SWITCH,
             "context switch from frame {:#08x} to frame {:#08x}",
@@ -131,6 +119,43 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
 
         sched_state
     }
+
+    fn idle() {
+        riscv::asm::wfi();
+    }
+
+    fn enable_interrupts() {
+        unsafe {
+            riscv::register::mstatus::set_mie();
+        }
+    }
+
+    fn disable_interrupts() {
+        unsafe {
+            riscv::register::mstatus::clear_mie();
+        }
+    }
+
+    fn interrupts_enabled() -> bool {
+        riscv::register::mstatus::read().mie()
+    }
+
+    fn get_scheduler_lock(
+        self,
+    ) -> &'static SpinLock<BareSpinLock, SchedulerState<ArchThreadState>> {
+        static LOCK: SpinLock<BareSpinLock, SchedulerState<ArchThreadState>> =
+            SpinLock::new(SchedulerState::new());
+        &LOCK
+    }
+}
+
+impl crate::scheduler::thread::ThreadState for ArchThreadState {
+    type MemoryConfig = crate::arch::riscv::protection::MemoryConfig;
+    const NEW: Self = Self {
+        frame: core::ptr::null_mut(),
+        #[cfg(feature = "user_space")]
+        memory_config: core::ptr::null(),
+    };
 
     #[inline(never)]
     fn initialize_kernel_frame(

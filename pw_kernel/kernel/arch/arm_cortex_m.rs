@@ -18,12 +18,10 @@ use cortex_m::peripheral::*;
 use pw_cast::CastInto as _;
 use pw_log::info;
 
-use crate::arch::ArchInterface;
-
 mod exceptions;
 pub mod protection;
 mod regs;
-mod spinlock;
+pub mod spinlock;
 mod syscall;
 mod threads;
 mod timer;
@@ -37,8 +35,7 @@ fn get_num_mpu_regions(mpu: &mut regs::Mpu) -> u8 {
     mpu._type.read().dregion()
 }
 
-impl ArchInterface for Arch {
-    type BareSpinLock = spinlock::BareSpinLock;
+impl crate::KernelContext for Arch {
     type Clock = timer::Clock;
 
     fn early_init() {
@@ -118,29 +115,6 @@ impl ArchInterface for Arch {
     fn init() {
         info!("arch init");
         timer::systick_init();
-    }
-
-    fn enable_interrupts() {
-        unsafe {
-            cortex_m::interrupt::enable();
-        }
-    }
-    fn disable_interrupts() {
-        cortex_m::interrupt::disable();
-    }
-
-    fn interrupts_enabled() -> bool {
-        // It's a complicated concept in cortex-m:
-        // If PRIMASK is inactive, then interrupts are 100% disabled otherwise
-        // if the current interrupt priority level is not zero (BASEPRI register) interrupts
-        // at that level are not allowed. For now we're treating nonzero as full disabled.
-        let primask = cortex_m::register::primask::read();
-        let basepri = cortex_m::register::basepri::read();
-        primask.is_active() && (basepri == 0)
-    }
-
-    fn idle() {
-        cortex_m::asm::wfi();
     }
 
     fn panic() -> ! {

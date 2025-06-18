@@ -25,8 +25,9 @@ use crate::arch::arm_cortex_m::exceptions::{
 };
 use crate::arch::arm_cortex_m::protection::MemoryConfig;
 use crate::arch::arm_cortex_m::regs::msr::{ControlVal, Spsel};
+use crate::arch::arm_cortex_m::spinlock::BareSpinLock;
 use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
-use crate::arch::{ArchInterface, MemoryConfig as _, MemoryRegionType};
+use crate::arch::{MemoryConfig as _, MemoryRegionType};
 use crate::scheduler::thread::Stack;
 use crate::scheduler::{self, SchedulerContext, SchedulerState};
 use crate::sync::spinlock::{SpinLock, SpinLockGuard};
@@ -84,27 +85,14 @@ impl ArchThreadState {
 
 impl SchedulerContext for Arch {
     type ThreadState = ArchThreadState;
-
-    fn get_scheduler_lock(self) -> &'static SpinLock<SchedulerState<ArchThreadState>> {
-        static LOCK: SpinLock<SchedulerState<ArchThreadState>> =
-            SpinLock::new(SchedulerState::new());
-        &LOCK
-    }
-}
-
-impl crate::scheduler::thread::ThreadState for ArchThreadState {
-    type MemoryConfig = crate::arch::arm_cortex_m::protection::MemoryConfig;
-
-    const NEW: Self = Self {
-        frame: core::ptr::null_mut(),
-        memory_config: core::ptr::null(),
-    };
+    type BareSpinLock = BareSpinLock;
 
     unsafe fn context_switch<'a>(
-        mut sched_state: SpinLockGuard<'a, SchedulerState<ArchThreadState>>,
+        self,
+        mut sched_state: SpinLockGuard<'a, BareSpinLock, SchedulerState<ArchThreadState>>,
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'a, SchedulerState<ArchThreadState>> {
+    ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<ArchThreadState>> {
         pw_assert::assert!(new_thread_state == sched_state.get_current_arch_thread_state());
         // TODO - konkers: Allow $expr to be tokenized.
 
@@ -149,6 +137,47 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
         }
         sched_state
     }
+
+    fn enable_interrupts() {
+        unsafe {
+            cortex_m::interrupt::enable();
+        }
+    }
+
+    fn disable_interrupts() {
+        cortex_m::interrupt::disable();
+    }
+
+    fn interrupts_enabled() -> bool {
+        // It's a complicated concept in cortex-m:
+        // If PRIMASK is inactive, then interrupts are 100% disabled otherwise
+        // if the current interrupt priority level is not zero (BASEPRI register) interrupts
+        // at that level are not allowed. For now we're treating nonzero as full disabled.
+        let primask = cortex_m::register::primask::read();
+        let basepri = cortex_m::register::basepri::read();
+        primask.is_active() && (basepri == 0)
+    }
+
+    fn idle() {
+        cortex_m::asm::wfi();
+    }
+
+    fn get_scheduler_lock(
+        self,
+    ) -> &'static SpinLock<BareSpinLock, SchedulerState<ArchThreadState>> {
+        static LOCK: SpinLock<BareSpinLock, SchedulerState<ArchThreadState>> =
+            SpinLock::new(SchedulerState::new());
+        &LOCK
+    }
+}
+
+impl crate::scheduler::thread::ThreadState for ArchThreadState {
+    type MemoryConfig = crate::arch::arm_cortex_m::protection::MemoryConfig;
+
+    const NEW: Self = Self {
+        frame: core::ptr::null_mut(),
+        memory_config: core::ptr::null(),
+    };
 
     fn initialize_kernel_frame(
         &mut self,

@@ -43,19 +43,21 @@ impl<C: SchedulerContext, T> SmuggledSchedLock<C, T> {
 }
 
 pub struct SchedLockGuard<'lock, C: SchedulerContext, T> {
-    guard: SpinLockGuard<'lock, SchedulerState<C::ThreadState>>,
+    guard: SpinLockGuard<'lock, C::BareSpinLock, SchedulerState<C::ThreadState>>,
     inner: &'lock mut T,
     ctx: C,
 }
 
 impl<'lock, C: SchedulerContext, T> SchedLockGuard<'lock, C, T> {
     #[must_use]
-    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState<C::ThreadState>> {
+    pub fn sched(&self) -> &SpinLockGuard<'lock, C::BareSpinLock, SchedulerState<C::ThreadState>> {
         &self.guard
     }
 
     #[must_use]
-    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState<C::ThreadState>> {
+    pub fn sched_mut(
+        &mut self,
+    ) -> &mut SpinLockGuard<'lock, C::BareSpinLock, SchedulerState<C::ThreadState>> {
         &mut self.guard
     }
 
@@ -63,7 +65,7 @@ impl<'lock, C: SchedulerContext, T> SchedLockGuard<'lock, C, T> {
     pub fn reschedule(self, current_thread_id: usize) -> Self {
         let inner = self.inner;
         let ctx = self.ctx;
-        let guard = super::reschedule(self.guard, current_thread_id);
+        let guard = super::reschedule(ctx, self.guard, current_thread_id);
         Self { guard, inner, ctx }
     }
 
@@ -71,7 +73,7 @@ impl<'lock, C: SchedulerContext, T> SchedLockGuard<'lock, C, T> {
     pub fn try_reschedule(self) -> Self {
         let inner = self.inner;
         let ctx = self.ctx;
-        let guard = self.guard.try_reschedule();
+        let guard = self.guard.try_reschedule(ctx);
         Self { guard, inner, ctx }
     }
 
@@ -184,12 +186,14 @@ pub struct WaitQueueLockGuard<'lock, C: SchedulerContext, T> {
 }
 
 impl<'lock, C: SchedulerContext, T> WaitQueueLockGuard<'lock, C, T> {
-    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState<C::ThreadState>> {
+    pub fn sched(&self) -> &SpinLockGuard<'lock, C::BareSpinLock, SchedulerState<C::ThreadState>> {
         &self.inner.guard
     }
 
     #[allow(dead_code)]
-    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState<C::ThreadState>> {
+    pub fn sched_mut(
+        &mut self,
+    ) -> &mut SpinLockGuard<'lock, C::BareSpinLock, SchedulerState<C::ThreadState>> {
         &mut self.inner.guard
     }
 

@@ -19,8 +19,7 @@ use list::*;
 use pw_log::info;
 use pw_status::Result;
 
-use crate::scheduler::{SchedulerContext, SchedulerState};
-use crate::sync::spinlock::SpinLockGuard;
+use crate::scheduler::SchedulerContext;
 
 /// The memory backing a thread's stack before it has been started.
 ///
@@ -148,21 +147,6 @@ pub trait ThreadState: 'static + Sized {
 
     // TODO: Maybe have a `MemoryConfigContext` super-trait of `ThreadState`?
     type MemoryConfig: crate::arch::MemoryConfig;
-
-    /// Switches to a new thread.
-    ///
-    /// - `sched_state`: A guard for the global `SchedulerState`
-    ///   - This may be dropped and re-acquired across this function; the
-    ///     returned guard is either still held or newly re-acquired
-    /// - `old_thread_state`: The thread we're moving away from
-    /// - `new_thread_state`: The thread we're moving to; must match
-    ///   `current_thread` and the container for this `ThreadState`
-    #[allow(clippy::missing_safety_doc)]
-    unsafe fn context_switch(
-        sched_state: SpinLockGuard<'_, SchedulerState<Self>>,
-        old_thread_state: *mut Self,
-        new_thread_state: *mut Self,
-    ) -> SpinLockGuard<'_, SchedulerState<Self>>;
 
     /// Initialize the default frame of a kernel thread
     ///

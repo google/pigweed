@@ -17,10 +17,10 @@ use core::ptr::NonNull;
 use foreign_box::ForeignBox;
 use list::{ForeignList, Link};
 
-use crate::arch::{Arch, ArchInterface};
+use crate::arch::Arch;
 use crate::sync::spinlock::SpinLock;
 
-pub type Clock = <Arch as ArchInterface>::Clock;
+pub type Clock = <Arch as crate::KernelContext>::Clock;
 pub type Instant = time::Instant<Clock>;
 pub type Duration = time::Duration<Clock>;
 
@@ -135,4 +135,7 @@ impl TimerQueue {
     }
 }
 
-pub static TIMER_QUEUE: SpinLock<TimerQueue> = SpinLock::new(TimerQueue::new());
+pub static TIMER_QUEUE: SpinLock<
+    <Arch as crate::scheduler::SchedulerContext>::BareSpinLock,
+    TimerQueue,
+> = SpinLock::new(TimerQueue::new());
