@@ -26,3 +26,17 @@ sphinx_docs_library(
     prefix = "pw_chrono_zephyr/",
     target_compatible_with = incompatible_with_mcu(),
 )
+
+# TODO: https://pwbug.dev/380001331 - Make this a zephyr_cc_library
+exports_files([
+    "public/pw_chrono_zephyr/system_clock_config.h",
+    "public/pw_chrono_zephyr/system_clock_constants.h",
+    "public/pw_chrono_zephyr/system_clock_inline.h",
+    "public_overrides/pw_chrono_backend/system_clock_config.h",
+    "public_overrides/pw_chrono_backend/system_clock_inline.h",
+    "public/pw_chrono_zephyr/system_timer_inline.h",
+    "public/pw_chrono_zephyr/system_timer_native.h",
+    "public_overrides/pw_chrono_backend/system_timer_inline.h",
+    "public_overrides/pw_chrono_backend/system_timer_native.h",
+    "system_timer.cc",
+])
