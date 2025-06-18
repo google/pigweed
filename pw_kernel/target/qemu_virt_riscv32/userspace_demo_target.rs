@@ -29,7 +29,7 @@ impl TargetInterface for Target {
     fn main() -> ! {
         userspace_demo_codegen::start();
         loop {
-            kernel::sleep_until(Clock::now() + Duration::from_secs(10));
+            kernel::sleep_until(kernel::Arch, Clock::now() + Duration::from_secs(10));
         }
     }
 }

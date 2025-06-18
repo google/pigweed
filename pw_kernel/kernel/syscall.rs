@@ -18,6 +18,8 @@ use pw_status::{Error, Result};
 use syscall_defs::{SysCallId, SysCallReturnValue};
 use time::Clock;
 
+use crate::arch::Arch;
+
 const SYSCALL_DEBUG: bool = false;
 
 pub fn handle_syscall(
@@ -45,7 +47,7 @@ pub fn handle_syscall(
                 arg0 as usize,
                 arg1 as usize,
             );
-            crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
+            crate::sleep_until(Arch, crate::Clock::now() + crate::Duration::from_secs(1));
             log_if::debug_if!(SYSCALL_DEBUG, "sycall: DebugAdd woken");
             match arg0.checked_add(arg1) {
                 Some(res) => Ok(res.cast_into()),
@@ -54,7 +56,7 @@ pub fn handle_syscall(
         }
         // TODO: Remove this syscall when logging is added.
         SysCallId::DebugPutc => {
-            crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
+            crate::sleep_until(Arch, crate::Clock::now() + crate::Duration::from_secs(1));
             let c = u32::try_from(arg0)
                 .ok()
                 .and_then(char::from_u32)

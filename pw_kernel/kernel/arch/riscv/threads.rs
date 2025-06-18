@@ -22,8 +22,8 @@ use crate::arch::riscv::protection::MemoryConfig;
 use crate::arch::riscv::regs::{MStatusVal, PrivilegeLevel};
 use crate::arch::{Arch, ArchInterface};
 use crate::scheduler::thread::Stack;
-use crate::scheduler::{self, SchedulerState};
-use crate::sync::spinlock::SpinLockGuard;
+use crate::scheduler::{self, SchedulerContext, SchedulerState};
+use crate::sync::spinlock::{SpinLock, SpinLockGuard};
 
 const LOG_CONTEXT_SWITCH: bool = false;
 const LOG_THREAD_CREATE: bool = false;
@@ -81,7 +81,18 @@ impl ArchThreadState {
     }
 }
 
-impl super::super::ThreadState for ArchThreadState {
+impl SchedulerContext for super::Arch {
+    type ThreadState = ArchThreadState;
+
+    fn get_scheduler_lock(self) -> &'static SpinLock<SchedulerState<ArchThreadState>> {
+        static LOCK: SpinLock<SchedulerState<ArchThreadState>> =
+            SpinLock::new(SchedulerState::new());
+        &LOCK
+    }
+}
+
+impl crate::scheduler::thread::ThreadState for ArchThreadState {
+    type MemoryConfig = crate::arch::riscv::protection::MemoryConfig;
     const NEW: Self = Self {
         frame: core::ptr::null_mut(),
         #[cfg(feature = "user_space")]
@@ -90,10 +101,10 @@ impl super::super::ThreadState for ArchThreadState {
 
     #[inline(never)]
     unsafe fn context_switch<'a>(
-        sched_state: SpinLockGuard<'a, SchedulerState>,
+        sched_state: SpinLockGuard<'a, SchedulerState<ArchThreadState>>,
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'a, SchedulerState> {
+    ) -> SpinLockGuard<'a, SchedulerState<ArchThreadState>> {
         debug_if!(
             LOG_CONTEXT_SWITCH,
             "context switch from frame {:#08x} to frame {:#08x}",
@@ -121,6 +132,7 @@ impl super::super::ThreadState for ArchThreadState {
         sched_state
     }
 
+    #[inline(never)]
     fn initialize_kernel_frame(
         &mut self,
         kernel_stack: Stack,
@@ -275,7 +287,7 @@ extern "C" fn trampoline(initial_function: extern "C" fn(usize, usize), arg0: us
     // Get a pointer to the current thread and call exit.
     // Note: must let the scope of the lock guard close,
     // since exit_thread() does not return.
-    scheduler::exit_thread();
+    scheduler::exit_thread(Arch);
 
     // Does not reach.
 }

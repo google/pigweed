@@ -28,8 +28,8 @@ use crate::arch::arm_cortex_m::regs::msr::{ControlVal, Spsel};
 use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
 use crate::arch::{ArchInterface, MemoryConfig as _, MemoryRegionType};
 use crate::scheduler::thread::Stack;
-use crate::scheduler::{self, SchedulerState, SCHEDULER_STATE};
-use crate::sync::spinlock::SpinLockGuard;
+use crate::scheduler::{self, SchedulerContext, SchedulerState};
+use crate::sync::spinlock::{SpinLock, SpinLockGuard};
 
 const STACK_ALIGNMENT: usize = 8;
 
@@ -82,17 +82,29 @@ impl ArchThreadState {
     }
 }
 
-impl super::super::ThreadState for ArchThreadState {
+impl SchedulerContext for Arch {
+    type ThreadState = ArchThreadState;
+
+    fn get_scheduler_lock(self) -> &'static SpinLock<SchedulerState<ArchThreadState>> {
+        static LOCK: SpinLock<SchedulerState<ArchThreadState>> =
+            SpinLock::new(SchedulerState::new());
+        &LOCK
+    }
+}
+
+impl crate::scheduler::thread::ThreadState for ArchThreadState {
+    type MemoryConfig = crate::arch::arm_cortex_m::protection::MemoryConfig;
+
     const NEW: Self = Self {
         frame: core::ptr::null_mut(),
         memory_config: core::ptr::null(),
     };
 
     unsafe fn context_switch<'a>(
-        mut sched_state: SpinLockGuard<'a, SchedulerState>,
+        mut sched_state: SpinLockGuard<'a, SchedulerState<ArchThreadState>>,
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'a, SchedulerState> {
+    ) -> SpinLockGuard<'a, SchedulerState<ArchThreadState>> {
         pw_assert::assert!(new_thread_state == sched_state.get_current_arch_thread_state());
         // TODO - konkers: Allow $expr to be tokenized.
 
@@ -130,7 +142,7 @@ impl super::super::ThreadState for ArchThreadState {
             // The next line of code is only executed in this context after the
             // old thread is context switched back to.
 
-            sched_state = SCHEDULER_STATE.lock();
+            sched_state = Arch::get_scheduler_lock(Arch).lock();
         } else {
             // in interrupt context the pendsv should have already triggered it
             pw_assert::assert!(SCB::is_pendsv_pending());
@@ -240,7 +252,7 @@ extern "C" fn trampoline(initial_function: extern "C" fn(usize, usize), arg0: us
     // Get a pointer to the current thread and call exit.
     // Note: must let the scope of the lock guard close,
     // since exit_thread() does not return.
-    scheduler::exit_thread();
+    scheduler::exit_thread(Arch);
 
     // Does not reach.
 }
@@ -280,7 +292,7 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     }
 
     // Return the arch frame for the current thread
-    let mut sched_state = SCHEDULER_STATE.lock();
+    let mut sched_state = Arch.get_scheduler_lock().lock();
     let new_thread = unsafe { sched_state.get_current_arch_thread_state() };
     // info!(
     //     "new frame {:08x}: pc {:08x}",

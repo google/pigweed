@@ -14,7 +14,7 @@
 
 use pw_status::Result;
 
-use crate::scheduler::WaitQueueLock;
+use crate::scheduler::{SchedulerContext, WaitQueueLock};
 use crate::timer::Instant;
 
 /// Configuration for the behavior of an [`Event`].
@@ -51,21 +51,21 @@ struct EventState {
 /// [`wait_until`]: Event::wait_until
 /// [`signal`]: Event::signal
 /// [`unsignal`]: Event::unsignal
-pub struct Event {
+pub struct Event<C: SchedulerContext> {
     config: EventConfig,
-    state: WaitQueueLock<EventState>,
+    state: WaitQueueLock<C, EventState>,
 }
 
-unsafe impl Sync for Event {}
-unsafe impl Send for Event {}
+unsafe impl<C: SchedulerContext> Sync for Event<C> {}
+unsafe impl<C: SchedulerContext> Send for Event<C> {}
 
-impl Event {
+impl<C: SchedulerContext> Event<C> {
     /// Constructs a new `Event` with the given configuration.
     #[must_use]
-    pub const fn new(config: EventConfig) -> Self {
+    pub const fn new(ctx: C, config: EventConfig) -> Self {
         Self {
             config,
-            state: WaitQueueLock::new(EventState { signaled: false }),
+            state: WaitQueueLock::new(ctx, EventState { signaled: false }),
         }
     }
 

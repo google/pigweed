@@ -84,7 +84,7 @@ pub fn init() {}
 pub fn mtimer_tick() {
     set_next_monotonic_tick();
 
-    scheduler::tick(Clock::now());
+    scheduler::tick(super::Arch, Clock::now());
 }
 
 pub struct Clock;

@@ -16,22 +16,36 @@ use pw_log::info;
 use pw_status::Result;
 
 use crate::arch::{ArchInterface, MemoryRegionType};
-use crate::scheduler::thread::Stack;
-use crate::scheduler::SchedulerState;
-use crate::sync::spinlock::SpinLockGuard;
+use crate::scheduler::thread::{Stack, ThreadState};
+use crate::scheduler::{SchedulerContext, SchedulerState};
+use crate::sync::spinlock::{SpinLock, SpinLockGuard};
 
 mod spinlock;
 
-pub struct ThreadState {}
+#[derive(Copy, Clone)]
+pub struct Arch;
 
-impl super::ThreadState for ThreadState {
-    const NEW: Self = Self {};
+pub struct ArchThreadState;
+
+impl SchedulerContext for Arch {
+    type ThreadState = ArchThreadState;
+
+    fn get_scheduler_lock(self) -> &'static SpinLock<SchedulerState<ArchThreadState>> {
+        static LOCK: SpinLock<SchedulerState<ArchThreadState>> =
+            SpinLock::new(SchedulerState::new());
+        &LOCK
+    }
+}
+
+impl ThreadState for ArchThreadState {
+    const NEW: Self = Self;
+    type MemoryConfig = MemoryConfig;
 
     unsafe fn context_switch(
-        mut _sched_state: SpinLockGuard<'_, SchedulerState>,
-        _old_thread_state: *mut ThreadState,
-        _new_thread_state: *mut ThreadState,
-    ) -> SpinLockGuard<'_, SchedulerState> {
+        _sched_state: SpinLockGuard<'_, SchedulerState<ArchThreadState>>,
+        _old_thread_state: *mut ArchThreadState,
+        _new_thread_state: *mut ArchThreadState,
+    ) -> SpinLockGuard<'_, SchedulerState<ArchThreadState>> {
         pw_assert::panic!("unimplemented");
     }
 
@@ -69,11 +83,10 @@ impl time::Clock for Clock {
 }
 
 pub struct MemoryConfig;
-impl MemoryConfig {
-    pub const KERNEL_THREAD_MEMORY_CONFIG: Self = Self;
-}
 
 impl crate::arch::MemoryConfig for MemoryConfig {
+    const KERNEL_THREAD_MEMORY_CONFIG: Self = Self;
+
     fn range_has_access(
         &self,
         _access_type: MemoryRegionType,
@@ -84,13 +97,9 @@ impl crate::arch::MemoryConfig for MemoryConfig {
     }
 }
 
-pub struct Arch;
-
 impl ArchInterface for Arch {
-    type ThreadState = ThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = Clock;
-    type MemoryConfig = MemoryConfig;
 
     fn early_init() {
         info!("HOST arch early init");

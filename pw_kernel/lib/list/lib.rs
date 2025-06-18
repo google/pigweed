@@ -124,7 +124,7 @@ mod tests {
         }
     }
 
-    define_adapter!(TestAdapter => TestMember.link);
+    define_adapter!(TestAdapter => TestMember::link);
 
     fn validate_list(
         list: &ForeignList<TestMember, TestAdapter>,

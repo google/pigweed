@@ -17,7 +17,7 @@ use core::arch::asm;
 use riscv;
 
 mod exceptions;
-mod protection;
+pub mod protection;
 mod regs;
 mod spinlock;
 mod threads;
@@ -25,13 +25,12 @@ mod timer;
 
 use crate::arch::ArchInterface;
 
-pub struct Arch {}
+#[derive(Copy, Clone)]
+pub struct Arch;
 
 impl ArchInterface for Arch {
-    type ThreadState = threads::ArchThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = timer::Clock;
-    type MemoryConfig = protection::MemoryConfig;
 
     fn early_init() {
         // Make sure interrupts are disabled

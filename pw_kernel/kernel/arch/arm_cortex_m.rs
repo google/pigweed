@@ -21,14 +21,15 @@ use pw_log::info;
 use crate::arch::ArchInterface;
 
 mod exceptions;
-mod protection;
+pub mod protection;
 mod regs;
 mod spinlock;
 mod syscall;
 mod threads;
 mod timer;
 
-pub struct Arch {}
+#[derive(Copy, Clone)]
+pub struct Arch;
 
 // Demonstration of zero over head register abstraction.
 #[inline(never)]
@@ -37,10 +38,8 @@ fn get_num_mpu_regions(mpu: &mut regs::Mpu) -> u8 {
 }
 
 impl ArchInterface for Arch {
-    type ThreadState = threads::ArchThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = timer::Clock;
-    type MemoryConfig = protection::MemoryConfig;
 
     fn early_init() {
         info!("arch early init");

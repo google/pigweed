@@ -157,13 +157,26 @@ pub trait Adapter {
 }
 
 /// Defines an adapter type and implements [`Adapter`] for it.
+///
+/// # Usage
+///
+/// `define_adapter!` accepts a syntax like the following (where type arguments
+/// are optional):
+///
+/// ```
+/// define_adapter!(pub Adapter<T: Bound> => Node<T>::link);
+/// ```
 #[macro_export]
 macro_rules! define_adapter {
-    ($vis:vis $name:ident => $node:ident.$link:ident) => {
-        $vis enum $name {}
+    ($vis:vis $name:ident $(<$($tyvar:ident $(: $bound:path)?),*>)? => $node:ident $(<$($node_tyvar:ident),*>)? :: $link:ident) => {
+        $vis struct $name $(<$($tyvar $(: $bound)?),*>)? {
+            $(
+                _marker: core::marker::PhantomData<$($tyvar),*>,
+            )?
+        }
 
-        impl $crate::Adapter for $name {
-            const LINK_OFFSET: usize = core::mem::offset_of!($node, $link);
+        impl $(<$($tyvar $(: $bound)?),*>)? $crate::Adapter for $name $(<$($tyvar),*>)? {
+            const LINK_OFFSET: usize = core::mem::offset_of!($node $(<$($node_tyvar),*>)?, $link);
         }
     };
 }
@@ -493,7 +506,7 @@ mod tests {
         }
     }
 
-    define_adapter!(TestAdapter => TestMember.link);
+    define_adapter!(TestAdapter => TestMember::link);
 
     unsafe fn validate_list(
         list: &UnsafeList<TestMember, TestAdapter>,

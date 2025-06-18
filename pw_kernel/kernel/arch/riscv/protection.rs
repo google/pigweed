@@ -27,12 +27,6 @@ pub struct MemoryConfig(
 );
 
 impl MemoryConfig {
-    pub const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion {
-        ty: MemoryRegionType::ReadWriteExecutable,
-        start: 0x0000_0000,
-        end: 0xffff_ffff,
-    }]);
-
     /// Create a new `MemoryConfig` in a `const` context
     ///
     /// # Panics
@@ -57,6 +51,12 @@ impl MemoryConfig {
 }
 
 impl crate::arch::MemoryConfig for MemoryConfig {
+    const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion {
+        ty: MemoryRegionType::ReadWriteExecutable,
+        start: 0x0000_0000,
+        end: 0xffff_ffff,
+    }]);
+
     fn range_has_access(
         &self,
         _access_type: MemoryRegionType,

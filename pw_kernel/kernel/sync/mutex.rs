@@ -18,7 +18,7 @@ use core::ops::{Deref, DerefMut};
 use pw_status::Result;
 
 use crate::scheduler::thread::Thread;
-use crate::scheduler::WaitQueueLock;
+use crate::scheduler::{SchedulerContext, WaitQueueLock};
 use crate::timer::Instant;
 
 const MUTEX_DEBUG: bool = false;
@@ -33,22 +33,22 @@ struct MutexState {
     holder_thread_id: usize,
 }
 
-pub struct Mutex<T> {
+pub struct Mutex<C: SchedulerContext, T> {
     // An future optimization can be made by keeping an atomic count outside of
     // the spinlock.  However, not all architectures support atomics so a pure
     // SchedLock based approach will always be needed.
-    state: WaitQueueLock<MutexState>,
+    state: WaitQueueLock<C, MutexState>,
 
     inner: UnsafeCell<T>,
 }
-unsafe impl<T> Sync for Mutex<T> {}
-unsafe impl<T> Send for Mutex<T> {}
+unsafe impl<C: SchedulerContext, T> Sync for Mutex<C, T> {}
+unsafe impl<C: SchedulerContext, T> Send for Mutex<C, T> {}
 
-pub struct MutexGuard<'lock, T> {
-    lock: &'lock Mutex<T>,
+pub struct MutexGuard<'lock, C: SchedulerContext, T> {
+    lock: &'lock Mutex<C, T>,
 }
 
-impl<T> Deref for MutexGuard<'_, T> {
+impl<C: SchedulerContext, T> Deref for MutexGuard<'_, C, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -56,30 +56,33 @@ impl<T> Deref for MutexGuard<'_, T> {
     }
 }
 
-impl<T> DerefMut for MutexGuard<'_, T> {
+impl<C: SchedulerContext, T> DerefMut for MutexGuard<'_, C, T> {
     fn deref_mut(&mut self) -> &mut T {
         unsafe { &mut *self.lock.inner.get() }
     }
 }
 
-impl<T> Drop for MutexGuard<'_, T> {
+impl<C: SchedulerContext, T> Drop for MutexGuard<'_, C, T> {
     fn drop(&mut self) {
         self.lock.unlock();
     }
 }
 
-impl<T> Mutex<T> {
-    pub const fn new(initial_value: T) -> Self {
+impl<C: SchedulerContext, T> Mutex<C, T> {
+    pub const fn new(ctx: C, initial_value: T) -> Self {
         Self {
-            state: WaitQueueLock::new(MutexState {
-                count: 0,
-                holder_thread_id: Thread::null_id(),
-            }),
+            state: WaitQueueLock::new(
+                ctx,
+                MutexState {
+                    count: 0,
+                    holder_thread_id: Thread::<C::ThreadState>::null_id(),
+                },
+            ),
             inner: UnsafeCell::new(initial_value),
         }
     }
 
-    pub fn lock(&self) -> MutexGuard<'_, T> {
+    pub fn lock(&self) -> MutexGuard<'_, C, T> {
         let mut state = self.state.lock();
         pw_assert::ne!(
             state.holder_thread_id as usize,
@@ -109,7 +112,7 @@ impl<T> Mutex<T> {
     }
 
     // TODO - konkers: Investigate combining with lock().
-    pub fn lock_until(&self, deadline: Instant) -> Result<MutexGuard<'_, T>> {
+    pub fn lock_until(&self, deadline: Instant) -> Result<MutexGuard<'_, C, T>> {
         let mut state = self.state.lock();
         pw_assert::ne!(
             state.holder_thread_id as usize,
@@ -168,7 +171,7 @@ impl<T> Mutex<T> {
             state.holder_thread_id as usize,
             state.sched().current_thread_id() as usize
         );
-        state.holder_thread_id = Thread::null_id();
+        state.holder_thread_id = Thread::<C::ThreadState>::null_id();
 
         state.count -= 1;
 

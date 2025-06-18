@@ -18,71 +18,77 @@ use core::ptr::NonNull;
 
 use pw_status::Result;
 
-use super::SCHEDULER_STATE;
-use crate::scheduler::{SchedulerState, WaitQueue};
+use crate::scheduler::thread::ThreadState;
+use crate::scheduler::{SchedulerContext, SchedulerState, WaitQueue};
 use crate::sync::spinlock::SpinLockGuard;
 use crate::timer::Instant;
 
-pub struct SmuggledSchedLock<T> {
+pub struct SmuggledSchedLock<C, T> {
     inner: NonNull<T>,
+    ctx: C,
 }
 
-impl<T> SmuggledSchedLock<T> {
+impl<C: SchedulerContext, T> SmuggledSchedLock<C, T> {
     /// # Safety
     /// The caller must guarantee that the underlying lock and it's enclosed data
     /// is still valid.
-    pub unsafe fn lock(&self) -> SchedLockGuard<'_, T> {
-        let guard = SCHEDULER_STATE.lock();
+    pub unsafe fn lock(&self) -> SchedLockGuard<'_, C, T> {
+        let guard = self.ctx.get_scheduler_lock().lock();
         SchedLockGuard {
             guard,
             inner: unsafe { &mut *self.inner.as_ptr() },
+            ctx: self.ctx,
         }
     }
 }
 
-pub struct SchedLockGuard<'lock, T> {
-    guard: SpinLockGuard<'lock, SchedulerState>,
+pub struct SchedLockGuard<'lock, C: SchedulerContext, T> {
+    guard: SpinLockGuard<'lock, SchedulerState<C::ThreadState>>,
     inner: &'lock mut T,
+    ctx: C,
 }
 
-impl<'lock, T> SchedLockGuard<'lock, T> {
+impl<'lock, C: SchedulerContext, T> SchedLockGuard<'lock, C, T> {
     #[must_use]
-    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
+    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState<C::ThreadState>> {
         &self.guard
     }
 
     #[must_use]
-    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState> {
+    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState<C::ThreadState>> {
         &mut self.guard
     }
 
-    #[allow(clippy::return_self_not_must_use, clippy::must_use_candidate)]
+    #[allow(clippy::return_self_not_must_use)]
     pub fn reschedule(self, current_thread_id: usize) -> Self {
         let inner = self.inner;
+        let ctx = self.ctx;
         let guard = super::reschedule(self.guard, current_thread_id);
-        Self { guard, inner }
+        Self { guard, inner, ctx }
     }
 
     #[allow(clippy::return_self_not_must_use, clippy::must_use_candidate)]
     pub fn try_reschedule(self) -> Self {
         let inner = self.inner;
+        let ctx = self.ctx;
         let guard = self.guard.try_reschedule();
-        Self { guard, inner }
+        Self { guard, inner, ctx }
     }
 
     /// # Safety
     /// The caller must guarantee that the underlying lock remains valid and
     /// un-moved for the live the smuggled lock.
     #[must_use]
-    pub unsafe fn smuggle(&self) -> SmuggledSchedLock<T> {
+    pub unsafe fn smuggle(&self) -> SmuggledSchedLock<C, T> {
         let inner: *const T = self.inner;
         SmuggledSchedLock {
             inner: unsafe { NonNull::new_unchecked(inner.cast_mut()) },
+            ctx: self.ctx,
         }
     }
 }
 
-impl<T> Deref for SchedLockGuard<'_, T> {
+impl<C: SchedulerContext, T> Deref for SchedLockGuard<'_, C, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -90,7 +96,7 @@ impl<T> Deref for SchedLockGuard<'_, T> {
     }
 }
 
-impl<T> DerefMut for SchedLockGuard<'_, T> {
+impl<C: SchedulerContext, T> DerefMut for SchedLockGuard<'_, C, T> {
     fn deref_mut(&mut self) -> &mut T {
         self.inner
     }
@@ -104,88 +110,101 @@ impl<T> DerefMut for SchedLockGuard<'_, T> {
 /// # Safety
 /// Taking two different `SchedLock`s at the same time will deadlock as they
 /// share the same underlying lock.
-pub struct SchedLock<T> {
+pub struct SchedLock<C, T> {
     inner: UnsafeCell<T>,
+    ctx: C,
 }
-unsafe impl<T> Sync for SchedLock<T> {}
-unsafe impl<T> Send for SchedLock<T> {}
+unsafe impl<C: Sync, T> Sync for SchedLock<C, T> {}
+unsafe impl<C: Send, T> Send for SchedLock<C, T> {}
 
-impl<T> SchedLock<T> {
-    pub const fn new(initial_value: T) -> Self {
+impl<C, T> SchedLock<C, T> {
+    pub const fn new(ctx: C, initial_value: T) -> Self {
         Self {
             inner: UnsafeCell::new(initial_value),
+            ctx,
         }
     }
+}
 
+impl<C: SchedulerContext, T> SchedLock<C, T> {
     #[allow(unused)]
-    pub fn try_lock(&self) -> Option<SchedLockGuard<'_, T>> {
+    pub fn try_lock(&self) -> Option<SchedLockGuard<'_, C, T>> {
         // Safety: The lock guarantees
-        super::SCHEDULER_STATE
+        self.ctx
+            .get_scheduler_lock()
             .try_lock()
             .map(|guard| SchedLockGuard {
                 inner: unsafe { &mut *self.inner.get() },
                 guard,
+                ctx: self.ctx,
             })
     }
 
-    pub fn lock(&self) -> SchedLockGuard<'_, T> {
-        let guard = super::SCHEDULER_STATE.lock();
+    pub fn lock(&self) -> SchedLockGuard<'_, C, T> {
+        let guard = self.ctx.get_scheduler_lock().lock();
         SchedLockGuard {
             inner: unsafe { &mut *self.inner.get() },
             guard,
+            ctx: self.ctx,
         }
     }
 }
 
-pub struct WaitQueueLockState<T> {
-    queue: WaitQueue,
+pub struct WaitQueueLockState<S: ThreadState, T> {
+    queue: WaitQueue<S>,
     inner: T,
 }
 
-pub struct WaitQueueLock<T> {
-    state: SchedLock<WaitQueueLockState<T>>,
+pub struct WaitQueueLock<C: SchedulerContext, T> {
+    state: SchedLock<C, WaitQueueLockState<C::ThreadState, T>>,
 }
 
-impl<T> WaitQueueLock<T> {
-    pub const fn new(initial_value: T) -> Self {
+impl<C: SchedulerContext, T> WaitQueueLock<C, T> {
+    pub const fn new(ctx: C, initial_value: T) -> Self {
         Self {
-            state: SchedLock::new(WaitQueueLockState {
-                queue: WaitQueue::new(),
-                inner: initial_value,
-            }),
+            state: SchedLock::new(
+                ctx,
+                WaitQueueLockState {
+                    queue: WaitQueue::new(),
+                    inner: initial_value,
+                },
+            ),
         }
     }
 
-    pub fn lock(&self) -> WaitQueueLockGuard<'_, T> {
+    pub fn lock(&self) -> WaitQueueLockGuard<'_, C, T> {
         WaitQueueLockGuard {
             inner: self.state.lock(),
         }
     }
 }
 
-pub struct WaitQueueLockGuard<'lock, T> {
-    inner: SchedLockGuard<'lock, WaitQueueLockState<T>>,
+pub struct WaitQueueLockGuard<'lock, C: SchedulerContext, T> {
+    inner: SchedLockGuard<'lock, C, WaitQueueLockState<C::ThreadState, T>>,
 }
 
-impl<'lock, T> WaitQueueLockGuard<'lock, T> {
-    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
+impl<'lock, C: SchedulerContext, T> WaitQueueLockGuard<'lock, C, T> {
+    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState<C::ThreadState>> {
         &self.inner.guard
     }
 
     #[allow(dead_code)]
-    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState> {
+    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState<C::ThreadState>> {
         &mut self.inner.guard
     }
 
     pub fn operate_on_wait_queue<F, R>(mut self, f: F) -> (Self, R)
     where
-        F: FnOnce(SchedLockGuard<'lock, WaitQueue>) -> (SchedLockGuard<'lock, WaitQueue>, R),
+        F: FnOnce(
+            SchedLockGuard<'lock, C, WaitQueue<C::ThreadState>>,
+        ) -> (SchedLockGuard<'lock, C, WaitQueue<C::ThreadState>>, R),
     {
-        let guard = SchedLockGuard::<'lock, WaitQueue> {
+        let guard = SchedLockGuard::<'lock, _, WaitQueue<C::ThreadState>> {
             guard: self.inner.guard,
             // Safety: Mutable reference only lives as long as the call into f()
             #[allow(clippy::deref_addrof)]
             inner: unsafe { &mut *&raw mut self.inner.inner.queue },
+            ctx: self.inner.ctx,
         };
         let (guard, result) = f(guard);
         self.inner.guard = guard.guard;
@@ -209,7 +228,7 @@ impl<'lock, T> WaitQueueLockGuard<'lock, T> {
     }
 }
 
-impl<T> Deref for WaitQueueLockGuard<'_, T> {
+impl<C: SchedulerContext, T> Deref for WaitQueueLockGuard<'_, C, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -217,7 +236,7 @@ impl<T> Deref for WaitQueueLockGuard<'_, T> {
     }
 }
 
-impl<T> DerefMut for WaitQueueLockGuard<'_, T> {
+impl<C: SchedulerContext, T> DerefMut for WaitQueueLockGuard<'_, C, T> {
     fn deref_mut(&mut self) -> &mut T {
         &mut self.inner.inner.inner
     }

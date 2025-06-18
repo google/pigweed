@@ -16,7 +16,7 @@
 
 use hal::fugit::RateExtU32;
 use hal::uart::{DataBits, StopBits, UartConfig};
-use hal::Clock;
+use hal::Clock as _;
 use target_common::{declare_target, TargetInterface};
 use {console_backend as _, kernel as _, rp235x_hal as hal};
 mod userspace_demo_codegen;

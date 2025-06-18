@@ -103,5 +103,5 @@ pub unsafe extern "C" fn SysTick() {
 
     //info!("SysTick {}", *ticks as u64);
 
-    scheduler::tick(Clock::now());
+    scheduler::tick(super::Arch, Clock::now());
 }

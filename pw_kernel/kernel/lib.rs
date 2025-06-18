@@ -15,7 +15,7 @@
 
 use pw_log::info;
 
-mod arch;
+pub mod arch;
 #[cfg(not(feature = "std_panic_handler"))]
 mod panic;
 pub mod scheduler;
@@ -27,10 +27,10 @@ mod timer;
 pub use arch::{Arch, ArchInterface, MemoryRegion, MemoryRegionType};
 use kernel_config::{KernelConfig, KernelConfigInterface};
 pub use scheduler::thread::{Process, Stack, Thread};
-// Used by the `init_thread!` macro.
 #[doc(hidden)]
 pub use scheduler::thread::{StackStorage, StackStorageExt};
-use scheduler::SCHEDULER_STATE;
+use scheduler::SchedulerContext as _;
+// Used by the `init_thread!` macro.
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 pub use timer::{Clock, Duration};
 
@@ -57,7 +57,7 @@ impl Kernel {
         Arch::early_init();
 
         // Prepare the scheduler for thread initialization.
-        scheduler::initialize();
+        scheduler::initialize(Arch);
 
         // SAFETY: The `main` function thread is never executed more than once.
         let bootstrap_thread = unsafe {
@@ -70,7 +70,7 @@ impl Kernel {
         info!("created thread, bootstrapping");
 
         // special case where we bootstrap the system by half context switching to this thread
-        scheduler::bootstrap_scheduler(bootstrap_thread);
+        scheduler::bootstrap_scheduler(Arch, bootstrap_thread);
 
         // never get to here
     }
@@ -83,7 +83,7 @@ fn bootstrap_thread_entry(_arg: usize) {
 
     Arch::init();
 
-    SCHEDULER_STATE.lock().dump_all_threads();
+    Arch.get_scheduler_lock().lock().dump_all_threads();
 
     // SAFETY: The bootstrap thread is never executed more than once.
     let idle_thread = unsafe {
@@ -94,9 +94,9 @@ fn bootstrap_thread_entry(_arg: usize) {
         )
     };
 
-    SCHEDULER_STATE.lock().dump_all_threads();
+    Arch::get_scheduler_lock(Arch).lock().dump_all_threads();
 
-    scheduler::start_thread(idle_thread);
+    scheduler::start_thread(Arch, idle_thread);
 
     target::main()
 }
@@ -131,5 +131,10 @@ pub mod __private {
         }};
     }
 
+    pub type ArchThreadState =
+        <crate::arch::Arch as crate::scheduler::SchedulerContext>::ThreadState;
+
     pub use foreign_box;
+
+    pub use crate::arch::Arch;
 }
