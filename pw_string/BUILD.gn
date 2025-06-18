@@ -163,6 +163,7 @@ pw_test_group("tests") {
     ":type_to_string_test",
     ":utf_codecs_test",
     ":util_test",
+    ":examples",
   ]
   group_deps = [
     "$dir_pw_preprocessor:tests",
@@ -230,4 +231,13 @@ pw_test("util_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("examples") {
+  deps = [
+    "$dir_pw_log",
+    "$dir_pw_span",
+    "$dir_pw_string",
+  ]
+  sources = [ "examples.cc" ]
 }

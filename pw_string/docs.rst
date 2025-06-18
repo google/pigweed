@@ -13,6 +13,9 @@ pw_string
    *Pick three!* If you know how to use ``std::string``, just use
    :cpp:type:`pw::InlineString` in the same way:
 
+   .. Note for docs maintainers: the next code example could be built
+   .. but is difficult to test because it generates a runtime crash.
+
    .. code-block:: cpp
 
       // Create a string from a C-style char array; storage is pre-allocated!
@@ -29,16 +32,11 @@ pw_string
    ``std::ostringstream``, but with most of the efficiency and memory benefits
    of :cpp:type:`pw::InlineString`:
 
-   .. code-block:: cpp
-
-      // Create a pw::StringBuilder with a built-in buffer
-      pw::StringBuffer<32> my_string_builder = "Is it really this easy?";
-
-      // Add to it with idiomatic C++
-      my_string << " YES!";
-
-      // Use it like any other string
-      PW_LOG_DEBUG("%s", my_string_builder.c_str());
+   .. literalinclude:: ./examples.cc
+      :language: cpp
+      :dedent:
+      :start-after: // DOCSTAG[start-pw_string-buffer-example]
+      :end-before: // DOCSTAG[end-pw_string-buffer-example]
 
    Check out :ref:`module-pw_string-guide` for more code samples.
 
