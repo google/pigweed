@@ -18,7 +18,8 @@ use pw_status::Result;
 use crate::arch::MemoryRegionType;
 use crate::scheduler::thread::{Stack, ThreadState};
 use crate::scheduler::{SchedulerContext, SchedulerState};
-use crate::sync::spinlock::{SpinLock, SpinLockGuard};
+use crate::sync::spinlock::SpinLockGuard;
+use crate::{KernelState, KernelStateContext};
 
 mod spinlock;
 
@@ -49,13 +50,12 @@ impl SchedulerContext for Arch {
     fn interrupts_enabled() -> bool {
         todo!("");
     }
+}
 
-    fn get_scheduler_lock(
-        self,
-    ) -> &'static SpinLock<spinlock::BareSpinLock, SchedulerState<ArchThreadState>> {
-        static LOCK: SpinLock<spinlock::BareSpinLock, SchedulerState<ArchThreadState>> =
-            SpinLock::new(SchedulerState::new());
-        &LOCK
+impl KernelStateContext for Arch {
+    fn get_state(self) -> &'static KernelState<Arch> {
+        static STATE: KernelState<Arch> = KernelState::new();
+        &STATE
     }
 }
 

@@ -68,31 +68,26 @@ pub trait SchedulerContext: 'static + Copy {
 
     #[allow(dead_code)]
     fn idle() {}
+}
 
-    // TODO(joshlf): Is there any way to have this operate on `&self` instead of
-    // `self`? I tried that, and unsurprisingly it causes lifetime issues. If we
-    // wanted to resolve those, we would likely need to do:
-    //
-    //   trait SchedulerContext<'a> {
-    //       fn get_scheduler_lock(self) -> &'a SpinLock<...>;
-    //   }
-    //
-    // In production, we would implement `SchedulerContext<'static>` and provide
-    // a reference to a global static lock. In testing, we would implement
-    // `SchedulerContext<'a> for MockSchedulerContext<'a>`.
-    //
-    // Unfortunately, this would also require propagating a `'a` bound to all
-    // functions, which would be very verbose. As written, it's still possible
-    // to write a mock - it's just that a mock will need to call e.g.
-    // `Box::leak` in order to produce a lock reference with a `'static`
-    // lifetime. For the time being, that's probably the best tradeoff given the
-    // ergonomic pain of threading through lifetimes.
+pub trait SchedulerStateContext: SchedulerContext {
     fn get_scheduler_lock(
         self,
     ) -> &'static SpinLock<Self::BareSpinLock, SchedulerState<Self::ThreadState>>;
 }
 
-pub fn start_thread<C: SchedulerContext>(ctx: C, mut thread: ForeignBox<Thread<C::ThreadState>>) {
+impl<C: SchedulerContext + crate::KernelStateContext> SchedulerStateContext for C {
+    fn get_scheduler_lock(
+        self,
+    ) -> &'static SpinLock<Self::BareSpinLock, SchedulerState<Self::ThreadState>> {
+        &self.get_state().scheduler
+    }
+}
+
+pub fn start_thread<C: SchedulerStateContext>(
+    ctx: C,
+    mut thread: ForeignBox<Thread<C::ThreadState>>,
+) {
     info!(
         "starting thread {} {:#x}",
         thread.name as &str,
@@ -121,7 +116,7 @@ pub fn start_thread<C: SchedulerContext>(ctx: C, mut thread: ForeignBox<Thread<C
     reschedule(ctx, sched_state, id);
 }
 
-pub fn initialize<C: SchedulerContext>(ctx: C) {
+pub fn initialize<C: SchedulerStateContext>(ctx: C) {
     let mut sched_state = ctx.get_scheduler_lock().lock();
 
     // The kernel process needs be to initialized before any kernel threads so
@@ -132,7 +127,7 @@ pub fn initialize<C: SchedulerContext>(ctx: C) {
     }
 }
 
-pub fn bootstrap_scheduler<C: SchedulerContext>(
+pub fn bootstrap_scheduler<C: SchedulerStateContext>(
     ctx: C,
     mut thread: ForeignBox<Thread<C::ThreadState>>,
 ) -> ! {
@@ -155,9 +150,9 @@ pub fn bootstrap_scheduler<C: SchedulerContext>(
     pw_assert::panic!("should not reach here");
 }
 
-struct PremptDisableGuard<C: SchedulerContext>(C);
+struct PremptDisableGuard<C: SchedulerStateContext>(C);
 
-impl<C: SchedulerContext> PremptDisableGuard<C> {
+impl<C: SchedulerStateContext> PremptDisableGuard<C> {
     pub fn new(ctx: C) -> Self {
         let mut sched_state = ctx.get_scheduler_lock().lock();
         let thread = sched_state.current_thread_mut();
@@ -173,7 +168,7 @@ impl<C: SchedulerContext> PremptDisableGuard<C> {
     }
 }
 
-impl<C: SchedulerContext> Drop for PremptDisableGuard<C> {
+impl<C: SchedulerStateContext> Drop for PremptDisableGuard<C> {
     fn drop(&mut self) {
         let mut sched_state = self.0.get_scheduler_lock().lock();
         let thread = sched_state.current_thread_mut();
@@ -390,7 +385,7 @@ fn reschedule<C: SchedulerContext>(
 }
 
 #[allow(dead_code)]
-pub fn yield_timeslice<C: SchedulerContext>(ctx: C) {
+pub fn yield_timeslice<C: SchedulerStateContext>(ctx: C) {
     // info!("yielding thread {:#x}", current_thread.id());
     let mut sched_state = ctx.get_scheduler_lock().lock();
 
@@ -401,7 +396,7 @@ pub fn yield_timeslice<C: SchedulerContext>(ctx: C) {
 }
 
 #[allow(dead_code)]
-pub fn preempt<C: SchedulerContext>(ctx: C) {
+pub fn preempt<C: SchedulerStateContext>(ctx: C) {
     // info!("preempt thread {:#x}", current_thread.id());
     let mut sched_state = ctx.get_scheduler_lock().lock();
 
@@ -416,7 +411,7 @@ pub fn preempt<C: SchedulerContext>(ctx: C) {
 // Tick that is called from a timer handler. The scheduler will evaluate if the current thread
 // should be preempted or not
 #[allow(dead_code)]
-pub fn tick<C: SchedulerContext>(ctx: C, now: Instant) {
+pub fn tick<C: SchedulerStateContext>(ctx: C, now: Instant) {
     //info!("tick {} ms", time_ms);
 
     // In lieu of a proper timer interface, the scheduler needs to be robust
@@ -433,7 +428,7 @@ pub fn tick<C: SchedulerContext>(ctx: C, now: Instant) {
 // For now, simply remove ourselves from the run queue. No cleanup of thread resources
 // is performed.
 #[allow(dead_code)]
-pub fn exit_thread<C: SchedulerContext>(ctx: C) -> ! {
+pub fn exit_thread<C: SchedulerStateContext>(ctx: C) -> ! {
     let mut sched_state = ctx.get_scheduler_lock().lock();
 
     let mut current_thread = sched_state.take_current_thread();
@@ -449,7 +444,7 @@ pub fn exit_thread<C: SchedulerContext>(ctx: C) -> ! {
     loop {}
 }
 
-pub fn sleep_until<C: SchedulerContext>(ctx: C, deadline: Instant) {
+pub fn sleep_until<C: SchedulerStateContext>(ctx: C, deadline: Instant) {
     let wait_queue = WaitQueueLock::new(ctx, ());
     let _ = wait_queue.lock().wait_until(deadline);
 }
@@ -477,7 +472,7 @@ pub enum WakeResult {
     QueueEmpty,
 }
 
-impl<C: SchedulerContext> SchedLockGuard<'_, C, WaitQueue<C::ThreadState>> {
+impl<C: SchedulerStateContext> SchedLockGuard<'_, C, WaitQueue<C::ThreadState>> {
     fn add_to_queue_and_reschedule(
         mut self,
         mut thread: ForeignBox<Thread<C::ThreadState>>,

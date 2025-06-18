@@ -19,7 +19,7 @@ use list::*;
 use pw_log::info;
 use pw_status::Result;
 
-use crate::scheduler::SchedulerContext;
+use crate::scheduler::SchedulerStateContext;
 
 /// The memory backing a thread's stack before it has been started.
 ///
@@ -203,7 +203,7 @@ impl<S: ThreadState> Process<S> {
     }
 
     /// Registers process with scheduler.
-    pub fn register<C: SchedulerContext<ThreadState = S>>(&mut self, ctx: C) {
+    pub fn register<C: SchedulerStateContext<ThreadState = S>>(&mut self, ctx: C) {
         unsafe {
             ctx.get_scheduler_lock().lock().add_process_to_list(self);
         }
@@ -295,7 +295,7 @@ impl<S: ThreadState> Thread<S> {
         entry_point(arg);
     }
 
-    pub fn initialize_kernel_thread<C: SchedulerContext<ThreadState = S>>(
+    pub fn initialize_kernel_thread<C: SchedulerStateContext<ThreadState = S>>(
         &mut self,
         ctx: C,
         kernel_stack: Stack,
@@ -322,7 +322,7 @@ impl<S: ThreadState> Thread<S> {
     /// It is up to the caller to ensure that *process is valid.
     /// Initialize the mutable parts of the non privileged thread, must be
     /// called once per thread prior to starting it
-    pub unsafe fn initialize_non_priv_thread<C: SchedulerContext<ThreadState = S>>(
+    pub unsafe fn initialize_non_priv_thread<C: SchedulerStateContext<ThreadState = S>>(
         &mut self,
         ctx: C,
         kernel_stack: Stack,
@@ -353,7 +353,7 @@ impl<S: ThreadState> Thread<S> {
     /// It is up to the caller to ensure that *process is valid.
     /// Initialize the mutable parts of the thread, must be called once per
     /// thread prior to starting it
-    unsafe fn initialize<C: SchedulerContext<ThreadState = S>>(
+    unsafe fn initialize<C: SchedulerStateContext<ThreadState = S>>(
         &mut self,
         ctx: C,
         process: *mut Process<S>,

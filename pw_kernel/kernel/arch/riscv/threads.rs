@@ -21,10 +21,10 @@ use pw_status::Result;
 use crate::arch::riscv::protection::MemoryConfig;
 use crate::arch::riscv::regs::{MStatusVal, PrivilegeLevel};
 use crate::arch::riscv::spinlock::BareSpinLock;
-use crate::arch::Arch;
+use crate::arch::riscv::Arch;
 use crate::scheduler::thread::Stack;
 use crate::scheduler::{self, SchedulerContext, SchedulerState};
-use crate::sync::spinlock::{SpinLock, SpinLockGuard};
+use crate::sync::spinlock::SpinLockGuard;
 
 const LOG_CONTEXT_SWITCH: bool = false;
 const LOG_THREAD_CREATE: bool = false;
@@ -138,14 +138,6 @@ impl SchedulerContext for super::Arch {
 
     fn interrupts_enabled() -> bool {
         riscv::register::mstatus::read().mie()
-    }
-
-    fn get_scheduler_lock(
-        self,
-    ) -> &'static SpinLock<BareSpinLock, SchedulerState<ArchThreadState>> {
-        static LOCK: SpinLock<BareSpinLock, SchedulerState<ArchThreadState>> =
-            SpinLock::new(SchedulerState::new());
-        &LOCK
     }
 }
 

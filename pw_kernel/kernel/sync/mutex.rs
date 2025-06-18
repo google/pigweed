@@ -18,7 +18,7 @@ use core::ops::{Deref, DerefMut};
 use pw_status::Result;
 
 use crate::scheduler::thread::Thread;
-use crate::scheduler::{SchedulerContext, WaitQueueLock};
+use crate::scheduler::{SchedulerContext, SchedulerStateContext, WaitQueueLock};
 use crate::timer::Instant;
 
 const MUTEX_DEBUG: bool = false;
@@ -44,11 +44,11 @@ pub struct Mutex<C: SchedulerContext, T> {
 unsafe impl<C: SchedulerContext, T> Sync for Mutex<C, T> {}
 unsafe impl<C: SchedulerContext, T> Send for Mutex<C, T> {}
 
-pub struct MutexGuard<'lock, C: SchedulerContext, T> {
+pub struct MutexGuard<'lock, C: SchedulerStateContext, T> {
     lock: &'lock Mutex<C, T>,
 }
 
-impl<C: SchedulerContext, T> Deref for MutexGuard<'_, C, T> {
+impl<C: SchedulerStateContext, T> Deref for MutexGuard<'_, C, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -56,19 +56,19 @@ impl<C: SchedulerContext, T> Deref for MutexGuard<'_, C, T> {
     }
 }
 
-impl<C: SchedulerContext, T> DerefMut for MutexGuard<'_, C, T> {
+impl<C: SchedulerStateContext, T> DerefMut for MutexGuard<'_, C, T> {
     fn deref_mut(&mut self) -> &mut T {
         unsafe { &mut *self.lock.inner.get() }
     }
 }
 
-impl<C: SchedulerContext, T> Drop for MutexGuard<'_, C, T> {
+impl<C: SchedulerStateContext, T> Drop for MutexGuard<'_, C, T> {
     fn drop(&mut self) {
         self.lock.unlock();
     }
 }
 
-impl<C: SchedulerContext, T> Mutex<C, T> {
+impl<C: SchedulerStateContext, T> Mutex<C, T> {
     pub const fn new(ctx: C, initial_value: T) -> Self {
         Self {
             state: WaitQueueLock::new(

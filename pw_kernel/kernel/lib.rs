@@ -29,9 +29,10 @@ use kernel_config::{KernelConfig, KernelConfigInterface};
 pub use scheduler::thread::{Process, Stack, Thread};
 #[doc(hidden)]
 pub use scheduler::thread::{StackStorage, StackStorageExt};
-use scheduler::SchedulerContext as _;
-// Used by the `init_thread!` macro.
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
+// Used by the `init_thread!` macro.
+use scheduler::{SchedulerContext, SchedulerState, SchedulerStateContext as _};
+use sync::spinlock::SpinLock;
 pub use timer::{Clock, Duration};
 
 #[no_mangle]
@@ -40,7 +41,7 @@ pub extern "C" fn pw_assert_HandleFailure() -> ! {
     Arch::panic();
 }
 
-pub trait KernelContext: scheduler::SchedulerContext {
+pub trait KernelContext: SchedulerContext {
     type Clock: time::Clock;
 
     fn early_init() {}
@@ -49,6 +50,23 @@ pub trait KernelContext: scheduler::SchedulerContext {
     fn panic() -> ! {
         #[allow(clippy::empty_loop)]
         loop {}
+    }
+}
+
+pub trait KernelStateContext: SchedulerContext + KernelContext {
+    fn get_state(self) -> &'static KernelState<Self>;
+}
+
+pub struct KernelState<C: KernelStateContext> {
+    scheduler: SpinLock<C::BareSpinLock, SchedulerState<C::ThreadState>>,
+}
+
+impl<C: KernelStateContext> KernelState<C> {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            scheduler: SpinLock::new(SchedulerState::new()),
+        }
     }
 }
 

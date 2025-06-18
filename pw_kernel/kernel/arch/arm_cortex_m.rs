@@ -18,6 +18,8 @@ use cortex_m::peripheral::*;
 use pw_cast::CastInto as _;
 use pw_log::info;
 
+use crate::{KernelState, KernelStateContext};
+
 mod exceptions;
 pub mod protection;
 mod regs;
@@ -122,6 +124,13 @@ impl crate::KernelContext for Arch {
             asm!("bkpt");
         }
         loop {}
+    }
+}
+
+impl KernelStateContext for Arch {
+    fn get_state(self) -> &'static KernelState<Arch> {
+        static STATE: KernelState<Arch> = KernelState::new();
+        &STATE
     }
 }
 

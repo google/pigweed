@@ -15,6 +15,7 @@
 use core::arch::asm;
 
 use crate::scheduler::SchedulerContext as _;
+use crate::{KernelState, KernelStateContext};
 
 mod exceptions;
 pub mod protection;
@@ -46,5 +47,12 @@ impl crate::KernelContext for Arch {
         }
         #[allow(clippy::empty_loop)]
         loop {}
+    }
+}
+
+impl KernelStateContext for Arch {
+    fn get_state(self) -> &'static KernelState<Arch> {
+        static STATE: KernelState<Arch> = KernelState::new();
+        &STATE
     }
 }

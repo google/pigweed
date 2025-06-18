@@ -19,7 +19,7 @@ use core::ptr::NonNull;
 use pw_status::Result;
 
 use crate::scheduler::thread::ThreadState;
-use crate::scheduler::{SchedulerContext, SchedulerState, WaitQueue};
+use crate::scheduler::{SchedulerContext, SchedulerState, SchedulerStateContext, WaitQueue};
 use crate::sync::spinlock::SpinLockGuard;
 use crate::timer::Instant;
 
@@ -28,7 +28,7 @@ pub struct SmuggledSchedLock<C, T> {
     ctx: C,
 }
 
-impl<C: SchedulerContext, T> SmuggledSchedLock<C, T> {
+impl<C: SchedulerStateContext, T> SmuggledSchedLock<C, T> {
     /// # Safety
     /// The caller must guarantee that the underlying lock and it's enclosed data
     /// is still valid.
@@ -128,7 +128,7 @@ impl<C, T> SchedLock<C, T> {
     }
 }
 
-impl<C: SchedulerContext, T> SchedLock<C, T> {
+impl<C: SchedulerStateContext, T> SchedLock<C, T> {
     #[allow(unused)]
     pub fn try_lock(&self) -> Option<SchedLockGuard<'_, C, T>> {
         // Safety: The lock guarantees
@@ -161,7 +161,7 @@ pub struct WaitQueueLock<C: SchedulerContext, T> {
     state: SchedLock<C, WaitQueueLockState<C::ThreadState, T>>,
 }
 
-impl<C: SchedulerContext, T> WaitQueueLock<C, T> {
+impl<C: SchedulerStateContext, T> WaitQueueLock<C, T> {
     pub const fn new(ctx: C, initial_value: T) -> Self {
         Self {
             state: SchedLock::new(
@@ -185,7 +185,7 @@ pub struct WaitQueueLockGuard<'lock, C: SchedulerContext, T> {
     inner: SchedLockGuard<'lock, C, WaitQueueLockState<C::ThreadState, T>>,
 }
 
-impl<'lock, C: SchedulerContext, T> WaitQueueLockGuard<'lock, C, T> {
+impl<'lock, C: SchedulerStateContext, T> WaitQueueLockGuard<'lock, C, T> {
     pub fn sched(&self) -> &SpinLockGuard<'lock, C::BareSpinLock, SchedulerState<C::ThreadState>> {
         &self.inner.guard
     }

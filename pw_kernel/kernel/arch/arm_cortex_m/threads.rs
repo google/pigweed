@@ -29,8 +29,8 @@ use crate::arch::arm_cortex_m::spinlock::BareSpinLock;
 use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
 use crate::arch::{MemoryConfig as _, MemoryRegionType};
 use crate::scheduler::thread::Stack;
-use crate::scheduler::{self, SchedulerContext, SchedulerState};
-use crate::sync::spinlock::{SpinLock, SpinLockGuard};
+use crate::scheduler::{self, SchedulerContext, SchedulerState, SchedulerStateContext as _};
+use crate::sync::spinlock::SpinLockGuard;
 
 const STACK_ALIGNMENT: usize = 8;
 
@@ -160,14 +160,6 @@ impl SchedulerContext for Arch {
 
     fn idle() {
         cortex_m::asm::wfi();
-    }
-
-    fn get_scheduler_lock(
-        self,
-    ) -> &'static SpinLock<BareSpinLock, SchedulerState<ArchThreadState>> {
-        static LOCK: SpinLock<BareSpinLock, SchedulerState<ArchThreadState>> =
-            SpinLock::new(SchedulerState::new());
-        &LOCK
     }
 }
 
