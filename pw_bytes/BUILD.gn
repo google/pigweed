@@ -78,6 +78,7 @@ pw_test_group("tests") {
     ":byte_builder_test",
     ":endian_test",
     ":packed_ptr_test",
+    ":span_test",
     ":suffix_test",
     ":units_test",
   ]
@@ -116,6 +117,11 @@ pw_test("packed_ptr_test") {
   deps = [ ":packed_ptr" ]
   sources = [ "packed_ptr_test.cc" ]
   negative_compilation_tests = true
+}
+
+pw_test("span_test") {
+  deps = [ ":pw_bytes" ]
+  sources = [ "span_test.cc" ]
 }
 
 pw_test("suffix_test") {

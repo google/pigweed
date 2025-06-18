@@ -173,3 +173,7 @@ pw_bytes/span.h
 .. doxygentypedef:: pw::ByteSpan
 
 .. doxygentypedef:: pw::ConstByteSpan
+
+.. doxygenfunction:: pw::ObjectAsBytes
+
+.. doxygenfunction:: pw::ObjectAsWritableBytes
