@@ -20,6 +20,7 @@
 #include <type_traits>
 
 #include "pw_assert/check.h"
+#include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_grpc_private/hpack.h"
 #include "pw_log/log.h"
@@ -157,11 +158,6 @@ PW_PACKED(struct) WireFrameHeader {
   uint8_t flags;
   uint32_t stream_id;
 };
-
-template <typename T>
-ConstByteSpan AsBytes(T& object) {
-  return as_bytes(span<T, 1>{&object, 1});
-}
 
 }  // namespace
 
@@ -330,7 +326,7 @@ Status Connection::SharedState::SendData(StreamId stream_id,
       .flags = 0,
       .stream_id = stream_id,
   });
-  ConstByteSpan frame_span = AsBytes(frame);
+  ConstByteSpan frame_span = ObjectAsBytes(frame);
   std::copy(frame_span.begin(), frame_span.end(), chunk->begin());
 
   auto buffer = multibuf::MultiBuf::FromChunk(std::move(chunk));
@@ -361,7 +357,7 @@ Status Connection::SharedState::SendHeaders(StreamId stream_id,
     frame.flags |= FLAGS_END_STREAM;
   }
 
-  ConstByteSpan frame_span = AsBytes(frame);
+  ConstByteSpan frame_span = ObjectAsBytes(frame);
   std::optional<multibuf::MultiBuf> buffer =
       multibuf_allocator_.AllocateContiguous(frame_span.size() +
                                              payload1.size() + payload2.size());
@@ -402,7 +398,7 @@ Status Connection::SharedState::SendRstStream(StreamId stream_id,
       }),
       .error_code = ToNetworkOrder(code),
   };
-  return SendBytes(AsBytes(frame));
+  return SendBytes(ObjectAsBytes(frame));
 }
 
 // RFC 9113 §6.9
@@ -471,7 +467,7 @@ Status Connection::SharedState::SendSettingsAck() {
       .flags = FLAGS_ACK,
       .stream_id = 0,
   });
-  return SendBytes(AsBytes(frame));
+  return SendBytes(ObjectAsBytes(frame));
 }
 
 Status Connection::Writer::SendResponseMessage(StreamId stream_id,
@@ -664,7 +660,7 @@ Status Connection::Reader::ProcessConnectionPreface() {
 
   {
     auto state = connection_.LockState();
-    PW_TRY(state->SendBytes(AsBytes(server_frame)));
+    PW_TRY(state->SendBytes(ObjectAsBytes(server_frame)));
 
     // We must ack the client's SETTINGS frame *after* sending our SETTINGS.
     PW_TRY(state->SendSettingsAck());
@@ -1256,7 +1252,7 @@ Status Connection::Reader::ProcessPingFrame(const FrameHeader& frame) {
 
   {
     auto state = connection_.LockState();
-    PW_TRY(state->SendBytes(AsBytes(ack_frame)));
+    PW_TRY(state->SendBytes(ObjectAsBytes(ack_frame)));
   }
 
   return OkStatus();
@@ -1384,7 +1380,7 @@ void Connection::Reader::SendGoAway(Http2Error code) {
     // Close all open streams.
     state->ForAllStreams([this](Stream* stream) { CloseStream(stream); });
     // Ignore errors since we're about to close the connection anyway.
-    state->SendBytes(AsBytes(frame)).IgnoreError();
+    state->SendBytes(ObjectAsBytes(frame)).IgnoreError();
   }
 }
 
