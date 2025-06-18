@@ -14,12 +14,6 @@ modern software development practices.
 See :ref:`docs-python-build` for information about Python build automation with
 Pigweed.
 
-.. toctree::
-  :hidden:
-
-  bazel_compatibility
-  python_build
-
 What's in a build system?
 =========================
 A quality build system provides a variety of features beyond compiling code.
@@ -1019,3 +1013,10 @@ you just specify the ``--config`` on the command line:
 .. code-block:: console
 
    bazelisk build --config=m4 //:time_is_relative
+
+.. toctree::
+   :hidden:
+
+   self
+   bazel_compatibility
+   python_build

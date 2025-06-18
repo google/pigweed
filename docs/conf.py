@@ -188,7 +188,7 @@ if is_bazel_build:
 
 html_theme_options = {
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#navigation-bar-dropdown-links
-    'header_links_before_dropdown': 6,
+    'header_links_before_dropdown': 5,
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#icon-links
     'icon_links': [
         {
@@ -232,10 +232,13 @@ if 'LUCI_IS_TRY' in os.environ and os.environ['LUCI_IS_TRY'] == '1':
 # https://sphinx-sitemap.readthedocs.io/en/latest/getting-started.html#usage
 html_baseurl = 'https://pigweed.dev/'
 
-# Hide "Section Navigation" on homepage and changelog.
+# The lefthand "Section Navigation" section is empty for these docs. Hide it.
 html_sidebars = {
-    'index': [],
+    'automated_analysis': [],
     'changelog': [],
+    'docs/size_optimizations': [],
+    'index': [],
+    'docs/overview': [],
     'toolchain': [],
 }
 
@@ -270,6 +273,7 @@ htmlhelp_basename = 'Pigweeddoc'
 # assumes that the redirect will work, which may not be true during
 # local development.
 redirects = {
+    'docs/3p/index': '../index.html',
     'docs/contributing': './contributing/index.html',
     'docs/contributing/changelog': './docs/changelog.html',
     'docs/contributing/module_docs': './docs/modules.html',

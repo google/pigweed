@@ -63,7 +63,6 @@ sphinx_docs_library(
 sphinx_docs_library(
     name = "prefixed",
     srcs = [
-        "3p/index.rst",
         "_static/css/pigweed.css",
         "_static/js/changelog.js",
         "_static/js/pigweed.js",

@@ -1,11 +1,20 @@
 .. _docs-concepts:
 
-====================
-Overviews & concepts
-====================
-.. grid:: 1
+========
+Concepts
+========
+.. grid:: 2
 
-   .. grid-item-card:: :octicon:`info` Facades & Backends
+   .. grid-item-card:: :octicon:`heart` Mission & philosophies
+      :link: docs-mission
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Learn more about our mission to "create both software and process
+      foundations for sustained, robust, and rapid embedded product
+      development with large teams."
+
+   .. grid-item-card:: :octicon:`stack` Facades & backends
       :link: docs-facades
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
@@ -16,14 +25,14 @@ Overviews & concepts
 
 .. grid:: 2
 
-   .. grid-item-card:: :octicon:`info` FAQs
+   .. grid-item-card:: :octicon:`question` FAQs
       :link: docs-faq
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 
       Answers to general, frequently asked questions about Pigweed.
 
-   .. grid-item-card:: :octicon:`info` Glossary
+   .. grid-item-card:: :octicon:`book` Glossary
       :link: docs-glossary
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
@@ -35,10 +44,7 @@ Overviews & concepts
    :hidden:
 
    self
-   ../overview
    ../mission
    ../facades
-   ../size_optimizations
-   ../../automated_analysis
    ../glossary
    FAQs <../faq>

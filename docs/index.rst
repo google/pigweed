@@ -185,16 +185,20 @@ Talk to us
    :maxdepth: 1
    :hidden:
 
-   Home <self>
-   Tour <docs/showcases/sense/index>
+   docs/overview
    docs/get_started/index
-   What's new <changelog>
+   Tour <docs/showcases/sense/index>
    modules
    Contributing <docs/contributing/index>
-   Source code <https://cs.pigweed.dev/pigweed>
-   docs/showcases/index
    docs/concepts/index
+   build_system
+   targets
    Toolchain <toolchain>
-   docs/3p/index
+   docs/size_optimizations
+   automated_analysis
+   docs/os/index
+   third_party_support
+   docs/showcases/index
    docs/community/index
+   What's new <changelog>
    Blog <docs/blog/index>

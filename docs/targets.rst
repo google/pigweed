@@ -1,8 +1,8 @@
 .. _docs-targets:
 
-================
-Hardware targets
-================
+=======
+Targets
+=======
 Pigweed is designed to be portable to many different hardware platforms.
 Pigweed's GN build comes with an extensible target system that allows it to be
 configured to build for any number of platforms, which all build simultaneously.
@@ -97,11 +97,14 @@ Upstream targets
 ================
 The following is a list of targets used for upstream Pigweed development.
 
-.. toctree::
-  :maxdepth: 1
-  :glob:
+.. TODO: https://pwbug.dev/424897199 - Refactor this into a proper index page.
 
-  targets/*/target_docs
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   self
+   targets/*/target_docs
 
 Work-in-progress targets
 ------------------------
