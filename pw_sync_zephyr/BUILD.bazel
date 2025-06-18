@@ -26,3 +26,17 @@ sphinx_docs_library(
     prefix = "pw_sync_zephyr/",
     target_compatible_with = incompatible_with_mcu(),
 )
+
+# TODO: https://pwbug.dev/380001331 - Make this a zephyr_cc_library
+exports_files([
+    "binary_semaphore.cc",
+    "interrupt_spin_lock.cc",
+    "public/pw_sync_zephyr/binary_semaphore_inline.h",
+    "public/pw_sync_zephyr/binary_semaphore_native.h",
+    "public_overrides/pw_sync_backend/binary_semaphore_inline.h",
+    "public_overrides/pw_sync_backend/binary_semaphore_native.h",
+    "public/pw_sync_zephyr/interrupt_spin_lock_inline.h",
+    "public/pw_sync_zephyr/interrupt_spin_lock_native.h",
+    "public_overrides/pw_sync_backend/interrupt_spin_lock_inline.h",
+    "public_overrides/pw_sync_backend/interrupt_spin_lock_native.h",
+])
