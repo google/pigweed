@@ -280,5 +280,179 @@ TEST(ExpectedTest, MonadicOperation) {
             "no error");
 }
 
+class ExpectedVoidTest : public ::testing::Test {
+ protected:
+  constexpr static expected<void, int> kSuccess{};
+  constexpr static int kErrorValue = -5;
+  constexpr static int kRecoverableErrorValue = 5;
+
+  expected<void, int> Func1() {
+    ++func1_invocations;
+    if (func1_result.has_value()) {
+      return unexpected(*func1_result);
+    }
+    return kSuccess;
+  }
+
+  expected<void, int> Func2() {
+    ++func2_invocations;
+    if (func2_result.has_value()) {
+      return unexpected(*func2_result);
+    }
+    return kSuccess;
+  }
+
+  expected<void, int> Func3() {
+    ++func3_invocations;
+    if (func3_result.has_value()) {
+      return unexpected(*func3_result);
+    }
+    return kSuccess;
+  }
+
+  expected<void, int> RecoverIfNotNegative(int err) {
+    ++recover_if_not_negative_invocations;
+    if (err < 0) {
+      return unexpected(err);
+    }
+    return kSuccess;
+  }
+
+  void Func1Returns(std::optional<int> value) { func1_result = value; }
+  void Func2Returns(std::optional<int> value) { func2_result = value; }
+  void Func3Returns(std::optional<int> value) { func3_result = value; }
+
+  size_t CountFunc1Invocations() { return func1_invocations; }
+  size_t CountFunc2Invocations() { return func2_invocations; }
+  size_t CountFunc3Invocations() { return func3_invocations; }
+  size_t CountRecoverIfNotNegativeInvocations() {
+    return recover_if_not_negative_invocations;
+  }
+
+  template <typename Return, typename... Args>
+  auto Bind(Return (ExpectedVoidTest::*member_func)(Args...)) {
+    return [this, member_func](Args... args) {
+      return (this->*member_func)(args...);
+    };
+  }
+
+  expected<void, int> RunSequence() {
+    using Self = ExpectedVoidTest;
+    return Func1()
+        .and_then(Bind(&Self::Func2))
+        .and_then(Bind(&Self::Func3))
+        .or_else(Bind(&Self::RecoverIfNotNegative));
+  }
+
+ private:
+  std::optional<int> func1_result = std::nullopt;
+  std::optional<int> func2_result = std::nullopt;
+  std::optional<int> func3_result = std::nullopt;
+
+  size_t func1_invocations = 0;
+  size_t func2_invocations = 0;
+  size_t func3_invocations = 0;
+  size_t recover_if_not_negative_invocations = 0;
+};
+
+TEST_F(ExpectedVoidTest, VoidAllSuccess) {
+  EXPECT_TRUE(RunSequence().has_value());
+
+  EXPECT_EQ(1u, CountFunc1Invocations());
+  EXPECT_EQ(1u, CountFunc2Invocations());
+  EXPECT_EQ(1u, CountFunc3Invocations());
+  EXPECT_EQ(0u, CountRecoverIfNotNegativeInvocations());
+}
+
+TEST_F(ExpectedVoidTest, VoidOneFailureFirst) {
+  Func1Returns(kErrorValue);
+
+  auto result = RunSequence();
+  ASSERT_FALSE(result.has_value());
+  EXPECT_EQ(result.error(), kErrorValue);
+
+  EXPECT_EQ(1u, CountFunc1Invocations());
+  EXPECT_EQ(0u, CountFunc2Invocations());
+  EXPECT_EQ(0u, CountFunc3Invocations());
+  EXPECT_EQ(1u, CountRecoverIfNotNegativeInvocations());
+}
+
+TEST_F(ExpectedVoidTest, VoidOneFailureMiddle) {
+  Func2Returns(kErrorValue);
+
+  auto result = RunSequence();
+  ASSERT_FALSE(result.has_value());
+  EXPECT_EQ(result.error(), kErrorValue);
+
+  EXPECT_EQ(1u, CountFunc1Invocations());
+  EXPECT_EQ(1u, CountFunc2Invocations());
+  EXPECT_EQ(0u, CountFunc3Invocations());
+  EXPECT_EQ(1u, CountRecoverIfNotNegativeInvocations());
+}
+
+TEST_F(ExpectedVoidTest, VoidOneFailureLast) {
+  Func3Returns(kErrorValue);
+
+  auto result = RunSequence();
+  ASSERT_FALSE(result.has_value());
+  EXPECT_EQ(result.error(), kErrorValue);
+
+  EXPECT_EQ(1u, CountFunc1Invocations());
+  EXPECT_EQ(1u, CountFunc2Invocations());
+  EXPECT_EQ(1u, CountFunc3Invocations());
+  EXPECT_EQ(1u, CountRecoverIfNotNegativeInvocations());
+}
+
+TEST_F(ExpectedVoidTest, VoidOneFailureFirstRecovers) {
+  Func1Returns(kRecoverableErrorValue);
+
+  auto result = RunSequence();
+  EXPECT_TRUE(result.has_value());
+
+  EXPECT_EQ(1u, CountFunc1Invocations());
+  EXPECT_EQ(0u, CountFunc2Invocations());
+  EXPECT_EQ(0u, CountFunc3Invocations());
+  EXPECT_EQ(1u, CountRecoverIfNotNegativeInvocations());
+}
+
+TEST_F(ExpectedVoidTest, VoidOneFailureMiddleRecovers) {
+  Func2Returns(kRecoverableErrorValue);
+
+  auto result = RunSequence();
+  EXPECT_TRUE(result.has_value());
+
+  EXPECT_EQ(1u, CountFunc1Invocations());
+  EXPECT_EQ(1u, CountFunc2Invocations());
+  EXPECT_EQ(0u, CountFunc3Invocations());
+  EXPECT_EQ(1u, CountRecoverIfNotNegativeInvocations());
+}
+
+TEST_F(ExpectedVoidTest, VoidOneFailureLastRecovers) {
+  Func3Returns(kRecoverableErrorValue);
+
+  auto result = RunSequence();
+  EXPECT_TRUE(result.has_value());
+
+  EXPECT_EQ(1u, CountFunc1Invocations());
+  EXPECT_EQ(1u, CountFunc2Invocations());
+  EXPECT_EQ(1u, CountFunc3Invocations());
+  EXPECT_EQ(1u, CountRecoverIfNotNegativeInvocations());
+}
+
+TEST_F(ExpectedVoidTest, VoidTransform) {
+  auto result = expected<void, const char*>().transform([] { return 100; });
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(*result, 100);
+  EXPECT_EQ(result, 100);
+}
+
+TEST_F(ExpectedVoidTest, VoidTransformError) {
+  auto result = expected<void, int>(unexpect, 100).transform_error([](int x) {
+    return x * 2;
+  });
+  ASSERT_FALSE(result.has_value());
+  EXPECT_EQ(result.error(), 200);
+}
+
 }  // namespace
 }  // namespace pw
