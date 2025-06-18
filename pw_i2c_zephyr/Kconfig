@@ -12,21 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-name: pw_i2c_zephyr
-file-map:
-  test_resources/native_sim.conf: boards/native_sim.conf
-  test_resources/native_sim.overlay: boards/native_sim.overlay
-testcase:
-  common:
-    harness: gtest
-    timeout: 10
-    platform_allow:
-      - native_sim
-  tests:
-    pw_i2c.controller:
-      extra_configs:
-        - CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK=y
-        - CONFIG_PIGWEED_I2C=y
-        - CONFIG_PIGWEED_SYNC_MUTEX=y
-      extra_args:
-        - TEST_LIB=pw_i2c_zephyr.initiator_test
+menu "pw_thread"
+
+config PIGWEED_I2C
+  bool "Link the pw_i2c_zephyr module"
+  select PIGWED_SYNC_MUTEX
+  select PIGWEED_CHRONO_SYSTEM_CLOCK
+  help
+    Link the library allowing I2C instantiation for Zephyr drivers.
+
+endmenu

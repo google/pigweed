@@ -22,6 +22,7 @@ licenses(["notice"])
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "Kconfig",
         "docs.rst",
     ],
     prefix = "pw_i2c_zephyr/",
