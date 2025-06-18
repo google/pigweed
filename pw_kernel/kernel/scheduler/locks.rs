@@ -46,20 +46,24 @@ pub struct SchedLockGuard<'lock, T> {
 }
 
 impl<'lock, T> SchedLockGuard<'lock, T> {
+    #[must_use]
     pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
         &self.guard
     }
 
+    #[must_use]
     pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState> {
         &mut self.guard
     }
 
+    #[allow(clippy::return_self_not_must_use, clippy::must_use_candidate)]
     pub fn reschedule(self, current_thread_id: usize) -> Self {
         let inner = self.inner;
         let guard = super::reschedule(self.guard, current_thread_id);
         Self { guard, inner }
     }
 
+    #[allow(clippy::return_self_not_must_use, clippy::must_use_candidate)]
     pub fn try_reschedule(self) -> Self {
         let inner = self.inner;
         let guard = self.guard.try_reschedule();
@@ -69,6 +73,7 @@ impl<'lock, T> SchedLockGuard<'lock, T> {
     /// # Safety
     /// The caller must guarantee that the underlying lock remains valid and
     /// un-moved for the live the smuggled lock.
+    #[must_use]
     pub unsafe fn smuggle(&self) -> SmuggledSchedLock<T> {
         let inner: *const T = self.inner;
         SmuggledSchedLock {

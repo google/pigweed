@@ -54,7 +54,8 @@ build:k_lint --@rules_rust//rust/settings:clippy_flags="\
 -Dclippy::style,\
 -Dclippy::suspicious,\
 -Dclippy::unimplemented,\
--Dclippy::unnested_or_patterns"
+-Dclippy::unnested_or_patterns,\
+-Aclippy::new_without_default"
 
 # TODO: Deny the following lints:
 # - clippy::use_debug

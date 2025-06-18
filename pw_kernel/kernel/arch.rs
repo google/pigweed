@@ -35,8 +35,7 @@ use crate::sync::spinlock::SpinLockGuard;
 pub type ArchThreadState = <Arch as ArchInterface>::ThreadState;
 
 pub trait ThreadState {
-    #[allow(dead_code)]
-    fn new() -> Self;
+    const NEW: Self;
 
     // Switch to this thread.
     // sched_state: a locked spinlockguard for the main SCHEDULER_STATE struct.

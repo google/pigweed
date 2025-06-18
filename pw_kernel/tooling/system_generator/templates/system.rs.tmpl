@@ -30,16 +30,18 @@ pub fn start() {
             },
         ]);
 
-    let process_{{app_name}} = kernel::init_non_priv_process!("{{app.process.name}}", MEMORY_CONFIG_{{app_name | uppercase}});
+    let process_{{app_name}} = unsafe { kernel::init_non_priv_process!("{{app.process.name}}", MEMORY_CONFIG_{{app_name | uppercase}}) };
 {%- for thread in app.process.threads -%}
 {% set thread_index = loop.index0 %}
-    let thread_{{app_name}}_{{thread_index}} = kernel::init_non_priv_thread!(
-        "{{thread.name}}",
-        process_{{app_name}},
-        start_fn_{{app_name}},
-        {{app.initial_sp | to_hex}},
-        {{thread.stack_size_bytes}}
-    );
+    let thread_{{app_name}}_{{thread_index}} = unsafe {
+        kernel::init_non_priv_thread!(
+            "{{thread.name}}",
+            process_{{app_name}},
+            start_fn_{{app_name}},
+            {{app.initial_sp | to_hex}},
+            {{thread.stack_size_bytes}}
+        )
+    };
     kernel::start_thread(thread_{{app_name}}_{{thread_index}});
 {%- endfor -%}
 {%- endfor -%}

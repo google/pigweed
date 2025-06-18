@@ -20,11 +20,14 @@ use pw_log::info;
 use time::Clock as _;
 
 pub fn main() -> ! {
-    let thread_b = kernel::init_thread!(
-        "B",
-        test_thread_entry_b,
-        KernelConfig::KERNEL_STACK_SIZE_BYTES
-    );
+    // SAFETY: The `main` function thread is never executed more than once.
+    let thread_b = unsafe {
+        kernel::init_thread!(
+            "B",
+            test_thread_entry_b,
+            KernelConfig::KERNEL_STACK_SIZE_BYTES
+        )
+    };
     kernel::start_thread(thread_b);
 
     info!("Thread A re-using bootstrap thread");

@@ -13,15 +13,12 @@
 // the License.
 #![no_std]
 
-use core::cell::UnsafeCell;
-
-use foreign_box::ForeignBox;
 use pw_log::info;
 
 mod arch;
 #[cfg(not(feature = "std_panic_handler"))]
 mod panic;
-mod scheduler;
+pub mod scheduler;
 pub mod sync;
 mod syscall;
 mod target;
@@ -43,70 +40,7 @@ pub extern "C" fn pw_assert_HandleFailure() -> ! {
     Arch::panic();
 }
 
-// A structure intended to be statically allocated to hold a Thread structure that will
-// be constructed at run time.
-#[repr(C, align(4))]
-pub struct ThreadBuffer {
-    buffer: [u8; size_of::<Thread>()],
-}
-
-impl ThreadBuffer {
-    #[must_use]
-    pub const fn new() -> Self {
-        ThreadBuffer {
-            buffer: [0; size_of::<Thread>()],
-        }
-    }
-
-    // Create and new a thread out of the internal u8 buffer.
-    // TODO: figure out how to properly statically construct a thread or
-    // make sure this function can only be called once.
-    #[inline(never)]
-    pub fn alloc_thread(&mut self, name: &'static str) -> ForeignBox<Thread> {
-        pw_assert::eq!(
-            self.buffer.as_ptr().align_offset(align_of::<Thread>()) as usize,
-            0 as usize,
-        );
-        let thread_ptr = self.buffer.as_mut_ptr().cast::<Thread>();
-        unsafe {
-            thread_ptr.write(Thread::new(name));
-            ForeignBox::new_from_ptr(&mut *thread_ptr)
-        }
-    }
-}
-
-impl Default for ThreadBuffer {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 pub struct Kernel {}
-
-pub struct StaticProcess {
-    process_cell: UnsafeCell<Process>,
-}
-
-#[allow(dead_code)]
-impl StaticProcess {
-    #[must_use]
-    pub const fn new(
-        name: &'static str,
-        memory_config: <Arch as ArchInterface>::MemoryConfig,
-    ) -> Self {
-        Self {
-            process_cell: UnsafeCell::new(Process::new(name, memory_config)),
-        }
-    }
-
-    #[must_use]
-    pub fn get(&self) -> *mut Process {
-        self.process_cell.get()
-    }
-}
-
-unsafe impl Sync for StaticProcess {}
-unsafe impl Send for StaticProcess {}
 
 // Module re-exporting modules into a scope that can be referenced by macros
 // in this crate.
@@ -125,11 +59,14 @@ impl Kernel {
         // Prepare the scheduler for thread initialization.
         scheduler::initialize();
 
-        let bootstrap_thread = init_thread!(
-            "bootstrap",
-            bootstrap_thread_entry,
-            KernelConfig::KERNEL_STACK_SIZE_BYTES
-        );
+        // SAFETY: The `main` function thread is never executed more than once.
+        let bootstrap_thread = unsafe {
+            init_thread!(
+                "bootstrap",
+                bootstrap_thread_entry,
+                KernelConfig::KERNEL_STACK_SIZE_BYTES
+            )
+        };
         info!("created thread, bootstrapping");
 
         // special case where we bootstrap the system by half context switching to this thread
@@ -148,11 +85,14 @@ fn bootstrap_thread_entry(_arg: usize) {
 
     SCHEDULER_STATE.lock().dump_all_threads();
 
-    let idle_thread = init_thread!(
-        "idle",
-        idle_thread_entry,
-        KernelConfig::KERNEL_STACK_SIZE_BYTES
-    );
+    // SAFETY: The bootstrap thread is never executed more than once.
+    let idle_thread = unsafe {
+        init_thread!(
+            "idle",
+            idle_thread_entry,
+            KernelConfig::KERNEL_STACK_SIZE_BYTES
+        )
+    };
 
     SCHEDULER_STATE.lock().dump_all_threads();
 
@@ -167,4 +107,29 @@ fn idle_thread_entry(_arg: usize) {
     loop {
         Arch::idle();
     }
+}
+
+#[doc(hidden)]
+pub mod __private {
+    /// Takes a mutable reference to a global static.
+    ///
+    /// # Safety
+    ///
+    /// Each invocation of `static_mut_ref!` must be executed at most once at
+    /// run time.
+    #[doc(hidden)] // `#[macro_export]` bypasses this module's `#[doc(hidden)]`
+    #[macro_export]
+    macro_rules! static_mut_ref {
+        ($ty:ty = $value:expr) => {{
+            static mut __STATIC: $ty = $value;
+            // SAFETY: The caller promises that this macro will be executed at
+            // most once, and so taking a `&mut` reference to this global
+            // static, which is defined per-call site, will not violate
+            // aliasing.
+            #[allow(static_mut_refs)]
+            &mut __STATIC
+        }};
+    }
+
+    pub use foreign_box;
 }

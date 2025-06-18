@@ -26,7 +26,7 @@ use crate::sync::spinlock::{SpinLock, SpinLockGuard};
 use crate::timer::{Instant, TimerCallback, TimerQueue};
 
 mod locks;
-pub(crate) mod thread;
+pub mod thread;
 
 pub use locks::{SchedLockGuard, WaitQueueLock};
 
@@ -90,7 +90,7 @@ pub fn bootstrap_scheduler(mut thread: ForeignBox<Thread>) -> ! {
     info!("context switching to first thread");
 
     // Special case where we're switching from a non-thread to something real
-    let mut temp_arch_thread_state = ArchThreadState::new();
+    let mut temp_arch_thread_state = ArchThreadState::NEW;
     sched_state.current_arch_thread_state = &raw mut temp_arch_thread_state;
 
     reschedule(sched_state, Thread::null_id());
@@ -232,6 +232,10 @@ impl SchedulerState {
         thread
     }
 
+    /// # Safety
+    ///
+    /// This method has the same safety preconditions as
+    /// [`UnsafeList::push_front_unchecked`].
     #[allow(dead_code)]
     #[inline(never)]
     pub unsafe fn add_process_to_list(&mut self, process: *mut Process) {
@@ -401,6 +405,7 @@ unsafe impl Send for WaitQueue {}
 
 impl WaitQueue {
     #[allow(dead_code)]
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             queue: ForeignList::new(),
@@ -446,6 +451,7 @@ impl SchedLockGuard<'_, WaitQueue> {
         Some(Error::DeadlineExceeded)
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn wake_one(mut self) -> (Self, WakeResult) {
         let Some(mut thread) = self.queue.pop_head() else {
             return (self, WakeResult::QueueEmpty);
@@ -456,6 +462,7 @@ impl SchedLockGuard<'_, WaitQueue> {
         (self.try_reschedule(), WakeResult::Woken)
     }
 
+    #[allow(clippy::return_self_not_must_use, clippy::must_use_candidate)]
     pub fn wake_all(mut self) -> Self {
         loop {
             let result;
@@ -466,6 +473,7 @@ impl SchedLockGuard<'_, WaitQueue> {
         }
     }
 
+    #[allow(clippy::return_self_not_must_use, clippy::must_use_candidate)]
     pub fn wait(mut self) -> Self {
         let thread = self.sched_mut().take_current_thread();
         wait_queue_debug!("<{}> waiting", thread.name as &str);

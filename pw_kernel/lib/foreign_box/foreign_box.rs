@@ -111,6 +111,14 @@ impl<T: ?Sized> Drop for ForeignBox<T> {
     }
 }
 
+impl<T: ?Sized> From<&'static mut T> for ForeignBox<T> {
+    fn from(t: &'static mut T) -> ForeignBox<T> {
+        // SAFETY: The `'static` lifetime guarantees that `t`'s referent will
+        // remain valid for the lifetime of the returned `ForeignBox`.
+        unsafe { ForeignBox::new(NonNull::from(t)) }
+    }
+}
+
 impl<T: ?Sized> AsRef<T> for ForeignBox<T> {
     fn as_ref(&self) -> &T {
         unsafe { self.inner.as_ref() }

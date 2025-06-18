@@ -82,13 +82,11 @@ impl ArchThreadState {
 }
 
 impl super::super::ThreadState for ArchThreadState {
-    fn new() -> Self {
-        Self {
-            frame: core::ptr::null_mut(),
-            #[cfg(feature = "user_space")]
-            memory_config: core::ptr::null(),
-        }
-    }
+    const NEW: Self = Self {
+        frame: core::ptr::null_mut(),
+        #[cfg(feature = "user_space")]
+        memory_config: core::ptr::null(),
+    };
 
     #[inline(never)]
     unsafe fn context_switch<'a>(

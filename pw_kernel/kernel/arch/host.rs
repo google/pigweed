@@ -25,9 +25,7 @@ mod spinlock;
 pub struct ThreadState {}
 
 impl super::ThreadState for ThreadState {
-    fn new() -> Self {
-        Self {}
-    }
+    const NEW: Self = Self {};
 
     unsafe fn context_switch(
         mut _sched_state: SpinLockGuard<'_, SchedulerState>,

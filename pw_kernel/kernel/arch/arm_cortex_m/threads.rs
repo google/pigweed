@@ -19,7 +19,6 @@ use cortex_m::peripheral::SCB;
 use pw_cast::CastInto as _;
 use pw_status::{Error, Result};
 
-// use pw_log::info;
 use crate::arch::arm_cortex_m::exceptions::{
     exception, ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking,
     ExcReturnStack, ExceptionFrame, KernelExceptionFrame, RetPsrVal,
@@ -84,12 +83,10 @@ impl ArchThreadState {
 }
 
 impl super::super::ThreadState for ArchThreadState {
-    fn new() -> Self {
-        Self {
-            frame: core::ptr::null_mut(),
-            memory_config: core::ptr::null(),
-        }
-    }
+    const NEW: Self = Self {
+        frame: core::ptr::null_mut(),
+        memory_config: core::ptr::null(),
+    };
 
     unsafe fn context_switch<'a>(
         mut sched_state: SpinLockGuard<'a, SchedulerState>,

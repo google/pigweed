@@ -238,14 +238,14 @@ list::define_adapter!(pub ProcessThreadListAdapter => Thread.process_link);
 impl Thread {
     // Create an empty, uninitialzed thread
     #[must_use]
-    pub fn new(name: &'static str) -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Thread {
             process_link: Link::new(),
             active_link: Link::new(),
             process: core::ptr::null_mut(),
             state: State::New,
             preempt_disable_count: 0,
-            arch_thread_state: UnsafeCell::new(ThreadState::new()),
+            arch_thread_state: UnsafeCell::new(ThreadState::NEW),
             stack: Stack::new(),
             name,
         }
@@ -376,102 +376,132 @@ impl Thread {
     }
 }
 
+/// Constructs a new [`Thread`] in global static storage.
+///
+/// # Safety
+///
+/// Each invocation of `init_thread!` must be executed at most once at run time.
 // TODO: davidroth - Add const assertions to ensure stack sizes aren't too
-// small, once the sizing analysis has been done to understand what a
-// reasonable minimum is.
+// small, once the sizing analysis has been done to understand what a reasonable
+// minimum is.
 #[macro_export]
 macro_rules! init_thread {
-    ($name:literal, $entry:expr, $stack_size:expr) => {{
-        info!("allocating thread: {}", $name as &'static str);
-        use $crate::{Stack, ThreadBuffer};
-        let mut thread = {
-            static mut THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
-            #[allow(static_mut_refs)]
-            unsafe {
-                THREAD_BUFFER.alloc_thread($name)
-            }
-        };
+    ($name:literal, $entry:expr, $stack_size:expr $(,)?) => {{
+        use $crate::__private::foreign_box::ForeignBox;
+        use $crate::scheduler::thread::{Stack, StackStorage, StackStorageExt, Thread};
+        use $crate::static_mut_ref;
 
-        info!("initializing thread: {}", $name as &'static str);
-        thread.initialize_kernel_thread(
-            {
-                static mut STACK_STORAGE: $crate::StackStorage<{ $stack_size }> =
-                    $crate::StackStorageExt::ZEROED;
-                #[allow(static_mut_refs)]
-                unsafe {
-                    Stack::from_slice(&STACK_STORAGE)
-                }
-            },
-            $entry,
-            0,
-        );
+        /// SAFETY: This must be executed at most once at run time.
+        unsafe fn __init_thread() -> ForeignBox<Thread> {
+            info!("allocating thread: {}", $name as &'static str);
+            // SAFETY: The caller promises that this function will be executed
+            // at most once.
+            let thread = unsafe { static_mut_ref!(Thread = Thread::new($name)) };
+            let mut thread = ForeignBox::from(thread);
 
-        thread
+            info!("initializing thread: {}", $name as &'static str);
+            thread.initialize_kernel_thread(
+                // SAFETY: The caller promises that this function will be
+                // executed at most once.
+                Stack::from_slice(unsafe { static_mut_ref!(StackStorage<{ $stack_size }> = StackStorageExt::ZEROED)}),
+                $entry,
+                0,
+            );
+
+            thread
+        }
+
+        __init_thread()
     }};
 }
 
+/// Constructs a new [`Process`] in global static storage and registers it.
+///
+/// # Safety
+///
+/// Each invocation of `init_non_priv_process!` must be executed at most once at
+/// run time.
 #[cfg(feature = "user_space")]
 #[macro_export]
 macro_rules! init_non_priv_process {
     ($name:literal, $memory_config:expr) => {{
-        use kernel::StaticProcess;
-        use pw_log::info;
-        info!(
-            "allocating non-privileged process: {}",
-            $name as &'static str
-        );
+        use $crate::scheduler::thread::Process;
 
-        static PROCESS: StaticProcess = StaticProcess::new($name, $memory_config);
-        unsafe { (*PROCESS.get()).register() };
-        &PROCESS
+        /// SAFETY: This must be executed at most once at run time.
+        unsafe fn __init_non_priv_process() -> &'static mut Process {
+            use pw_log::info;
+            info!(
+                "allocating non-privileged process: {}",
+                $name as &'static str
+            );
+
+            // SAFETY: The caller promises that this function will be executed
+            // at most once.
+            let proc =
+                unsafe { $crate::static_mut_ref!(Process = Process::new($name, $memory_config)) };
+            proc.register();
+            proc
+        }
+
+        __init_non_priv_process()
     }};
 }
 
+/// Constructs a new [`Thread`] in global static storage and registers it.
+///
+/// # Safety
+///
+/// Each invocation of `init_non_priv_thread!` must be executed at most once at
+/// run time.
 #[cfg(feature = "user_space")]
 #[macro_export]
 macro_rules! init_non_priv_thread {
     ($name:literal, $process:expr, $entry:expr, $initial_sp:expr, $kernel_stack_size:expr) => {{
-        use pw_log::info;
-        info!(
-            "allocating non-privileged thread: {}, entry {:#x}",
-            $name as &'static str, $entry as usize
-        );
-        use $crate::{Stack, ThreadBuffer};
-        let mut thread = {
-            static mut THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
-            #[allow(static_mut_refs)]
-            unsafe {
-                THREAD_BUFFER.alloc_thread($name)
-            }
-        };
+        use $crate::static_mut_ref;
+        use $crate::__private::foreign_box::ForeignBox;
+        use $crate::scheduler::thread::{Process, Stack, StackStorage, StackStorageExt, Thread};
 
-        info!(
-            "initializing non-privileged thread: {}",
-            $name as &'static str
-        );
-        unsafe {
-            if let Err(e) = thread.initialize_non_priv_thread(
-                {
-                    static mut STACK_STORAGE: $crate::StackStorage<{ $kernel_stack_size }> =
-                        $crate::StackStorageExt::ZEROED;
-                    #[allow(static_mut_refs)]
-                    unsafe {
-                        Stack::from_slice(&STACK_STORAGE)
-                    }
-                },
-                $initial_sp,
-                $process.get(),
-                $entry,
-                0,
-            ) {
-                $crate::macro_exports::pw_assert::panic!(
-                    "Error initializing thread: {}: {}",
-                    $name as &'static str,
-                    e as u32
-                );
+        /// SAFETY: This must be executed at most once at run time.
+        unsafe fn __init_non_priv_thread(
+            proc: &mut Process,
+            entry: usize,
+            initial_sp: usize,
+        ) -> ForeignBox<Thread> {
+            use pw_log::info;
+            info!(
+                "allocating non-privileged thread: {}, entry {:#x}",
+                $name as &'static str, entry as usize
+            );
+            // SAFETY: The caller promises that this function will be executed
+            // at most once.
+            let thread = unsafe { static_mut_ref!(Thread = Thread::new($name)) };
+            let mut thread = ForeignBox::from(thread);
+
+            info!(
+                "initializing non-privileged thread: {}",
+                $name as &'static str
+            );
+            unsafe {
+                if let Err(e) = thread.initialize_non_priv_thread(
+                    // SAFETY: The caller promises that this function will be
+                    // executed at most once.
+                    Stack::from_slice(unsafe { static_mut_ref!(StackStorage<{ $kernel_stack_size }> = StackStorageExt::ZEROED)}),
+                    initial_sp,
+                    proc,
+                    entry,
+                    0,
+                ) {
+                    $crate::macro_exports::pw_assert::panic!(
+                        "Error initializing thread: {}: {}",
+                        $name as &'static str,
+                        e as u32
+                    );
+                }
             }
+
+            thread
         }
 
-        thread
+        __init_non_priv_thread($process, $entry, $initial_sp)
     }};
 }
