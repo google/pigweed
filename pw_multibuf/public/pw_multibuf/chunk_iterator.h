@@ -47,6 +47,7 @@ class ChunkIterator {
                                    DynamicDeque<Entry, SizeType>>;
 
  public:
+  using size_type = SizeType;
   using difference_type = std::ptrdiff_t;
   using value_type = SpanType;
   using pointer = value_type*;
@@ -124,7 +125,7 @@ class ChunkIterator {
   template <typename, bool>
   friend class ByteIterator;
 
-  constexpr ChunkIterator(Deque* deque, uint16_t depth, uint16_t index)
+  constexpr ChunkIterator(Deque* deque, size_type depth, size_type index)
       : deque_(deque), depth_(depth), index_(index) {
     ResetCurrent();
   }
@@ -134,20 +135,20 @@ class ChunkIterator {
   }
 
   // constexpr ByteType* data() const { return data(index_); }
-  constexpr ByteType* data(uint16_t index) const {
+  constexpr ByteType* data(size_type index) const {
     return (*deque_)[index].data + (*deque_)[index + depth_ - 1].view.offset;
   }
 
   // constexpr size_t size() const { return size(index_); }
-  constexpr size_t size(uint16_t index) const {
+  constexpr size_t size(size_type index) const {
     return (*deque_)[index + depth_ - 1].view.length;
   }
 
   constexpr void ResetCurrent();
 
   Deque* deque_ = nullptr;
-  uint16_t depth_ = 0;
-  uint16_t index_ = 0;
+  size_type depth_ = 0;
+  size_type index_ = 0;
   SpanType current_;
 };
 
@@ -163,17 +164,21 @@ class ChunksImpl {
 
   constexpr ChunksImpl() = default;
 
-  constexpr const_iterator cbegin() const { return Derived::begin(); }
-  constexpr const_iterator cend() const { return Derived::end(); }
+  constexpr const_iterator cbegin() const { return derived().begin(); }
+  constexpr const_iterator cend() const { return derived().end(); }
 
  protected:
   constexpr void Init(Deque& deque, size_type depth) {
-    auto* derived = static_cast<Derived*>(this);
-    derived->begin_.deque_ = &deque;
-    derived->begin_.depth_ = depth;
-    derived->end_.deque_ = &deque;
-    derived->end_.depth_ = depth;
-    derived->end_.index_ = deque.size();
+    derived().begin_.deque_ = &deque;
+    derived().begin_.depth_ = depth;
+    derived().end_.deque_ = &deque;
+    derived().end_.depth_ = depth;
+    derived().end_.index_ = deque.size();
+  }
+
+  constexpr Derived& derived() { return static_cast<Derived&>(*this); }
+  constexpr const Derived& derived() const {
+    return static_cast<const Derived&>(*this);
   }
 };
 
@@ -201,6 +206,7 @@ class Chunks
   using typename Base::const_iterator;
   using typename Base::difference_type;
   using typename Base::iterator;
+  using typename Base::size_type;
   using typename Base::value_type;
 
   constexpr Chunks() = default;
@@ -211,11 +217,12 @@ class Chunks
  private:
   template <typename, typename>
   friend class ChunksImpl;
+  friend class GenericMultiBuf;
 
   // For unit testing.
   friend class IteratorTest;
 
-  constexpr Chunks(Deque& deque, uint16_t depth) { Base::Init(deque, depth); }
+  constexpr Chunks(Deque& deque, size_type depth) { Base::Init(deque, depth); }
 
   iterator begin_;
   iterator end_;
@@ -244,6 +251,7 @@ class ConstChunks : public internal::ChunksImpl<
  public:
   using typename Base::const_iterator;
   using typename Base::difference_type;
+  using typename Base::size_type;
   using typename Base::value_type;
 
   constexpr ConstChunks() = default;
@@ -253,9 +261,10 @@ class ConstChunks : public internal::ChunksImpl<
 
  private:
   template <typename, typename>
-  friend class internal::ChunksImpl;
+  friend class ChunksImpl;
+  friend class GenericMultiBuf;
 
-  constexpr ConstChunks(Deque& deque, uint16_t depth) {
+  constexpr ConstChunks(Deque& deque, size_type depth) {
     Base::Init(deque, depth);
   }
 
@@ -312,7 +321,7 @@ constexpr void ChunkIterator<SizeType, kIsConst>::ResetCurrent() {
     return;
   }
   current_ = SpanType(data(index_), size(index_));
-  for (uint16_t i = index_; i < deque_->size() - depth_; i += depth_) {
+  for (size_type i = index_; i < deque_->size() - depth_; i += depth_) {
     SpanType next(data(i + depth_), size(i + depth_));
     if (current_.empty()) {
       current_ = next;

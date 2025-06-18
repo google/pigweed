@@ -19,6 +19,7 @@
 #if PW_ALLOCATOR_HAS_ATOMICS
 
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 
 #include "pw_allocator/deallocator.h"
@@ -28,9 +29,18 @@
 
 namespace pw {
 
-// Forward declaration.
+// Forward declarations.
 template <typename T>
 class WeakPtr;
+
+namespace multibuf {
+
+enum class Property : uint8_t;
+
+template <Property...>
+class BasicMultiBuf;
+
+}  // namespace multibuf
 
 /// A `std::shared_ptr<T>`-like type that integrates with `pw::Allocator`.
 ///
@@ -176,6 +186,10 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   // Allow WeakPtr<T> to promote to a SharedPtr<T>.
   template <typename>
   friend class WeakPtr;
+
+  // Allow MultiBufs to decompose SharedPtr<T>.
+  template <multibuf::Property...>
+  friend class multibuf::BasicMultiBuf;
 
   /// Constructs and object of type `T` from the given `args`, and wraps it in a
   /// `SharedPtr`

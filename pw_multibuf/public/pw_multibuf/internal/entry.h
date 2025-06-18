@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace pw::multibuf::internal {
 
@@ -30,16 +31,53 @@ namespace pw::multibuf::internal {
 ///  * The second entry holds a zero offset and the whole frame length.
 ///  * The third entry holds the offset and length describing the IP data.
 ///  * The fourth entry holds the offset and length describing the TCP data.
-///
-/// The boundary flag is set when adding an entry or consolidating several
-/// entries in a new layer. It is used to determine how many entries represent
-/// a packet or message fragment at a particular protocol layer.
 union Entry {
+  /// Entries fit in a single word on 32-bit platforms and larger. Fields are
+  /// ordered in such a way to ensure this is true on supported platforms.
+  using size_type = uint16_t;
+
+  /// Offset and length must fit in 15 bits.
+  static constexpr size_t kMaxSize = ~(1U << 15);
+
+  /// Pointer to memory.
   std::byte* data;
+
+  /// The first entry after the data
+  struct BaseView {
+    /// Starting offset within the buffer of the data to present.
+    size_type offset : 15;
+
+    /// Indicates this memory is "owned", i.e. it should be deallocated when the
+    /// entry goes out of scope.
+    size_type owned : 1;
+
+    /// Amount of data from the buffer to present.
+    size_type length : 15;
+
+    /// Indicates this memory is "shared", i.e. there may be other references to
+    /// it.
+    size_type shared : 1;
+  } base_view;
+
+  /// Each of the `depth - 2` subsequent entries describe the view of that data
+  /// that makes up part of a MultiBuf "layer".
   struct View {
-    uint16_t offset;
-    uint16_t length : 15;
-    uint16_t boundary : 1;
+    /// Starting offset within the buffer of the data to present.
+    size_type offset : 15;
+
+    /// Flag that is set when a layer should not be modified or removed. This
+    /// can be used by lower levels of a protocol stack to indicate that upper
+    /// or application layers should not modify data. This is informational and
+    /// bypassable, and so should not be considered a security mechanism.
+    size_type sealed : 1;
+
+    /// Amount of data from the buffer to present.
+    size_type length : 15;
+
+    /// Flag that is set when adding an entry or consolidating several entries
+    /// in a new layer. It is used to determine how many entries represent a
+    /// packet or message fragment at a particular protocol layer.
+    size_type boundary : 1;
   } view;
 };
 

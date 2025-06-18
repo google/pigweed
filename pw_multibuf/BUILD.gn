@@ -329,6 +329,41 @@ pw_source_set("iterator_testing") {
   ]
 }
 
+pw_source_set("multibuf_v2") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_multibuf/multibuf_v2.h",
+    "public/pw_multibuf/observer.h",
+    "public/pw_multibuf/properties.h",
+  ]
+  public_deps = [
+    ":byte_iterator",
+    ":chunk_iterator",
+    "$dir_pw_containers:dynamic_deque",
+    dir_pw_allocator,
+    dir_pw_bytes,
+  ]
+  sources = [ "multibuf_v2.cc" ]
+  deps = [ "$dir_pw_assert:check" ]
+}
+
+pw_test("multibuf_v2_test") {
+  sources = [ "multibuf_v2_test.cc" ]
+  deps = [
+    ":byte_iterator",
+    ":chunk",
+    ":chunk_iterator",
+    ":multibuf_v2",
+    "$dir_pw_allocator:chunk_pool",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_assert:check",
+    dir_pw_bytes,
+    dir_pw_result,
+    dir_pw_status,
+  ]
+  negative_compilation_tests = true
+}
+
 ## Test group
 
 pw_test_group("tests") {
@@ -345,5 +380,6 @@ pw_test_group("tests") {
     # v2 tests
     ":byte_iterator_test",
     ":chunk_iterator_test",
+    ":multibuf_v2_test",
   ]
 }

@@ -44,9 +44,21 @@ data which are one of the following:
   especially useful when working in systems that are latency-sensitive,
   need to pass large amounts of data, or when memory usage is constrained.
 
--------------
+---------------------------
+Why are there two versions?
+---------------------------
+We are currently investigating an alternate approach that keeps many of the
+aspects described above, while separating out the concern of memory allocation
+and instead using ``MultiBuf`` to present different logical, span-like views of
+sequences of buffers. This version is currently experimental, but we welcome
+feedback on the direction it is taking!
+
+-----------
+MultiBuf v1
+-----------
+
 API Reference
--------------
+=============
 Most users of ``pw_multibuf`` will start by allocating a ``MultiBuf`` using
 a ``MultiBufAllocator`` class, such as the ``SimpleAllocator``.
 
@@ -89,13 +101,12 @@ iterator available through the ``Chunks()`` method. It allows extracting a
    :members:
 
 Test-only features
-==================
+------------------
 .. doxygenclass:: pw::multibuf::test::SimpleAllocatorForTest
    :members:
 
----------------------------
 Allocator Implementors' API
----------------------------
+===========================
 Some users will need to directly implement the ``MultiBufAllocator`` interface
 in order to provide allocation out of a particular region, provide particular
 allocation policy, fix Chunks to some size (such as MTU size - header for
@@ -122,4 +133,23 @@ provided memory view to create a single chunk. This is useful when a single
 the provided memory and know when a new ``Chunk`` can be requested.
 
 .. doxygenclass:: pw::multibuf::SingleChunkRegionTracker
+   :members:
+
+-----------
+MultiBuf v2
+-----------
+Everything in this section is experimental and subject to change without
+warning!
+
+API Reference
+=============
+.. doxygenclass:: pw::multibuf::BasicMultiBuf
+   :members:
+
+.. doxygenenum:: pw::multibuf::Property
+
+.. doxygenclass:: pw::multibuf::Instance
+   :members:
+
+.. doxygenclass:: pw::multibuf::Observer
    :members:

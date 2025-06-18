@@ -405,6 +405,48 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "multibuf_v2",
+    srcs = ["multibuf_v2.cc"],
+    hdrs = [
+        "public/pw_multibuf/multibuf_v2.h",
+        "public/pw_multibuf/observer.h",
+        "public/pw_multibuf/properties.h",
+    ],
+    implementation_deps = [
+        "//pw_assert:check",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":byte_iterator",
+        ":chunk_iterator",
+        "//pw_allocator",
+        "//pw_bytes",
+        "//pw_containers:dynamic_deque",
+    ],
+)
+
+pw_cc_test(
+    name = "multibuf_v2_test",
+    srcs = [
+        "multibuf_v2_test.cc",
+    ],
+    deps = [
+        ":byte_iterator",
+        ":chunk",
+        ":chunk_iterator",
+        ":multibuf_v2",
+        "//pw_allocator:chunk_pool",
+        "//pw_allocator:testing",
+        "//pw_assert:check",
+        "//pw_bytes",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
 ## Docs
 
 filegroup(
@@ -417,6 +459,9 @@ filegroup(
         "public/pw_multibuf/from_span.h",
         "public/pw_multibuf/header_chunk_region_tracker.h",
         "public/pw_multibuf/multibuf_v1.h",
+        "public/pw_multibuf/multibuf_v2.h",
+        "public/pw_multibuf/observer.h",
+        "public/pw_multibuf/properties.h",
         "public/pw_multibuf/simple_allocator.h",
         "public/pw_multibuf/simple_allocator_for_test.h",
         "public/pw_multibuf/single_chunk_region_tracker.h",

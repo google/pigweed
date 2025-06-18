@@ -22,12 +22,9 @@
 #include "pw_multibuf/chunk_iterator.h"
 #include "pw_multibuf/internal/entry.h"
 
-namespace pw {
+namespace pw::multibuf::internal {
 
-// Forward declaration.
-class MultiBuf;
-
-namespace multibuf::internal {
+class GenericMultiBuf;
 
 /// Type for iterating over the bytes in a multibuf.
 ///
@@ -82,7 +79,7 @@ class ByteIterator {
       delta -= chunk_->size();
       ++chunk_;
     }
-    offset_ = static_cast<uint16_t>(delta);
+    offset_ = delta;
     return *this;
   }
 
@@ -107,12 +104,12 @@ class ByteIterator {
       return operator+=(-n);
     }
     size_t delta = static_cast<size_t>(n);
-    while (delta > size_t{offset_}) {
+    while (delta > offset_) {
       --chunk_;
       delta -= offset_;
-      offset_ = static_cast<uint16_t>(chunk_->size());
+      offset_ = chunk_->size();
     }
-    offset_ -= static_cast<uint16_t>(delta);
+    offset_ -= delta;
     return *this;
   }
 
@@ -127,14 +124,14 @@ class ByteIterator {
     }
     difference_type delta = 0;
     auto chunk = rhs.chunk_;
-    uint16_t offset = rhs.offset_;
+    size_t offset = rhs.offset_;
     while (chunk != lhs.chunk_) {
       ConstByteSpan bytes = *chunk;
       delta += bytes.size() - offset;
       offset = 0;
       ++chunk;
     }
-    return delta + lhs.offset_;
+    return delta + static_cast<difference_type>(lhs.offset_);
   }
 
   constexpr friend bool operator==(const ByteIterator& lhs,
@@ -172,11 +169,16 @@ class ByteIterator {
   template <typename, bool>
   friend class ByteIterator;
 
+  // Allow MultiBufs to create iterators.
+  friend class GenericMultiBuf;
+
   // For unit testing.
   friend class IteratorTest;
 
-  constexpr ByteIterator(ChunkIteratorType chunk, uint16_t offset)
+  constexpr ByteIterator(ChunkIteratorType chunk, size_t offset)
       : chunk_(chunk), offset_(offset) {}
+
+  constexpr size_type chunk_index() const { return chunk_.index_; }
 
   // Compare using a method to allow access to the befriended ChunkIterator.
   constexpr int Compare(const ByteIterator& other) const {
@@ -190,8 +192,7 @@ class ByteIterator {
   }
 
   ChunkIteratorType chunk_;
-  uint16_t offset_ = 0;
+  size_t offset_ = 0;
 };
 
-}  // namespace multibuf::internal
-}  // namespace pw
+}  // namespace pw::multibuf::internal

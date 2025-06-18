@@ -57,9 +57,22 @@ class IteratorTest : public ::testing::Test {
           for (size_t j = 0; j < kBufSize; ++j) {
             entry.data[j] = std::byte(j);
           }
+        } else if (row == 1) {
+          auto [offset, length] = kViews[row - 1][col];
+          entry.base_view = {
+              .offset = offset,
+              .owned = false,
+              .length = length,
+              .shared = false,
+          };
         } else {
           auto [offset, length] = kViews[row - 1][col];
-          entry.view = {offset, length, true};
+          entry.view = {
+              .offset = offset,
+              .sealed = false,
+              .length = length,
+              .boundary = true,
+          };
         }
         deque_.push_back(entry);
       }

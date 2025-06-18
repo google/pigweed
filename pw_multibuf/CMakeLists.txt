@@ -363,3 +363,42 @@ pw_add_library(pw_multibuf.iterator_testing INTERFACE
     pw_multibuf.chunk_iterator
     pw_unit_test
 )
+
+pw_add_library(pw_multibuf.multibuf_v2 STATIC
+  HEADERS
+    public/pw_multibuf/multibuf_v2.h
+    public/pw_multibuf/observer.h
+    public/pw_multibuf/properties.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator
+    pw_bytes
+    pw_containers.dynamic_deque
+    pw_multibuf.chunk_iterator
+    pw_multibuf.byte_iterator
+  SOURCES
+    multibuf_v2.cc
+  PRIVATE_DEPS
+    pw_assert.check
+)
+
+pw_add_test(pw_multibuf.multibuf_v2_test
+  SOURCES
+    multibuf_v2_test.cc
+  PRIVATE_DEPS
+    pw_allocator.chunk_pool
+    pw_allocator.testing
+    pw_assert.check
+    pw_bytes
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_multibuf.byte_iterator
+    pw_multibuf.chunk
+    pw_multibuf.chunk_iterator
+    pw_multibuf.multibuf_v2
+    pw_result
+    pw_status
+  GROUPS
+    modules
+    pw_multibuf
+)
