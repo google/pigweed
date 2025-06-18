@@ -55,9 +55,6 @@
   TEST_FOR_TYPE(suite, name, u64, uint64_t) \
   TEST_FOR_TYPE(suite, name, i64, int64_t)
 
-#define STATIC_ASSERT_EXTENT(spanvar, n) \
-  static_assert(decltype(spanvar)::extent == n)
-
 namespace {
 
 template <class T>
@@ -114,16 +111,16 @@ void SpanCastRoundTripStaticExtent() {
   // or pw::ByteSpan, which are always of a dynamic extent!
 
   auto t_span = pw::span(t_array);
-  STATIC_ASSERT_EXTENT(t_span, kNumElem);  // Ensure static extent
+  static_assert(t_span.extent == kNumElem);  // Ensure static extent
 
   auto byte_span = pw::as_writable_bytes(t_span);
-  STATIC_ASSERT_EXTENT(byte_span, kNumBytes);  // Ensure static extent
+  static_assert(byte_span.extent == kNumBytes);  // Ensure static extent
 
   // Everything above is actually out of scope for this test...
   // Now verify the UUT span_cast<T>...
 
   auto t_span2 = pw::span_cast<T>(byte_span);
-  STATIC_ASSERT_EXTENT(t_span2, kNumElem);  // Ensure proper static extent
+  static_assert(t_span2.extent == kNumElem);  // Ensure proper static extent
 }
 
 template <class T>
@@ -137,17 +134,17 @@ void SpanCastRoundTripStaticExtentConst() {
   // or pw::ConstByteSpan, which are always of a dynamic extent!
 
   auto t_span = pw::span(t_array);
-  STATIC_ASSERT_EXTENT(t_span, kNumElem);  // Ensure static extent
+  static_assert(t_span.extent == kNumElem);  // Ensure static extent
 
   auto byte_span = pw::as_bytes(t_span);
-  STATIC_ASSERT_EXTENT(byte_span, kNumBytes);  // Ensure static extent
+  static_assert(byte_span.extent == kNumBytes);  // Ensure static extent
 
   // The static_asert_extent checks above are actually out of scope for this
   // test, but we check them to ensure the proper setup for the test below.
   // Now verify the UUT span_cast<T>.
 
   auto t_span2 = pw::span_cast<const T>(byte_span);
-  STATIC_ASSERT_EXTENT(t_span2, kNumElem);  // Ensure proper static extent
+  static_assert(t_span2.extent == kNumElem);  // Ensure proper static extent
 }
 
 struct MixedBag {
