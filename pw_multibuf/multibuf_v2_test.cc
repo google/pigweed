@@ -35,11 +35,14 @@ using ::pw::multibuf::ConstMultiBuf;
 using ::pw::multibuf::ConstMultiBufInstance;
 using ::pw::multibuf::MultiBuf;
 using ::pw::multibuf::MultiBufInstance;
+using ::pw::multibuf::TrackedMultiBuf;
+using ::pw::multibuf::TrackedMultiBufInstance;
+using Event = ::pw::multibuf::Observer::Event;
 
 constexpr size_t kN = 32;
 
-// Test fixture that includes helper methods to set up structures used to test
-// MultiBufs
+/// Test fixture that includes helper methods to set up structures used to test
+/// MultiBufs
 class MultiBufTest : public ::testing::Test {
  protected:
   MultiBufTest() {
@@ -54,7 +57,7 @@ class MultiBufTest : public ::testing::Test {
     owned_bytes_ = pw::ByteSpan(owned_chunk_.get(), owned_chunk_.size());
   }
 
-  // Helper to make a MultiBuf with non-contiguous buffers.
+  /// Helper to make a MultiBuf with non-contiguous buffers.
   void MakeNonContiguous(ConstMultiBuf& out, size_t n, uint8_t value) {
     auto bytes1 = allocator_.MakeUnique<std::byte[]>(n / 2);
     auto bytes2 = allocator_.MakeUnique<std::byte[]>(n / 2);
@@ -69,12 +72,60 @@ class MultiBufTest : public ::testing::Test {
     out.PushBack(std::move(bytes3));
   }
 
+  /// Helper method to instantiate a layered MultiBuf that resembles the entries
+  /// used by `multibuf::internal::IteratorTest`.
+  ///
+  /// The created sequence represents 4 chunks with three layers, i.e.
+  ///
+  /// layer 3: <[0x3]={4, 8}>  [0x7]={0, 0}  <[0xB]={8, 8}  [0xF]={0,16}>
+  /// layer 2: <[0x2]={2,12}> <[0x6]={0, 8}> <[0xA]={4,12}  [0xE]={0,16}>
+  /// layer 1: <[0x1]={0,16}> <[0x5]={0,16}> <[0x9]={0,16}><[0xD]={0,16}>
+  /// layer 0:  [0x0].data     [0x4].data     [0x8].data    [0xC].data
+  ///
+  /// where "<...>" represents a fragment.
+  void AddLayers(ConstMultiBuf& mb) {
+    MultiBufInstance fragment(allocator_);
+    auto chunk = allocator_.MakeUnique<std::byte[]>(16);
+    fragment->PushBack(std::move(chunk));
+    PW_CHECK(fragment->AddLayer(2, 12));
+    PW_CHECK(fragment->AddLayer(2, 8));
+    mb.PushBack(std::move(*fragment));
+
+    fragment = MultiBufInstance(allocator_);
+    chunk = allocator_.MakeUnique<std::byte[]>(16);
+    fragment->PushBack(std::move(chunk));
+    PW_CHECK(fragment->AddLayer(0, 8));
+    PW_CHECK(fragment->AddLayer(0, 0));
+    mb.PushBack(std::move(*fragment));
+
+    fragment = MultiBufInstance(allocator_);
+    chunk = allocator_.MakeUnique<std::byte[]>(16);
+    fragment->PushBack(std::move(chunk));
+    chunk = allocator_.MakeUnique<std::byte[]>(16);
+    fragment->PushBack(std::move(chunk));
+    PW_CHECK(fragment->AddLayer(4));
+    PW_CHECK(fragment->AddLayer(4));
+    mb.PushBack(std::move(*fragment));
+  }
+
   std::array<std::byte, kN / 2> unowned_chunk_;
 
   AllocatorForTest<1024> allocator_;
   pw::UniquePtr<std::byte[]> owned_chunk_;
 
   pw::ByteSpan owned_bytes_;
+};
+
+// A test fixture that receives events when a MultiBuf changes.
+struct TestObserver : public pw::multibuf::Observer {
+  std::optional<Event> event;
+  size_t value = 0;
+
+ private:
+  void DoNotify(Event event_, size_t value_) override {
+    event = event_;
+    value = value_;
+  }
 };
 
 // Unit tests. /////////////////////////////////////////////////////////////////
@@ -346,6 +397,13 @@ TEST_F(MultiBufTest, IterateBytesOverNonContiguous) {
   }
   EXPECT_EQ(value, kN * 3);
 }
+
+// TODO(b/425740614): Add test for IsCompatible with compatible MultiBuf
+// TODO(b/425740614): Add test for IsCompatible with incompatible MultiBuf
+// TODO(b/425740614): Add test for IsCompatible with compatible UniquePtr
+// TODO(b/425740614): Add test for IsCompatible with incompatible UniquePtr
+// TODO(b/425740614): Add test for IsCompatible with compatible SharedPtr
+// TODO(b/425740614): Add test for IsCompatible with incompatible SharedPtr
 
 // TODO(b/425740614): Add test for TryReserveChunks with num_chunks equal to
 // zero.
@@ -984,5 +1042,240 @@ TEST_F(MultiBufTest, IsReusableAfterClear) {
 // TODO(b/425740614): Add test where PopLayer fails when sealed
 // TODO(b/425740614): Add test where PopLayer succeeds after Unseal
 // TODO(b/425740614): Add GetReturnsDataFromTopLayerOnly
+
+// TODO(b/425740614): InsertMultiBufNotifiesObserver
+// TODO(b/425740614): InsertUnownedNotifiesObserver
+// TODO(b/425740614): InsertUniquePtrNotifiesObserver
+// TODO(b/425740614): InsertSharedPtrNotifiesObserver
+
+// TODO(b/425740614): PushBackMultiBufNotifiesObserver
+
+TEST_F(MultiBufTest, PushBackMultiBufNotifiesObserver) {
+  TestObserver observer;
+
+  TrackedMultiBufInstance mbi1(allocator_);
+  TrackedMultiBuf& mb1 = mbi1;
+  mb1.set_observer(&observer);
+
+  TrackedMultiBufInstance mbi2(allocator_);
+  TrackedMultiBuf& mb2 = mbi2;
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN * 2);
+  mb2.PushBack(std::move(chunk));
+
+  EXPECT_FALSE(observer.event.has_value());
+  mb1.PushBack(std::move(mb2));
+  ASSERT_TRUE(observer.event.has_value());
+  EXPECT_EQ(observer.event.value(), Event::kBytesAdded);
+  EXPECT_EQ(observer.value, kN * 2);
+}
+
+TEST_F(MultiBufTest, PushBackUnownedNotifiesObserver) {
+  TestObserver observer;
+
+  TrackedMultiBufInstance mbi(allocator_);
+  TrackedMultiBuf& mb = mbi;
+  mb.set_observer(&observer);
+
+  EXPECT_FALSE(observer.event.has_value());
+  mb.PushBack(unowned_chunk_);
+  ASSERT_TRUE(observer.event.has_value());
+  EXPECT_EQ(observer.event.value(), Event::kBytesAdded);
+  EXPECT_EQ(observer.value, unowned_chunk_.size());
+}
+
+// TODO(b/425740614): PushBackUniquePtrNotifiesObserver
+// TODO(b/425740614): PushBackSharedPtrNotifiesObserver
+
+TEST_F(MultiBufTest, RemoveNotifiesObserver) {
+  TestObserver observer;
+
+  TrackedMultiBufInstance mbi(allocator_);
+  TrackedMultiBuf& mb = mbi;
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mb.PushBack(std::move(chunk));
+
+  mb.set_observer(&observer);
+  EXPECT_FALSE(observer.event.has_value());
+  auto result = mb.Remove(mb.begin(), kN);
+  ASSERT_TRUE(observer.event.has_value());
+  EXPECT_EQ(observer.event.value(), Event::kBytesRemoved);
+  EXPECT_EQ(observer.value, kN);
+}
+
+// TODO(b/425740614): DiscardNotifiesObserver
+// TODO(b/425740614): ReleaseNotifiesObserver
+// TODO(b/425740614): PopFrontFragmentNotifiesObserver
+
+// TODO(b/425740614): Add a negative compilation test for enumerating fragments
+// when unlayered
+
+TEST_F(MultiBufTest, NumFragmentsIsZeroWhenEmpty) {
+  ConstMultiBufInstance mbi(allocator_);
+  EXPECT_EQ(mbi->NumFragments(), 0u);
+}
+
+TEST_F(MultiBufTest, NumFragmentsWithoutLayersMatchesChunks) {
+  ConstMultiBufInstance mbi1(allocator_);
+  ConstMultiBuf& mb1 = mbi1;
+
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN * 2);
+  mb1.PushBack(std::move(chunk));
+  EXPECT_EQ(mb1.NumFragments(), 1u);
+
+  chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mb1.PushBack(std::move(chunk));
+  EXPECT_EQ(mb1.NumFragments(), 2u);
+
+  chunk = allocator_.MakeUnique<std::byte[]>(kN / 2);
+  mb1.PushBack(std::move(chunk));
+  EXPECT_EQ(mb1.NumFragments(), 3u);
+
+  auto result = mb1.PopFrontFragment();
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(mb1.NumFragments(), 2u);
+
+  result = mb1.PopFrontFragment();
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(mb1.NumFragments(), 1u);
+
+  result = mb1.PopFrontFragment();
+  ASSERT_EQ(result.status(), pw::OkStatus());
+  EXPECT_EQ(mb1.NumFragments(), 0u);
+}
+
+// TODO(b/425740614): Add NumFragmentsWithLayersMatchesAddedFragments
+
+// TODO(b/425740614): Add a negative compilation test for enumerating layers
+// when unlayered
+
+TEST_F(MultiBufTest, NumLayersIsOneWhenEmpty) {
+  ConstMultiBufInstance mbi(allocator_);
+  ConstMultiBuf& mb = mbi;
+  EXPECT_EQ(mb.NumLayers(), 1u);
+}
+
+// TODO(b/425740614): Add NumLayersMatchesAddedLayers
+
+TEST_F(MultiBufTest, IterateChunksOverLayers) {
+  ConstMultiBufInstance mbi(allocator_);
+  AddLayers(mbi);
+  size_t i = 0;
+  size_t total = 0;
+  for (auto chunk : mbi->Chunks()) {
+    i++;
+    total += chunk.size();
+  }
+  // See `AddLayers`. Span lengths should be [8, 8, 16].
+  EXPECT_EQ(i, 3u);
+  EXPECT_EQ(total, 32u);
+}
+
+TEST_F(MultiBufTest, IterateBytesOverLayers) {
+  ConstMultiBufInstance mbi(allocator_);
+  AddLayers(mbi);
+  // See `AddLayers`. Span lengths should be [8, 8, 16].
+  EXPECT_EQ(mbi->end() - mbi->begin(), 32);
+}
+
+// TODO(b/425740614): Add a negative compilation test for adding layers when
+// unlayered
+
+TEST_F(MultiBufTest, AddLayerFailsUnableToGrowQueue) {
+  ConstMultiBufInstance mbi(allocator_);
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN * 2);
+  mbi->PushBack(std::move(chunk));
+  allocator_.Exhaust();
+
+  EXPECT_EQ(mbi->NumLayers(), 1u);
+  EXPECT_FALSE(mbi->AddLayer(0, 0));
+  EXPECT_EQ(mbi->NumLayers(), 1u);
+}
+
+TEST_F(MultiBufTest, AddLayerSucceedsWithZeroOffset) {
+  ConstMultiBufInstance mbi(allocator_);
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mbi->PushBack(std::move(chunk));
+
+  EXPECT_TRUE(mbi->AddLayer(0));
+  EXPECT_EQ(mbi->size(), kN);
+  EXPECT_EQ(mbi->NumLayers(), 2u);
+
+  EXPECT_TRUE(mbi->AddLayer(0));
+  EXPECT_EQ(mbi->size(), kN);
+  EXPECT_EQ(mbi->NumLayers(), 3u);
+
+  EXPECT_TRUE(mbi->AddLayer(0));
+  EXPECT_EQ(mbi->size(), kN);
+  EXPECT_EQ(mbi->NumLayers(), 4u);
+}
+
+TEST_F(MultiBufTest, AddLayerSucceedsWithNonzeroOffset) {
+  ConstMultiBufInstance mbi(allocator_);
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mbi->PushBack(std::move(chunk));
+
+  EXPECT_TRUE(mbi->AddLayer(2));
+  EXPECT_EQ(mbi->size(), kN - 2);
+  EXPECT_EQ(mbi->NumLayers(), 2u);
+
+  EXPECT_TRUE(mbi->AddLayer(4));
+  EXPECT_EQ(mbi->size(), kN - 6);
+  EXPECT_EQ(mbi->NumLayers(), 3u);
+
+  EXPECT_TRUE(mbi->AddLayer(8));
+  EXPECT_EQ(mbi->size(), kN - 14);
+  EXPECT_EQ(mbi->NumLayers(), 4u);
+}
+
+TEST_F(MultiBufTest, AddLayerSucceedsWithNonzeroLength) {
+  ConstMultiBufInstance mbi(allocator_);
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mbi->PushBack(std::move(chunk));
+
+  EXPECT_TRUE(mbi->AddLayer(0, kN - 3));
+  EXPECT_EQ(mbi->size(), kN - 3);
+  EXPECT_EQ(mbi->NumLayers(), 2u);
+
+  EXPECT_TRUE(mbi->AddLayer(0, kN - 7));
+  EXPECT_EQ(mbi->size(), kN - 7);
+  EXPECT_EQ(mbi->NumLayers(), 3u);
+
+  EXPECT_TRUE(mbi->AddLayer(0, kN - 11));
+  EXPECT_EQ(mbi->size(), kN - 11);
+  EXPECT_EQ(mbi->NumLayers(), 4u);
+}
+
+TEST_F(MultiBufTest, AddLayerCreatesNewFragment) {
+  ConstMultiBufInstance mbi(allocator_);
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mbi->PushBack(std::move(chunk));
+  chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mbi->PushBack(std::move(chunk));
+  chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mbi->PushBack(std::move(chunk));
+
+  EXPECT_EQ(mbi->NumFragments(), 3u);
+  EXPECT_TRUE(mbi->AddLayer(0));
+  EXPECT_EQ(mbi->NumFragments(), 1u);
+  mbi->PopLayer();
+  EXPECT_EQ(mbi->NumFragments(), 3u);
+}
+
+// TODO(b/425740614): Add a test of AddLayer where added MultiBuf is shallower.
+
+// TODO(b/425740614): Add test where AddLayer fails when sealed
+// TODO(b/425740614): Add test where AddLayer succeeds after Unseal
+
+// TODO(b/425740614): Add a negative compilation test for resizing layers when
+// unlayered
+
+// TODO(b/425740614): Add test where ResizeTopLayer fails when sealed
+// TODO(b/425740614): Add test where ResizeTopLayer succeeds after Unseal
+
+// TODO(b/425740614): Add a negative compilation test for popping layers when
+// unlayered
+
+// TODO(b/425740614): Add test where PopLayer fails when sealed
+// TODO(b/425740614): Add test where PopLayer succeeds after Unseal
 
 }  // namespace

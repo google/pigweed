@@ -388,6 +388,31 @@ class BasicMultiBuf {
 
   // Other methods
 
+  /// Returns whether chunks associated the given argument could be added to
+  /// this object.
+  ///
+  /// To be compatible, the memory for chunks must be one of the following:
+  ///   * Externally managed, i.e. "unowned".
+  ///   * Deallocatable by the same deallocator as other chunks, if any.
+  ///   * Part of the same shared memory allocation as any other shared chunks.
+  /// @{
+  bool IsCompatible(const GenericMultiBuf& other) const {
+    return generic().IsCompatible(other);
+  }
+  bool IsCompatible(const UniquePtr<std::byte[]> bytes) const {
+    return generic().IsCompatible(bytes.deallocator());
+  }
+  bool IsCompatible(const UniquePtr<const std::byte[]>& bytes) const {
+    return generic().IsCompatible(bytes.deallocator());
+  }
+  bool IsCompatible(const SharedPtr<std::byte[]>& bytes) const {
+    return generic().IsCompatible(bytes.control_block());
+  }
+  bool IsCompatible(const SharedPtr<const std::byte[]>& bytes) const {
+    return generic().IsCompatible(bytes.control_block());
+  }
+  /// @}
+
   /// Attempts to reserves memory to hold metadata for the given number of total
   /// chunks.
   ///
@@ -671,6 +696,27 @@ class BasicMultiBuf {
 
   // Layerable methods.
 
+  /// Returns the number of fragments in the top layer.
+  ///
+  /// Whenever a new layer is added, its boundary is marked and it is treated as
+  /// a single fragment of a larger message or packet. These boundaries markers
+  /// are preserved by `Insert` and `PushBack`. They can be used to delineate
+  /// how much memory to return when `PopFront` is called.
+  size_type NumFragments() const {
+    static_assert(is_layerable(),
+                  "`NumFragments` may only be called on layerable MultiBufs");
+    return generic().NumFragments();
+  }
+
+  /// Returns the number layers in the MultiBuf.
+  ///
+  /// This will always be at least 1.
+  constexpr size_type NumLayers() const {
+    static_assert(is_layerable(),
+                  "`NumLayers` may only be called on layerable MultiBufs");
+    return generic().NumLayers();
+  }
+
   /// Adds a layer.
   ///
   /// Each layer provides a span-like view of memory. An empty MultiBuf has no
@@ -696,10 +742,6 @@ class BasicMultiBuf {
     return generic().AddLayer(offset, length);
   }
 
- private:
-  // These methods are subject to change, and thus currently withheld from the
-  // public API.
-
   /// Marks the top layer as "sealed", preventing it from being resized or
   /// popped.
   void SealTopLayer() {
@@ -716,7 +758,6 @@ class BasicMultiBuf {
     return generic().UnsealTopLayer();
   }
 
- public:
   /// Resizes the current top layer.
   ///
   /// The range given by `offset` and `length` MUST fall within this MultiBuf.
@@ -747,6 +788,9 @@ class BasicMultiBuf {
   constexpr BasicMultiBuf() { internal::PropertiesAreValid(); }
 
  private:
+  template <Property...>
+  friend class BasicMultiBuf;
+
   constexpr GenericMultiBuf& generic() {
     return static_cast<GenericMultiBuf&>(*this);
   }
@@ -856,6 +900,11 @@ class GenericMultiBuf final
 
   // Mutators.
 
+  /// @copydoc BasicMultiBuf<>::IsCompatible
+  bool IsCompatible(const GenericMultiBuf& other) const;
+  bool IsCompatible(const Deallocator* other) const;
+  bool IsCompatible(const ControlBlock* other) const;
+
   /// @copydoc BasicMultiBuf<>::TryReserveChunks
   [[nodiscard]] bool TryReserveChunks(size_type num_chunks);
 
@@ -914,6 +963,12 @@ class GenericMultiBuf final
   void Clear();
 
   // Layerable methods.
+
+  /// @copydoc BasicMultiBuf<>::NumFragments
+  size_type NumFragments() const;
+
+  /// @copydoc BasicMultiBuf<>::NumLayers
+  constexpr size_type NumLayers() const { return depth_ - 1; }
 
   /// @copydoc BasicMultiBuf<>::AddLayer
   [[nodiscard]] bool AddLayer(size_t offset, size_t length);
@@ -1000,25 +1055,6 @@ class GenericMultiBuf final
 
   /// Resets the memory context to its initial state.
   void ClearMemoryContext();
-
-  /// Returns whether chunks associated the given argument could be added to
-  /// this object.
-  ///
-  /// To be compatible, the memory for chunks must be one of the following:
-  ///   * Externally managed, i.e. "unowned".
-  ///   * Deallocatable by the same deallocator as other chunks, if any.
-  ///   * Part of the same shared memory allocation as any other shared chunks.
-  bool IsCompatible(const GenericMultiBuf& other) const;
-  bool IsCompatible(const Deallocator* other) const;
-  bool IsCompatible(const ControlBlock* other) const;
-
-  /// Returns the number of fragments in the top layer.
-  ///
-  /// Whenever a new layer is added, its boundary is marked and it is treated as
-  /// a single fragment of a larger message or packet. These boundaries markers
-  /// are preserved by `Insert` and `PushBack`. They can be used to delineate
-  /// how much memory to return when `PopFront` is called.
-  size_type NumFragments() const;
 
   /// Converts an iterator into a deque index and byte offset.
   ///
@@ -1145,8 +1181,8 @@ class GenericMultiBuf final
   // layer 0: deque_[0x0].data  deque_[0x4].data  deque_[0x8].data
   Deque deque_;
 
-  // Number of layers in this MultiBuf. Zero indicates it is empty.
-  size_type depth_ = 0;
+  // Number of entries per chunk in this MultiBuf.
+  size_type depth_ = 2;
 
   /// Encapsulates details about the ownership of the memory buffers stored in
   /// this object.

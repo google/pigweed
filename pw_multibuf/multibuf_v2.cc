@@ -26,7 +26,7 @@ namespace pw::multibuf::internal {
 
 GenericMultiBuf& GenericMultiBuf::operator=(GenericMultiBuf&& other) {
   deque_ = std::move(other.deque_);
-  depth_ = std::exchange(other.depth_, 0);
+  depth_ = std::exchange(other.depth_, 2);
   CopyMemoryContext(other);
   other.ClearMemoryContext();
   observer_ = std::exchange(other.observer_, nullptr);
@@ -64,7 +64,7 @@ bool GenericMultiBuf::TryReserveForInsert(const_iterator pos,
 
 bool GenericMultiBuf::TryReserveForInsert(const_iterator pos, size_t size) {
   PW_CHECK_UINT_LE(size, Entry::kMaxSize);
-  return TryReserveEntries(pos, empty() ? 2 : depth_);
+  return TryReserveEntries(pos, depth_);
 }
 
 bool GenericMultiBuf::TryReserveForInsert(const_iterator pos,
@@ -268,16 +268,14 @@ void GenericMultiBuf::Clear() {
     UnsealTopLayer();
     PopLayer();
   }
+
   Deallocator* deallocator = GetDeallocator();
   while (!empty()) {
     if (IsOwned(0)) {
       deallocator->Deallocate(GetData(0));
     }
-    for (size_type i = 0; i < depth_; ++i) {
-      deque_.pop_front();
-    }
+    deque_.erase(deque_.begin(), deque_.begin() + 2);
   }
-  depth_ = 0;
   ClearMemoryContext();
 }
 
@@ -303,6 +301,12 @@ bool GenericMultiBuf::AddLayer(size_t offset, size_t length) {
   for (size_type i = deque_.size(); i != 0; --i) {
     if (i % depth_ == 0) {
       --width;
+      deque_[i - 1].view = {
+          .offset = 0,
+          .sealed = false,
+          .length = 0,
+          .boundary = false,
+      };
     } else {
       deque_[i - 1] = deque_[i - 1 - width];
     }
@@ -313,7 +317,9 @@ bool GenericMultiBuf::AddLayer(size_t offset, size_t length) {
   SetLayer(offset, length);
 
   // 4). Mark the end of the new layer.
-  deque_.back().view.boundary = true;
+  if (!deque_.empty()) {
+    deque_.back().view.boundary = true;
+  }
   if (observer_ != nullptr) {
     observer_->Notify(Observer::Event::kLayerAdded, num_fragments);
   }
@@ -482,9 +488,8 @@ bool GenericMultiBuf::TryReserveEntries(const_iterator pos,
 }
 
 bool GenericMultiBuf::TryReserveEntries(size_type num_entries, bool split) {
-  size_type depth = empty() ? 2 : depth_;
   if (split) {
-    PW_CHECK_ADD(num_entries, depth, &num_entries);
+    PW_CHECK_ADD(num_entries, depth_, &num_entries);
   }
   PW_CHECK_ADD(num_entries, deque_.size(), &num_entries);
   return deque_.try_reserve(num_entries);
@@ -501,7 +506,7 @@ GenericMultiBuf::size_type GenericMultiBuf::InsertEntries(
   for (size_type i = 0; i < num_entries; ++i) {
     deque_.push_back(entry);
   }
-  for (size_type i = deque_.size() - 1; i >= offset + num_entries; --i) {
+  for (size_type i = deque_.size() - 1; i >= index + num_entries; --i) {
     deque_[i] = deque_[i - num_entries];
   }
   if (offset == 0) {
@@ -517,10 +522,7 @@ GenericMultiBuf::size_type GenericMultiBuf::InsertEntries(
 GenericMultiBuf::size_type GenericMultiBuf::Insert(const_iterator pos,
                                                    const std::byte* data,
                                                    size_t size) {
-  if (depth_ == 0) {
-    depth_ = 2;
-  }
-  size_type index = InsertEntries(pos, depth_ == 0 ? 2 : depth_);
+  size_type index = InsertEntries(pos, depth_);
   deque_[index].data = const_cast<std::byte*>(data);
   PW_CHECK_UINT_LE(size, Entry::kMaxSize);
   auto length = static_cast<Entry::size_type>(size);
@@ -538,7 +540,6 @@ GenericMultiBuf::size_type GenericMultiBuf::Insert(const_iterator pos,
         .boundary = true,
     };
   }
-
   if (observer_ != nullptr) {
     observer_->Notify(Observer::Event::kBytesAdded, size);
   }
@@ -767,7 +768,7 @@ size_t GenericMultiBuf::CopyToImpl(ByteSpan dst,
 
 void GenericMultiBuf::CheckRange(size_t offset, size_t length) {
   size_t size = this->size();
-  PW_CHECK_UINT_LT(offset, size);
+  PW_CHECK_UINT_LE(offset, size);
   if (length != dynamic_extent) {
     PW_CHECK_UINT_LE(length, size - offset);
   }
