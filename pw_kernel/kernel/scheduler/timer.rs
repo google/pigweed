@@ -37,6 +37,7 @@ pub struct TimerCallback {
 
 impl TimerCallback {
     #[allow(dead_code)]
+    #[must_use]
     pub fn new(deadline: Instant, callback: ForeignBox<TimerCallbackFn>) -> Self {
         Self {
             deadline,
@@ -75,6 +76,7 @@ unsafe impl Sync for TimerQueue {}
 unsafe impl Send for TimerQueue {}
 
 impl TimerQueue {
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             queue: ForeignList::new(),
@@ -87,11 +89,19 @@ impl TimerQueue {
         timer_queue.queue.sorted_insert(callback);
     }
 
+    /// # Safety
+    ///
+    /// `timer` must point to a valid [`TimerCallback`] object which is in the
+    /// timer queue.
     pub unsafe fn cancel_timer(timer: NonNull<TimerCallback>) -> Option<ForeignBox<TimerCallback>> {
         let mut timer_queue = TIMER_QUEUE.lock();
         unsafe { timer_queue.queue.remove_element(timer) }
     }
 
+    /// # Safety
+    ///
+    /// `timer` must point to a valid [`TimerCallback`] object which is in the
+    /// timer queue.
     pub unsafe fn cancel_and_consume_timer(timer: NonNull<TimerCallback>) {
         if let Some(mut callback) = unsafe { Self::cancel_timer(timer) } {
             if let Some(callback) = callback.callback.take() {

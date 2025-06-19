@@ -22,11 +22,12 @@ use pw_status::{Error, Result};
 use thread::*;
 
 use crate::arch::MemoryConfig as _;
+use crate::scheduler::timer::{Instant, TimerCallback, TimerQueue};
 use crate::sync::spinlock::{SpinLock, SpinLockGuard};
-use crate::timer::{Instant, TimerCallback, TimerQueue};
 
 mod locks;
 pub mod thread;
+pub mod timer;
 
 pub use locks::{SchedLockGuard, WaitQueueLock};
 

@@ -22,18 +22,17 @@ pub mod scheduler;
 pub mod sync;
 mod syscall;
 mod target;
-mod timer;
 
 pub use arch::{Arch, MemoryRegion, MemoryRegionType};
 use kernel_config::{KernelConfig, KernelConfigInterface};
 pub use scheduler::thread::{Process, Stack, Thread};
 #[doc(hidden)]
 pub use scheduler::thread::{StackStorage, StackStorageExt};
-pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 // Used by the `init_thread!` macro.
+pub use scheduler::timer::{Clock, Duration};
+pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use scheduler::{SchedulerContext, SchedulerState, SchedulerStateContext as _};
 use sync::spinlock::SpinLock;
-pub use timer::{Clock, Duration};
 
 #[no_mangle]
 #[allow(non_snake_case)]

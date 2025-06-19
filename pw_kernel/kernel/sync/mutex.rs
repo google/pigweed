@@ -18,8 +18,8 @@ use core::ops::{Deref, DerefMut};
 use pw_status::Result;
 
 use crate::scheduler::thread::Thread;
+use crate::scheduler::timer::Instant;
 use crate::scheduler::{SchedulerContext, SchedulerStateContext, WaitQueueLock};
-use crate::timer::Instant;
 
 const MUTEX_DEBUG: bool = false;
 macro_rules! mutex_debug {

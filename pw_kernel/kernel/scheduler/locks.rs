@@ -19,9 +19,9 @@ use core::ptr::NonNull;
 use pw_status::Result;
 
 use crate::scheduler::thread::ThreadState;
+use crate::scheduler::timer::Instant;
 use crate::scheduler::{SchedulerContext, SchedulerState, SchedulerStateContext, WaitQueue};
 use crate::sync::spinlock::SpinLockGuard;
-use crate::timer::Instant;
 
 pub struct SmuggledSchedLock<C, T> {
     inner: NonNull<T>,
