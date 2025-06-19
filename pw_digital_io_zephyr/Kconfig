@@ -12,19 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+menu "pw_thread"
 
-package(default_visibility = ["//visibility:public"])
+config PIGWEED_DIGITAL_IO
+  bool "Link the pw_digital_io_zephyr module"
+  help
+    Link the library allowing digital io instantiation for Zephyr drivers.
 
-licenses(["notice"])
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "Kconfig",
-        "docs.rst",
-    ],
-    prefix = "pw_digital_io_zephyr/",
-    target_compatible_with = incompatible_with_mcu(),
-)
+endmenu
