@@ -19,6 +19,9 @@ use kernel::InitKernelState;
 use target_common::{declare_target, TargetInterface};
 use {console_backend as _, kernel as _};
 
+#[cfg(test)]
+use integration_tests as _;
+
 pub struct Target {}
 
 impl TargetInterface for Target {

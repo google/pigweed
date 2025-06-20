@@ -22,6 +22,9 @@ use kernel::InitKernelState;
 use target_common::{declare_target, TargetInterface};
 use {console_backend as _, kernel as _, rp235x_hal as hal};
 
+#[cfg(test)]
+use integration_tests as _;
+
 #[link_section = ".start_block"]
 #[used]
 pub static IMAGE_DEF: hal::block::ImageDef = hal::block::ImageDef::secure_exe();
