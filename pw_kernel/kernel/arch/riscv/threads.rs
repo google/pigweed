@@ -71,6 +71,9 @@ impl ArchThreadState {
             // first two argument slots.
             (*frame) = mem::zeroed();
             (*frame).ra = trampoline as usize;
+            // The `s` registers are used here instead of the ABI prescribed `a`
+            // registers because the `a` registers are in the exception frame,
+            // not the context switch frame.
             (*frame).s0 = s0;
             (*frame).s1 = s1;
             (*frame).s2 = s2;
@@ -260,9 +263,11 @@ extern "C" fn asm_user_trampoline() {
                 // Set initial SP as passed in by `initialize_frame()`.
                 mv      sp, s5
 
-                // Set args for function call.
+                // Set args for function call.  `s` registers are offset by 1
+                // because `initial_pc` is stored in s0.
                 mv      a0, s1
                 mv      a1, s2
+                mv      a2, s3
 
                 // Mstatus and Mepc are set up for a return to U-Mode.
                 csrw    mstatus, s6
@@ -281,9 +286,13 @@ extern "C" fn asm_trampoline() {
         "
                 // Zero out mscratch to signify that this is a kernel thread.
                 csrw    mscratch, zero
+
+                // Set args for function call.
                 mv a0, s0
                 mv a1, s1
                 mv a2, s2
+                mv a3, s3
+
                 tail trampoline
             "
     )
@@ -291,13 +300,19 @@ extern "C" fn asm_trampoline() {
 
 #[allow(unused)]
 #[no_mangle]
-extern "C" fn trampoline(initial_function: extern "C" fn(usize, usize), arg0: usize, arg1: usize) {
+extern "C" fn trampoline(
+    initial_function: extern "C" fn(usize, usize, usize),
+    arg0: usize,
+    arg1: usize,
+    arg2: usize,
+) {
     debug_if!(
         LOG_THREAD_CREATE,
-        "riscv trampoline: initial function {:#x} arg0 {:#x} arg1 {:#x}",
+        "riscv trampoline: initial function {:#x} arg0 {:#x} arg1 {:#x} arg2 {:#}",
         initial_function as usize,
         arg0 as usize,
-        arg1 as usize
+        arg1 as usize,
+        arg2 as usize,
     );
 
     // Enable interrupts
@@ -306,7 +321,7 @@ extern "C" fn trampoline(initial_function: extern "C" fn(usize, usize), arg0: us
     // TODO: figure out how to drop the scheduler lock here?
 
     // Call the actual initial function of the thread.
-    initial_function(arg0, arg1);
+    initial_function(arg0, arg1, arg2);
 
     // Get a pointer to the current thread and call exit.
     // Note: must let the scope of the lock guard close,

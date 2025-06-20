@@ -16,6 +16,7 @@ use core::arch::asm;
 use core::mem::{self, MaybeUninit};
 
 use cortex_m::peripheral::SCB;
+use log_if::debug_if;
 use pw_cast::CastInto as _;
 use pw_status::{Error, Result};
 
@@ -31,6 +32,8 @@ use crate::arch::{MemoryConfig as _, MemoryRegionType};
 use crate::scheduler::thread::Stack;
 use crate::scheduler::{self, SchedulerContext, SchedulerState, SchedulerStateContext as _};
 use crate::sync::spinlock::SpinLockGuard;
+
+const LOG_THREAD_CREATE: bool = false;
 
 const STACK_ALIGNMENT: usize = 8;
 
@@ -266,16 +269,25 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
     }
 }
 
-extern "C" fn trampoline(initial_function: extern "C" fn(usize, usize), arg0: usize, arg1: usize) {
-    // info!(
-    //     "cortex-m trampoline: initial function {:#x} arg {:#x}",
-    //     initial_function as usize, arg0
-    // );
+extern "C" fn trampoline(
+    initial_function: extern "C" fn(usize, usize, usize),
+    arg0: usize,
+    arg1: usize,
+    arg2: usize,
+) {
+    debug_if!(
+        LOG_THREAD_CREATE,
+        "arm_cortex_m trampoline: initial function {:#x} arg0 {:#x} arg1 {:#x} arg2 {:#}",
+        initial_function as usize,
+        arg0 as usize,
+        arg1 as usize,
+        arg2 as usize,
+    );
 
     pw_assert::assert!(Arch::interrupts_enabled());
 
     // Call the actual initial function of the thread.
-    initial_function(arg0, arg1);
+    initial_function(arg0, arg1, arg2);
 
     // Get a pointer to the current thread and call exit.
     // Note: must let the scope of the lock guard close,
