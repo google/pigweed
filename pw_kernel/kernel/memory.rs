@@ -12,25 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#[cfg(feature = "arch_arm_cortex_m")]
-pub mod arm_cortex_m;
-#[cfg(feature = "arch_arm_cortex_m")]
-pub use arm_cortex_m::{protection::MemoryConfig as ArchMemoryConfig, Arch};
-
-#[cfg(feature = "arch_riscv")]
-pub mod riscv;
-#[cfg(feature = "arch_riscv")]
-pub use riscv::{protection::MemoryConfig as ArchMemoryConfig, Arch};
-
-#[cfg(feature = "arch_host")]
-mod host;
-#[cfg(feature = "arch_host")]
-pub use host::{Arch, MemoryConfig as ArchMemoryConfig};
-
-use crate::impl_thread_arg_for_default_zst;
-
-impl_thread_arg_for_default_zst!(Arch);
-
 #[derive(Clone, Copy)]
 #[allow(dead_code)]
 pub enum MemoryRegionType {

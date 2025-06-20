@@ -70,9 +70,9 @@ system_image(
 SRCS = ["target.rs"]
 
 COMMON_DEPS = [
-    ":console",
     ":linker_script",
     "//pw_kernel/kernel",
+    "//pw_kernel/arch/arm_cortex_m:arch_arm_cortex_m",
     "//pw_kernel/target:target_common",
     "@rust_crates//:cortex-m",
     "@rust_crates//:cortex-m-rt",
@@ -87,6 +87,7 @@ rust_binary(
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
+        ":console",
         "//pw_kernel/apps/kernel_only_demo:demo",
     ] + COMMON_DEPS,
 )
@@ -112,6 +113,7 @@ rust_binary(
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     visibility = ["//visibility:public"],
     deps = [
+        ":console",
         "//pw_log/rust:pw_log",
     ] + COMMON_DEPS,
 )
@@ -124,6 +126,7 @@ rust_test(
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     use_libtest_harness = False,
     deps = COMMON_DEPS + [
+        ":console",
         "//pw_kernel/lib/unittest:unittest_core",
         "//pw_log/rust:pw_log",
         "@rust_crates//:cortex-m-semihosting",
@@ -147,11 +150,9 @@ rust_library(
     crate_name = "console_backend",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
-    deps = [
-        "//pw_kernel/kernel",
+    deps = COMMON_DEPS + [
         "//pw_kernel/lib/pw_status",
         "@rust_crates//:embedded-io",
-        "@rust_crates//:rp235x-hal",
     ],
 )
 

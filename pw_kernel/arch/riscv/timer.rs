@@ -14,12 +14,12 @@
 
 use core::ptr::{with_exposed_provenance, with_exposed_provenance_mut};
 
+use kernel::scheduler;
 use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
 use time::{Clock as _, Duration};
 
-use crate::arch::riscv::spinlock::InterruptGuard;
-use crate::scheduler;
+use crate::spinlock::InterruptGuard;
 
 // Use the CLINT to read time and set the hardware timer.
 // NOTE: assumes machine mode and the CLINT is the best timer to use.

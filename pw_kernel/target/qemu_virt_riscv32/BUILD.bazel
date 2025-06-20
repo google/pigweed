@@ -85,9 +85,9 @@ rust_binary_no_panics_test(
 SRCS = ["target.rs"]
 
 COMMON_DEPS = [
-    ":console",
     ":linker_script",
     "//pw_kernel/kernel",
+    "//pw_kernel/arch/riscv:arch_riscv",
     "//pw_kernel/target:target_common",
     "@rust_crates//:panic-halt",
     "@rust_crates//:riscv",
@@ -101,6 +101,7 @@ rust_binary(
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
+        ":console",
         "//pw_kernel/apps/kernel_only_demo:demo",
     ] + COMMON_DEPS,
 )
@@ -126,6 +127,7 @@ rust_binary(
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     visibility = ["//visibility:public"],
     deps = [
+        ":console",
         "//pw_kernel/lib/time",
         "//pw_kernel/userspace",
         "//pw_log/rust:pw_log",
@@ -140,6 +142,7 @@ rust_test(
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     use_libtest_harness = False,
     deps = COMMON_DEPS + [
+        ":console",
         "//pw_kernel/lib/unittest:unittest_core",
         "//pw_log/rust:pw_log",
         "@rust_crates//:riscv-semihosting",
@@ -153,10 +156,9 @@ rust_library(
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
-        "//pw_kernel/kernel",
         "//pw_kernel/lib/pw_status",
         "@rust_crates//:embedded-io",
-    ],
+    ] + COMMON_DEPS,
 )
 
 rust_library(

@@ -14,9 +14,8 @@
 #![no_std]
 #![no_main]
 
+use arch_riscv::{Arch, ArchThreadState};
 use console_backend as _;
-use kernel::arch::riscv::threads::ArchThreadState;
-use kernel::arch::Arch;
 use kernel::scheduler::SchedulerContext as _;
 use kernel::{self as _, Duration, InitKernelState};
 
@@ -31,12 +30,19 @@ impl TargetInterface for Target {
     fn main() -> ! {
         userspace_demo_codegen::start();
         loop {
-            kernel::sleep_until(kernel::Arch, kernel::Arch.now() + Duration::from_secs(10));
+            kernel::sleep_until(Arch, Arch.now() + Duration::from_secs(10));
         }
     }
 }
 
 declare_target!(Target);
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn pw_assert_HandleFailure() -> ! {
+    use kernel::KernelContext as _;
+    Arch::panic()
+}
 
 #[riscv_rt::entry]
 fn main() -> ! {

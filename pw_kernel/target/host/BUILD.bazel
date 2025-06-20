@@ -18,6 +18,7 @@ load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
 
 COMMON_DEPS = [
+    "//pw_kernel/arch/host:arch_host",
     "//pw_kernel/kernel",
     "//pw_kernel/subsys/console:console_backend",
 ]

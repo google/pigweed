@@ -15,17 +15,17 @@
 
 use pw_log::info;
 
-pub mod arch;
+pub mod memory;
 #[cfg(not(feature = "std_panic_handler"))]
 mod panic;
 pub mod scheduler;
 pub mod sync;
-mod syscall;
+pub mod syscall;
 mod target;
 
 // Used by the `init_thread!` macro.
-pub use arch::{Arch, MemoryRegion, MemoryRegionType};
 use kernel_config::{KernelConfig, KernelConfigInterface};
+pub use memory::{MemoryRegion, MemoryRegionType};
 use scheduler::thread::{self, ThreadState};
 pub use scheduler::thread::{Process, Stack, Thread};
 #[doc(hidden)]
@@ -35,12 +35,6 @@ use scheduler::timer::TimerQueue;
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use scheduler::{SchedulerContext, SchedulerState, SchedulerStateContext};
 use sync::spinlock::SpinLock;
-
-#[no_mangle]
-#[allow(non_snake_case)]
-pub extern "C" fn pw_assert_HandleFailure() -> ! {
-    Arch::panic();
-}
 
 pub trait KernelContext: Sized {
     fn early_init(self) {}
@@ -197,10 +191,5 @@ pub mod __private {
         }};
     }
 
-    pub type ArchThreadState =
-        <crate::arch::Arch as crate::scheduler::SchedulerContext>::ThreadState;
-
     pub use foreign_box;
-
-    pub use crate::arch::Arch;
 }

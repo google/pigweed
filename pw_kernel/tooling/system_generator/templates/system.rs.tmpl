@@ -14,7 +14,9 @@
 
 {% if apps.len() > 0 %}
 pub fn start() {
-    type MemoryConfig = kernel::arch::ArchMemoryConfig;
+    use {{ arch_crate_name }} as arch;
+
+    type MemoryConfig = arch::MemoryConfig;
 
 {%- for (app_name, app) in apps %}
     let start_fn_{{app_name}} = {{app.start_fn_address | to_hex}}_usize;
@@ -43,7 +45,7 @@ pub fn start() {
             {{thread.stack_size_bytes}}
         )
     };
-    kernel::start_thread(kernel::arch::Arch, thread_{{app_name}}_{{thread_index}});
+    kernel::start_thread(arch::Arch, thread_{{app_name}}_{{thread_index}});
 {%- endfor -%}
 {%- endfor -%}
 }

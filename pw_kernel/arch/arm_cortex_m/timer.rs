@@ -12,15 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use kernel::scheduler;
+use kernel::sync::spinlock::SpinLock;
 use kernel_config::{CortexMKernelConfigInterface, KernelConfig, KernelConfigInterface};
 use pw_log::info;
 use time::Clock as _;
 
-use crate::arch::arm_cortex_m::regs::Regs;
-use crate::scheduler;
-use crate::sync::spinlock::SpinLock;
+use crate::regs::Regs;
 
-static TICKS: SpinLock<crate::arch::arm_cortex_m::spinlock::BareSpinLock, u64> = SpinLock::new(0);
+static TICKS: SpinLock<crate::spinlock::BareSpinLock, u64> = SpinLock::new(0);
 const SYSTICK_RELOAD_VALUE: u32 = KernelConfig::SYS_TICK_HZ / KernelConfig::SCHEDULER_TICK_HZ;
 
 pub struct Clock {}

@@ -100,7 +100,7 @@ impl Default for BareSpinLock {
     }
 }
 
-impl crate::sync::spinlock::BareSpinLock for BareSpinLock {
+impl kernel::sync::spinlock::BareSpinLock for BareSpinLock {
     type Guard<'a> = RiscVSpinLockGuard<'a>;
     const NEW: BareSpinLock = Self::new();
 

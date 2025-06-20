@@ -35,7 +35,7 @@ pub fn handle_syscall<C: SchedulerStateContext>(
     // extern "C" function pointers could be kept and use the architecture's
     // calling convention to directly call them.
     //
-    // This allows [`crate::arch::arm_cortex_m::in_interrupt_handler()`] to treat
+    // This allows [`arch::arm_cortex_m::in_interrupt_handler()`] to treat
     // active SVCalls as not in interrupt context.
     let id: SysCallId = id.try_into()?;
     let res = match id {

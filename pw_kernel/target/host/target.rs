@@ -14,7 +14,13 @@
 
 #![no_main]
 
-use {console_backend as _, kernel as _};
+use {arch_host as _, console_backend as _, kernel as _};
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn pw_assert_HandleFailure() -> ! {
+    panic!()
+}
 
 #[no_mangle]
 pub extern "C" fn main() -> core::ffi::c_int {

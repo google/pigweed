@@ -16,8 +16,7 @@
 
 use console_backend as _;
 
-use kernel::arch::arm_cortex_m::threads::ArchThreadState;
-use kernel::arch::Arch;
+use arch_arm_cortex_m::{Arch, ArchThreadState};
 use kernel::InitKernelState;
 use target_common::{declare_target, TargetInterface};
 mod userspace_demo_codegen;
@@ -34,6 +33,13 @@ impl TargetInterface for Target {
 }
 
 declare_target!(Target);
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn pw_assert_HandleFailure() -> ! {
+    use kernel::KernelContext as _;
+    Arch::panic()
+}
 
 static mut INIT_STATE: InitKernelState<ArchThreadState> = InitKernelState::new();
 

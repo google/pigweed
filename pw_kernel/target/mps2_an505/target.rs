@@ -14,8 +14,7 @@
 #![no_std]
 #![no_main]
 
-use kernel::arch::arm_cortex_m::threads::ArchThreadState;
-use kernel::arch::Arch;
+use arch_arm_cortex_m::{Arch, ArchThreadState};
 use kernel::InitKernelState;
 use target_common::{declare_target, TargetInterface};
 use {console_backend as _, kernel as _};
@@ -32,7 +31,13 @@ impl TargetInterface for Target {
         unsafe { target_common::run_ctors() };
 
         #[cfg(not(test))]
-        demo::main();
+        {
+            static mut DEMO_STATE: demo::DemoState<Arch> = demo::DemoState::new(Arch);
+            // SAFETY: `main` is only executed once, so we never generate more
+            // than one `&mut` reference to `DEMO_STATE`.
+            #[allow(static_mut_refs)]
+            demo::main(Arch, unsafe { &mut DEMO_STATE });
+        }
 
         #[cfg(test)]
         {
@@ -52,6 +57,13 @@ impl TargetInterface for Target {
 }
 
 declare_target!(Target);
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn pw_assert_HandleFailure() -> ! {
+    use kernel::KernelContext as _;
+    Arch::panic()
+}
 
 #[cortex_m_rt::entry]
 fn main() -> ! {

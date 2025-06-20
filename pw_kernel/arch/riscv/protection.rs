@@ -12,10 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use kernel_config::{KernelConfig, RiscVKernelConfigInterface};
+use kernel::memory::{MemoryRegion, MemoryRegionType};
+use kernel_config::{KernelConfig, RiscVKernelConfigInterface as _};
 
-use crate::arch::riscv::regs::pmp::*;
-use crate::arch::{MemoryRegion, MemoryRegionType};
+use crate::regs::pmp::*;
 
 /// RISC-V memory configuration
 ///
@@ -50,7 +50,7 @@ impl MemoryConfig {
     }
 }
 
-impl crate::arch::MemoryConfig for MemoryConfig {
+impl kernel::memory::MemoryConfig for MemoryConfig {
     const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion {
         ty: MemoryRegionType::ReadWriteExecutable,
         start: 0x0000_0000,

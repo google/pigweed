@@ -12,19 +12,21 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#![no_std]
+
+use kernel::scheduler::thread::{Stack, ThreadState};
+use kernel::scheduler::{SchedulerContext, SchedulerState};
+use kernel::sync::spinlock::SpinLockGuard;
+use kernel::{KernelState, KernelStateContext, MemoryRegionType};
 use pw_log::info;
 use pw_status::Result;
-
-use crate::arch::MemoryRegionType;
-use crate::scheduler::thread::{Stack, ThreadState};
-use crate::scheduler::{SchedulerContext, SchedulerState};
-use crate::sync::spinlock::SpinLockGuard;
-use crate::{KernelState, KernelStateContext};
 
 mod spinlock;
 
 #[derive(Copy, Clone, Default)]
 pub struct Arch;
+
+kernel::impl_thread_arg_for_default_zst!(Arch);
 
 pub struct ArchThreadState;
 
@@ -104,7 +106,7 @@ impl time::Clock for Clock {
 
 pub struct MemoryConfig;
 
-impl crate::arch::MemoryConfig for MemoryConfig {
+impl kernel::memory::MemoryConfig for MemoryConfig {
     const KERNEL_THREAD_MEMORY_CONFIG: Self = Self;
 
     fn range_has_access(
@@ -117,7 +119,7 @@ impl crate::arch::MemoryConfig for MemoryConfig {
     }
 }
 
-impl crate::KernelContext for Arch {
+impl kernel::KernelContext for Arch {
     fn early_init(self) {
         info!("HOST arch early init");
     }

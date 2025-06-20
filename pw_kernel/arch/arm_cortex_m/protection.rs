@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use kernel::memory::{MemoryRegion, MemoryRegionType};
 use kernel_config::{CortexMKernelConfigInterface as _, KernelConfig};
 
-use crate::arch::arm_cortex_m::regs::mpu::*;
-use crate::arch::arm_cortex_m::regs::Regs;
-use crate::{MemoryRegion, MemoryRegionType};
+use crate::regs::mpu::*;
+use crate::regs::Regs;
 
 #[derive(Copy, Clone)]
 struct MpuRegion {
@@ -180,7 +180,7 @@ pub fn init() {
     mpu.mair0.write(val);
 }
 
-impl crate::arch::MemoryConfig for MemoryConfig {
+impl kernel::memory::MemoryConfig for MemoryConfig {
     const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion {
         ty: MemoryRegionType::ReadWriteExecutable,
         start: 0x0000_0000,

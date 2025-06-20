@@ -147,7 +147,7 @@ pub trait ThreadState: 'static + Sized {
     const NEW: Self;
 
     // TODO: Maybe have a `MemoryConfigContext` super-trait of `ThreadState`?
-    type MemoryConfig: crate::arch::MemoryConfig;
+    type MemoryConfig: crate::memory::MemoryConfig;
 
     /// Initialize the default frame of a kernel thread
     ///
@@ -538,9 +538,11 @@ mod arg {
 #[macro_export]
 macro_rules! init_thread {
     ($name:literal, $entry:expr, $stack_size:expr $(,)?) => {{
-        use $crate::__private::{foreign_box::ForeignBox, ArchThreadState};
+        use $crate::__private::foreign_box::ForeignBox;
         use $crate::scheduler::thread::{Stack, StackStorage, StackStorageExt, Thread};
         use $crate::static_mut_ref;
+
+        type ArchThreadState = <arch::Arch as $crate::scheduler::SchedulerContext>::ThreadState;
 
         /// SAFETY: This must be executed at most once at run time.
         unsafe fn __init_thread() -> ForeignBox<Thread<ArchThreadState>> {
@@ -578,7 +580,8 @@ macro_rules! init_thread {
 macro_rules! init_non_priv_process {
     ($name:literal, $memory_config:expr) => {{
         use $crate::scheduler::thread::Process;
-        use $crate::__private::{ArchThreadState};
+
+        type ArchThreadState = <arch::Arch as $crate::scheduler::SchedulerContext>::ThreadState;
 
         /// SAFETY: This must be executed at most once at run time.
         unsafe fn __init_non_priv_process() -> &'static mut Process<ArchThreadState> {
@@ -592,7 +595,7 @@ macro_rules! init_non_priv_process {
             // at most once.
             let proc =
                 unsafe { $crate::static_mut_ref!(Process<ArchThreadState> = Process::new($name, $memory_config)) };
-            proc.register($crate::arch::Arch);
+            proc.register(arch::Arch);
             proc
         }
 
@@ -611,8 +614,10 @@ macro_rules! init_non_priv_process {
 macro_rules! init_non_priv_thread {
     ($name:literal, $process:expr, $entry:expr, $initial_sp:expr, $kernel_stack_size:expr) => {{
         use $crate::static_mut_ref;
-        use $crate::__private::{foreign_box::ForeignBox, ArchThreadState};
+        use $crate::__private::foreign_box::ForeignBox;
         use $crate::scheduler::thread::{Process, Stack, StackStorage, StackStorageExt, Thread};
+
+        type ArchThreadState = <arch::Arch as $crate::scheduler::SchedulerContext>::ThreadState;
 
         /// SAFETY: This must be executed at most once at run time.
         unsafe fn __init_non_priv_thread(
@@ -636,7 +641,7 @@ macro_rules! init_non_priv_thread {
             );
             unsafe {
                 if let Err(e) = thread.initialize_non_priv_thread(
-                    $crate::arch::Arch,
+                    arch::Arch,
                     // SAFETY: The caller promises that this function will be
                     // executed at most once.
                     Stack::from_slice(unsafe { static_mut_ref!(StackStorage<{ $kernel_stack_size }> = StackStorageExt::ZEROED)}),

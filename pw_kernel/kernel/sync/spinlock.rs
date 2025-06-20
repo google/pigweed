@@ -15,10 +15,6 @@
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 
-use crate::arch::Arch;
-
-pub type ConcreteBareSpinLock = <Arch as crate::scheduler::SchedulerContext>::BareSpinLock;
-
 pub trait BareSpinLock {
     type Guard<'a>
     where
@@ -90,42 +86,5 @@ impl<L: BareSpinLock, T> SpinLock<L, T> {
             lock: self,
             _inner_guard: inner_guard,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use unittest::test;
-
-    use super::*;
-
-    #[test]
-    fn bare_try_lock_returns_correct_value() -> unittest::Result<()> {
-        let lock = ConcreteBareSpinLock::new();
-
-        {
-            let _sentinel = lock.lock();
-            unittest::assert_true!(lock.try_lock().is_none());
-        }
-
-        unittest::assert_true!(lock.try_lock().is_some());
-
-        Ok(())
-    }
-
-    #[test]
-    fn try_lock_returns_correct_value() -> unittest::Result<()> {
-        let lock = SpinLock::<ConcreteBareSpinLock, _>::new(false);
-
-        {
-            let mut guard = lock.lock();
-            *guard = true;
-            unittest::assert_true!(lock.try_lock().is_none());
-        }
-
-        let guard = lock.lock();
-        unittest::assert_true!(*guard);
-
-        Ok(())
     }
 }

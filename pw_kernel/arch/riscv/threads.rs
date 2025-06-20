@@ -15,16 +15,16 @@
 use core::arch::naked_asm;
 use core::mem;
 
+use kernel::scheduler::thread::Stack;
+use kernel::scheduler::{self, SchedulerContext, SchedulerState};
+use kernel::sync::spinlock::SpinLockGuard;
 use log_if::debug_if;
 use pw_status::Result;
 
-use crate::arch::riscv::protection::MemoryConfig;
-use crate::arch::riscv::regs::{MStatusVal, PrivilegeLevel};
-use crate::arch::riscv::spinlock::BareSpinLock;
-use crate::arch::riscv::Arch;
-use crate::scheduler::thread::Stack;
-use crate::scheduler::{self, SchedulerContext, SchedulerState};
-use crate::sync::spinlock::SpinLockGuard;
+use crate::protection::MemoryConfig;
+use crate::regs::{MStatusVal, PrivilegeLevel};
+use crate::spinlock::BareSpinLock;
+use crate::Arch;
 
 const LOG_CONTEXT_SWITCH: bool = false;
 const LOG_THREAD_CREATE: bool = false;
@@ -151,8 +151,8 @@ impl SchedulerContext for super::Arch {
     }
 }
 
-impl crate::scheduler::thread::ThreadState for ArchThreadState {
-    type MemoryConfig = crate::arch::riscv::protection::MemoryConfig;
+impl kernel::scheduler::thread::ThreadState for ArchThreadState {
+    type MemoryConfig = crate::protection::MemoryConfig;
     const NEW: Self = Self {
         frame: core::ptr::null_mut(),
         #[cfg(feature = "user_space")]

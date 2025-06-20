@@ -15,10 +15,9 @@
 
 use core::arch::asm;
 
+use kernel::memory::{MemoryRegion, MemoryRegionType};
 use pw_status::{Error, Result};
 use regs::*;
-
-use crate::arch::{MemoryRegion, MemoryRegionType};
 
 #[repr(u8)]
 pub enum PmpCfgAddressMode {

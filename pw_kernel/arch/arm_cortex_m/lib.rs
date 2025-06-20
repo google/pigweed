@@ -12,24 +12,32 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#![no_std]
+
 use core::arch::asm;
 
 use cortex_m::peripheral::*;
+use kernel::{KernelState, KernelStateContext};
 use pw_cast::CastInto as _;
 use pw_log::info;
 
-use crate::{KernelState, KernelStateContext};
-
 mod exceptions;
-pub mod protection;
+mod protection;
 mod regs;
-pub mod spinlock;
+mod spinlock;
 mod syscall;
-pub mod threads;
+mod threads;
 mod timer;
+
+// Re-exports to conform to simplify public API.
+pub use protection::MemoryConfig;
+pub use spinlock::BareSpinLock;
+pub use threads::ArchThreadState;
 
 #[derive(Copy, Clone, Default)]
 pub struct Arch;
+
+kernel::impl_thread_arg_for_default_zst!(Arch);
 
 // Demonstration of zero over head register abstraction.
 #[inline(never)]
@@ -37,7 +45,7 @@ fn get_num_mpu_regions(mpu: &mut regs::Mpu) -> u8 {
     mpu._type.read().dregion()
 }
 
-impl crate::KernelContext for Arch {
+impl kernel::KernelContext for Arch {
     fn early_init(self) {
         info!("arch early init");
         // TODO: set up the cpu here:
@@ -151,7 +159,7 @@ fn in_interrupt_handler() -> bool {
     // Treat SVCall (0xb) as in thread mode as we drop the SVCall pending bit
     // during system call execution to allow it to block and be preempted.
     // The code that manages this is in
-    // [`crate::arch::arm_cortex_m::syscall::handle_syscall()`]
+    // [`crate::syscall::handle_syscall()`]
     current_exception != 0 && current_exception != 0xb
 }
 

@@ -23,7 +23,7 @@ use pw_cast::{CastFrom as _, CastInto as _};
 use pw_log::info;
 use regs::*;
 
-use crate::arch::arm_cortex_m::regs::msr::ControlVal;
+use crate::regs::msr::ControlVal;
 
 /// Combined Exception Return Program Status Register Value
 #[repr(transparent)]

@@ -46,7 +46,7 @@ impl Default for BareSpinLock {
     }
 }
 
-impl crate::sync::spinlock::BareSpinLock for BareSpinLock {
+impl kernel::sync::spinlock::BareSpinLock for BareSpinLock {
     type Guard<'a> = AtomicSpinLockGuard<'a>;
 
     #[allow(clippy::declare_interior_mutable_const)]

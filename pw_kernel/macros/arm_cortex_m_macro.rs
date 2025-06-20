@@ -270,7 +270,7 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
             }
         }
         // Compile time assert that the handler function signature matches.
-        const _: crate::arch::arm_cortex_m::exceptions::ExceptionHandler = #handler_ident;
+        const _: crate::exceptions::ExceptionHandler = #handler_ident;
         #handler
     }
     .into()

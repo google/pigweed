@@ -325,7 +325,7 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
             }
         }
         // Compile time assert that the handler function signature matches.
-        const _: crate::arch::riscv::exceptions::ExceptionHandler = #handler_ident;
+        const _: crate::exceptions::ExceptionHandler = #handler_ident;
 
         #[link_section = ".trap"]
         #handler

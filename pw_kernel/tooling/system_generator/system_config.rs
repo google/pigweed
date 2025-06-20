@@ -25,6 +25,8 @@ pub struct SystemConfig {
     pub kernel: KernelConfig,
     #[serde(default)]
     pub apps: LinkedHashMap<String, AppConfig>,
+    #[serde(skip_deserializing)]
+    pub arch_crate_name: &'static str,
 }
 
 #[derive(Debug, Deserialize)]

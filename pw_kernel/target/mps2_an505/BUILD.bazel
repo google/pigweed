@@ -85,6 +85,7 @@ SRCS = ["target.rs"]
 COMMON_DEPS = [
     ":linker_script",
     "//pw_kernel/kernel",
+    "//pw_kernel/arch/arm_cortex_m:arch_arm_cortex_m",
     "//pw_kernel/subsys/console:console_backend_semihosting",
     "//pw_kernel/target:target_common",
     "@rust_crates//:cortex-m",

@@ -16,22 +16,22 @@ use core::arch::asm;
 use core::mem::{self, MaybeUninit};
 
 use cortex_m::peripheral::SCB;
+use kernel::memory::{MemoryConfig as _, MemoryRegionType};
+use kernel::scheduler::thread::Stack;
+use kernel::scheduler::{self, SchedulerContext, SchedulerState, SchedulerStateContext as _};
+use kernel::sync::spinlock::SpinLockGuard;
 use log_if::debug_if;
 use pw_cast::CastInto as _;
 use pw_status::{Error, Result};
 
-use crate::arch::arm_cortex_m::exceptions::{
-    exception, ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking,
-    ExcReturnStack, ExceptionFrame, KernelExceptionFrame, RetPsrVal,
+use crate::exceptions::{
+    ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking, ExcReturnStack,
+    ExceptionFrame, KernelExceptionFrame, RetPsrVal, exception,
 };
-use crate::arch::arm_cortex_m::protection::MemoryConfig;
-use crate::arch::arm_cortex_m::regs::msr::{ControlVal, Spsel};
-use crate::arch::arm_cortex_m::spinlock::BareSpinLock;
-use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
-use crate::arch::{MemoryConfig as _, MemoryRegionType};
-use crate::scheduler::thread::Stack;
-use crate::scheduler::{self, SchedulerContext, SchedulerState, SchedulerStateContext as _};
-use crate::sync::spinlock::SpinLockGuard;
+use crate::protection::MemoryConfig;
+use crate::regs::msr::{ControlVal, Spsel};
+use crate::spinlock::BareSpinLock;
+use crate::{Arch, in_interrupt_handler};
 
 const LOG_THREAD_CREATE: bool = false;
 
@@ -173,8 +173,8 @@ impl SchedulerContext for Arch {
     }
 }
 
-impl crate::scheduler::thread::ThreadState for ArchThreadState {
-    type MemoryConfig = crate::arch::arm_cortex_m::protection::MemoryConfig;
+impl kernel::scheduler::thread::ThreadState for ArchThreadState {
+    type MemoryConfig = crate::protection::MemoryConfig;
 
     const NEW: Self = Self {
         frame: core::ptr::null_mut(),

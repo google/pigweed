@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use kernel::syscall::raw_handle_syscall;
 use log_if::debug_if;
 use pw_log::info;
 #[cfg(not(feature = "user_space"))]
@@ -19,9 +20,8 @@ pub(crate) use riscv_macro::kernel_only_exception as exception;
 #[cfg(feature = "user_space")]
 pub(crate) use riscv_macro::user_space_exception as exception;
 
-use crate::arch::riscv::regs::{Cause, Exception, Interrupt, MCause, MCauseVal, MStatus};
-use crate::arch::riscv::timer;
-use crate::syscall::raw_handle_syscall;
+use crate::regs::{Cause, Exception, Interrupt, MCause, MCauseVal, MStatus};
+use crate::timer;
 
 const LOG_EXCEPTIONS: bool = false;
 

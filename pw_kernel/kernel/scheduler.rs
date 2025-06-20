@@ -21,7 +21,7 @@ use pw_log::info;
 use pw_status::{Error, Result};
 use thread::*;
 
-use crate::arch::MemoryConfig as _;
+use crate::memory::MemoryConfig as _;
 use crate::scheduler::timer::{Instant, TimerCallback, TimerQueue};
 use crate::sync::spinlock::{BareSpinLock, SpinLock, SpinLockGuard};
 
@@ -230,8 +230,18 @@ impl<S: ThreadState> SchedulerState<S> {
         }
     }
 
+    /// Returns a pointer to the current threads architecture thread state
+    /// struct.
+    ///
+    /// Only meant to be called from within an architecture implementation.
+    ///
+    /// # Safety
+    ///
+    /// Must be called with the scheduler lock held.  Pointer is only valid
+    /// while the current threads remains the current thread.
     #[allow(dead_code)]
-    pub(super) unsafe fn get_current_arch_thread_state(&mut self) -> *mut S {
+    #[doc(hidden)]
+    pub unsafe fn get_current_arch_thread_state(&mut self) -> *mut S {
         self.current_arch_thread_state
     }
 
