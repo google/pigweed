@@ -66,6 +66,7 @@ fn dump_exception_frame(frame: &TrapFrame) {
 // handler.
 fn handle_ecall(frame: &mut TrapFrame) {
     let ret_val = raw_handle_syscall(
+        super::Arch,
         (*frame).t0 as u16,
         (*frame).a0 as usize,
         (*frame).a1 as usize,

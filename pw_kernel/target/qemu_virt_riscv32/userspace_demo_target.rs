@@ -15,8 +15,8 @@
 #![no_main]
 
 use console_backend as _;
-use kernel::{self as _, Clock, Duration};
-use time::Clock as _;
+use kernel::scheduler::SchedulerContext as _;
+use kernel::{self as _, Duration};
 
 use target_common::{declare_target, TargetInterface};
 mod userspace_demo_codegen;
@@ -29,7 +29,7 @@ impl TargetInterface for Target {
     fn main() -> ! {
         userspace_demo_codegen::start();
         loop {
-            kernel::sleep_until(kernel::Arch, Clock::now() + Duration::from_secs(10));
+            kernel::sleep_until(kernel::Arch, kernel::Arch.now() + Duration::from_secs(10));
         }
     }
 }

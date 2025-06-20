@@ -86,6 +86,7 @@ impl ArchThreadState {
 impl SchedulerContext for Arch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = BareSpinLock;
+    type Clock = super::timer::Clock;
 
     unsafe fn context_switch<'a>(
         self,
@@ -130,12 +131,17 @@ impl SchedulerContext for Arch {
             // The next line of code is only executed in this context after the
             // old thread is context switched back to.
 
-            sched_state = Arch::get_scheduler_lock(Arch).lock();
+            sched_state = Arch::get_scheduler(Arch).lock();
         } else {
             // in interrupt context the pendsv should have already triggered it
             pw_assert::assert!(SCB::is_pendsv_pending());
         }
         sched_state
+    }
+
+    fn now(self) -> time::Instant<super::timer::Clock> {
+        use time::Clock as _;
+        super::timer::Clock::now()
     }
 
     fn enable_interrupts() {
@@ -313,7 +319,7 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     }
 
     // Return the arch frame for the current thread
-    let mut sched_state = Arch.get_scheduler_lock().lock();
+    let mut sched_state = Arch.get_scheduler().lock();
     let new_thread = unsafe { sched_state.get_current_arch_thread_state() };
     // info!(
     //     "new frame {:08x}: pc {:08x}",

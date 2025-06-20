@@ -205,7 +205,7 @@ impl<S: ThreadState> Process<S> {
     /// Registers process with scheduler.
     pub fn register<C: SchedulerStateContext<ThreadState = S>>(&mut self, ctx: C) {
         unsafe {
-            ctx.get_scheduler_lock().lock().add_process_to_list(self);
+            ctx.get_scheduler().lock().add_process_to_list(self);
         }
     }
 
@@ -303,7 +303,7 @@ impl<S: ThreadState> Thread<S> {
         arg: usize,
     ) -> &mut Thread<S> {
         pw_assert::assert!(self.state == State::New);
-        let process = ctx.get_scheduler_lock().lock().kernel_process.get();
+        let process = ctx.get_scheduler().lock().kernel_process.get();
         let args = (entry_point as usize, arg);
         unsafe {
             (*self.arch_thread_state.get()).initialize_kernel_frame(
@@ -364,7 +364,7 @@ impl<S: ThreadState> Thread<S> {
 
         self.state = State::Initial;
 
-        let _sched_state = ctx.get_scheduler_lock().lock();
+        let _sched_state = ctx.get_scheduler().lock();
         unsafe {
             // Safety: *process is only accessed with the scheduler lock held.
 

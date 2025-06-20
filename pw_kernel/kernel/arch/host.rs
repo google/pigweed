@@ -31,6 +31,7 @@ pub struct ArchThreadState;
 impl SchedulerContext for Arch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
+    type Clock = Clock;
 
     unsafe fn context_switch(
         self,
@@ -39,6 +40,11 @@ impl SchedulerContext for Arch {
         _new_thread_state: *mut ArchThreadState,
     ) -> SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<ArchThreadState>> {
         pw_assert::panic!("unimplemented");
+    }
+
+    fn now(self) -> time::Instant<Clock> {
+        use time::Clock as _;
+        Clock::now()
     }
 
     fn enable_interrupts() {
@@ -112,12 +118,10 @@ impl crate::arch::MemoryConfig for MemoryConfig {
 }
 
 impl crate::KernelContext for Arch {
-    type Clock = Clock;
-
-    fn early_init() {
+    fn early_init(self) {
         info!("HOST arch early init");
     }
-    fn init() {
+    fn init(self) {
         info!("HOST arch init");
     }
 }

@@ -15,7 +15,7 @@
 use core::arch::asm;
 
 use crate::scheduler::SchedulerContext as _;
-use crate::{KernelState, KernelStateContext};
+use crate::KernelState;
 
 mod exceptions;
 pub mod protection;
@@ -28,16 +28,14 @@ mod timer;
 pub struct Arch;
 
 impl crate::KernelContext for Arch {
-    type Clock = timer::Clock;
-
-    fn early_init() {
+    fn early_init(self) {
         // Make sure interrupts are disabled
         Self::disable_interrupts();
 
         timer::early_init();
     }
 
-    fn init() {
+    fn init(self) {
         timer::init();
     }
 
@@ -50,7 +48,7 @@ impl crate::KernelContext for Arch {
     }
 }
 
-impl KernelStateContext for Arch {
+impl crate::KernelStateContext for Arch {
     fn get_state(self) -> &'static KernelState<Arch> {
         static STATE: KernelState<Arch> = KernelState::new();
         &STATE

@@ -112,7 +112,7 @@ impl<C: SchedulerStateContext, T> Mutex<C, T> {
     }
 
     // TODO - konkers: Investigate combining with lock().
-    pub fn lock_until(&self, deadline: Instant) -> Result<MutexGuard<'_, C, T>> {
+    pub fn lock_until(&self, deadline: Instant<C::Clock>) -> Result<MutexGuard<'_, C, T>> {
         let mut state = self.state.lock();
         pw_assert::ne!(
             state.holder_thread_id as usize,

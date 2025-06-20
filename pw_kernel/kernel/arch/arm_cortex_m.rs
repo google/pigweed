@@ -38,9 +38,7 @@ fn get_num_mpu_regions(mpu: &mut regs::Mpu) -> u8 {
 }
 
 impl crate::KernelContext for Arch {
-    type Clock = timer::Clock;
-
-    fn early_init() {
+    fn early_init(self) {
         info!("arch early init");
         // TODO: set up the cpu here:
         //  --interrupt vector table--
@@ -114,7 +112,7 @@ impl crate::KernelContext for Arch {
         // }
     }
 
-    fn init() {
+    fn init(self) {
         info!("arch init");
         timer::systick_init();
     }

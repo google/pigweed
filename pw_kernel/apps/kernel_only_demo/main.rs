@@ -14,11 +14,11 @@
 #![no_std]
 
 use kernel::arch::Arch;
+use kernel::scheduler::SchedulerContext as _;
 use kernel::sync::mutex::Mutex;
-use kernel::{Clock, Duration};
+use kernel::Duration;
 use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
-use time::Clock as _;
 
 pub fn main() -> ! {
     // SAFETY: The `main` function thread is never executed more than once.
@@ -45,7 +45,7 @@ static TEST_COUNTER: Mutex<Arch, u64> = Mutex::new(Arch, 0);
 fn thread_a() -> ! {
     loop {
         let mut counter = TEST_COUNTER.lock();
-        kernel::sleep_until(Arch, Clock::now() + Duration::from_secs(1));
+        kernel::sleep_until(Arch, Arch.now() + Duration::from_secs(1));
         info!("Thread A: incrementing counter");
         *counter = (*counter).saturating_add(1);
     }
@@ -53,7 +53,7 @@ fn thread_a() -> ! {
 
 fn thread_b() {
     loop {
-        let deadline = Clock::now() + Duration::from_millis(600);
+        let deadline = Arch.now() + Duration::from_millis(600);
         let Ok(counter) = TEST_COUNTER.lock_until(deadline) else {
             info!("Thread B: timeout");
             continue;

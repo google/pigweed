@@ -16,13 +16,13 @@ use pw_cast::CastInto as _;
 use pw_log::info;
 use pw_status::{Error, Result};
 use syscall_defs::{SysCallId, SysCallReturnValue};
-use time::Clock;
 
-use crate::arch::Arch;
+use crate::scheduler::SchedulerStateContext;
 
 const SYSCALL_DEBUG: bool = false;
 
-pub fn handle_syscall(
+pub fn handle_syscall<C: SchedulerStateContext>(
+    ctx: C,
     id: u16,
     arg0: usize,
     arg1: usize,
@@ -47,7 +47,7 @@ pub fn handle_syscall(
                 arg0 as usize,
                 arg1 as usize,
             );
-            crate::sleep_until(Arch, crate::Clock::now() + crate::Duration::from_secs(1));
+            crate::sleep_until(ctx, ctx.now() + crate::Duration::from_secs(1));
             log_if::debug_if!(SYSCALL_DEBUG, "sycall: DebugAdd woken");
             match arg0.checked_add(arg1) {
                 Some(res) => Ok(res.cast_into()),
@@ -56,7 +56,7 @@ pub fn handle_syscall(
         }
         // TODO: Remove this syscall when logging is added.
         SysCallId::DebugPutc => {
-            crate::sleep_until(Arch, crate::Clock::now() + crate::Duration::from_secs(1));
+            crate::sleep_until(ctx, ctx.now() + crate::Duration::from_secs(1));
             let c = u32::try_from(arg0)
                 .ok()
                 .and_then(char::from_u32)
@@ -70,7 +70,14 @@ pub fn handle_syscall(
 }
 
 #[allow(dead_code)]
-pub fn raw_handle_syscall(id: u16, arg0: usize, arg1: usize, arg2: usize, arg3: usize) -> i64 {
-    let ret_val: SysCallReturnValue = handle_syscall(id, arg0, arg1, arg2, arg3).into();
+pub fn raw_handle_syscall<C: SchedulerStateContext>(
+    ctx: C,
+    id: u16,
+    arg0: usize,
+    arg1: usize,
+    arg2: usize,
+    arg3: usize,
+) -> i64 {
+    let ret_val: SysCallReturnValue = handle_syscall(ctx, id, arg0, arg1, arg2, arg3).into();
     ret_val.0
 }

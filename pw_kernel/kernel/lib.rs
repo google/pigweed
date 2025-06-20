@@ -23,13 +23,14 @@ pub mod sync;
 mod syscall;
 mod target;
 
+// Used by the `init_thread!` macro.
 pub use arch::{Arch, MemoryRegion, MemoryRegionType};
 use kernel_config::{KernelConfig, KernelConfigInterface};
 pub use scheduler::thread::{Process, Stack, Thread};
 #[doc(hidden)]
 pub use scheduler::thread::{StackStorage, StackStorageExt};
-// Used by the `init_thread!` macro.
-pub use scheduler::timer::{Clock, Duration};
+pub use scheduler::timer::Duration;
+use scheduler::timer::TimerQueue;
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use scheduler::{SchedulerContext, SchedulerState, SchedulerStateContext as _};
 use sync::spinlock::SpinLock;
@@ -40,11 +41,9 @@ pub extern "C" fn pw_assert_HandleFailure() -> ! {
     Arch::panic();
 }
 
-pub trait KernelContext: SchedulerContext {
-    type Clock: time::Clock;
-
-    fn early_init() {}
-    fn init() {}
+pub trait KernelContext: Sized {
+    fn early_init(self) {}
+    fn init(self) {}
 
     fn panic() -> ! {
         #[allow(clippy::empty_loop)]
@@ -58,6 +57,7 @@ pub trait KernelStateContext: SchedulerContext + KernelContext {
 
 pub struct KernelState<C: KernelStateContext> {
     scheduler: SpinLock<C::BareSpinLock, SchedulerState<C::ThreadState>>,
+    timer_queue: SpinLock<C::BareSpinLock, TimerQueue<C::Clock>>,
 }
 
 impl<C: KernelStateContext> KernelState<C> {
@@ -65,6 +65,7 @@ impl<C: KernelStateContext> KernelState<C> {
     pub const fn new() -> Self {
         Self {
             scheduler: SpinLock::new(SchedulerState::new()),
+            timer_queue: SpinLock::new(TimerQueue::new()),
         }
     }
 }
@@ -83,7 +84,7 @@ impl Kernel {
         target::console_init();
         info!("Welcome to Maize on {}!", target::name() as &str);
 
-        Arch::early_init();
+        Arch.early_init();
 
         // Prepare the scheduler for thread initialization.
         scheduler::initialize(Arch);
@@ -110,9 +111,9 @@ fn bootstrap_thread_entry(_arg: usize) {
     info!("Welcome to the first thread, continuing bootstrap");
     pw_assert::assert!(Arch::interrupts_enabled());
 
-    Arch::init();
+    Arch.init();
 
-    Arch.get_scheduler_lock().lock().dump_all_threads();
+    Arch.get_scheduler().lock().dump_all_threads();
 
     // SAFETY: The bootstrap thread is never executed more than once.
     let idle_thread = unsafe {
@@ -123,7 +124,7 @@ fn bootstrap_thread_entry(_arg: usize) {
         )
     };
 
-    Arch::get_scheduler_lock(Arch).lock().dump_all_threads();
+    Arch::get_scheduler(Arch).lock().dump_all_threads();
 
     scheduler::start_thread(Arch, idle_thread);
 

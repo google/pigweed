@@ -85,6 +85,7 @@ impl ArchThreadState {
 impl SchedulerContext for super::Arch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = BareSpinLock;
+    type Clock = super::timer::Clock;
 
     #[inline(never)]
     unsafe fn context_switch<'a>(
@@ -118,6 +119,11 @@ impl SchedulerContext for super::Arch {
         riscv_context_switch(&mut (*old_thread_state).frame, (*new_thread_state).frame);
 
         sched_state
+    }
+
+    fn now(self) -> time::Instant<super::timer::Clock> {
+        use time::Clock as _;
+        super::timer::Clock::now()
     }
 
     fn idle() {

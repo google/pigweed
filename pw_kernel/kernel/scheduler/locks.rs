@@ -33,7 +33,7 @@ impl<C: SchedulerStateContext, T> SmuggledSchedLock<C, T> {
     /// The caller must guarantee that the underlying lock and it's enclosed data
     /// is still valid.
     pub unsafe fn lock(&self) -> SchedLockGuard<'_, C, T> {
-        let guard = self.ctx.get_scheduler_lock().lock();
+        let guard = self.ctx.get_scheduler().lock();
         SchedLockGuard {
             guard,
             inner: unsafe { &mut *self.inner.as_ptr() },
@@ -45,7 +45,7 @@ impl<C: SchedulerStateContext, T> SmuggledSchedLock<C, T> {
 pub struct SchedLockGuard<'lock, C: SchedulerContext, T> {
     guard: SpinLockGuard<'lock, C::BareSpinLock, SchedulerState<C::ThreadState>>,
     inner: &'lock mut T,
-    ctx: C,
+    pub(super) ctx: C,
 }
 
 impl<'lock, C: SchedulerContext, T> SchedLockGuard<'lock, C, T> {
@@ -133,7 +133,7 @@ impl<C: SchedulerStateContext, T> SchedLock<C, T> {
     pub fn try_lock(&self) -> Option<SchedLockGuard<'_, C, T>> {
         // Safety: The lock guarantees
         self.ctx
-            .get_scheduler_lock()
+            .get_scheduler()
             .try_lock()
             .map(|guard| SchedLockGuard {
                 inner: unsafe { &mut *self.inner.get() },
@@ -143,7 +143,7 @@ impl<C: SchedulerStateContext, T> SchedLock<C, T> {
     }
 
     pub fn lock(&self) -> SchedLockGuard<'_, C, T> {
-        let guard = self.ctx.get_scheduler_lock().lock();
+        let guard = self.ctx.get_scheduler().lock();
         SchedLockGuard {
             inner: unsafe { &mut *self.inner.get() },
             guard,
@@ -215,7 +215,7 @@ impl<'lock, C: SchedulerStateContext, T> WaitQueueLockGuard<'lock, C, T> {
         (self, result)
     }
 
-    pub fn wait_until(self, deadline: Instant) -> (Self, Result<()>) {
+    pub fn wait_until(self, deadline: Instant<C::Clock>) -> (Self, Result<()>) {
         self.operate_on_wait_queue(|guard| guard.wait_until(deadline))
     }
 

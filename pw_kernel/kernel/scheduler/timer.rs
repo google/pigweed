@@ -17,28 +17,26 @@ use core::ptr::NonNull;
 use foreign_box::ForeignBox;
 use list::{ForeignList, Link};
 
-use crate::arch::Arch;
-use crate::sync::spinlock::SpinLock;
+use crate::scheduler::SchedulerStateContext;
 
-pub type Clock = <Arch as crate::KernelContext>::Clock;
-pub type Instant = time::Instant<Clock>;
-pub type Duration = time::Duration<Clock>;
+pub type Instant<C> = time::Instant<C>;
+pub type Duration<C> = time::Duration<C>;
 
-list::define_adapter!(pub TimerCallbackListAdapter => TimerCallback::link);
+list::define_adapter!(pub TimerCallbackListAdapter<C: time::Clock> => TimerCallback<C>::link);
 
-pub type TimerCallbackFn = dyn FnMut(ForeignBox<TimerCallback>, Instant);
+pub type TimerCallbackFn<C> = dyn FnMut(ForeignBox<TimerCallback<C>>, Instant<C>);
 #[allow(dead_code)]
-pub struct TimerCallback {
-    deadline: Instant,
+pub struct TimerCallback<C: time::Clock> {
+    deadline: Instant<C>,
     // XXX: make private
-    pub callback: Option<ForeignBox<TimerCallbackFn>>,
+    pub callback: Option<ForeignBox<TimerCallbackFn<C>>>,
     link: Link,
 }
 
-impl TimerCallback {
+impl<C: time::Clock> TimerCallback<C> {
     #[allow(dead_code)]
     #[must_use]
-    pub fn new(deadline: Instant, callback: ForeignBox<TimerCallbackFn>) -> Self {
+    pub fn new(deadline: Instant<C>, callback: ForeignBox<TimerCallbackFn<C>>) -> Self {
         Self {
             deadline,
             callback: Some(callback),
@@ -47,35 +45,35 @@ impl TimerCallback {
     }
 }
 
-impl PartialEq for TimerCallback {
+impl<C: time::Clock> PartialEq for TimerCallback<C> {
     fn eq(&self, other: &Self) -> bool {
         self.deadline == other.deadline
     }
 }
 
-impl Eq for TimerCallback {}
+impl<C: time::Clock> Eq for TimerCallback<C> {}
 
-impl PartialOrd for TimerCallback {
+impl<C: time::Clock> PartialOrd for TimerCallback<C> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.deadline.cmp(&other.deadline))
     }
 }
 
-impl Ord for TimerCallback {
+impl<C: time::Clock> Ord for TimerCallback<C> {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         self.deadline.cmp(&other.deadline)
     }
 }
 
 #[allow(dead_code)]
-pub struct TimerQueue {
-    queue: ForeignList<TimerCallback, TimerCallbackListAdapter>,
+pub struct TimerQueue<C: time::Clock> {
+    queue: ForeignList<TimerCallback<C>, TimerCallbackListAdapter<C>>,
 }
 
-unsafe impl Sync for TimerQueue {}
-unsafe impl Send for TimerQueue {}
+unsafe impl<C: time::Clock> Sync for TimerQueue<C> {}
+unsafe impl<C: time::Clock> Send for TimerQueue<C> {}
 
-impl TimerQueue {
+impl<C: time::Clock> TimerQueue<C> {
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -83,35 +81,10 @@ impl TimerQueue {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn schedule_timer(callback: ForeignBox<TimerCallback>) {
-        let mut timer_queue = TIMER_QUEUE.lock();
-        timer_queue.queue.sorted_insert(callback);
-    }
-
-    /// # Safety
-    ///
-    /// `timer` must point to a valid [`TimerCallback`] object which is in the
-    /// timer queue.
-    pub unsafe fn cancel_timer(timer: NonNull<TimerCallback>) -> Option<ForeignBox<TimerCallback>> {
-        let mut timer_queue = TIMER_QUEUE.lock();
-        unsafe { timer_queue.queue.remove_element(timer) }
-    }
-
-    /// # Safety
-    ///
-    /// `timer` must point to a valid [`TimerCallback`] object which is in the
-    /// timer queue.
-    pub unsafe fn cancel_and_consume_timer(timer: NonNull<TimerCallback>) {
-        if let Some(mut callback) = unsafe { Self::cancel_timer(timer) } {
-            if let Some(callback) = callback.callback.take() {
-                callback.consume();
-            }
-            callback.consume();
-        }
-    }
-
-    pub fn get_next_exipred_callback(&mut self, now: Instant) -> Option<ForeignBox<TimerCallback>> {
+    pub fn get_next_exipred_callback(
+        &mut self,
+        now: Instant<C>,
+    ) -> Option<ForeignBox<TimerCallback<C>>> {
         // TODO - konkers: An optimization opportunity exists here to implement
         // a something like `peek_front(|front| front.deadline > now)` which
         // would eliminate the popping and re-pushing of the non-expired
@@ -124,28 +97,60 @@ impl TimerQueue {
 
         Some(callback)
     }
+}
 
-    #[allow(dead_code)]
-    pub fn process_queue(now: Instant) {
-        let mut timer_queue = TIMER_QUEUE.lock();
-        while let Some(mut callback) = timer_queue.get_next_exipred_callback(now) {
-            // Drop the timer queue lock before processing callbacks.  This is
-            // Safe to do because the callback is already removed from the queue.
-            drop(timer_queue);
+#[allow(dead_code)]
+pub fn schedule_timer<C: SchedulerStateContext>(
+    ctx: C,
+    callback: ForeignBox<TimerCallback<C::Clock>>,
+) {
+    let mut timer_queue = ctx.get_timer_queue().lock();
+    timer_queue.queue.sorted_insert(callback);
+}
 
-            let Some(mut callback_fn) = callback.callback.take() else {
-                pw_assert::panic!("Non callback function found on timer");
-            };
-            (callback_fn)(callback, now);
-            let _ = callback_fn.consume();
+/// # Safety
+///
+/// `timer` must point to a valid [`TimerCallback`] object which is in the
+/// timer queue.
+pub unsafe fn cancel_timer<C: SchedulerStateContext>(
+    ctx: C,
+    timer: NonNull<TimerCallback<C::Clock>>,
+) -> Option<ForeignBox<TimerCallback<C::Clock>>> {
+    let mut timer_queue = ctx.get_timer_queue().lock();
+    unsafe { timer_queue.queue.remove_element(timer) }
+}
 
-            // Require timer queue lock.
-            timer_queue = TIMER_QUEUE.lock();
+/// # Safety
+///
+/// `timer` must point to a valid [`TimerCallback`] object which is in the
+/// timer queue.
+pub unsafe fn cancel_and_consume_timer<C: SchedulerStateContext>(
+    ctx: C,
+    timer: NonNull<TimerCallback<C::Clock>>,
+) {
+    if let Some(mut callback) = unsafe { cancel_timer(ctx, timer) } {
+        if let Some(callback) = callback.callback.take() {
+            callback.consume();
         }
+        callback.consume();
     }
 }
 
-pub static TIMER_QUEUE: SpinLock<
-    <Arch as crate::scheduler::SchedulerContext>::BareSpinLock,
-    TimerQueue,
-> = SpinLock::new(TimerQueue::new());
+#[allow(dead_code)]
+pub fn process_queue<C: SchedulerStateContext>(ctx: C, now: Instant<C::Clock>) {
+    let mut timer_queue = ctx.get_timer_queue().lock();
+    while let Some(mut callback) = timer_queue.get_next_exipred_callback(now) {
+        // Drop the timer queue lock before processing callbacks.  This is
+        // Safe to do because the callback is already removed from the queue.
+        drop(timer_queue);
+
+        let Some(mut callback_fn) = callback.callback.take() else {
+            pw_assert::panic!("Non callback function found on timer");
+        };
+        (callback_fn)(callback, now);
+        let _ = callback_fn.consume();
+
+        // Require timer queue lock.
+        timer_queue = ctx.get_timer_queue().lock();
+    }
+}

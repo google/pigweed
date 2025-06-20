@@ -99,7 +99,7 @@ impl<C: SchedulerStateContext> Event<C> {
     /// # Interrupt context
     ///
     /// This method is *not* safe to call in an interrupt context.
-    pub fn wait_until(&self, deadline: Instant) -> Result<()> {
+    pub fn wait_until(&self, deadline: Instant<C::Clock>) -> Result<()> {
         let mut state = self.state.lock();
         if !state.signaled {
             let (_state, result) = state.wait_until(deadline);
