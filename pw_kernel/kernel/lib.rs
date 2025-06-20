@@ -107,7 +107,7 @@ impl Kernel {
 }
 
 // completion of main in thread context
-fn bootstrap_thread_entry(_arg: usize) {
+fn bootstrap_thread_entry(_arg0: usize, _arg1: usize) {
     info!("Welcome to the first thread, continuing bootstrap");
     pw_assert::assert!(Arch::interrupts_enabled());
 
@@ -131,7 +131,7 @@ fn bootstrap_thread_entry(_arg: usize) {
     target::main()
 }
 
-fn idle_thread_entry(_arg: usize) {
+fn idle_thread_entry(_arg0: usize, _arg1: usize) {
     // Fake idle thread to keep the runqueue from being empty if all threads are blocked.
     pw_assert::assert!(Arch::interrupts_enabled());
     loop {

@@ -157,8 +157,8 @@ pub trait ThreadState: 'static + Sized {
         &mut self,
         kernel_stack: Stack,
         memory_config: *const Self::MemoryConfig,
-        initial_function: extern "C" fn(usize, usize),
-        args: (usize, usize),
+        initial_function: extern "C" fn(usize, usize, usize),
+        args: (usize, usize, usize),
     );
 
     /// Initialize the default frame of a user thread
@@ -171,8 +171,8 @@ pub trait ThreadState: 'static + Sized {
         kernel_stack: Stack,
         memory_config: *const Self::MemoryConfig,
         initial_sp: usize,
-        entry_point: usize,
-        arg: usize,
+        initial_pc: usize,
+        args: (usize, usize, usize),
     ) -> Result<()>;
 }
 
@@ -282,7 +282,7 @@ impl<S: ThreadState> Thread<S> {
         }
     }
 
-    extern "C" fn trampoline(entry_point: usize, arg: usize) {
+    extern "C" fn trampoline(entry_point: usize, arg0: usize, arg1: usize) {
         let entry_point = core::ptr::with_exposed_provenance::<()>(entry_point);
         // SAFETY: This function is only ever passed to the
         // architecture-specific call to `initialize_frame` below. It is
@@ -291,20 +291,20 @@ impl<S: ThreadState> Thread<S> {
         // this transmute preserves validity, and the preceding
         // `with_exposed_provenance` ensures that the resulting `fn(usize)`
         // has valid provenance for its referent.
-        let entry_point: fn(usize) = unsafe { core::mem::transmute(entry_point) };
-        entry_point(arg);
+        let entry_point: fn(usize, usize) = unsafe { core::mem::transmute(entry_point) };
+        entry_point(arg0, arg1);
     }
 
     pub fn initialize_kernel_thread<C: SchedulerStateContext<ThreadState = S>>(
         &mut self,
         ctx: C,
         kernel_stack: Stack,
-        entry_point: fn(usize),
-        arg: usize,
+        entry_point: fn(usize, usize),
+        args: (usize, usize),
     ) -> &mut Thread<S> {
         pw_assert::assert!(self.state == State::New);
         let process = ctx.get_scheduler().lock().kernel_process.get();
-        let args = (entry_point as usize, arg);
+        let args = (entry_point as usize, args.0, args.1);
         unsafe {
             (*self.arch_thread_state.get()).initialize_kernel_frame(
                 kernel_stack,
@@ -328,8 +328,8 @@ impl<S: ThreadState> Thread<S> {
         kernel_stack: Stack,
         initial_sp: usize,
         process: *mut Process<S>,
-        entry_point: usize,
-        arg: usize,
+        initial_pc: usize,
+        args: (usize, usize, usize),
     ) -> Result<&mut Thread<S>> {
         pw_assert::assert!(self.state == State::New);
 
@@ -339,8 +339,8 @@ impl<S: ThreadState> Thread<S> {
                 &raw const (*process).memory_config,
                 // be passed in from user space.
                 initial_sp,
-                entry_point,
-                arg,
+                initial_pc,
+                args,
             )?;
         }
         unsafe { Ok(self.initialize(ctx, process, kernel_stack)) }
@@ -444,7 +444,7 @@ macro_rules! init_thread {
                 // executed at most once.
                 Stack::from_slice(unsafe { static_mut_ref!(StackStorage<{ $stack_size }> = StackStorageExt::ZEROED)}),
                 $entry,
-                0,
+                (0, 0)
             );
 
             thread
@@ -530,7 +530,7 @@ macro_rules! init_non_priv_thread {
                     initial_sp,
                     proc,
                     entry,
-                    0,
+                    (0, 0, 0)
                 ) {
                     $crate::macro_exports::pw_assert::panic!(
                         "Error initializing thread: {}: {}",

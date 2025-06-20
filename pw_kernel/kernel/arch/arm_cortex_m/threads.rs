@@ -62,7 +62,7 @@ impl ArchThreadState {
         psp: u32,
         return_address: ExcReturn,
         initial_pc: usize,
-        (r0, r1, r2): (usize, usize, usize),
+        (r0, r1, r2, r3): (usize, usize, usize, usize),
     ) {
         // Clear the stack and set up the exception frame such that it would
         // return to the function passed in with arg0 and arg1 passed in the
@@ -72,6 +72,7 @@ impl ArchThreadState {
             (*user_frame).r0 = r0.cast_into();
             (*user_frame).r1 = r1.cast_into();
             (*user_frame).r2 = r2.cast_into();
+            (*user_frame).r3 = r3.cast_into();
             (*user_frame).pc = initial_pc.cast_into();
             (*user_frame).psr = RetPsrVal(0).with_t(true);
             (*kernel_frame) = mem::zeroed();
@@ -181,8 +182,8 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
         &mut self,
         kernel_stack: Stack,
         memory_config: *const MemoryConfig,
-        initial_function: extern "C" fn(usize, usize),
-        args: (usize, usize),
+        initial_function: extern "C" fn(usize, usize, usize),
+        args: (usize, usize, usize),
     ) {
         self.memory_config = memory_config;
         let user_frame: *mut ExceptionFrame =
@@ -213,7 +214,7 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
                 ExcReturnMode::ThreadSecure,
             ),
             trampoline as usize,
-            (initial_function as usize, args.0, args.1),
+            (initial_function as usize, args.0, args.1, args.2),
         );
     }
 
@@ -223,8 +224,8 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
         kernel_stack: Stack,
         memory_config: *const MemoryConfig,
         initial_sp: usize,
-        entry_point: usize,
-        arg: usize,
+        initial_pc: usize,
+        args: (usize, usize, usize),
     ) -> Result<()> {
         self.memory_config = memory_config;
 
@@ -257,8 +258,8 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
                 ExcReturnFrameType::Standard,
                 ExcReturnMode::ThreadSecure,
             ),
-            entry_point,
-            (arg, 0x0, 0x0),
+            initial_pc,
+            (args.0, args.1, args.2, 0),
         );
 
         Ok(())

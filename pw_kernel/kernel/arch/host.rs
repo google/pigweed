@@ -73,8 +73,8 @@ impl ThreadState for ArchThreadState {
         &mut self,
         _kernel_stack: Stack,
         _memory_config: *const MemoryConfig,
-        _initial_function: extern "C" fn(usize, usize),
-        _args: (usize, usize),
+        _initial_function: extern "C" fn(usize, usize, usize),
+        _args: (usize, usize, usize),
     ) {
         pw_assert::panic!("unimplemented");
     }
@@ -85,8 +85,8 @@ impl ThreadState for ArchThreadState {
         _kernel_stack: Stack,
         _memory_config: *const MemoryConfig,
         _initial_sp: usize,
-        _entry_point: usize,
-        _arg: usize,
+        _initial_pc: usize,
+        _args: (usize, usize, usize),
     ) -> Result<()> {
         pw_assert::panic!("unimplemented");
     }

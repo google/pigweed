@@ -60,7 +60,7 @@ impl ArchThreadState {
         trampoline: extern "C" fn(),
         initial_mstatus: MStatusVal,
         initial_sp: usize,
-        (s0, s1, s2): (usize, usize, usize),
+        (s0, s1, s2, s3): (usize, usize, usize, usize),
     ) {
         let frame: *mut ContextSwitchFrame =
             Stack::aligned_stack_allocation_mut(unsafe { kernel_stack.end_mut() }, 8);
@@ -74,6 +74,7 @@ impl ArchThreadState {
             (*frame).s0 = s0;
             (*frame).s1 = s1;
             (*frame).s2 = s2;
+            (*frame).s3 = s3;
             (*frame).s5 = initial_sp;
             (*frame).s6 = initial_mstatus.0;
         }
@@ -160,8 +161,8 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
         &mut self,
         kernel_stack: Stack,
         memory_config: *const MemoryConfig,
-        initial_function: extern "C" fn(usize, usize),
-        args: (usize, usize),
+        initial_function: extern "C" fn(usize, usize, usize),
+        args: (usize, usize, usize),
     ) {
         self.memory_config = memory_config;
         self.initialize_frame(
@@ -169,7 +170,7 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
             asm_trampoline,
             MStatusVal::default(),
             0x0,
-            (initial_function as usize, args.0, args.1),
+            (initial_function as usize, args.0, args.1, args.2),
         );
     }
 
@@ -179,8 +180,8 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
         kernel_stack: Stack,
         memory_config: *const MemoryConfig,
         initial_sp: usize,
-        entry_point: usize,
-        arg: usize,
+        initial_pc: usize,
+        args: (usize, usize, usize),
     ) -> Result<()> {
         self.memory_config = memory_config;
         let mstatus = MStatusVal::default()
@@ -192,7 +193,7 @@ impl crate::scheduler::thread::ThreadState for ArchThreadState {
             asm_user_trampoline,
             mstatus,
             initial_sp as usize,
-            (entry_point, arg, 0),
+            (initial_pc, args.0, args.1, args.2),
         );
 
         Ok(())
