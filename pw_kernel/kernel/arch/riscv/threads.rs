@@ -130,23 +130,23 @@ impl SchedulerContext for super::Arch {
         super::timer::Clock::now()
     }
 
-    fn idle() {
+    fn idle(self) {
         riscv::asm::wfi();
     }
 
-    fn enable_interrupts() {
+    fn enable_interrupts(self) {
         unsafe {
             riscv::register::mstatus::set_mie();
         }
     }
 
-    fn disable_interrupts() {
+    fn disable_interrupts(self) {
         unsafe {
             riscv::register::mstatus::clear_mie();
         }
     }
 
-    fn interrupts_enabled() -> bool {
+    fn interrupts_enabled(self) -> bool {
         riscv::register::mstatus::read().mie()
     }
 }
@@ -316,7 +316,7 @@ extern "C" fn trampoline(
     );
 
     // Enable interrupts
-    Arch::enable_interrupts();
+    Arch.enable_interrupts();
 
     // TODO: figure out how to drop the scheduler lock here?
 

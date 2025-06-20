@@ -126,7 +126,7 @@ impl SchedulerContext for Arch {
 
             // TODO: make sure this always drops interrupts, may need to force a cpsid here.
             drop(sched_state);
-            pw_assert::debug_assert!(Arch::interrupts_enabled());
+            pw_assert::debug_assert!(Arch.interrupts_enabled());
 
             // PendSV should fire and a context switch will happen.
 
@@ -148,17 +148,17 @@ impl SchedulerContext for Arch {
         super::timer::Clock::now()
     }
 
-    fn enable_interrupts() {
+    fn enable_interrupts(self) {
         unsafe {
             cortex_m::interrupt::enable();
         }
     }
 
-    fn disable_interrupts() {
+    fn disable_interrupts(self) {
         cortex_m::interrupt::disable();
     }
 
-    fn interrupts_enabled() -> bool {
+    fn interrupts_enabled(self) -> bool {
         // It's a complicated concept in cortex-m:
         // If PRIMASK is inactive, then interrupts are 100% disabled otherwise
         // if the current interrupt priority level is not zero (BASEPRI register) interrupts
@@ -168,7 +168,7 @@ impl SchedulerContext for Arch {
         primask.is_active() && (basepri == 0)
     }
 
-    fn idle() {
+    fn idle(self) {
         cortex_m::asm::wfi();
     }
 }
@@ -284,7 +284,7 @@ extern "C" fn trampoline(
         arg2 as usize,
     );
 
-    pw_assert::assert!(Arch::interrupts_enabled());
+    pw_assert::assert!(Arch.interrupts_enabled());
 
     // Call the actual initial function of the thread.
     initial_function(arg0, arg1, arg2);
@@ -312,7 +312,7 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     unsafe { asm!("clrex") };
 
     pw_assert::assert!(in_interrupt_handler());
-    pw_assert::assert!(!Arch::interrupts_enabled());
+    pw_assert::assert!(!Arch.interrupts_enabled());
 
     // Save the incoming frame to the current active thread's arch state, that will function
     // as the context switch frame for when it is returned to later. Clear active thread

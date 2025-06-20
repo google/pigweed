@@ -23,7 +23,7 @@ use crate::{KernelState, KernelStateContext};
 
 mod spinlock;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Arch;
 
 pub struct ArchThreadState;
@@ -47,13 +47,13 @@ impl SchedulerContext for Arch {
         Clock::now()
     }
 
-    fn enable_interrupts() {
+    fn enable_interrupts(self) {
         todo!("unimplemented");
     }
-    fn disable_interrupts() {
+    fn disable_interrupts(self) {
         todo!("");
     }
-    fn interrupts_enabled() -> bool {
+    fn interrupts_enabled(self) -> bool {
         todo!("");
     }
 }

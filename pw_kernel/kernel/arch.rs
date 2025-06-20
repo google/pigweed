@@ -27,6 +27,10 @@ mod host;
 #[cfg(feature = "arch_host")]
 pub use host::{Arch, MemoryConfig as ArchMemoryConfig};
 
+use crate::impl_thread_arg_for_default_zst;
+
+impl_thread_arg_for_default_zst!(Arch);
+
 #[derive(Clone, Copy)]
 #[allow(dead_code)]
 pub enum MemoryRegionType {

@@ -24,13 +24,13 @@ pub mod spinlock;
 mod threads;
 mod timer;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Arch;
 
 impl crate::KernelContext for Arch {
     fn early_init(self) {
         // Make sure interrupts are disabled
-        Self::disable_interrupts();
+        Arch.disable_interrupts();
 
         timer::early_init();
     }

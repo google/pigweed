@@ -28,7 +28,7 @@ mod syscall;
 mod threads;
 mod timer;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Arch;
 
 // Demonstration of zero over head register abstraction.

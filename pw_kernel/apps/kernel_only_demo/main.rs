@@ -35,7 +35,7 @@ pub fn main() -> ! {
     thread_a()
 }
 
-fn test_thread_entry_b(_arg0: usize, _arg1: usize) {
+fn test_thread_entry_b(_ctx: Arch, _arg: usize) {
     info!("Thread B starting");
     thread_b();
 }

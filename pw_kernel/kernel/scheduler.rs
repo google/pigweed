@@ -38,7 +38,7 @@ macro_rules! wait_queue_debug {
   }}
 }
 
-pub trait SchedulerContext: 'static + Copy {
+pub trait SchedulerContext: 'static + Copy + thread::ThreadArg {
     type ThreadState: ThreadState;
     type BareSpinLock: BareSpinLock;
     type Clock: time::Clock;
@@ -64,14 +64,14 @@ pub trait SchedulerContext: 'static + Copy {
     // fill in more arch implementation functions from the kernel here:
     // arch-specific backtracing
     #[allow(dead_code)]
-    fn enable_interrupts();
+    fn enable_interrupts(self);
     #[allow(dead_code)]
-    fn disable_interrupts();
+    fn disable_interrupts(self);
     #[allow(dead_code)]
-    fn interrupts_enabled() -> bool;
+    fn interrupts_enabled(self) -> bool;
 
     #[allow(dead_code)]
-    fn idle() {}
+    fn idle(self) {}
 }
 
 pub trait SchedulerStateContext: SchedulerContext {

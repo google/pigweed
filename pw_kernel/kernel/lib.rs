@@ -107,13 +107,13 @@ impl Kernel {
 }
 
 // completion of main in thread context
-fn bootstrap_thread_entry(_arg0: usize, _arg1: usize) {
+fn bootstrap_thread_entry(ctx: Arch, _arg: usize) {
     info!("Welcome to the first thread, continuing bootstrap");
-    pw_assert::assert!(Arch::interrupts_enabled());
+    pw_assert::assert!(ctx.interrupts_enabled());
 
-    Arch.init();
+    ctx.init();
 
-    Arch.get_scheduler().lock().dump_all_threads();
+    ctx.get_scheduler().lock().dump_all_threads();
 
     // SAFETY: The bootstrap thread is never executed more than once.
     let idle_thread = unsafe {
@@ -124,18 +124,18 @@ fn bootstrap_thread_entry(_arg0: usize, _arg1: usize) {
         )
     };
 
-    Arch::get_scheduler(Arch).lock().dump_all_threads();
+    ctx.get_scheduler().lock().dump_all_threads();
 
-    scheduler::start_thread(Arch, idle_thread);
+    scheduler::start_thread(ctx, idle_thread);
 
     target::main()
 }
 
-fn idle_thread_entry(_arg0: usize, _arg1: usize) {
+fn idle_thread_entry(ctx: Arch, _arg: usize) {
     // Fake idle thread to keep the runqueue from being empty if all threads are blocked.
-    pw_assert::assert!(Arch::interrupts_enabled());
+    pw_assert::assert!(ctx.interrupts_enabled());
     loop {
-        Arch::idle();
+        ctx.idle();
     }
 }
 
