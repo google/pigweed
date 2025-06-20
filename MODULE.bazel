@@ -59,7 +59,7 @@ bazel_dep(name = "emboss", version = "2024.1017.203246", repo_name = "com_google
 # LINT.ThenChange(/pw_package/py/pw_package/packages/emboss.py:emboss)
 
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
-bazel_dep(name = "rules_doxygen", version = "2.2.0", dev_dependency = True)
+bazel_dep(name = "rules_doxygen", version = "2.4.0", dev_dependency = True)
 
 # Repository overrides
 # ====================
