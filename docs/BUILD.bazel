@@ -240,68 +240,8 @@ doxygen(
         "html",
         "xml",
     ],
-    # TODO: b/384047922 - Move configuration to a dedicated Doxyfile.
-    configurations = [
-        # Use `leading-asterisk` even though `leading-slashes` is more
-        # semantically accurate (all Doxygen comments in Pigweed codebase
-        # start with `///`). See the discussion about undocumented Doxygen
-        # behavior at the bottom of this section:
-        # https://breathe.readthedocs.io/en/latest/markups.html#aliases
-        "ALIASES = \"rst=^^@verbatim embed:rst:leading-asterisk^^\"",
-        "ALIASES += \"endrst=@endverbatim\"",
-        "ALIASES += \"rstref{1}=@verbatim embed:rst:inline :ref:`\\1` @endverbatim\"",
-        "ALIASES += \"crossref{3}=@verbatim embed:rst:inline :\\1:\\2:`\\3` @endverbatim\"",
-        "ALIASES += \"c_macro{1}=@crossref{c,macro,\\1}\"",
-        "ALIASES += \"cpp_class{1}=@crossref{cpp,class,\\1}\"",
-        "ALIASES += \"cpp_func{1}=@crossref{cpp,func,\\1}\"",
-        "ALIASES += \"cpp_type{1}=@crossref{cpp,type,\\1}\"",
-        "ALIASES += \"cpp_enum{1}=@crossref{cpp,type,\\1}\"",
-        "ALIASES += \"pw_status{1}=@crossref{c,enumerator,\\1}\"",
-        "CASE_SENSE_NAMES = NO",
-        "ENABLE_PREPROCESSING = YES",
-        "EXTRACT_PACKAGE = YES",
-        "EXTRACT_PRIV_VIRTUAL = YES",
-        "EXTRACT_STATIC = YES",
-        "GENERATE_HTML = YES",
-        # Doxygen warns that a tool that LaTeX depends on (epstopdf) is
-        # not available. Explicitly disable LaTeX to stop these warnings.
-        "GENERATE_LATEX = NO",
-        "GENERATE_XML = YES",
-        "INCLUDE_GRAPH = NO",
-        "MACRO_EXPANSION = YES",
-        "PROJECT_NAME = Pigweed",
-        # TODO: https://pwbug.dev/402489948 - Replace PW_ALLOCATOR_HAS_ATOMICS
-        # when `pw_atomic` provides portable atomics.
-        """PREDEFINED = __cplusplus=202002L \\
-                        PW_LOCKABLE= \\
-                        PW_PRINTF_FORMAT(...)= \\
-                        PW_CONSTEXPR_CPP20= \\
-                        PW_EXCLUSIVE_LOCK_FUNCTION(...)= \\
-                        PW_EXCLUSIVE_TRYLOCK_FUNCTION(...)= \\
-                        PW_UNLOCK_FUNCTION(...)= \\
-                        PW_NO_LOCK_SAFETY_ANALYSIS= \\
-                        PW_CXX_STANDARD_IS_SUPPORTED(...)=1 \\
-                        PW_EXTERN_C_START= \\
-                        PW_LOCKS_EXCLUDED(...)= \\
-                        PW_EXCLUSIVE_LOCKS_REQUIRED(...)= \\
-                        PW_GUARDED_BY(...)= \\
-                        PW_NO_SANITIZE(...)= \\
-                        PW_NODISCARD_STR(...)= \\
-                        PW_ALLOCATOR_HAS_ATOMICS=1 \\
-                        configSUPPORT_STATIC_ALLOCATION=1 \\
-                        configUSE_TIMERS=1 \\
-                        configCHECK_FOR_STACK_OVERFLOW=1 \\
-                        PW_EXCLUDE_FROM_DOXYGEN=1""",
-        "QUIET = YES",  # Don't log informational messages.
-        "RECURSIVE = YES",
-        # TODO: https://pwbug.dev/393634135 - Fix all Doxygen warnings.
-        "WARN_LOGFILE = doxygen_build_logs.txt",
-    ],
+    doxyfile_template = "Doxyfile",
     tags = ["manual"],
-    # Don't use rules_doxygen's `aliases` attribute. Define aliases within
-    # `configurations`. The `aliases` attribute doesn't render aliases with
-    # args correctly: https://github.com/TendTo/rules_doxygen/issues/12
-    # aliases = []
     target_compatible_with = incompatible_with_mcu(),
 )
 
