@@ -15,6 +15,7 @@
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 
+use foreign_box::ForeignBox;
 use list::*;
 use pw_log::info;
 use pw_status::Result;
@@ -657,4 +658,19 @@ macro_rules! init_non_priv_thread {
 
         __init_non_priv_thread($process, $entry, $initial_sp)
     }};
+}
+
+/// Initializes a thread in the given storage.
+pub fn init_thread_in<C: SchedulerStateContext, T: ThreadArg, const STACK_SIZE: usize>(
+    ctx: C,
+    thread: &'static mut Thread<C::ThreadState>,
+    stack: &'static mut StackStorage<STACK_SIZE>,
+    name: &'static str,
+    entry: fn(C, T),
+    arg: T,
+) -> ForeignBox<Thread<C::ThreadState>> {
+    *thread = Thread::new(name);
+    let mut thread = ForeignBox::from(thread);
+    thread.initialize_kernel_thread(ctx, Stack::from_slice(&*stack), entry, arg);
+    thread
 }

@@ -16,6 +16,9 @@
 
 use console_backend as _;
 
+use kernel::arch::arm_cortex_m::threads::ArchThreadState;
+use kernel::arch::Arch;
+use kernel::InitKernelState;
 use target_common::{declare_target, TargetInterface};
 mod userspace_demo_codegen;
 
@@ -32,7 +35,12 @@ impl TargetInterface for Target {
 
 declare_target!(Target);
 
+static mut INIT_STATE: InitKernelState<ArchThreadState> = InitKernelState::new();
+
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    kernel::Kernel::main();
+    // SAFETY: `main` is only executed once, so we never generate more than one
+    // `&mut` reference to `INIT_STATE`.
+    #[allow(static_mut_refs)]
+    kernel::Kernel::main(Arch, unsafe { &mut INIT_STATE });
 }

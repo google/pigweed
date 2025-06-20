@@ -14,6 +14,9 @@
 #![no_std]
 #![no_main]
 
+use kernel::arch::arm_cortex_m::threads::ArchThreadState;
+use kernel::arch::Arch;
+use kernel::InitKernelState;
 use target_common::{declare_target, TargetInterface};
 use {console_backend as _, kernel as _};
 
@@ -53,5 +56,11 @@ declare_target!(Target);
 #[cortex_m_rt::entry]
 fn main() -> ! {
     Target::console_init();
-    kernel::Kernel::main()
+
+    static mut INIT_STATE: InitKernelState<ArchThreadState> = InitKernelState::new();
+
+    // SAFETY: `main` is only executed once, so we never generate more than one
+    // `&mut` reference to `INIT_STATE`.
+    #[allow(static_mut_refs)]
+    kernel::Kernel::main(Arch, unsafe { &mut INIT_STATE });
 }

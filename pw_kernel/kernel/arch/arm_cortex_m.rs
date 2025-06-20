@@ -25,7 +25,7 @@ pub mod protection;
 mod regs;
 pub mod spinlock;
 mod syscall;
-mod threads;
+pub mod threads;
 mod timer;
 
 #[derive(Copy, Clone, Default)]
