@@ -10,7 +10,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:08bc5333ae46179a7d239ad59b0d724181b019dd"
+        "git_revision:01493a2903b560bd8f9270168ce21e4581f9bac9"
       ],
       "version_file": ".versions/bb.cipd_version"
     },
@@ -66,7 +66,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:0250323d999386415553b5e2297eafe827ca41f3"
+        "git_revision:01493a2903b560bd8f9270168ce21e4581f9bac9"
       ],
       "version_file": ".versions/cas.cipd_version"
     },
@@ -80,7 +80,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:08bc5333ae46179a7d239ad59b0d724181b019dd"
+        "git_revision:01493a2903b560bd8f9270168ce21e4581f9bac9"
       ],
       "version_file": ".versions/led.cipd_version"
     },
@@ -94,7 +94,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:08bc5333ae46179a7d239ad59b0d724181b019dd"
+        "git_revision:01493a2903b560bd8f9270168ce21e4581f9bac9"
       ],
       "version_file": ".versions/swarming.cipd_version"
     },
@@ -121,7 +121,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:0250323d999386415553b5e2297eafe827ca41f3"
+        "git_revision:01493a2903b560bd8f9270168ce21e4581f9bac9"
       ],
       "version_file": ".versions/prpc.cipd_version"
     },
