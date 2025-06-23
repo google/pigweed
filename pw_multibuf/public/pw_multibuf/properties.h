@@ -84,16 +84,17 @@ struct IsBasicMultiBuf<BasicMultiBuf<kProperties...>> : public std::true_type {
 /// SFINAE-style type that can be used to enable methods only when a MultiBuf
 /// can be converted to another MultiBuf type.
 template <typename From, typename To>
-using EnableIfConvertible = std::enable_if_t<
-    std::is_same_v<To, internal::GenericMultiBuf> ||
-    // Only conversion to other MultiBuf types are supported.
-    (IsBasicMultiBuf<To>::value &&
-     // Read-only data cannot be converted to mutable data.
-     (!From::is_const() || To::is_const()) &&
-     // Layered MultiBufs cannot be converted to flat MultiBufs.
-     (From::is_layerable() || !To::is_layerable()) &&
-     // Tracked MultiBufs cannot be converted to untracked MultiBufs.
-     (From::is_observable() || !To::is_observable()))>;
+using EnableIfConvertible =
+    std::enable_if_t<std::is_same_v<To, internal::GenericMultiBuf> ||
+                     // Only conversion to other MultiBuf types are supported.
+                     (IsBasicMultiBuf<To>::value &&
+                      // Read-only data cannot be converted to mutable data.
+                      (!From::is_const() || To::is_const()) &&
+                      // Flat MultiBufs do not have layer-related methods.
+                      (From::is_layerable() || !To::is_layerable()) &&
+                      // Untracked MultiBufs do not have observer-related
+                      // methods.
+                      (From::is_observable() || !To::is_observable()))>;
 
 /// Performs the same checks as EnableIfConvertible, but generates a
 /// static_assert with a helpful message if any condition is not met.
@@ -105,10 +106,9 @@ static constexpr void AssertIsConvertible() {
     static_assert(!From::is_const() || To::is_const(),
                   "Read-only data cannot be converted to mutable data.");
     static_assert(From::is_layerable() || !To::is_layerable(),
-                  "Layered MultiBufs cannot be converted to flat MultiBufs.");
-    static_assert(
-        From::is_observable() || !To::is_observable(),
-        "Tracked MultiBufs cannot be converted to untracked MultiBufs.");
+                  "Flat MultiBufs do not have layer-related methods.");
+    static_assert(From::is_observable() || !To::is_observable(),
+                  "Untracked MultiBufs do not have observer-related methods.");
   }
 }
 
