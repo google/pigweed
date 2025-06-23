@@ -3,10 +3,11 @@
 =========
 C++ style
 =========
-The Pigweed C++ style guide is closely based on Google's external C++ Style
-Guide, which is found on the web at
-https://google.github.io/styleguide/cppguide.html. The Google C++ Style Guide
-applies to Pigweed except as described in this document.
+.. _Google C++ Style Guide: https://google.github.io/styleguide/cppguide.html
+
+The Pigweed C++ style guide is closely based on the `Google C++ Style Guide`_.
+The Google C++ Style Guide applies to Pigweed except as described in this
+document.
 
 The Pigweed style guide only applies to Pigweed itself. It does not apply to
 projects that use Pigweed or to the third-party code included with Pigweed.
