@@ -1261,13 +1261,21 @@ TEST_F(MultiBufTest, AddLayerCreatesNewFragment) {
   EXPECT_EQ(mbi->NumFragments(), 3u);
 }
 
-// TODO(b/425740614): Add a test of AddLayer where added MultiBuf is shallower.
+TEST_F(MultiBufTest, ResizeTopLayerSucceedsWithZeroLength) {
+  ConstMultiBufInstance mbi(allocator_);
+  AddLayers(*mbi);
+  EXPECT_EQ(mbi->size(), 32u);
+  mbi->ResizeTopLayer(0, 0);
+  EXPECT_EQ(mbi->size(), 0u);
+}
 
-// TODO(b/425740614): Add test where AddLayer fails when sealed
-// TODO(b/425740614): Add test where AddLayer succeeds after Unseal
-
-// TODO(b/425740614): Add a negative compilation test for resizing layers when
-// unlayered
+TEST_F(MultiBufTest, SetLayerSucceedsWithNonzeroLength) {
+  ConstMultiBufInstance mbi(allocator_);
+  AddLayers(*mbi);
+  EXPECT_EQ(mbi->size(), 32u);
+  mbi->ResizeTopLayer(6, 12);
+  EXPECT_EQ(mbi->size(), 12u);
+}
 
 // TODO(b/425740614): Add test where ResizeTopLayer fails when sealed
 // TODO(b/425740614): Add test where ResizeTopLayer succeeds after Unseal
@@ -1275,7 +1283,45 @@ TEST_F(MultiBufTest, AddLayerCreatesNewFragment) {
 // TODO(b/425740614): Add a negative compilation test for popping layers when
 // unlayered
 
+TEST_F(MultiBufTest, PopLayerSucceedsWithLayers) {
+  ConstMultiBufInstance mbi(allocator_);
+  AddLayers(*mbi);
+
+  // See `AddLayers`.
+  EXPECT_EQ(mbi->NumFragments(), 2u);
+  EXPECT_EQ(mbi->NumLayers(), 3u);
+  EXPECT_EQ(mbi->size(), 32u);
+
+  mbi->PopLayer();
+  EXPECT_EQ(mbi->NumFragments(), 3u);
+  EXPECT_EQ(mbi->NumLayers(), 2u);
+  EXPECT_EQ(mbi->size(), 48u);
+
+  mbi->PopLayer();
+  EXPECT_EQ(mbi->NumFragments(), 4u);
+  EXPECT_EQ(mbi->NumLayers(), 1u);
+  EXPECT_EQ(mbi->size(), 64u);
+}
+
 // TODO(b/425740614): Add test where PopLayer fails when sealed
 // TODO(b/425740614): Add test where PopLayer succeeds after Unseal
+
+TEST_F(MultiBufTest, GetReturnsDataFromTopLayerOnly) {
+  ConstMultiBufInstance mbi(allocator_);
+  mbi->PushBack(unowned_chunk_);
+  for (uint8_t i = 0; i < unowned_chunk_.size(); ++i) {
+    unowned_chunk_[i] = static_cast<std::byte>(i);
+  }
+  ASSERT_TRUE(mbi->AddLayer(3));
+  ASSERT_TRUE(mbi->AddLayer(1));
+  ASSERT_TRUE(mbi->AddLayer(4));
+
+  std::array<std::byte, kN> tmp;
+  pw::ConstByteSpan bytes = mbi->Get(tmp);
+  EXPECT_EQ(bytes.size(), unowned_chunk_.size() - 8);
+  for (uint8_t i = 0; i < bytes.size(); ++i) {
+    EXPECT_EQ(bytes[i], static_cast<std::byte>(i));
+  }
+}
 
 }  // namespace

@@ -293,6 +293,9 @@ ChunkIterator<SizeType, kIsConst>::operator++() {
     left -= size(index_);
     index_ += depth_;
   }
+  while (index_ < deque_->size() && size(index_) == 0) {
+    index_ += depth_;
+  }
   ResetCurrent();
   return *this;
 }

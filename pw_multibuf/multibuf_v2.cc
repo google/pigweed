@@ -168,7 +168,11 @@ Result<GenericMultiBuf> GenericMultiBuf::PopFrontFragment() {
   PW_CHECK(!empty());
   size_t size = 0;
   for (size_type index = 0; index < deque_.size(); index += depth_) {
-    size += GetLength(index);
+    size_type length = GetLength(index);
+    if (length == 0) {
+      continue;
+    }
+    size += size_t{length};
     if (IsBoundary(index)) {
       break;
     }
@@ -455,7 +459,7 @@ bool GenericMultiBuf::IsCompatible(const ControlBlock* other) const {
 GenericMultiBuf::size_type GenericMultiBuf::NumFragments() const {
   size_type num_fragments = 0;
   for (size_type index = 0; index < deque_.size(); index += depth_) {
-    if (IsBoundary(index)) {
+    if (GetLength(index) != 0 && IsBoundary(index)) {
       ++num_fragments;
     }
   }
@@ -775,21 +779,31 @@ void GenericMultiBuf::CheckRange(size_t offset, size_t length) {
 }
 
 void GenericMultiBuf::SetLayer(size_t offset, size_t length) {
-  for (size_type i = depth_ - 1; i < deque_.size() && length != 0;
-       i += depth_) {
-    Entry::View& prev = deque_[i - 1].view;
-    Entry::View& view = deque_[i].view;
-    if (offset >= prev.length) {
-      offset -= prev.length;
+  for (size_type index = 0; index < deque_.size(); index += depth_) {
+    Entry& lower = deque_[index + depth_ - 2];
+    size_type lower_offset, lower_length;
+    if (depth_ == 3) {
+      lower_offset = lower.base_view.offset;
+      lower_length = lower.base_view.length;
+    } else {
+      lower_offset = lower.view.offset;
+      lower_length = lower.view.length;
+    }
+
+    if (offset >= lower_length) {
+      offset -= size_t{lower_length};
       continue;
     }
-    view.offset = prev.offset + static_cast<size_type>(offset);
+    Entry& entry = deque_[index + depth_ - 1];
+    entry.view.offset = lower_offset + static_cast<size_type>(offset);
+    lower_length -= static_cast<size_type>(offset);
+
     if (length == dynamic_extent) {
-      view.length = prev.length - static_cast<size_type>(offset);
+      entry.view.length = lower_length;
     } else {
-      view.length =
-          static_cast<size_type>(std::min(prev.length - offset, length));
-      length -= view.length;
+      entry.view.length =
+          static_cast<size_type>(std::min(size_t{lower_length}, length));
+      length -= size_t{entry.view.length};
     }
     offset = 0;
   }
