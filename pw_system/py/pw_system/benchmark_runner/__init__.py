@@ -15,7 +15,7 @@
 """Pigweed System RPC Benchmark runner.
 
 The ``benchmark_runner`` folder is a convenience tool to execute RPC benchmarks
-using the benchmarking tools found in ``pw_rpc``.  It contains\:
+using the benchmarking tools found in ``pw_rpc``.  It contains:
 
 #. A host-side runner, ``benchmark_runner.py``, providing a default set of RPC
    Benchmark test cases to execute.
@@ -24,18 +24,18 @@ using the benchmarking tools found in ``pw_rpc``.  It contains\:
 project, while the default runner can be invoked as a python module in a
 terminal.
 
-To execute the host-side runner, open two (2) terminals\:
+To execute the host-side runner, open two (2) terminals:
 
-#. In both terminals\:
+#. In both terminals:
 
    #. Navigate to your root-level project folder.
    #. ``source activate.sh``
 
-#. In terminal A\:
+#. In terminal A:
 
    #. bazel run ``//pw_system:simulator_system_example``
 
-#. In terminal B\:
+#. In terminal B:
    #. ``python -m pw_system.benchmark_runner -s default --cli``
 """
 # pylint: enable=anomalous-backslash-in-string
