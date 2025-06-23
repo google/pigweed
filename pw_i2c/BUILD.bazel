@@ -186,7 +186,6 @@ cc_library(
         ":initiator",
         "//pw_assert:check",
         "//pw_bytes",
-        "//pw_containers",
         "//pw_containers:algorithm",
         "//pw_containers:to_array",
         "//pw_unit_test",
