@@ -39,6 +39,7 @@ pw_python_package("py") {
     "pw_presubmit/format/private/cli.py",
     "pw_presubmit/format/private/cli_support.py",
     "pw_presubmit/format/python.py",
+    "pw_presubmit/format/rust.py",
     "pw_presubmit/format/test_data/__init__.py",
     "pw_presubmit/format_code.py",
     "pw_presubmit/git_repo.py",
@@ -63,34 +64,17 @@ pw_python_package("py") {
     "pw_presubmit/todo_check.py",
     "pw_presubmit/tools.py",
   ]
-  inputs = [
-    "pw_presubmit/format/test_data/bazel_test_data.bazel",
-    "pw_presubmit/format/test_data/bazel_test_data_golden.bazel",
-    "pw_presubmit/format/test_data/clang_format_config",
-    "pw_presubmit/format/test_data/cpp_test_data.cc",
-    "pw_presubmit/format/test_data/cpp_test_data_golden.cc",
-    "pw_presubmit/format/test_data/gn_test_data.gn",
-    "pw_presubmit/format/test_data/gn_test_data_golden.gn",
-    "pw_presubmit/format/test_data/malformed_file.txt",
-    "pw_presubmit/format/test_data/python_test_data.py",
-    "pw_presubmit/format/test_data/python_test_data_golden.py",
-  ]
   tests = [
     "bazel_checks_test.py",
     "bazel_parser_test.py",
-    "bazel_format_test.py",
     "context_test.py",
     "cpp_checks_test.py",
-    "cpp_format_test.py",
-    "format_testing_utils.py",
     "format_core_test.py",
     "gitmodules_test.py",
-    "gn_format_test.py",
     "inclusive_language_test.py",
     "keep_sorted_test.py",
     "ninja_parser_test.py",
     "presubmit_test.py",
-    "python_format_test.py",
     "owners_checks_test.py",
     "todo_check_test.py",
     "tools_test.py",
@@ -115,6 +99,29 @@ pw_python_package("pigweed_format") {
     }
   }
   sources = [ "pigweed_format/__main__.py" ]
+  inputs = [
+    "pw_presubmit/format/test_data/bazel_test_data.bazel",
+    "pw_presubmit/format/test_data/bazel_test_data_golden.bazel",
+    "pw_presubmit/format/test_data/clang_format_config",
+    "pw_presubmit/format/test_data/cpp_test_data.cc",
+    "pw_presubmit/format/test_data/cpp_test_data_golden.cc",
+    "pw_presubmit/format/test_data/gn_test_data.gn",
+    "pw_presubmit/format/test_data/gn_test_data_golden.gn",
+    "pw_presubmit/format/test_data/malformed_file.txt",
+    "pw_presubmit/format/test_data/python_test_data.py",
+    "pw_presubmit/format/test_data/python_test_data_golden.py",
+    "pw_presubmit/format/test_data/rust_test_data.rs",
+    "pw_presubmit/format/test_data/rust_test_data_golden.rs",
+    "pw_presubmit/format/test_data/rustfmt.toml",
+  ]
+  tests = [
+    "bazel_format_test.py",
+    "cpp_format_test.py",
+    "format_testing_utils.py",
+    "gn_format_test.py",
+    "python_format_test.py",
+    "rust_format_test.py",
+  ]
   python_deps = [
     "$dir_pw_build/py",
     "$dir_pw_cli/py",

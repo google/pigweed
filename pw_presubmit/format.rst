@@ -46,3 +46,7 @@ Formatters
 .. autoclass:: pw_presubmit.format.python.BlackFormatter
    :members:
    :noindex:
+
+.. autoclass:: pw_presubmit.format.rust.RustfmtFormatter
+   :members:
+   :noindex:

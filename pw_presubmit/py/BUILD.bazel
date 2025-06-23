@@ -42,6 +42,7 @@ py_library(
         "pw_presubmit/format/private/cli.py",
         "pw_presubmit/format/private/cli_support.py",
         "pw_presubmit/format/python.py",
+        "pw_presubmit/format/rust.py",
         "pw_presubmit/format/test_data/__init__.py",
         "pw_presubmit/format_code.py",
         "pw_presubmit/git_repo.py",
@@ -77,6 +78,9 @@ py_library(
         "pw_presubmit/format/test_data/malformed_file.txt",
         "pw_presubmit/format/test_data/python_test_data.py",
         "pw_presubmit/format/test_data/python_test_data_golden.py",
+        "pw_presubmit/format/test_data/rust_test_data.rs",
+        "pw_presubmit/format/test_data/rust_test_data_golden.rs",
+        "pw_presubmit/format/test_data/rustfmt.toml",
     ],
     imports = ["."],
     deps = [
@@ -127,6 +131,17 @@ pw_py_importable_runfile(
     name = "buildifier_runfiles",
     src = "@buildifier",
     executable = True,
+    visibility = ["//visibility:private"],
+)
+
+pw_py_importable_runfile(
+    name = "rustfmt_runfiles",
+    src = "@rules_rust//tools/upstream_wrapper:rustfmt",
+    executable = True,
+    target_compatible_with = select({
+        "@platforms//os:none": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:private"],
 )
 
@@ -273,6 +288,17 @@ pw_py_test(
         ":format_testing_utils",
         ":pw_presubmit",
         "@pigweed_python_packages//black",
+    ],
+)
+
+pw_py_test(
+    name = "rust_format_test",
+    srcs = ["rust_format_test.py"],
+    deps = [
+        ":format_testing_utils",
+        ":pw_presubmit",
+        ":rustfmt_runfiles",
+        "//pw_build/py:pw_build",
     ],
 )
 

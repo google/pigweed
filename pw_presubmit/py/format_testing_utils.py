@@ -14,7 +14,8 @@
 """Utilities common to format tests."""
 
 import subprocess
-from typing import List
+from pathlib import Path
+from typing import List, Mapping
 
 from pw_cli.tool_runner import ToolRunner
 
@@ -22,7 +23,8 @@ from pw_cli.tool_runner import ToolRunner
 class CapturingToolRunner(ToolRunner):
     """A ToolRunner that captures executed commands and their arguments."""
 
-    def __init__(self):
+    def __init__(self, tool_map: Mapping[str, Path] | None = None):
+        self.tool_map: Mapping[str, Path] = tool_map if tool_map else {}
         self.command_history: List[str] = []
 
     def _run_tool(
@@ -32,6 +34,10 @@ class CapturingToolRunner(ToolRunner):
 
         The full command is appended to ``command_history``.
         """
+        if self.tool_map:
+            if tool not in self.tool_map:
+                raise ValueError(f'Attempted to run unmapped tool `{tool}`')
+            tool = str(self.tool_map[tool])
         cmd = [tool] + args
         self.command_history.append(' '.join([str(arg) for arg in cmd]))
         return subprocess.run(cmd, **kwargs)
