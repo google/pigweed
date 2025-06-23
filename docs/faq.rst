@@ -97,12 +97,12 @@ The summary is:
 Why doesn't Pigweed allow shell scripting?
 ------------------------------------------
 Pigweed supports multiple platforms. The native shells on these differ and
-additionally "compatible" shells often have sububle differences in behavior.
+additionally "compatible" shells often have subtle differences in behavior.
 Pigweed uses Python instead of shell scripting wherever practical and changes to
 Pigweed that include shell scripting will likely be rejected. Users of Pigweed
 may use shell scripts in their own code and we have included support for
 `Shellcheck <https://www.shellcheck.net/>`_ during presubmit checks that is
-automatically enabled if ``shellcheck`` found in the path.
+automatically enabled if ``shellcheck`` is found in the path.
 
 What development hosts are supported?
 -------------------------------------

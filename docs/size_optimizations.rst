@@ -20,7 +20,7 @@ and soon with C++20
 `consteval <https://en.cppreference.com/w/cpp/language/consteval>`_ can enable
 you to evaluate the value of a function or variable more at compile-time rather
 than only at run-time. This can often not only result in smaller sizes but also
-often times more efficient, faster execution.
+often more efficient, faster execution.
 
 We highly encourage using this aspect of C++, however there is one caveat: be
 careful in marking functions constexpr in APIs which cannot be easily changed
@@ -93,7 +93,7 @@ meaning the exit functions including any finalizers registered through
 ``atexit``, ``at_quick_exit``, and static destructors can all be removed to
 reduce the size.
 
-The exact mechanics for disabling static destructors depends on your toolchain.
+The exact mechanism for disabling static destructors depends on your toolchain.
 
 See the `Ignored Finalizer and Destructor Registration`_ section below for
 further details regarding disabling registration of functions to be run at exit
@@ -133,7 +133,7 @@ as ``__tcf_`` prefixed symbols, for example ``__tcf_0``.
 
 There's `an interesting proposal (P1247R0) <http://wg21.link/p1247r0>`_ to
 enable ``[[no_destroy]]`` attributes to C++ which would be tempting to use here.
-Alas this is not an option yet. As mentioned in the proposal one way to remove
+Unfortunately, this is not an option yet. As mentioned in the proposal one way to remove
 the destructors from these scoped statics is to wrap it in a templated wrapper
 which uses placement new.
 
@@ -235,8 +235,8 @@ queues to effectively permit the sharing of stack allocations.
 
 Buffer Sizing
 =============
-We'd be remiss not to mention the sizing of the various buffers that may exist
-in your application. You could consider watermarking them with
+It is also important to consider the sizing of the various buffers that may
+exist in your application. You could consider watermarking them with
 :ref:`module-pw_metric`. You may also be able to adjust their servicing interval
 and priority, but do not forget to keep the ingress burst sizes and scheduling
 jitter into account.

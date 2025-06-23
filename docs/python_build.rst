@@ -29,10 +29,10 @@ In addition to compiler commands a Pigweed GN build will execute Python scripts
 for various reasons including running tests, linting code, generating protos and
 more. All these scripts are run as part of a
 :ref:`module-pw_build-pw_python_action` GN template which will ultimately run
-``python``. Running Python on it's own by default will make any Python packages
-installed on the users system available for importing. This is not good and can
-lead to flaky builds when different packages are installed on each developer
-workstation. To get around this the Python community uses `virtual environments
+``python``. Running Python on its own by default will make any Python packages
+installed on the users system available for importing. This can lead to flaky
+builds when different packages are installed on each developer workstation. To
+get around this the Python community uses `virtual environments
 <https://docs.python.org/3/library/venv.html>`_ (venvs) that expose a specific
 set of Python packages separate from the host system.
 
@@ -87,8 +87,8 @@ is used by default.
    :bdg-ref-primary-line:`docs-python-build-python-gn-venv` on how to define
    your own default venv.
 
-Having a static venv containing only third-party dependencies opens the flood
-gates for python scripts to run. If the venv only contains third-party
+Having a static venv containing only third-party dependencies makes it
+possible for Python scripts to run. If the venv only contains third-party
 dependencies you may be wondering how you can import your own in-tree Python
 packages. Python code run in the build may still import any in-tree Python
 packages created with :ref:`module-pw_build-pw_python_package`

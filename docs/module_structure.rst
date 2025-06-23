@@ -9,7 +9,7 @@ That means including the code from multiple languages, as well as all the
 related documentation and tests.
 
 Additionally, the structure is designed to limit the number of places a file
-could go, so that when reading callsites it is obvious where a header is from.
+could go, so that when reading call sites it is obvious where a header is from.
 That is where the duplicated ``<module>`` occurrences in file paths comes from.
 
 Example module structure
@@ -165,7 +165,7 @@ module structure is to make it so there is ideally exactly one obvious place
 to find a header based on an ``#include``.
 
 However, in some cases header overrides are necessary to enable flexibly
-combining modules. To make this as explicit as possible, headers which override
+combining modules. To make this as explicit as possible, headers that override
 other headers must go in
 
 ``{pw_module_dir}/public_overrides/...```
@@ -433,7 +433,7 @@ This shows the only supported way to configure a module in Bazel.
 To conditionally enable targets based on whether a particular config override is
 enabled, a ``config_setting`` can be defined that looks at the config_override
 label flag value. This allows use of ``target_compatible_with`` to enable
-targets.
+targets based on the configuration.
 
 .. code-block:: python
 

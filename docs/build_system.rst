@@ -574,7 +574,7 @@ refer to the official `Bazel reference`_.
 
 General usage
 -------------
-While described in more detail in the Bazel docs there a few Bazel features that
+While described in more detail in the Bazel docs there are a few Bazel features that
 are of particular importance when targeting embedded platforms. The most
 commonly used commands used in bazel are;
 
@@ -610,8 +610,8 @@ this is experimental. The easiest way of achieving this at the moment is to use
 Bazel's ``--run_under`` flag. To make this work create a Bazel target
 (``//your_handler``) that:
 
-1. Takes a single argument (the path to the elf) and uploads the elf to your
-   Pigweed target.
+1. Takes a single argument (the path to the ELF file to be tested) and uploads the
+   ELF to your Pigweed target.
 2. Connects with your target using serial or other communication method.
 3. Listens to the communication transport for the keywords ("PASSED", "FAIL")
    and returns (0, 1) respectively if one of the keywords is intercepted. (This
@@ -789,10 +789,9 @@ please see `Bazel target_compatible_with reference`_.
 
 Flags/build settings
 ^^^^^^^^^^^^^^^^^^^^
-Flags/build settings are particularly useful in scenarios where you may want to
-be able to quickly inject a dependency from the command line but don't
-necessarily want to create an entirely new set of constraints to use with a
-select statement.
+Flags/build settings are particularly useful when you want to inject a
+dependency from the command line without creating a new set of constraints for
+a select statement.
 
 .. note::
   The scope for what is possible with build flags/settings goes well beyond
@@ -917,7 +916,7 @@ When building ``//:time_is_relative``, Bazel checks the dependencies of
 
    label_flag(
        name = "system_clock_backend",
-       build_setting_default = ":unspecified system_clock_backend",
+       build_setting_default = ":unspecified_system_clock_backend",
    )
 
 This is a  `label_flag

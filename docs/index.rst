@@ -108,8 +108,8 @@ What is Pigweed?
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 
-      Hermetic and replicable development environments for your entire team -
-      no more struggling with toolchains and "it worked on my machine"
+      Hermetic and reproducible development environments for your entire team -
+      no more struggling with toolchains and the "it worked on my machine" problem
 
 --------------------
 Who's using Pigweed?

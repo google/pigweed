@@ -17,7 +17,8 @@ a ``generate_toolchain`` template to create the complete GN toolchain.
 
 Hierarchical target structure
 -----------------------------
-The rationale for scope-based toolchains is to make Pigweed targets extensible.
+The rationale for scope-based toolchains is to make Pigweed targets
+extensible by allowing them to be composed of other toolchains.
 Variables from a toolchain can be forwarded into new scopes and then extended
 or overriden. This facilitates the sharing of common configuration options
 between toolchains, and allows for hierarchical structures. Upstream Pigweed

@@ -148,7 +148,7 @@ When to NOT roll your own facades and backends
 * If you can afford the runtime cost of dependency injection, use that.
   In all other cases where link-time subsitution will work, use that.
   Only if the API contract requires a backend to provide a header (which
-  link-time substitution doesn't let you do) should you reach for a facde.
+  link-time substitution doesn't let you do) should you reach for a facade.
 * You're trying to use globals to avoid dependency injection. Use
   the dependency injection! It makes testing much easier.
 * Your needs can be served by a standard mechanism like virtual interfaces.

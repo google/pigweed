@@ -113,7 +113,7 @@ Partial support:
 
 * GN. Pigweed has extensive support for GN, because GN was Pigweed's primary
   build system for many years. However, Pigweed's support for GN is expected
-  to relatively decline over the coming years as we focus more on Bazel.
+  to decline over the coming years as we focus more on Bazel.
 
 * CMake. We support integrating Pigweed modules into existing CMake projects.
   We don't recommend starting new projects with CMake and can't offer extensive
@@ -136,7 +136,7 @@ Development environment
 Our Bazel-based development environment reduces new teammate onboarding time
 and eliminates the `works on my machine`_ problem. Onboarding time speeds up
 because we dramatically simplify the setup of cross-compilation toolchains and
-complex tools like ``libusb``. The "works on my machine" problem is eliminated
+complex tools like ``libusb``. The "works on my machine" problem is mitigated
 because of Bazel's strong `hermeticity`_ guarantees. Building your entire
 project becomes a literal two-step process:
 
@@ -239,7 +239,7 @@ hardware-agnostic module and :ref:`pw_spi backends <module-pw_spi-backends>`
 for a list of implementations.  We encourage Pigweed clients to contribute
 their general-purpose implementations for popular vendor SDKs to Upstream
 Pigweed so that the whole Pigweed community can benefit from them and improve
-them. But that is totally optional. You can of course keep your implementations
+them. But that is totally optional. You can keep your implementations
 private, if needed.
 
 4. Set up device builds

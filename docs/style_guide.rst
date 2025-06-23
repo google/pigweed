@@ -113,7 +113,7 @@ formats, ordered by preference with the preferred patterns at the top:
 Copyright headers
 -----------------
 Every Pigweed file containing source code must include copyright and license
-information. This includes any JS/CSS files that you might be serving out to
+information. This includes any JavaScript or CSS files that you might be serving to
 browsers.
 
 Apache header source code files that support ``//`` comments:
@@ -232,7 +232,7 @@ If you use Gerrit for source code hosting and have the
 plug-in enabled Pigweed can help you enforce consistent styling on those files
 and also detects some errors.
 
-The styling follows these rules.
+The styling follows these rules:
 
 #. Content is grouped by type of line (Access grant, include, etc).
 #. Each grouping is sorted alphabetically.
