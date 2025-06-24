@@ -38,6 +38,8 @@ constexpr AdvertisingIntervalRange kTestInterval(
 const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
 
+const AdvertisementId kFirstAdvertisementId = AdvertisementId(1);
+
 template <typename T>
 class LowEnergyMultipleAdvertisingTest : public TestingBase {
  public:
@@ -85,15 +87,15 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
 
   T* advertiser() const { return advertiser_.get(); }
 
-  ResultFunction<hci_spec::AdvertisingHandle> MakeExpectSuccessCallback() {
-    return [this](Result<hci_spec::AdvertisingHandle> status) {
+  ResultFunction<AdvertisementId> MakeExpectSuccessCallback() {
+    return [this](Result<AdvertisementId> status) {
       last_status_ = status;
       EXPECT_EQ(fit::ok(), status);
     };
   }
 
-  ResultFunction<hci_spec::AdvertisingHandle> MakeExpectErrorCallback() {
-    return [this](Result<hci_spec::AdvertisingHandle> status) {
+  ResultFunction<AdvertisementId> MakeExpectErrorCallback() {
+    return [this](Result<AdvertisementId> status) {
       last_status_ = status;
       EXPECT_EQ(fit::failed(), status);
     };
@@ -165,11 +167,11 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
         hci_spec::kLESetExtendedAdvertisingEnable);
   }
 
-  std::optional<Result<hci_spec::AdvertisingHandle>> last_status() const {
+  std::optional<Result<AdvertisementId>> last_status() const {
     return last_status_;
   }
 
-  std::optional<Result<hci_spec::AdvertisingHandle>> TakeLastStatus() {
+  std::optional<Result<AdvertisementId>> TakeLastStatus() {
     if (!last_status_) {
       return std::nullopt;
     }
@@ -183,7 +185,7 @@ class LowEnergyMultipleAdvertisingTest : public TestingBase {
 
  private:
   std::unique_ptr<T> advertiser_;
-  std::optional<Result<hci_spec::AdvertisingHandle>> last_status_;
+  std::optional<Result<AdvertisementId>> last_status_;
   uint8_t max_advertisements_ = hci_spec::kMaxAdvertisingHandle + 1;
   inspect::Inspector inspector_;
 
@@ -260,6 +262,10 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousAdvertisements) {
   std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_public_addr);
+  std::optional<Result<AdvertisementId>> public_status = this->TakeLastStatus();
+  ASSERT_TRUE(public_status.has_value());
+  ASSERT_TRUE(public_status->is_ok());
+  AdvertisementId public_id = public_status->value();
 
   // start random address advertising
   constexpr AdvertisingIntervalRange random_interval(
@@ -281,11 +287,16 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousAdvertisements) {
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_random_addr);
 
+  std::optional<Result<AdvertisementId>> random_status = this->TakeLastStatus();
+  ASSERT_TRUE(random_status.has_value());
+  ASSERT_TRUE(random_status->is_ok());
+  AdvertisementId random_id = random_status->value();
+
   // check everything is correct
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_public_addr.value()));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_random_addr.value()));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(public_id));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(random_id));
 
   const LEAdvertisingState& public_addr_state =
       this->test_device()->extended_advertising_state(
@@ -338,6 +349,10 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousRandomAdvertisements) {
   std::optional<hci_spec::AdvertisingHandle> handle1 =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle1);
+  std::optional<Result<AdvertisementId>> status_1 = this->TakeLastStatus();
+  ASSERT_TRUE(status_1.has_value());
+  ASSERT_TRUE(status_1->is_ok());
+  AdvertisementId adv_id_1 = status_1->value();
 
   // start second random address advertising
   constexpr AdvertisingIntervalRange random_interval(
@@ -358,12 +373,16 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousRandomAdvertisements) {
   std::optional<hci_spec::AdvertisingHandle> handle2 =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle2);
+  std::optional<Result<AdvertisementId>> status_2 = this->TakeLastStatus();
+  ASSERT_TRUE(status_2.has_value());
+  ASSERT_TRUE(status_2->is_ok());
+  AdvertisementId adv_id_2 = status_2->value();
 
   // check everything is correct
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle1.value()));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle2.value()));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(adv_id_1));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(adv_id_2));
 
   const LEAdvertisingState& addr_state1 =
       this->test_device()->extended_advertising_state(handle1.value());
@@ -409,6 +428,10 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_public_addr);
+  std::optional<Result<AdvertisementId>> public_status = this->TakeLastStatus();
+  ASSERT_TRUE(public_status.has_value());
+  ASSERT_TRUE(public_status->is_ok());
+  AdvertisementId public_adv_id = public_status->value();
 
   // start random address advertising
   constexpr AdvertisingIntervalRange random_interval(
@@ -429,12 +452,16 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   std::optional<hci_spec::AdvertisingHandle> handle_random_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_random_addr);
+  std::optional<Result<AdvertisementId>> random_status = this->TakeLastStatus();
+  ASSERT_TRUE(random_status.has_value());
+  ASSERT_TRUE(random_status->is_ok());
+  AdvertisementId random_adv_id = random_status->value();
 
   // check everything is correct
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_public_addr.value()));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_random_addr.value()));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(public_adv_id));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(random_adv_id));
 
   // Stop advertising
   this->advertiser()->StopAdvertising();
@@ -443,8 +470,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   // Check that advertiser and controller both report not advertising
   EXPECT_EQ(0u, this->advertiser()->NumAdvertisements());
   EXPECT_FALSE(this->advertiser()->IsAdvertising());
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_public_addr.value()));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_random_addr.value()));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(public_adv_id));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(random_adv_id));
 
   const LEAdvertisingState& public_addr_state =
       this->test_device()->extended_advertising_state(
@@ -500,9 +527,12 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
   this->RunUntilIdle();
+  std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle_public_addr);
   ASSERT_TRUE(this->last_status());
   ASSERT_TRUE(this->last_status()->is_ok());
-  hci_spec::AdvertisingHandle handle_public_addr = this->last_status()->value();
+  AdvertisementId public_adv_id = this->last_status()->value();
 
   // start random address advertising
   constexpr AdvertisingIntervalRange random_interval(
@@ -520,33 +550,38 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
   this->RunUntilIdle();
+  std::optional<hci_spec::AdvertisingHandle> handle_random_addr =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle_random_addr);
   ASSERT_TRUE(this->last_status());
   ASSERT_TRUE(this->last_status()->is_ok());
-  hci_spec::AdvertisingHandle handle_random_addr = this->last_status()->value();
+  AdvertisementId random_adv_id = this->last_status()->value();
 
   // check everything is correct
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_public_addr));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_random_addr));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(public_adv_id));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(random_adv_id));
 
   // Stop advertising the random address
-  this->advertiser()->StopAdvertising(handle_random_addr);
+  this->advertiser()->StopAdvertising(random_adv_id);
   this->RunUntilIdle();
 
   // Check that advertiser and controller both report the same advertising state
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_public_addr));
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_random_addr));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(public_adv_id));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(random_adv_id));
 
   constexpr uint8_t blank[hci_spec::kMaxLEAdvertisingDataLength] = {0};
 
   {
     const LEAdvertisingState& public_addr_state =
-        this->test_device()->extended_advertising_state(handle_public_addr);
+        this->test_device()->extended_advertising_state(
+            handle_public_addr.value());
     const LEAdvertisingState& random_addr_state =
-        this->test_device()->extended_advertising_state(handle_random_addr);
+        this->test_device()->extended_advertising_state(
+            handle_random_addr.value());
 
     EXPECT_TRUE(public_addr_state.enabled);
     EXPECT_NE(0,
@@ -574,21 +609,23 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   }
 
   // stop advertising the public address
-  this->advertiser()->StopAdvertising(handle_public_addr);
+  this->advertiser()->StopAdvertising(public_adv_id);
   this->RunUntilIdle();
 
   {
     const LEAdvertisingState& public_addr_state =
-        this->test_device()->extended_advertising_state(handle_public_addr);
+        this->test_device()->extended_advertising_state(
+            handle_public_addr.value());
     const LEAdvertisingState& random_addr_state =
-        this->test_device()->extended_advertising_state(handle_random_addr);
+        this->test_device()->extended_advertising_state(
+            handle_random_addr.value());
 
     // Check that advertiser and controller both report the same advertising
     // state
     EXPECT_FALSE(this->advertiser()->IsAdvertising());
     EXPECT_EQ(0u, this->advertiser()->NumAdvertisements());
-    EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_public_addr));
-    EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_random_addr));
+    EXPECT_FALSE(this->advertiser()->IsAdvertising(public_adv_id));
+    EXPECT_FALSE(this->advertiser()->IsAdvertising(random_adv_id));
 
     EXPECT_FALSE(public_addr_state.enabled);
     EXPECT_EQ(0,
@@ -627,26 +664,22 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SuccessiveAdvertisingCalls) {
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
-  std::optional<Result<hci_spec::AdvertisingHandle>> start_result_0;
+  std::optional<Result<AdvertisementId>> start_result_0;
   this->advertiser()->StartAdvertising(
       kPublicAddress,
       ad,
       scan_data,
       options,
       /*connect_callback=*/nullptr,
-      [&](Result<hci_spec::AdvertisingHandle> result) {
-        start_result_0 = result;
-      });
-  std::optional<Result<hci_spec::AdvertisingHandle>> start_result_1;
+      [&](Result<AdvertisementId> result) { start_result_0 = result; });
+  std::optional<Result<AdvertisementId>> start_result_1;
   this->advertiser()->StartAdvertising(
       kRandomAddress,
       ad,
       scan_data,
       options,
       /*connect_callback=*/nullptr,
-      [&](Result<hci_spec::AdvertisingHandle> result) {
-        start_result_1 = result;
-      });
+      [&](Result<AdvertisementId> result) { start_result_1 = result; });
 
   this->RunUntilIdle();
   ASSERT_TRUE(start_result_0);
@@ -680,16 +713,18 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, InterleavedAdvertisingCalls) {
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
 
-  this->advertiser()->StartAdvertising(kPublicAddress,
-                                       ad,
-                                       scan_data,
-                                       options,
-                                       /*connect_callback=*/nullptr,
-                                       this->MakeExpectSuccessCallback());
+  std::optional<Result<AdvertisementId>> result_0;
+  this->advertiser()->StartAdvertising(
+      kPublicAddress,
+      ad,
+      scan_data,
+      options,
+      /*connect_callback=*/nullptr,
+      [&](Result<AdvertisementId> result) { result_0 = result; });
   std::optional<hci_spec::AdvertisingHandle> handle_0 =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_0);
-  this->advertiser()->StopAdvertising(handle_0.value());
+  this->advertiser()->StopAdvertising();
   this->advertiser()->StartAdvertising(kPublicAddress,
                                        ad,
                                        scan_data,
@@ -698,13 +733,21 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, InterleavedAdvertisingCalls) {
                                        this->MakeExpectSuccessCallback());
 
   this->RunUntilIdle();
+  ASSERT_TRUE(result_0.has_value());
+  ASSERT_TRUE(result_0->is_error());
+
   std::optional<hci_spec::AdvertisingHandle> handle_1 =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_1);
+  std::optional<Result<AdvertisementId>> status_1 = this->TakeLastStatus();
+  ASSERT_TRUE(status_1.has_value());
+  ASSERT_TRUE(status_1->is_ok());
+  AdvertisementId adv_id_1 = status_1->value();
+
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_0.value()));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_1.value()));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(kFirstAdvertisementId));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(adv_id_1));
 }
 
 TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopWhileStarting) {
@@ -721,11 +764,12 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopWhileStarting) {
                                        scan_data,
                                        options,
                                        /*connect_callback=*/nullptr,
-                                       this->MakeExpectSuccessCallback());
+                                       this->MakeExpectErrorCallback());
   std::optional<hci_spec::AdvertisingHandle> adv_handle =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(adv_handle);
-  this->advertiser()->StopAdvertising(adv_handle.value());
+
+  this->advertiser()->StopAdvertising();
 
   this->RunUntilIdle();
   EXPECT_TRUE(this->TakeLastStatus());
@@ -750,20 +794,26 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
                                /*init_extended_pdu=*/false,
                                /*init_anonymous=*/false,
                                /*init_include_tx_power_level=*/false);
-  std::optional<Result<hci_spec::AdvertisingHandle>> result_0;
+  std::optional<Result<AdvertisementId>> result_0;
   std::unique_ptr<LowEnergyConnection> link_0;
-  auto conn_cb_0 = [&link_0](auto cb_link) { link_0 = std::move(cb_link); };
+  auto conn_cb_0 = [&link_0](auto, auto cb_link) {
+    link_0 = std::move(cb_link);
+  };
   this->advertiser()->StartAdvertising(
       kPublicAddress,
       ad,
       scan_data,
       options_0,
       std::move(conn_cb_0),
-      [&](Result<hci_spec::AdvertisingHandle> result) { result_0 = result; });
+      [&](Result<AdvertisementId> result) { result_0 = result; });
   this->RunUntilIdle();
   ASSERT_TRUE(result_0);
   ASSERT_TRUE(result_0->is_ok());
-  hci_spec::AdvertisingHandle handle_0 = result_0->value();
+  AdvertisementId adv_id_0 = result_0->value();
+
+  std::optional<hci_spec::AdvertisingHandle> adv_handle_0 =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(adv_handle_0);
 
   constexpr AdvertisingIntervalRange interval_1(
       hci_spec::kLEAdvertisingIntervalMin + 1u,
@@ -773,28 +823,34 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
                                /*init_extended_pdu=*/false,
                                /*init_anonymous=*/false,
                                /*init_include_tx_power_level=*/false);
-  std::optional<Result<hci_spec::AdvertisingHandle>> result_1;
+  std::optional<Result<AdvertisementId>> result_1;
   std::unique_ptr<LowEnergyConnection> link_1;
-  auto conn_cb_1 = [&link_1](auto cb_link) { link_1 = std::move(cb_link); };
+  auto conn_cb_1 = [&link_1](auto, auto cb_link) {
+    link_1 = std::move(cb_link);
+  };
   this->advertiser()->StartAdvertising(
       kPublicAddress,
       ad,
       scan_data,
       options_1,
       std::move(conn_cb_1),
-      [&](Result<hci_spec::AdvertisingHandle> result) { result_1 = result; });
+      [&](Result<AdvertisementId> result) { result_1 = result; });
   this->RunUntilIdle();
   ASSERT_TRUE(result_1);
   ASSERT_TRUE(result_1->is_ok());
-  hci_spec::AdvertisingHandle handle_1 = result_1->value();
+  AdvertisementId adv_id_1 = result_1->value();
+
+  std::optional<hci_spec::AdvertisingHandle> adv_handle_1 =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(adv_handle_1);
 
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_0));
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_1));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(adv_id_0));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(adv_id_1));
 
   const LEAdvertisingState& adv_state_0 =
-      this->test_device()->extended_advertising_state(handle_0);
+      this->test_device()->extended_advertising_state(adv_handle_0.value());
   EXPECT_TRUE(adv_state_0.enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             adv_state_0.own_address_type);
@@ -802,7 +858,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax, adv_state_0.interval_max);
 
   const LEAdvertisingState& adv_state_1 =
-      this->test_device()->extended_advertising_state(handle_1);
+      this->test_device()->extended_advertising_state(adv_handle_1.value());
   EXPECT_TRUE(adv_state_1.enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             adv_state_1.own_address_type);
@@ -817,26 +873,28 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest,
       pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
       kPublicAddress,
       hci_spec::LEConnectionParameters());
-  this->SendMultipleAdvertisingPostConnectionEvents(conn_handle_0, handle_0);
+  this->SendMultipleAdvertisingPostConnectionEvents(conn_handle_0,
+                                                    adv_handle_0.value());
   this->RunUntilIdle();
   ASSERT_TRUE(link_0);
   EXPECT_EQ(conn_handle_0, link_0->handle());
   EXPECT_EQ(kPublicAddress, link_0->local_address());
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_0));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(adv_id_0));
   ASSERT_FALSE(link_1);
-  EXPECT_TRUE(this->advertiser()->IsAdvertising(handle_1));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(adv_id_1));
 
   this->advertiser()->OnIncomingConnection(
       conn_handle_1,
       pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
       kPublicAddress,
       hci_spec::LEConnectionParameters());
-  this->SendMultipleAdvertisingPostConnectionEvents(conn_handle_1, handle_1);
+  this->SendMultipleAdvertisingPostConnectionEvents(conn_handle_1,
+                                                    adv_handle_1.value());
   this->RunUntilIdle();
   ASSERT_TRUE(link_1);
   EXPECT_EQ(conn_handle_1, link_1->handle());
   EXPECT_EQ(kPublicAddress, link_1->local_address());
-  EXPECT_FALSE(this->advertiser()->IsAdvertising(handle_1));
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(adv_id_1));
 }
 
 #ifndef NINSPECT

@@ -25,9 +25,6 @@
 namespace bt::hci {
 namespace pwemb = pw::bluetooth::emboss;
 
-const uint8_t kAdvertisingHandle = 0x01;
-const uint8_t kInvalidAdvertisingHandle = 0xFF;
-
 LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
   // This object is probably being destroyed because the stack is shutting down,
   // in which case the HCI layer may have already been destroyed.
@@ -39,7 +36,7 @@ LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
 }
 
 CommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
-    hci_spec::AdvertisingHandle, pwemb::GenericEnableParam enable) const {
+    AdvertisementId, pwemb::GenericEnableParam enable) const {
   auto packet =
       hci::CommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
           hci_spec::kLESetAdvertisingEnable);
@@ -50,16 +47,14 @@ CommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
 
 std::optional<CommandPacket>
 LegacyLowEnergyAdvertiser::BuildSetAdvertisingRandomAddr(
-    hci_spec::AdvertisingHandle) const {
+    AdvertisementId) const {
   // In legacy advertising, random addresses use a single, global address set by
   // the controlleer
   return std::nullopt;
 }
 
 std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
-    hci_spec::AdvertisingHandle,
-    const AdvertisingData& data,
-    AdvFlags flags) const {
+    AdvertisementId, const AdvertisingData& data, AdvFlags flags) const {
   if (data.CalculateBlockSize() == 0) {
     std::vector<CommandPacket> packets;
     return packets;
@@ -83,7 +78,7 @@ std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
 }
 
 std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
-    hci_spec::AdvertisingHandle, const AdvertisingData& scan_rsp) const {
+    AdvertisementId, const AdvertisingData& scan_rsp) const {
   if (scan_rsp.CalculateBlockSize() == 0) {
     std::vector<CommandPacket> packets;
     return packets;
@@ -130,24 +125,25 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
   // peer_address_type as 0x00
   // (|packet| parameters are initialized to zero above).
 
-  return SetAdvertisingParams{std::move(packet), kAdvertisingHandle};
+  return SetAdvertisingParams{std::move(packet),
+                              active_advertisement_id_.value()};
 }
 
 CommandPacket LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
-    hci_spec::AdvertisingHandle) const {
+    AdvertisementId) const {
   return CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
       hci_spec::kLESetAdvertisingData);
 }
 
 CommandPacket LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
-    hci_spec::AdvertisingHandle) const {
+    AdvertisementId) const {
   auto packet = CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
       hci_spec::kLESetScanResponseData);
   return packet;
 }
 
 CommandPacket LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
-    hci_spec::AdvertisingHandle) const {
+    AdvertisementId) const {
   auto packet =
       hci::CommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
           hci_spec::kLESetAdvertisingEnable);
@@ -167,7 +163,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     const AdvertisingData& scan_rsp,
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
-    ResultFunction<hci_spec::AdvertisingHandle> result_callback) {
+    ResultFunction<AdvertisementId> result_callback) {
   if (options.extended_pdu) {
     bt_log(INFO,
            "hci-le",
@@ -183,7 +179,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     return;
   }
 
-  if (IsAdvertising() || starting_) {
+  if (active_advertisement_id_) {
     bt_log(INFO,
            "hci-le",
            "already advertising (only one advertisement supported at a time)");
@@ -205,16 +201,17 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
 
   starting_ = true;
   local_address_ = DeviceAddress();
+  active_advertisement_id_.emplace(next_advertisement_id_++);
 
   auto result_cb_wrapper =
       [this, address_copy = address, cb = std::move(result_callback)](
           StartAdvertisingInternalResult result) {
-        starting_ = false;
         if (result.is_error()) {
-          local_address_ = DeviceAddress();
+          ResetAdvertisingState();
           cb(fit::error(std::get<Error>(result.error_value())));
           return;
         }
+        starting_ = false;
         local_address_ = address_copy;
         cb(result.take_value());
       };
@@ -247,9 +244,8 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
       }
 
       if (HCI_IS_ERROR(event, WARN, "hci-le", "read TX power level failed")) {
-        staged_params_.value().result_callback(fit::error(
-            std::make_tuple(event.ToResult().error_value(),
-                            std::optional<hci_spec::AdvertisingHandle>())));
+        staged_params_.value().result_callback(fit::error(std::make_tuple(
+            event.ToResult().error_value(), std::optional<AdvertisementId>())));
         staged_params_ = {};
         return;
       }
@@ -289,13 +285,13 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
 
 void LegacyLowEnergyAdvertiser::StopAdvertising() {
   LowEnergyAdvertiser::StopAdvertising();
-  starting_ = false;
-  local_address_ = DeviceAddress();
+  ResetAdvertisingState();
 }
 
 void LegacyLowEnergyAdvertiser::StopAdvertising(
-    hci_spec::AdvertisingHandle handle) {
-  if (handle != kAdvertisingHandle) {
+    AdvertisementId advertisement_id) {
+  if (!active_advertisement_id_ ||
+      active_advertisement_id_.value() != advertisement_id) {
     return;
   }
 
@@ -303,9 +299,8 @@ void LegacyLowEnergyAdvertiser::StopAdvertising(
     hci_cmd_runner().Cancel();
   }
 
-  LowEnergyAdvertiser::StopAdvertisingInternal(kAdvertisingHandle);
-  starting_ = false;
-  local_address_ = DeviceAddress();
+  LowEnergyAdvertiser::StopAdvertisingInternal(advertisement_id);
+  ResetAdvertisingState();
 }
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(
@@ -320,10 +315,8 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(
   // If we aren't advertising, this is obviously wrong. However, the link will
   // be disconnected in that case before it can propagate to higher layers.
   DeviceAddress local_address = identity_address;
-  hci_spec::AdvertisingHandle adv_handle = kInvalidAdvertisingHandle;
-  if (IsAdvertising()) {
+  if (active_advertisement_id_) {
     local_address = local_address_;
-    adv_handle = kAdvertisingHandle;
   }
 
   CompleteIncomingConnection(connection_handle,
@@ -331,7 +324,13 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(
                              local_address,
                              peer_address,
                              conn_params,
-                             adv_handle);
+                             active_advertisement_id_);
+}
+
+void LegacyLowEnergyAdvertiser::ResetAdvertisingState() {
+  starting_ = false;
+  local_address_ = DeviceAddress();
+  active_advertisement_id_.reset();
 }
 
 }  // namespace bt::hci

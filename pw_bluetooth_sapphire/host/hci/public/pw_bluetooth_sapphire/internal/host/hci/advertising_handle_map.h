@@ -14,39 +14,24 @@
 
 #pragma once
 
+#include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspect.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 
 namespace bt::hci {
 
-// Extended advertising HCI commands refer to a particular advertising set via
-// an AdvertisingHandle. An AdvertisingHandle is an eight bit unsigned integer
-// that uniquely identifies an advertising set and vice versa. This means that
-// we frequently need to convert between a DeviceAddress and an
-// AdvertisingHandle. AdvertisingHandleMap provides a mapping from an
-// AdvertisingHandle to a DeviceAddress, allocating the next available
-// AdvertisingHandle.
+using AdvertisementId = Identifier<uint64_t>;
+
+// This class allocates AdvertisingHandles and AdvertisementIds and provides
+// mappings between them.
 //
-// When using extended advertising, there are two types of advertising PDU
-// formats available: legacy PDUs and extended PDUs. Legacy advertising PDUs are
-// currently the most widely compatible type, discoverable by devices deployed
-// prior to the adoption of Bluetooth 5.0. Devices deployed more recently are
-// also able to discover this type of advertising packet. Conversely, extended
-// advertising PDUs are a newer format that offers a number of improvements,
-// including the ability to advertise larger amounts of data. However, devices
-// not specifically scanning for them, or who are running on an older version of
-// Bluetooth (pre-5.0), won't be able to see them.
-//
-// When advertising using extended advertising PDUs, users often choose to emit
-// legacy advertising PDUs as well in order to maintain backwards compatibility
-// with older Bluetooth devices. As such, advertisers such as
-// ExtendedLowEnergyAdvertiser may need to track two real AdvertisingHandles
-// for each logical advertisement, one for legacy advertising PDUs and one for
-// extended advertising PDUs. Along with DeviceAddress, AdvertisingHandleMap
-// tracks whether the mapping is for an extended PDU or a legacy PDU.
-//
-// NOTE: Users shouldn't rely on any particular ordering of the next available
-// mapping. Any available AdvertisingHandle may be used.
+// Extended advertising HCI commands refer to an advertising set via an
+// AdvertisingHandle. An AdvertisingHandle is an eight bit unsigned integer that
+// uniquely identifies an advertising set. We also use a unique AdvertisingId to
+// identify a client's advertising request. We sometimes need to retrieve the
+// local address of an advertising request to create advertising commands. Thus,
+// we frequently need to convert between an AdvertisingHandle, AdvertisementId,
+// and DeviceAddress.
 class AdvertisingHandleMap {
  public:
   // Instantiate an AdvertisingHandleMap. The capacity parameter specifies the
@@ -57,26 +42,23 @@ class AdvertisingHandleMap {
       uint8_t capacity = hci_spec::kMaxAdvertisingHandle + 1)
       : capacity_(capacity) {}
 
-  // Convert a DeviceAddress to an AdvertisingHandle, creating the mapping if it
-  // doesn't already exist. The conversion may fail if there are already
+  // Allocate an AdvertisingHandle and a unique AdvertisementId and map them to
+  // |address|. The insertion may fail if there are already
   // hci_spec::kMaxAdvertisingHandles in the container.
-  std::optional<hci_spec::AdvertisingHandle> MapHandle(
-      const DeviceAddress& address);
+  std::optional<AdvertisementId> Insert(const DeviceAddress& address);
 
-  // Convert an AdvertisingHandle to a DeviceAddress. The conversion may fail if
-  // there is no DeviceAddress currently mapping to the provided handle.
-  std::optional<DeviceAddress> GetAddress(
+  // Get the AdvertisingHandle corresponding to an AdvertisementId. |id| MUST
+  // exist in the map, or else this function will panic.
+  hci_spec::AdvertisingHandle GetHandle(AdvertisementId id) const;
+
+  // Get the DeviceAddress corresponding to an AdvertisementId. |id| MUST
+  // exist in the map, or else this function will panic.
+  DeviceAddress GetAddress(AdvertisementId id) const;
+
+  // Get the AdvertisementId of the corresponding |handle|. Returns nullopt if
+  // no advertisement using |handle| exists.
+  std::optional<AdvertisementId> GetId(
       hci_spec::AdvertisingHandle handle) const;
-
-  // Remove the mapping between an AdvertisingHandle and the DeviceAddress it
-  // maps to. The container may reuse the AdvertisingHandle for other
-  // DeviceAddresses in the future. Immediate future calls to GetAddress(...)
-  // with the same AdvertisingHandle will fail because the mapping no longer
-  // exists.
-  //
-  // If the given handle doesn't map to any DeviceAddress, this function does
-  // nothing.
-  void RemoveHandle(hci_spec::AdvertisingHandle handle) { map_.erase(handle); }
 
   // Get the maximum number of mappings the AdvertisingHandleMap will support.
   uint8_t capacity() const { return capacity_; }
@@ -94,12 +76,18 @@ class AdvertisingHandleMap {
   bool Empty() const { return map_.empty(); }
 
   // Remove all mappings in the container
-  void Clear() { return map_.clear(); }
+  void Clear() {
+    map_.clear();
+    handle_to_id_.clear();
+  }
+
+  void Erase(AdvertisementId id);
 
   void AttachInspect(inspect::Node& parent);
 
  private:
   struct Value {
+    hci_spec::AdvertisingHandle handle;
     DeviceAddress address;
     inspect::Node node;
   };
@@ -128,7 +116,11 @@ class AdvertisingHandleMap {
   // handle.
   hci_spec::AdvertisingHandle last_handle_ = kStartHandle;
 
-  std::unordered_map<hci_spec::AdvertisingHandle, Value> map_;
+  AdvertisementId::value_t next_advertisement_id_ = 1;
+
+  std::unordered_map<AdvertisementId, Value> map_;
+  std::unordered_map<hci_spec::AdvertisingHandle, AdvertisementId>
+      handle_to_id_;
 };
 
 }  // namespace bt::hci

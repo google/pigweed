@@ -45,10 +45,10 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const AdvertisingData& scan_rsp,
       const AdvertisingOptions& options,
       ConnectionCallback connect_callback,
-      ResultFunction<hci_spec::AdvertisingHandle> result_callback) override;
+      ResultFunction<hci::AdvertisementId> result_callback) override;
 
   void StopAdvertising() override;
-  void StopAdvertising(hci_spec::AdvertisingHandle handle) override;
+  void StopAdvertising(hci::AdvertisementId advertisement_id) override;
 
   void OnIncomingConnection(
       hci_spec::ConnectionHandle handle,
@@ -88,7 +88,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   };
 
   CommandPacket BuildEnablePacket(
-      hci_spec::AdvertisingHandle advertising_handle,
+      AdvertisementId advertisement_id,
       pw::bluetooth::emboss::GenericEnableParam enable) const override;
 
   std::optional<SetAdvertisingParams> BuildSetAdvertisingParams(
@@ -98,25 +98,27 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const AdvertisingIntervalRange& interval) override;
 
   std::optional<CommandPacket> BuildSetAdvertisingRandomAddr(
-      hci_spec::AdvertisingHandle advertising_handle) const override;
+      AdvertisementId advertisement_id) const override;
 
   std::vector<CommandPacket> BuildSetAdvertisingData(
-      hci_spec::AdvertisingHandle advertising_handle,
+      AdvertisementId advertisement_id,
       const AdvertisingData& data,
       AdvFlags flags) const override;
 
   CommandPacket BuildUnsetAdvertisingData(
-      hci_spec::AdvertisingHandle advertising_handle) const override;
+      AdvertisementId advertisement_id) const override;
 
   std::vector<CommandPacket> BuildSetScanResponse(
-      hci_spec::AdvertisingHandle advertising_handle,
+      AdvertisementId advertisement_id,
       const AdvertisingData& data) const override;
 
   CommandPacket BuildUnsetScanResponse(
-      hci_spec::AdvertisingHandle advertising_handle) const override;
+      AdvertisementId advertisement_id) const override;
 
   CommandPacket BuildRemoveAdvertisingSet(
-      hci_spec::AdvertisingHandle advertising_handle) const override;
+      AdvertisementId advertisement_id) const override;
+
+  void OnSetAdvertisingParamsComplete(const EventPacket&) override;
 
   CommandPacket BuildAdvertisingDataFragmentPacket(
       hci_spec::AdvertisingHandle handle,
@@ -131,8 +133,6 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       pw::bluetooth::emboss::LESetExtendedAdvDataOp operation,
       pw::bluetooth::emboss::LEExtendedAdvFragmentPreference
           fragment_preference) const;
-
-  void OnSetAdvertisingParamsComplete(const EventPacket& event) override;
 
   void OnCurrentOperationComplete() override;
 

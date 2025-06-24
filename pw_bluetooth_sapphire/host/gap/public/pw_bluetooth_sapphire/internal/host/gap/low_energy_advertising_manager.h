@@ -77,14 +77,14 @@ enum class AdvertisingInterval {
   SLOW,
 };
 
-class LowEnergyAdvertisingManager {
+class LowEnergyAdvertisingManager final {
  public:
   LowEnergyAdvertisingManager(hci::LowEnergyAdvertiser* advertiser,
                               hci::LocalAddressDelegate* local_addr_delegate);
-  virtual ~LowEnergyAdvertisingManager();
+  ~LowEnergyAdvertisingManager() = default;
 
   // Returns true if the controller is currently advertising.
-  bool advertising() const { return !advertisements_.empty(); }
+  bool advertising() const { return advertiser_->IsAdvertising(); }
 
   // Asynchronously attempts to start advertising a set of |data| with
   // additional scan response data |scan_rsp|.
@@ -123,24 +123,7 @@ class LowEnergyAdvertisingManager {
                         std::optional<DeviceAddress::Type> address_type,
                         AdvertisingStatusCallback status_callback);
 
-  // Stop advertising the advertisement with the id |advertisement_id|
-  // Returns true if an advertisement was stopped, and false otherwise.
-  // This function is idempotent.
-  bool StopAdvertising(AdvertisementId advertisement_id);
-
  private:
-  class ActiveAdvertisement;
-
-  // 0 is invalid, so we start at 1.
-  AdvertisementId::value_t next_advertisement_id_ = 1;
-
-  // Active advertisements, indexed by id.
-  // TODO(armansito): Use fbl::HashMap here (fxbug.dev/42143883) or move
-  // ActiveAdvertisement definition here and store by value (it is a small
-  // object).
-  std::unordered_map<AdvertisementId, std::unique_ptr<ActiveAdvertisement>>
-      advertisements_;
-
   // Used to communicate with the controller. |advertiser_| must outlive this
   // advertising manager.
   hci::LowEnergyAdvertiser* advertiser_;  // weak
