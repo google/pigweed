@@ -60,6 +60,7 @@ pw_add_library(pw_bluetooth INTERFACE
     pw_string.hex
     pw_string.string
     pw_chrono.system_clock
+    pw_uuid
 )
 
 pw_add_library(pw_bluetooth.pw_bluetooth2 INTERFACE
@@ -102,6 +103,7 @@ pw_add_library(pw_bluetooth.pw_bluetooth2 INTERFACE
     pw_span
     pw_status
     pw_string
+    pw_uuid
 )
 
 

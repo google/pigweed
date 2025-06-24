@@ -16,11 +16,14 @@
 #include <array>
 #include <climits>
 #include <cstdint>
+#include <string_view>
 
 #include "pw_assert/assert.h"
+#include "pw_result/result.h"
 #include "pw_span/span.h"
 #include "pw_string/hex.h"
 #include "pw_string/string.h"
+#include "pw_uuid/uuid.h"
 
 namespace pw::bluetooth {
 
@@ -39,46 +42,20 @@ namespace pw::bluetooth {
 // endian format.
 class Uuid {
  public:
-  // String size of a hexadecimal representation of a UUID, not including the
-  // null terminator.
-  static constexpr size_t kHexStringSize = 36;
-
   // Create a UUID from a span of 128-bit data. UUIDs are represented as
   // little endian bytes.
-  explicit constexpr Uuid(const span<const uint8_t, 16> uuid_span) : uuid_() {
-    for (size_t i = 0; i < sizeof(uuid_); i++) {
-      uuid_[i] = uuid_span[i];
-    }
+  constexpr Uuid(const span<const uint8_t, 16> uuid_span) : uuid_() {
+    Result<uuid::Uuid> uuid = uuid::Uuid::FromSpan(uuid_span);
+    PW_ASSERT(uuid.ok());
+    uuid_ = uuid.value();
   }
 
-  // Create a UUID from its string representation. This is parsed manually here
-  // so it can be parsed at compile time with constexpr. A valid UUID is a hex
-  // string with hyphen separators at the 9th, 14th, 19th, and 24th
-  // positions, for example:
-  //   "0000180a-0000-1000-8000-00805f9b34fb"
-  // The `str` parameter is byte longer than kHexStringSize so it can be
-  // initialized with literal strings including the null terminator, as in
-  // BluetoothBase().
-  constexpr Uuid(const char (&str)[kHexStringSize + 1]) : uuid_() {
-    size_t out_hex_index = 2 * sizeof(uuid_);  // UUID is stored little-endian.
-    for (size_t i = 0; i < kHexStringSize; i++) {
-      // Indices at which we expect to find a hyphen ('-') in a UUID string.
-      if (i == 8 || i == 13 || i == 18 || i == 23) {
-        PW_ASSERT(str[i] == '-');
-        continue;
-      }
-      PW_ASSERT(str[i] != 0);
-      out_hex_index--;
-      uint16_t value = string::HexToNibble(str[i]);
-      PW_ASSERT(value <= 0xf);
-      if (out_hex_index % 2 == 0) {
-        uuid_[out_hex_index / 2] |= value;
-      } else {
-        uuid_[out_hex_index / 2] = value << 4;
-      }
-    }
+  // Create a UUID from its string representation.
+  constexpr Uuid(std::string_view str) : uuid_() {
+    Result<uuid::Uuid> uuid = uuid::Uuid::FromString(str);
+    PW_ASSERT(uuid.ok());
+    uuid_ = uuid.value();
   }
-
   // The Bluetooth_Base_UUID defined by the specification. This is the base for
   // all 16-bit and 32-bit short UUIDs.
   static constexpr const Uuid& BluetoothBase();
@@ -89,12 +66,18 @@ class Uuid {
   // value. 16-bit values will be extended to 32-bit ones, meaning the that the
   // 16 most significant bits will be set to 0 regardless of the value on the
   // base UUID.
-  constexpr Uuid(uint32_t short_uuid, const Uuid& base_uuid)
-      : uuid_(base_uuid.uuid_) {
-    uuid_[kBaseOffset] = short_uuid & 0xff;
-    uuid_[kBaseOffset + 1] = (short_uuid >> CHAR_BIT) & 0xff;
-    uuid_[kBaseOffset + 2] = (short_uuid >> CHAR_BIT * 2) & 0xff;
-    uuid_[kBaseOffset + 3] = (short_uuid >> CHAR_BIT * 3) & 0xff;
+  constexpr Uuid(uint32_t short_uuid, const Uuid& base_uuid) : uuid_() {
+    std::array<uint8_t, uuid::Uuid::kSizeBytes> data{};
+    for (size_t i = 0; i < kBaseOffset; i++) {
+      data[i] = base_uuid.As128BitSpan()[i];
+    }
+    data[kBaseOffset] = short_uuid & 0xff;
+    data[kBaseOffset + 1] = (short_uuid >> CHAR_BIT) & 0xff;
+    data[kBaseOffset + 2] = (short_uuid >> CHAR_BIT * 2) & 0xff;
+    data[kBaseOffset + 3] = (short_uuid >> CHAR_BIT * 3) & 0xff;
+    Result<uuid::Uuid> result = uuid::Uuid::FromSpan(data);
+    PW_ASSERT(result.ok());
+    uuid_ = result.value();
   }
 
   // Create a short UUID (32-bit or 16-bit) using the standard Bluetooth base
@@ -108,34 +91,35 @@ class Uuid {
   // Return a 2-byte span containing the 16-bit little endian representation of
   // the UUID. This is useful when Same112BitBase(BluetoothBase()) is true.
   constexpr span<const uint8_t, 2> As16BitSpan() const {
-    return span<const uint8_t, 2>{uuid_.data() + kBaseOffset, 2u};
+    return span<const uint8_t, 2>{As128BitSpan().data() + kBaseOffset, 2u};
   }
 
   // Return a 4-byte span containing the 32-bit little endian representation of
   // the UUID. This is useful when Same96BitBase(BluetoothBase()) is true.
   constexpr span<const uint8_t, 4> As32BitSpan() const {
-    return span<const uint8_t, 4>{uuid_.data() + kBaseOffset, 4u};
+    return span<const uint8_t, 4>{As128BitSpan().data() + kBaseOffset, 4u};
   }
 
   // Return the 128-bit (16-byte) little endian representation of the UUID.
   constexpr span<const uint8_t, 16> As128BitSpan() const {
-    return span<const uint8_t, 16>{uuid_.data(), 16u};
+    return uuid_.GetSpan();
   }
 
   // Return whether the UUID shares the same 112-bit base with another UUID.
   // Sharing the same 112-bit base with BluetoothBase() means that this UUID
   // can be resented as a 16-bit UUID.
   constexpr bool Same112BitBase(const Uuid& other) const {
-    return Same96BitBase(other) && uuid_[14] == other.uuid_[14] &&
-           uuid_[15] == other.uuid_[15];
+    return Same96BitBase(other) &&
+           (As128BitSpan().data()[14] == other.As128BitSpan().data()[14]) &&
+           (As128BitSpan().data()[15] == other.As128BitSpan().data()[15]);
   }
 
   // Return whether the UUID shares the same 96-bit base with another UUID.
   // Sharing the same 96-bit base with BluetoothBase() means that this UUID
   // can be resented as a 32-bit UUID.
   constexpr bool Same96BitBase(const Uuid& other) const {
-    for (size_t i = 0; i < 12; i++) {
-      if (uuid_[i] != other.uuid_[i])
+    for (size_t i = 0; i < kBaseOffset; i++) {
+      if (As128BitSpan().data()[i] != other.As128BitSpan().data()[i])
         return false;
     }
     return true;
@@ -150,16 +134,8 @@ class Uuid {
   constexpr bool Is32BitUuid() const { return Same96BitBase(BluetoothBase()); }
 
   // Return an inline pw_string representation of the UUID in hexadecimal.
-  constexpr InlineString<kHexStringSize> ToString() const {
-    InlineString<kHexStringSize> ret;
-    for (size_t i = uuid_.size(); i-- != 0;) {
-      ret += string::NibbleToHex(uuid_[i] >> 4);
-      ret += string::NibbleToHex(uuid_[i] & 0xf);
-      if ((i == 12) || (i == 10) || (i == 8) || (i == 6)) {
-        ret += '-';
-      }
-    }
-    return ret;
+  constexpr InlineString<uuid::Uuid::kStringSize> ToString() const {
+    return uuid_.ToString();
   }
 
  private:
@@ -167,7 +143,7 @@ class Uuid {
   // in the uuid_ array.
   static constexpr size_t kBaseOffset = 12;
 
-  std::array<uint8_t, 16> uuid_;
+  uuid::Uuid uuid_;
 };
 
 namespace internal {

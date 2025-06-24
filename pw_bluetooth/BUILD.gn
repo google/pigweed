@@ -79,6 +79,7 @@ pw_source_set("pw_bluetooth") {
     dir_pw_result,
     dir_pw_span,
     dir_pw_status,
+    dir_pw_uuid,
   ]
 }
 
@@ -124,6 +125,7 @@ pw_source_set("pw_bluetooth2") {
     dir_pw_result,
     dir_pw_span,
     dir_pw_status,
+    dir_pw_uuid,
   ]
 }
 
@@ -134,6 +136,7 @@ pw_source_set("emboss_util") {
     dir_pw_result,
     dir_pw_span,
     dir_pw_status,
+    dir_pw_uuid,
   ]
 }
 pw_source_set("hci_util") {
