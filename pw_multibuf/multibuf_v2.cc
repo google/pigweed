@@ -152,7 +152,9 @@ void GenericMultiBuf::Insert(const_iterator pos,
 }
 
 bool GenericMultiBuf::IsRemovable(const_iterator pos, size_t size) const {
-  if (size == 0 || static_cast<size_t>(cend() - pos) < size) {
+  PW_CHECK(pos != cend());
+  PW_CHECK_UINT_NE(size, 0u);
+  if (static_cast<size_t>(cend() - pos) < size) {
     return false;
   }
   auto [index, offset] = GetIndexAndOffset(pos);
@@ -164,7 +166,7 @@ bool GenericMultiBuf::IsRemovable(const_iterator pos, size_t size) const {
 
 Result<GenericMultiBuf> GenericMultiBuf::Remove(const_iterator pos,
                                                 size_t size) {
-  PW_CHECK_UINT_NE(size, 0u);
+  PW_CHECK(IsRemovable(pos, size));
   GenericMultiBuf out(deque_.get_allocator());
   if (!TryReserveForRemove(pos, size, &out)) {
     return Status::ResourceExhausted();
@@ -209,13 +211,14 @@ Result<GenericMultiBuf::const_iterator> GenericMultiBuf::Discard(
 }
 
 bool GenericMultiBuf::IsReleasable(const_iterator pos) const {
+  PW_CHECK(pos != cend());
   auto [index, offset] = GetIndexAndOffset(pos);
-  return pos != cend() && IsOwned(index);
+  return IsOwned(index);
 }
 
 UniquePtr<std::byte[]> GenericMultiBuf::Release(const_iterator pos) {
+  PW_CHECK(IsReleasable(pos));
   auto [index, offset] = GetIndexAndOffset(pos);
-  PW_CHECK(IsOwned(index));
   ByteSpan bytes(GetData(index) + deque_[index + 1].base_view.offset,
                  deque_[index + 1].base_view.length);
   auto* deallocator = GetDeallocator();
@@ -224,6 +227,19 @@ UniquePtr<std::byte[]> GenericMultiBuf::Release(const_iterator pos) {
     observer_->Notify(Observer::Event::kBytesRemoved, bytes.size());
   }
   return UniquePtr<std::byte[]>(bytes.data(), bytes.size(), *deallocator);
+}
+
+bool GenericMultiBuf::IsShareable(const_iterator pos) const {
+  PW_CHECK(pos != cend());
+  auto [index, offset] = GetIndexAndOffset(pos);
+  return !IsOwned(index) && IsShared(index);
+}
+
+std::byte* GenericMultiBuf::Share(const_iterator pos) {
+  PW_CHECK(IsShareable(pos));
+  auto [index, offset] = GetIndexAndOffset(pos);
+  GetControlBlock()->IncrementShared();
+  return GetData(index);
 }
 
 size_t GenericMultiBuf::CopyTo(ByteSpan dst, size_t offset) const {

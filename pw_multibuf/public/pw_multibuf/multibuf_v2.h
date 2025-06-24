@@ -884,6 +884,8 @@ class BasicMultiBuf {
 
   /// Returns whether the given iterator refers to a location within an "owned"
   /// chunk, that is, memory that was added as a `UniquePtr`.
+  ///
+  /// @param    pos     Location within the MultiBuf of the memory to release.
   [[nodiscard]] bool IsReleasable(const_iterator pos) const {
     return generic().IsReleasable(pos);
   }
@@ -893,18 +895,38 @@ class BasicMultiBuf {
   /// The location given by `pos` and MUST be releasable, as described by
   /// `IsReleasable`: It MUST fall within an "owned" chunk.
   ///
-  /// This method may fail if space for additional metadata is needed but cannot
-  /// be allocated.
-  ///
-  /// On successful completion, this method will return a `UniquePtr` which now
-  /// owns the memory following that was removed.
+  /// This method returns a `UniquePtr` which owns the removed memory.
   ///
   /// The entire owned chunk containing the location indicated by the iterator
-  /// will be removed and returned, thus an iterator to the middle of an owned
-  /// chunk will result in some bytes before the iterator being removed.
+  /// will be removed and returned. An iterator to the middle of an owned chunk
+  /// will result in some bytes before the iterator being removed.
   ///
-  /// @param    pos     Location from which to release memory from the MultiBuf.
+  /// @param    pos     Location within the MultiBuf of the memory to release.
   UniquePtr<value_type[]> Release(const_iterator pos);
+
+  /// Returns whether the given iterator refers to a location within a "shared"
+  /// chunk, that is, memory that was added as a `SharedPtr`.
+  ///
+  /// @param    pos     Location within the MultiBuf of the memory to share.
+  [[nodiscard]] bool IsShareable(const_iterator pos) const {
+    return generic().IsShareable(pos);
+  }
+
+  /// Returns the shared memory at the given location.
+  ///
+  /// The location given by `pos` and MUST be shareable, as described by
+  /// `IsShareable`: It MUST fall within a "shared" chunk.
+  ///
+  /// This method returns a `SharedPtr` which shares ownership of the indicated
+  /// memory. the memory will not be freed until all shared pointers to it go
+  /// out of scope.
+  ///
+  /// The returned pointer will reference the entire shared chunk containing the
+  /// location indicated by the iterator. The shared pointer for an iterator to
+  /// the middle of a shared chunk will include some bytes before the iterator.
+  ///
+  /// @param    pos     Location within the MultiBuf of the memory to share.
+  SharedPtr<value_type[]> Share(const_iterator pos);
 
   /// Writes data from the MultiBuf at the given `offset` to `dst`.
   ///
@@ -1280,6 +1302,12 @@ class GenericMultiBuf final
 
   /// @copydoc BasicMultiBuf<>::Release
   UniquePtr<std::byte[]> Release(const_iterator pos);
+
+  /// @copydoc BasicMultiBuf<>::IsShareable
+  [[nodiscard]] bool IsShareable(const_iterator pos) const;
+
+  /// @copydoc BasicMultiBuf<>::Share
+  std::byte* Share(const_iterator pos);
 
   /// @copydoc BasicMultiBuf<>::CopyTo
   size_t CopyTo(ByteSpan dst, size_t offset) const;
@@ -1827,6 +1855,13 @@ BasicMultiBuf<kProperties...>::Release(const_iterator pos) {
   } else {
     return bytes;
   }
+}
+
+template <Property... kProperties>
+SharedPtr<typename BasicMultiBuf<kProperties...>::value_type[]>
+BasicMultiBuf<kProperties...>::Share(const_iterator pos) {
+  return SharedPtr<value_type[]>(generic().Share(pos),
+                                 generic().GetControlBlock());
 }
 
 }  // namespace pw::multibuf

@@ -1244,19 +1244,18 @@ TEST_F(MultiBufTest, RemoveOnlyOwnedChunk) {
   auto chunk = allocator_.MakeUnique<std::byte[]>(kN);
   mbi1->PushBack(std::move(chunk));
   EXPECT_FALSE(mbi1->empty());
-  EXPECT_TRUE(mbi1->has_deallocator());
+  EXPECT_TRUE(mbi1->IsReleasable(mbi1->begin()));
   EXPECT_EQ(mbi1->size(), kN);
 
   ASSERT_TRUE(mbi1->IsRemovable(mbi1->begin(), kN));
   auto result = mbi1->Remove(mbi1->begin(), kN);
   ASSERT_EQ(result.status(), pw::OkStatus());
   EXPECT_TRUE(mbi1->empty());
-  EXPECT_FALSE(mbi1->has_deallocator());
   EXPECT_EQ(mbi1->size(), 0u);
 
   ConstMultiBufInstance mbi2(std::move(*result));
   EXPECT_FALSE(mbi2->empty());
-  EXPECT_TRUE(mbi2->has_deallocator());
+  EXPECT_TRUE(mbi2->IsReleasable(mbi2->begin()));
   EXPECT_EQ(mbi2->size(), kN);
 }
 
@@ -1271,21 +1270,13 @@ TEST_F(MultiBufTest, RemoveCompleteOwnedChunkFromMultiBufWithOtherChunks) {
   auto result = mbi1->Remove(mbi1->begin() + kN, kN);
   ASSERT_EQ(result.status(), pw::OkStatus());
   EXPECT_FALSE(mbi1->empty());
-  EXPECT_TRUE(mbi1->has_deallocator());
+  EXPECT_TRUE(mbi1->IsReleasable(mbi1->begin()));
   EXPECT_EQ(mbi1->size(), kN);
 
   ConstMultiBufInstance mbi2(std::move(*result));
   EXPECT_FALSE(mbi2->empty());
-  EXPECT_TRUE(mbi2->has_deallocator());
+  EXPECT_TRUE(mbi2->IsReleasable(mbi2->begin()));
   EXPECT_EQ(mbi2->size(), kN);
-}
-
-TEST_F(MultiBufTest, ZeroLengthIsNotRemovable) {
-  ConstMultiBufInstance mbi(allocator_);
-  auto chunk = allocator_.MakeUnique<std::byte[]>(kN);
-  mbi->PushBack(std::move(chunk));
-  EXPECT_FALSE(mbi->IsRemovable(mbi->cbegin(), 0));
-  EXPECT_FALSE(mbi->IsRemovable(mbi->cend(), 0));
 }
 
 TEST_F(MultiBufTest, PartialOwnedChunkIsNotRemovable) {
@@ -1307,21 +1298,20 @@ TEST_F(MultiBufTest, PartialOwnedChunkIsNotRemovable) {
 TEST_F(MultiBufTest, RemoveOnlySharedChunk) {
   ConstMultiBufInstance mbi1(allocator_);
   auto chunk = allocator_.MakeShared<std::byte[]>(kN);
-  mbi1->PushBack(std::move(chunk));
+  mbi1->PushBack(chunk);
   EXPECT_FALSE(mbi1->empty());
-  EXPECT_TRUE(mbi1->has_control_block());
+  EXPECT_TRUE(mbi1->IsShareable(mbi1->begin()));
   EXPECT_EQ(mbi1->size(), kN);
 
   ASSERT_TRUE(mbi1->IsRemovable(mbi1->begin(), kN));
   auto result = mbi1->Remove(mbi1->begin(), kN);
   ASSERT_EQ(result.status(), pw::OkStatus());
   EXPECT_TRUE(mbi1->empty());
-  EXPECT_FALSE(mbi1->has_control_block());
   EXPECT_EQ(mbi1->size(), 0u);
 
   ConstMultiBufInstance mbi2(std::move(*result));
   EXPECT_FALSE(mbi2->empty());
-  EXPECT_TRUE(mbi2->has_control_block());
+  EXPECT_TRUE(mbi2->IsShareable(mbi2->begin()));
   EXPECT_EQ(mbi2->size(), kN);
 }
 
@@ -1331,18 +1321,17 @@ TEST_F(MultiBufTest, RemoveCompleteSharedChunkFromMultiBufWithOtherChunks) {
   mbi1->PushBack(std::move(owned));
   auto shared = allocator_.MakeShared<std::byte[]>(kN);
   mbi1->PushBack(std::move(shared));
-  EXPECT_TRUE(mbi1->has_control_block());
+  EXPECT_TRUE(mbi1->IsShareable(mbi1->begin() + kN));
 
   ASSERT_TRUE(mbi1->IsRemovable(mbi1->begin() + kN, kN));
   auto result = mbi1->Remove(mbi1->begin() + kN, kN);
   ASSERT_EQ(result.status(), pw::OkStatus());
   EXPECT_FALSE(mbi1->empty());
-  EXPECT_FALSE(mbi1->has_control_block());
   EXPECT_EQ(mbi1->size(), kN);
 
   ConstMultiBufInstance mbi2(std::move(*result));
   EXPECT_FALSE(mbi2->empty());
-  EXPECT_TRUE(mbi2->has_control_block());
+  EXPECT_TRUE(mbi2->IsShareable(mbi2->begin()));
   EXPECT_EQ(mbi2->size(), kN);
 }
 
@@ -1352,44 +1341,55 @@ TEST_F(MultiBufTest, RemovePartialSharedChunkFromMultiBufWithOtherChunks) {
   mbi1->PushBack(std::move(owned));
   auto shared = allocator_.MakeShared<std::byte[]>(kN * 2);
   mbi1->PushBack(shared);
-  EXPECT_TRUE(mbi1->has_control_block());
+  EXPECT_TRUE(mbi1->IsShareable(mbi1->begin() + kN / 2));
 
   ASSERT_TRUE(mbi1->IsRemovable(mbi1->begin() + kN, kN / 2));
   auto result = mbi1->Remove(mbi1->begin() + kN, kN / 2);
   ASSERT_EQ(result.status(), pw::OkStatus());
-  EXPECT_TRUE(mbi1->has_control_block());
+  EXPECT_TRUE(mbi1->IsShareable(mbi1->begin() + kN / 2));
   EXPECT_EQ(mbi1->size(), kN * 2);
 
   ConstMultiBufInstance mbi2(std::move(*result));
   EXPECT_FALSE(mbi2->empty());
-  EXPECT_TRUE(mbi2->has_control_block());
+  EXPECT_TRUE(mbi2->IsShareable(mbi2->begin()));
   EXPECT_EQ(mbi2->size(), kN / 2);
 }
 
 TEST_F(MultiBufTest, RemoveMultipleChunksFromMultiBufWithMixedOwnership) {
   ConstMultiBufInstance mbi1(allocator_);
+
+  // [0.0 * kN, 0.5 * kN)
   auto owned = allocator_.MakeUnique<std::byte[]>(kN / 2);
   mbi1->PushBack(std::move(owned));
+
+  // [0.5 * kN, 1.5 * kN)
   std::array<std::byte, kN> unowned;
   mbi1->PushBack(unowned);
+
+  // [1.5 * kN, 3.5 * kN)
   owned = allocator_.MakeUnique<std::byte[]>(kN * 2);
   mbi1->PushBack(std::move(owned));
+
+  // [3.5 * kN, 5.0 * kN)
   auto shared = allocator_.MakeShared<std::byte[]>(3 * kN / 2);
   mbi1->PushBack(shared);
+
+  // [5.0 * kN, 6.0 * kN)
   owned = allocator_.MakeUnique<std::byte[]>(kN);
   mbi1->PushBack(std::move(owned));
-  EXPECT_EQ(mbi1->size(), kN * 6);
-  EXPECT_TRUE(mbi1->has_control_block());
 
-  ASSERT_TRUE(mbi1->IsRemovable(mbi1->begin() + kN, kN / 2));
+  EXPECT_EQ(mbi1->size(), kN * 6);
+  EXPECT_TRUE(mbi1->IsShareable(mbi1->begin() + 7 * kN / 2));
+
+  ASSERT_TRUE(mbi1->IsRemovable(mbi1->begin() + kN, kN * 3));
   auto result = mbi1->Remove(mbi1->begin() + kN, kN * 3);
   ASSERT_EQ(result.status(), pw::OkStatus());
-  EXPECT_TRUE(mbi1->has_control_block());
+  EXPECT_TRUE(mbi1->IsShareable(mbi1->begin() + kN));
   EXPECT_EQ(mbi1->size(), kN * 3);
 
   ConstMultiBufInstance mbi2(std::move(*result));
   EXPECT_FALSE(mbi2->empty());
-  EXPECT_TRUE(mbi2->has_control_block());
+  EXPECT_TRUE(mbi2->IsShareable(mbi2->begin() + 5 * kN / 2));
   EXPECT_EQ(mbi2->size(), kN * 3);
 }
 
@@ -1471,11 +1471,6 @@ TEST_F(MultiBufTest, DiscardPartialOwnedChunkFromMultiBufWithOtherChunks) {
   EXPECT_EQ(mb->size(), kN + kN / 2);
 }
 
-TEST_F(MultiBufTest, IsReleasableReturnsFalseWhenEmpty) {
-  ConstMultiBufInstance mb(allocator_);
-  EXPECT_FALSE(mb->IsReleasable(mb->begin()));
-}
-
 TEST_F(MultiBufTest, IsReleasableReturnsFalseWhenNotOwned) {
   ConstMultiBufInstance mb(allocator_);
   mb->PushBack(unowned_chunk_);
@@ -1505,6 +1500,35 @@ TEST_F(MultiBufTest, ReleaseSucceedsWithoutMatchingChunkBoundary) {
   auto released = mbi->Release(mbi->begin() + 1);
   EXPECT_EQ(released.size(), kN);
   EXPECT_TRUE(mbi->empty());
+}
+
+TEST_F(MultiBufTest, IsShareableReturnsFalseWhenNotShared) {
+  ConstMultiBufInstance mbi(allocator_);
+  mbi->PushBack(std::move(owned_chunk_));
+  EXPECT_FALSE(mbi->IsShareable(mbi->begin()));
+}
+
+TEST_F(MultiBufTest, ShareSucceedsWhenNotEmptyAndShared) {
+  ConstMultiBufInstance mbi(allocator_);
+  auto shared1 = allocator_.MakeShared<std::byte[]>(kN * 2);
+  mbi->PushBack(shared1);
+
+  auto owned = allocator_.MakeUnique<std::byte[]>(kN);
+  mbi->PushBack(std::move(owned));
+
+  pw::SharedPtr<const std::byte[]> shared2 = mbi->Share(mbi->begin());
+  EXPECT_EQ(shared1.get(), shared2.get());
+  EXPECT_EQ(shared1.size(), shared2.size());
+  EXPECT_EQ(mbi->size(), 3 * kN);
+}
+
+TEST_F(MultiBufTest, ShareSucceedsWithoutMatchingChunkBoundary) {
+  ConstMultiBufInstance mbi(allocator_);
+  auto shared1 = allocator_.MakeShared<std::byte[]>(kN);
+  mbi->PushBack(shared1);
+  auto shared2 = mbi->Share(mbi->begin() + 1);
+  EXPECT_EQ(shared2.size(), kN);
+  EXPECT_EQ(mbi->size(), kN);
 }
 
 TEST_F(MultiBufTest, CopyToWithContiguousChunks) {
