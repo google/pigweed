@@ -160,9 +160,9 @@ pub fn bootstrap_scheduler<C: SchedulerStateContext>(
     pw_assert::panic!("should not reach here");
 }
 
-struct PremptDisableGuard<C: SchedulerStateContext>(C);
+pub struct PreemptDisableGuard<C: SchedulerStateContext>(C);
 
-impl<C: SchedulerStateContext> PremptDisableGuard<C> {
+impl<C: SchedulerStateContext> PreemptDisableGuard<C> {
     pub fn new(ctx: C) -> Self {
         let mut sched_state = ctx.get_scheduler().lock();
         let thread = sched_state.current_thread_mut();
@@ -171,14 +171,14 @@ impl<C: SchedulerStateContext> PremptDisableGuard<C> {
         if let Some(val) = thread.preempt_disable_count.checked_add(1) {
             thread.preempt_disable_count = val;
         } else {
-            pw_assert::debug_panic!("PremptDisableGuard preempt_disable_count overflow")
+            pw_assert::debug_panic!("PreemptDisableGuard preempt_disable_count overflow")
         }
 
         Self(ctx)
     }
 }
 
-impl<C: SchedulerStateContext> Drop for PremptDisableGuard<C> {
+impl<C: SchedulerStateContext> Drop for PreemptDisableGuard<C> {
     fn drop(&mut self) {
         let mut sched_state = self.0.get_scheduler().lock();
         let thread = sched_state.current_thread_mut();
@@ -188,7 +188,7 @@ impl<C: SchedulerStateContext> Drop for PremptDisableGuard<C> {
         } else {
             // use panic, not debug_panic, as it's possible a
             // real bug could trigger this assert.
-            pw_assert::panic!("PremptDisableGuard drop past zero")
+            pw_assert::panic!("PreemptDisableGuard drop past zero")
         }
 
         if thread.preempt_disable_count == 0 {
@@ -440,7 +440,7 @@ pub fn tick<C: SchedulerStateContext>(ctx: C, now: Instant<C::Clock>) {
         return;
     }
 
-    let _guard = PremptDisableGuard::new(ctx);
+    let _guard = PreemptDisableGuard::new(ctx);
     timer::process_queue(ctx, now);
 }
 
