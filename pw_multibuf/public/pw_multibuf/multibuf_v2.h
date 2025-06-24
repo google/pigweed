@@ -309,15 +309,6 @@ class BasicMultiBuf {
   /// of the views that make up its topmost layer.
   constexpr size_t size() const { return generic().size(); }
 
-  /// Returns whether a control block has been set by adding a UniquePtr or a
-  /// SharedPtr.
-  constexpr bool has_deallocator() const { return generic().has_deallocator(); }
-
-  /// Returns whether a control block has been set by adding a SharedPtr.
-  constexpr bool has_control_block() const {
-    return generic().has_control_block();
-  }
-
   /// @name at
   /// Returns a reference to the byte at specified index.
   ///
@@ -1330,7 +1321,7 @@ class GenericMultiBuf final
   constexpr size_type NumLayers() const { return depth_ - 1; }
 
   /// @copydoc BasicMultiBuf<>::AddLayer
-  [[nodiscard]] bool AddLayer(size_t offset, size_t length);
+  [[nodiscard]] bool AddLayer(size_t offset, size_t length = dynamic_extent);
 
   /// @copydoc BasicMultiBuf<>::SealTopLayer
   void SealTopLayer();
@@ -1339,7 +1330,8 @@ class GenericMultiBuf final
   void UnsealTopLayer();
 
   /// @copydoc BasicMultiBuf<>::ResizeTopLayer
-  [[nodiscard]] bool ResizeTopLayer(size_t offset, size_t length);
+  [[nodiscard]] bool ResizeTopLayer(size_t offset,
+                                    size_t length = dynamic_extent);
 
   /// @copydoc BasicMultiBuf<>::PopLayer
   [[nodiscard]] bool PopLayer();
@@ -1638,7 +1630,7 @@ template <int&... kExplicitGuard, typename T, typename>
 bool BasicMultiBuf<kProperties...>::TryReserveForInsert(const_iterator pos,
                                                         const T& bytes) {
   using data_ptr_type = decltype(std::data(std::declval<T&>()));
-  static_assert(std::is_same_v<data_ptr_type, std::byte*> || !is_const(),
+  static_assert(std::is_same_v<data_ptr_type, std::byte*> || is_const(),
                 "Cannot `Insert` read-only bytes into mutable MultiBuf");
   return generic().TryReserveForInsert(pos, bytes.size());
 }
@@ -1686,7 +1678,7 @@ template <Property... kProperties>
 template <int&... kExplicitGuard, typename T, typename>
 void BasicMultiBuf<kProperties...>::Insert(const_iterator pos, const T& bytes) {
   using data_ptr_type = decltype(std::data(std::declval<T&>()));
-  static_assert(std::is_same_v<data_ptr_type, std::byte*> || !is_const(),
+  static_assert(std::is_same_v<data_ptr_type, std::byte*> || is_const(),
                 "Cannot `Insert` read-only bytes into mutable MultiBuf");
   generic().Insert(pos, bytes);
 }
@@ -1745,7 +1737,7 @@ template <Property... kProperties>
 template <int&... kExplicitGuard, typename T, typename>
 bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(const T& bytes) {
   using data_ptr_type = decltype(std::data(std::declval<T&>()));
-  static_assert(std::is_same_v<data_ptr_type, std::byte*> || !is_const(),
+  static_assert(std::is_same_v<data_ptr_type, std::byte*> || is_const(),
                 "Cannot `PushBack` read-only bytes into mutable MultiBuf");
   return TryReserveForInsert(end(), bytes);
 }
@@ -1789,7 +1781,7 @@ template <Property... kProperties>
 template <int&... kExplicitGuard, typename T, typename>
 void BasicMultiBuf<kProperties...>::PushBack(const T& bytes) {
   using data_ptr_type = decltype(std::data(std::declval<T&>()));
-  static_assert(std::is_same_v<data_ptr_type, std::byte*> || !is_const(),
+  static_assert(std::is_same_v<data_ptr_type, std::byte*> || is_const(),
                 "Cannot `PushBack` read-only bytes into mutable MultiBuf");
   Insert(end(), bytes);
 }

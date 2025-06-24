@@ -49,7 +49,7 @@ bool GenericMultiBuf::TryReserveForInsert(const_iterator pos,
   size_type depth = depth_;
   size_type width = mb.deque_.size() / mb.depth_;
   while (depth_ < mb.depth_) {
-    if (!AddLayer(0, size())) {
+    if (!AddLayer(0)) {
       break;
     }
   }
@@ -88,7 +88,8 @@ void GenericMultiBuf::Insert(const_iterator pos, GenericMultiBuf&& mb) {
   }
 
   // Make room for the other object's entries.
-  size_type index = InsertEntries(pos, mb.deque_.size());
+  size_type mb_width = mb.deque_.size() / mb.depth_;
+  size_type index = InsertEntries(pos, mb_width * depth_);
 
   // Merge the entries into this object.
   size_t size = 0;
@@ -301,7 +302,7 @@ void GenericMultiBuf::Clear() {
     }
   }
   // Free any owned chunks.
-  Deallocator* deallocator = GetDeallocator();
+  Deallocator* deallocator = has_deallocator() ? GetDeallocator() : nullptr;
   size_t num_bytes = 0;
   for (size_type index = 0; index < deque_.size(); index += depth_) {
     num_bytes += size_t{GetLength(index)};
@@ -435,7 +436,7 @@ bool GenericMultiBuf::PopLayer() {
     deque_.pop_front();
   }
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kLayerAdded, num_fragments);
+    observer_->Notify(Observer::Event::kLayerRemoved, num_fragments);
   }
   return true;
 }
@@ -453,14 +454,14 @@ size_t GenericMultiBuf::CheckRange(size_t offset, size_t length, size_t size) {
 
 Deallocator* GenericMultiBuf::GetDeallocator() const {
   switch (memory_tag_) {
-    case MemoryTag::kEmpty:
-      break;
     case MemoryTag::kDeallocator:
       return memory_context_.deallocator;
     case MemoryTag::kControlBlock:
       return memory_context_.control_block->allocator();
+    case MemoryTag::kEmpty:
+      PW_CRASH("Invalid memory tag");
   }
-  return nullptr;
+  PW_UNREACHABLE;
 }
 
 void GenericMultiBuf::SetDeallocator(Deallocator* deallocator) {
@@ -469,14 +470,8 @@ void GenericMultiBuf::SetDeallocator(Deallocator* deallocator) {
 }
 
 GenericMultiBuf::ControlBlock* GenericMultiBuf::GetControlBlock() const {
-  switch (memory_tag_) {
-    case MemoryTag::kEmpty:
-    case MemoryTag::kDeallocator:
-      break;
-    case MemoryTag::kControlBlock:
-      return memory_context_.control_block;
-  }
-  return nullptr;
+  PW_DCHECK_UINT_EQ(memory_tag_, MemoryTag::kControlBlock);
+  return memory_context_.control_block;
 }
 
 void GenericMultiBuf::SetControlBlock(ControlBlock* control_block) {
@@ -574,6 +569,7 @@ GenericMultiBuf::size_type GenericMultiBuf::InsertEntries(
   for (size_type i = deque_.size() - 1; i >= index + num_entries; --i) {
     deque_[i] = deque_[i - num_entries];
   }
+
   if (offset == 0) {
     // New chunk falls between existing chunks.
     return index;
@@ -620,6 +616,9 @@ void GenericMultiBuf::SplitBase(size_type index,
     PW_CHECK_PTR_EQ(&deque_, &out_deque);
     deque_[index + 1].base_view.shared = true;
   }
+  if (&deque_ == &out_deque && index == out_index) {
+    return;
+  }
   for (size_type i = 0; i < depth_; ++i) {
     out_deque[out_index + i] = deque_[index + i];
   }
@@ -632,8 +631,8 @@ void GenericMultiBuf::SplitBefore(size_type index,
   SplitBase(index, out_deque, out_index);
   split += GetOffset(index);
   for (size_type i = 1; i < depth_; ++i) {
-    Entry src = deque_[index + 1];
-    Entry& dst = out_deque[out_index + 1];
+    Entry src = deque_[index + i];
+    Entry& dst = out_deque[out_index + i];
     if (i == 1) {
       dst.base_view.offset = src.base_view.offset;
       dst.base_view.length = split - src.base_view.offset;
@@ -655,8 +654,8 @@ void GenericMultiBuf::SplitAfter(size_type index,
   SplitBase(index, out_deque, out_index);
   split += GetOffset(index);
   for (size_type i = 1; i < depth_; ++i) {
-    Entry src = deque_[index + 1];
-    Entry& dst = out_deque[out_index + 1];
+    Entry src = deque_[index + i];
+    Entry& dst = out_deque[out_index + i];
     if (i == 1) {
       dst.base_view.offset = split;
       dst.base_view.length =
@@ -708,16 +707,16 @@ void GenericMultiBuf::CopyRange(const_iterator pos,
 
   // Are we removing the prefix of a single chunk?
   if (shift == 0 && offset == 0) {
+    out.InsertEntries(begin(), depth_);
     SplitBefore(index, end_offset, out.deque_, 0);
     return;
   }
 
   // Are we removing a sub-chunk? If so, split the chunk in two.
   if (shift == 0) {
-    end_index = InsertEntries(pos, 0);
-    end_offset -= offset;
     out.InsertEntries(begin(), depth_);
     SplitBefore(end_index, end_offset, out.deque_, 0);
+    out.SplitAfter(0, offset);
     return;
   }
 
@@ -754,6 +753,9 @@ void GenericMultiBuf::ClearRange(const_iterator pos, size_t size) {
   auto [end_index, end_offset] = GetIndexAndOffset(end);
 
   // Deallocate any owned memory that was not moved.
+  if (!has_deallocator()) {
+    return;
+  }
   Deallocator* deallocator = GetDeallocator();
   if (offset != 0) {
     index += depth_;
@@ -799,6 +801,9 @@ void GenericMultiBuf::EraseRange(const_iterator pos, size_t size) {
   }
 
   // Check if the memory context is still needed.
+  if (!has_deallocator()) {
+    return;
+  }
   Deallocator* deallocator = GetDeallocator();
   bool needs_deallocator = false;
   for (index = 0; index < deque_.size(); index += depth_) {
@@ -868,11 +873,14 @@ void GenericMultiBuf::SetLayer(size_t offset, size_t length) {
       lower_length = lower.view.length;
     }
 
+    // Skip over entries until we reach `offset`.
+    Entry& entry = deque_[index + depth_ - 1];
     if (offset >= lower_length) {
       offset -= size_t{lower_length};
+      entry.view.offset = 0;
+      entry.view.length = 0;
       continue;
     }
-    Entry& entry = deque_[index + depth_ - 1];
     entry.view.offset = lower_offset + static_cast<size_type>(offset);
     lower_length -= static_cast<size_type>(offset);
 
