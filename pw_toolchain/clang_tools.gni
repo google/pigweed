@@ -22,6 +22,8 @@ _default_rust_prefix = ""
 # compiler are present there.
 if (defined(pw_env_setup_CIPD_PIGWEED)) {
   _default_llvm_prefix = pw_env_setup_CIPD_PIGWEED + "/bin/"
+}
+if (defined(pw_env_setup_CIPD_RUST)) {
   _default_rust_prefix = pw_env_setup_CIPD_RUST + "/bin/"
 }
 
