@@ -150,10 +150,21 @@ class LowEnergyPeripheralServer
       return instance_ ? instance_->id() : bt::gap::kInvalidAdvertisementId;
     }
 
+    bool pending() const { return pending_; }
+    void set_pending(bool value) { pending_ = value; }
+
    private:
+    // The value will be set when an advertisement is active and will not be set
+    // when an advertisement is pending or after it has been stopped (e.g., by a
+    // client dropping their end of the AdvertisingHandle).
     std::optional<bt::gap::AdvertisementInstance> instance_;
+
     fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> handle_;
     async::Wait handle_closed_wait_;
+
+    // Set when the client has requested the start of an advertisement and the
+    // request is still being processed (it has not yet started).
+    bool pending_ = false;
 
     BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstanceDeprecated);
   };

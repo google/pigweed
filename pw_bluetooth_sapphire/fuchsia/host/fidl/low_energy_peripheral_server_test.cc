@@ -309,6 +309,41 @@ TEST_F(LowEnergyPrivilegedPeripheralServerTest,
   EXPECT_EQ(fble::PeripheralError::INVALID_PARAMETERS, result->error());
 }
 
+// This test just starts advertising using the legacy interfaces, drops the
+// AdvertisingHandle, then attempts to restart.
+TEST_F(LowEnergyPeripheralServerTest, CanRestartAdvertisingAfterHandleDropped) {
+  {
+    fble::AdvertisingParameters params;
+    FidlAdvHandle token;
+
+    std::optional<fpromise::result<void, fble::PeripheralError>> result;
+    server()->StartAdvertising(
+        std::move(params), token.NewRequest(), [&](auto actual) {
+          result = std::move(actual);
+        });
+    RunLoopUntilIdle();
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->is_ok());
+  }
+
+  // Process the dropped handle
+  RunLoopUntilIdle();
+
+  {
+    fble::AdvertisingParameters params;
+    FidlAdvHandle token;
+
+    std::optional<fpromise::result<void, fble::PeripheralError>> result;
+    server()->StartAdvertising(
+        std::move(params), token.NewRequest(), [&](auto actual) {
+          result = std::move(actual);
+        });
+    RunLoopUntilIdle();
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->is_ok());
+  }
+}
+
 // Tests that aborting a StartAdvertising command sequence does not cause a
 // crash in successive requests.
 TEST_F(LowEnergyPeripheralServerTest,

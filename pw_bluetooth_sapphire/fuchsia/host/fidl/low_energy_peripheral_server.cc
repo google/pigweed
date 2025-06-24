@@ -208,6 +208,7 @@ LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::Register(
   PW_DCHECK(!instance_);
 
   instance_ = std::move(instance);
+  pending_ = false;
 
   handle_closed_wait_.set_object(handle_.channel().get());
   handle_closed_wait_.set_trigger(ZX_CHANNEL_PEER_CLOSED);
@@ -314,7 +315,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
   if (advertisement_deprecated_) {
     bt_log(DEBUG, LOG_TAG, "reconfigure existing advertising instance");
     // If the old advertisement is still pending, queue the new advertisement.
-    if (advertisement_deprecated_->id() == bt::gap::kInvalidAdvertisementId) {
+    if (advertisement_deprecated_->pending()) {
       queued_start_advertising_.emplace(
           std::move(parameters), std::move(token), std::move(callback));
       return;
@@ -325,6 +326,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
 
   // Create an entry to mark that the request is in progress.
   advertisement_deprecated_.emplace(std::move(token));
+  advertisement_deprecated_->set_pending(true);
 
   auto self = weak_self_.GetWeakPtr();
   auto status_cb = [self, callback = std::move(callback), func = __FUNCTION__](
