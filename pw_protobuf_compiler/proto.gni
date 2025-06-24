@@ -628,7 +628,8 @@ template("pw_proto_library") {
     }
 
     data_keys = [ "protoc_includes" ]
-    outputs = [ "${_common.base_out_dir}/includes.txt" ]
+    toolchain_name = get_label_info(current_toolchain, "name")
+    outputs = [ "${_common.base_out_dir}/${toolchain_name}/includes.txt" ]
 
     # Indicate this library's base directory for its dependents.
     metadata = {
