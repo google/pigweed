@@ -157,6 +157,7 @@ class TestCipdSetupUpdate(unittest.TestCase):
             Path('default.json'),
             Path('arm.json'),
             Path('pigweed.json'),
+            Path('rust.json'),
             Path('clang.json'),
             Path('python.json'),
             Path('python311.json'),

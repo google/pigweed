@@ -16,7 +16,7 @@ import("//build_overrides/pigweed_environment.gni")
 import("$dir_pw_build/exec.gni")
 
 _bindgen_exe_path =
-    rebase_path(pw_env_setup_CIPD_PIGWEED + "/rust_bindgen/bindgen")
+    rebase_path(pw_env_setup_CIPD_RUST + "/rust_bindgen/bindgen")
 
 # Bindgen is not part of GN tools, so use pw_exec to run it.
 template("rust_bindgen_action") {

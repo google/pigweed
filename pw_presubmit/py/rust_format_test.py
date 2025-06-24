@@ -14,7 +14,6 @@
 """Tests for the rustfmt code formatter."""
 
 import importlib.resources
-import os
 import shutil
 import tempfile
 import unittest
@@ -45,12 +44,8 @@ class TestRustfmtFormatter(unittest.TestCase):
         )
         self.runfiles.add_bootstrapped_tool(
             'rustfmt',
-            os.path.join(
-                '${PW_PIGWEED_CIPD_INSTALL_DIR}',
-                'rust',
-                'bin',
-                'rustfmt' if not os.name == 'nt' else 'rustfmt.exe',
-            ),
+            'rustfmt',
+            from_shell_path=True,
         )
         self.tool_runner = CapturingToolRunner(
             {

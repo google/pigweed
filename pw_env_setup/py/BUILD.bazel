@@ -105,6 +105,7 @@ py_library(
         "pw_env_setup/cipd_setup/rbe.json",
         "pw_env_setup/cipd_setup/riscv.json",
         "pw_env_setup/cipd_setup/ruff.json",
+        "pw_env_setup/cipd_setup/rust.json",
         "pw_env_setup/cipd_setup/testing.json",
         "pw_env_setup/cipd_setup/upstream.json",
         "pw_env_setup/cipd_setup/web.json",
