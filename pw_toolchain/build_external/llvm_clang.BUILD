@@ -96,7 +96,8 @@ cc_tool(
     data = glob([
         "bin/llvm",
         "include/**",
-        "lib/clang/**/include/**",
+        "lib/clang/*/include/**",
+        "lib/clang/*/share/**",
     ]),
 )
 
@@ -109,7 +110,8 @@ cc_tool(
     data = glob([
         "bin/llvm",
         "include/**",
-        "lib/clang/**/include/**",
+        "lib/clang/*/include/**",
+        "lib/clang/*/share/**",
     ]),
 )
 
@@ -193,7 +195,8 @@ native_binary(
     }),
     data = glob([
         "include/**",
-        "lib/clang/**/include/**",
+        "lib/clang/*/include/**",
+        "lib/clang/*/share/**",
     ]) + select({
         "@platforms//os:linux": ["@linux_sysroot//:sysroot"],
         "//conditions:default": [],
@@ -238,6 +241,12 @@ subdirectory(
     name = "lib-clang-include",
     parent = ":toolchain_root",
     path = match_dir(["lib/clang/*/include"], allow_empty=False),
+)
+
+subdirectory(
+    name = "lib-clang-share",
+    parent = ":toolchain_root",
+    path = match_dir(["lib/clang/*/share"], allow_empty=False),
 )
 
 subdirectory(
