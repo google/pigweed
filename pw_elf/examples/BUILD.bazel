@@ -27,7 +27,6 @@ licenses(["notice"])
 pw_cc_test(
     name = "reader",
     srcs = ["reader.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         "//pw_elf:reader",
         "//pw_status",
