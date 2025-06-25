@@ -18,7 +18,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -31,6 +30,7 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         "//pw_elf:reader",
+        "//pw_status",
         "//pw_stream:std_file_stream",
     ],
 )
