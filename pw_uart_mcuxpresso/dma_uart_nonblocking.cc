@@ -189,8 +189,11 @@ void DmaUartMcuxpressoNonBlocking::TriggerReadDmaIntoRingBuffer() {
                rx_data_.ring_buffer_write_idx + rx_data_.transfer.dataSize,
                rx_data_.transfer.dataSize);
 
-  USART_TransferReceiveDMA(
-      config_.usart_base, &uart_dma_handle_, &rx_data_.transfer);
+  // This should only fail if we try and start a transfer when already started,
+  // which would be a bug in this driver.
+  PW_CHECK(USART_TransferReceiveDMA(config_.usart_base,
+                                    &uart_dma_handle_,
+                                    &rx_data_.transfer) == kStatus_Success);
 }
 
 // Trigger a RX DMA into the user buffer.
@@ -212,8 +215,11 @@ void DmaUartMcuxpressoNonBlocking::TriggerReadDmaIntoUserBuffer() {
                rx_data_.request.write_idx + rx_data_.transfer.dataSize,
                rx_data_.transfer.dataSize);
 
-  USART_TransferReceiveDMA(
-      config_.usart_base, &uart_dma_handle_, &rx_data_.transfer);
+  // This should only fail if we try and start a transfer when already started,
+  // which would be a bug in this driver.
+  PW_CHECK(USART_TransferReceiveDMA(config_.usart_base,
+                                    &uart_dma_handle_,
+                                    &rx_data_.transfer) == kStatus_Success);
 }
 
 // Trigger a TX DMA from the user's buffer.
@@ -228,8 +234,11 @@ void DmaUartMcuxpressoNonBlocking::TriggerWriteDma() {
   tx_data_.transfer.dataSize =
       std::min(bytes_remaining, kUsartDmaMaxTransferCount);
 
-  USART_TransferSendDMA(
-      config_.usart_base, &uart_dma_handle_, &tx_data_.transfer);
+  // This should only fail if we try and start a transfer when already started,
+  // which would be a bug in this driver.
+  PW_CHECK(USART_TransferSendDMA(config_.usart_base,
+                                 &uart_dma_handle_,
+                                 &tx_data_.transfer) == kStatus_Success);
 }
 
 // Clear the RX DMA idle interrupt flag and returns whether the flag was set.
