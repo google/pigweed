@@ -92,10 +92,15 @@ class MultiBufTest : public ::testing::Test {
   /// layer 1: <[0x1]={0,16}> <[0x5]={0,16}> <[0x9]={0,16}><[0xD]={0,16}>
   /// layer 0:  [0x0].data     [0x4].data     [0x8].data    [0xC].data
   ///
-  /// where "<...>" represents a fragment.
+  /// where "<...>" represents a fragment. The bytes in "layer 0" are indexed
+  /// from 0 to 63.
   void AddLayers(ConstMultiBuf& mb) {
     MultiBufInstance fragment(allocator_);
     auto chunk = allocator_.MakeUnique<std::byte[]>(16);
+    uint8_t i = 0;
+    for (uint8_t j = 0; j < chunk.size(); ++j) {
+      chunk.get()[j] = std::byte(i++);
+    }
     fragment->PushBack(std::move(chunk));
     PW_CHECK(fragment->AddLayer(2, 12));
     PW_CHECK(fragment->AddLayer(2, 8));
@@ -103,6 +108,9 @@ class MultiBufTest : public ::testing::Test {
 
     fragment = MultiBufInstance(allocator_);
     chunk = allocator_.MakeUnique<std::byte[]>(16);
+    for (uint8_t j = 0; j < chunk.size(); ++j) {
+      chunk.get()[j] = std::byte(i++);
+    }
     fragment->PushBack(std::move(chunk));
     PW_CHECK(fragment->AddLayer(0, 8));
     PW_CHECK(fragment->AddLayer(0, 0));
@@ -110,8 +118,14 @@ class MultiBufTest : public ::testing::Test {
 
     fragment = MultiBufInstance(allocator_);
     chunk = allocator_.MakeUnique<std::byte[]>(16);
+    for (uint8_t j = 0; j < chunk.size(); ++j) {
+      chunk.get()[j] = std::byte(i++);
+    }
     fragment->PushBack(std::move(chunk));
     chunk = allocator_.MakeUnique<std::byte[]>(16);
+    for (uint8_t j = 0; j < chunk.size(); ++j) {
+      chunk.get()[j] = std::byte(i++);
+    }
     fragment->PushBack(std::move(chunk));
     PW_CHECK(fragment->AddLayer(4));
     PW_CHECK(fragment->AddLayer(4));
@@ -2425,22 +2439,117 @@ TEST_F(MultiBufTest, PopLayerSucceedsAfterUnseal) {
   EXPECT_EQ(mbi->NumLayers(), 2u);
 }
 
+TEST_F(MultiBufTest, CopyToGetsDataFromTopLayerOnly) {
+  ConstMultiBufInstance mbi(allocator_);
+  AddLayers(*mbi);
+
+  // See `AddLayers`. Byte sequences should be [0x04..0x0C), [0x28..0x40)
+  std::array<std::byte, kN> tmp;
+  EXPECT_EQ(mbi->CopyTo(tmp, 1), kN - 1);
+  uint8_t expected = 0x04 + 1;
+  for (uint8_t i = 0; i < kN - 1; ++i) {
+    if (expected == 0x0C) {
+      expected = 0x28;
+    }
+    EXPECT_EQ(tmp[i], static_cast<std::byte>(expected));
+    ++expected;
+  }
+}
+
+TEST_F(MultiBufTest, CopyFromSetsDataInTopLayerOnly) {
+  MultiBufInstance mbi(allocator_);
+  AddLayers(*mbi);
+
+  // See `AddLayers`. Byte sequences should be [0x04..0x0C), [0x28..0x40)
+  std::array<std::byte, kN - 4> tmp;
+  std::memset(tmp.data(), 0xAA, tmp.size());
+  EXPECT_EQ(mbi->CopyFrom(tmp, 2), tmp.size());
+  EXPECT_EQ(mbi->at(0), std::byte(0x04));
+  EXPECT_EQ(mbi->at(1), std::byte(0x05));
+  EXPECT_EQ(mbi->at(2), std::byte(0xAA));
+  EXPECT_EQ(mbi->at(kN - 3), std::byte(0xAA));
+  EXPECT_EQ(mbi->at(kN - 2), std::byte(0x3E));
+  EXPECT_EQ(mbi->at(kN - 1), std::byte(0x3F));
+}
+
 TEST_F(MultiBufTest, GetReturnsDataFromTopLayerOnly) {
   ConstMultiBufInstance mbi(allocator_);
-  mbi->PushBack(unowned_chunk_);
-  for (uint8_t i = 0; i < unowned_chunk_.size(); ++i) {
-    unowned_chunk_[i] = static_cast<std::byte>(i);
+  AddLayers(*mbi);
+
+  // See `AddLayers`. Byte sequences should be [0x04..0x0C), [0x28..0x40)
+  std::array<std::byte, kN> tmp;
+  pw::ConstByteSpan bytes = mbi->Get(tmp, 3);
+  EXPECT_EQ(bytes.size(), kN - 3);
+  uint8_t expected = 0x04 + 3;
+  for (uint8_t i = 0; i < bytes.size(); ++i) {
+    if (expected == 0x0C) {
+      expected = 0x28;
+    }
+    EXPECT_EQ(bytes[i], static_cast<std::byte>(expected));
+    ++expected;
   }
-  ASSERT_TRUE(mbi->AddLayer(3));
-  ASSERT_TRUE(mbi->AddLayer(1));
-  ASSERT_TRUE(mbi->AddLayer(4));
+}
+
+TEST_F(MultiBufTest, GetDoesNotCopyIfTopLayerIsContiguous) {
+  std::array<std::byte, 2 * kN> unowned;
+  pw::ByteSpan bytes(unowned);
+
+  ConstMultiBufInstance mbi1(allocator_);
+  mbi1->PushBack(bytes.subspan(0, kN));
+  EXPECT_TRUE(mbi1->AddLayer(0));
+
+  ConstMultiBufInstance mbi2(allocator_);
+  mbi2->PushBack(bytes.subspan(kN));
+  EXPECT_TRUE(mbi2->AddLayer(0));
+
+  mbi1->PushBack(std::move(*mbi2));
 
   std::array<std::byte, kN> tmp;
-  pw::ConstByteSpan bytes = mbi->Get(tmp);
-  EXPECT_EQ(bytes.size(), unowned_chunk_.size() - 8);
-  for (uint8_t i = 0; i < bytes.size(); ++i) {
-    EXPECT_EQ(bytes[i], static_cast<std::byte>(i));
-  }
+  pw::ConstByteSpan retrieved = mbi1->Get(tmp, kN / 2);
+  EXPECT_NE(tmp.data(), retrieved.data());
+}
+
+TEST_F(MultiBufTest, GetCopiesIfTopLayerIsNonContiguous) {
+  std::array<std::byte, 2 * kN> unowned;
+  pw::ByteSpan bytes(unowned);
+
+  ConstMultiBufInstance mbi1(allocator_);
+  mbi1->PushBack(bytes.subspan(0, kN));
+  EXPECT_TRUE(mbi1->AddLayer(0, kN - 1));
+
+  ConstMultiBufInstance mbi2(allocator_);
+  mbi2->PushBack(bytes.subspan(kN + 1));
+  EXPECT_TRUE(mbi2->AddLayer(0));
+
+  mbi1->PushBack(std::move(*mbi2));
+
+  std::array<std::byte, kN - 2> tmp;
+  pw::ConstByteSpan retrieved = mbi1->Get(tmp, kN / 2);
+  EXPECT_EQ(tmp.data(), retrieved.data());
+}
+
+TEST_F(MultiBufTest, VisitActsOnDataFromTopLayerOnly) {
+  ConstMultiBufInstance mbi(allocator_);
+  AddLayers(*mbi);
+
+  // See `AddLayers`. Byte sequences should be [0x04..0x0C), [0x28..0x40)
+  std::array<std::byte, kN> tmp;
+  EXPECT_TRUE(mbi->Visit(
+      [](pw::ConstByteSpan bytes) {
+        uint8_t expected = 0x04 + 5;
+        for (uint8_t i = 0; i < bytes.size(); ++i) {
+          if (expected == 0x0C) {
+            expected = 0x28;
+          }
+          if (bytes[i] != static_cast<std::byte>(expected)) {
+            return false;
+          }
+          ++expected;
+        }
+        return true;
+      },
+      tmp,
+      5));
 }
 
 #if PW_NC_TEST(CannotSetObserverWhenUntracked)

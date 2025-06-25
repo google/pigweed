@@ -1387,6 +1387,11 @@ class GenericMultiBuf final
                        : deque_[index + depth_ - 1].view.length;
   }
 
+  /// Returns the available view of a chunk at the given index.
+  constexpr ByteSpan GetView(size_type index) const {
+    return ByteSpan(GetData(index) + GetOffset(index), GetLength(index));
+  }
+
   /// Returns the deallocator from the memory context, if set.
   Deallocator* GetDeallocator() const;
 

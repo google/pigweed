@@ -253,15 +253,15 @@ size_t GenericMultiBuf::CopyFrom(ConstByteSpan src, size_t offset) {
     if (src.empty()) {
       break;
     }
-    size_t length{GetLength(index)};
-    if (offset < length) {
-      length = std::min(length - offset, src.size());
-      std::memcpy(GetData(index) + offset, src.data(), length);
-      src = src.subspan(length);
+    ByteSpan view = GetView(index);
+    if (offset < view.size()) {
+      size_t size = std::min(view.size() - offset, src.size());
+      std::memcpy(view.data() + offset, src.data(), size);
+      src = src.subspan(size);
       offset = 0;
-      total += length;
+      total += size;
     } else {
-      offset -= length;
+      offset -= view.size();
     }
   }
   return total;
@@ -271,28 +271,25 @@ ConstByteSpan GenericMultiBuf::Get(ByteSpan copy, size_t offset) const {
   ByteSpan buffer;
   std::optional<size_type> start;
   for (size_type index = 0; index < deque_.size(); index += depth_) {
-    if (start.has_value()) {
-      // Found the start of the desired range in a previous entry; span is
-      // discontiguous and needs to be copied.
-      size_t copied = CopyToImpl(copy, offset, start.value());
-      buffer = copy.subspan(0, copied);
-      break;
-    }
-    size_t length{GetLength(index)};
-    if (offset >= length) {
+    ByteSpan view = GetView(index);
+    if (buffer.empty() && offset >= view.size()) {
       // Still looking for start of data.
-      offset -= length;
-    } else if (length - offset < copy.size()) {
-      // Span is contiguous only if this is this last entry.
-      buffer = ByteSpan(GetData(index) + offset, length - offset);
+      offset -= view.size();
+    } else if (buffer.empty()) {
+      // Found the start of data.
+      buffer = view.subspan(offset);
       start = index;
+    } else if (buffer.data() + buffer.size() == view.data()) {
+      // Current view is contiguous with previous; append.
+      buffer = ByteSpan(buffer.data(), buffer.size() + view.size());
     } else {
-      // Requested span is contiguous and can be directly passed to the visitor.
-      buffer = ByteSpan(GetData(index) + offset, copy.size());
-      break;
+      // Span is discontiguous and needs to be copied.
+      size_t copied = CopyToImpl(copy, offset, start.value());
+      return copy.subspan(0, copied);
     }
   }
-  return buffer;
+  // Requested span is contiguous and can be directly passed to the visitor.
+  return buffer.size() <= copy.size() ? buffer : buffer.subspan(0, copy.size());
 }
 
 void GenericMultiBuf::Clear() {
@@ -838,15 +835,15 @@ size_t GenericMultiBuf::CopyToImpl(ByteSpan dst,
     if (dst.empty()) {
       break;
     }
-    size_t length{GetLength(index)};
-    if (offset < length) {
-      length = std::min(length - offset, dst.size());
-      std::memcpy(dst.data(), GetData(index) + offset, length);
-      dst = dst.subspan(length);
+    ConstByteSpan view = GetView(index);
+    if (offset < view.size()) {
+      size_t size = std::min(view.size() - offset, dst.size());
+      std::memcpy(dst.data(), view.data() + offset, size);
+      dst = dst.subspan(size);
       offset = 0;
-      total += length;
+      total += size;
     } else {
-      offset -= length;
+      offset -= view.size();
     }
   }
   return total;
