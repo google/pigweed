@@ -11,7 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#include "pw_digital_io/digital_io.h"
+#include "pw_digital_io_linux/digital_io.h"
 
 #include <linux/gpio.h>
 
@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "mock_vfs.h"
-#include "pw_digital_io_linux/digital_io.h"
 #include "pw_log/log.h"
 #include "pw_result/result.h"
 #include "pw_sync/mutex.h"

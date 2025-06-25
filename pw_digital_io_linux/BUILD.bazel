@@ -20,7 +20,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -63,6 +62,7 @@ cc_binary(
         ":pw_digital_io_linux",
         "//pw_build:default_link_extra_lib",
         "//pw_log",
+        "//pw_status",
     ],
 )
 
@@ -94,9 +94,11 @@ pw_cc_test(
         ":mock_vfs",
         ":pw_digital_io_linux",
         "//pw_log",
+        "//pw_result",
         "//pw_sync:mutex",
         "//pw_sync:timed_thread_notification",
         "//pw_thread:thread",
+        "//pw_thread_stl:options",
         "//pw_thread_stl:thread",
     ],
 )
@@ -115,6 +117,7 @@ pw_cc_test(
         "//pw_log",
         "//pw_sync:counting_semaphore",
         "//pw_thread:thread",
+        "//pw_thread_stl:options",
         "//pw_thread_stl:thread",
     ],
 )

@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_digital_io/polarity.h"
 #include "pw_digital_io_linux/digital_io.h"
 #include "pw_log/log.h"
 #include "pw_status/try.h"
