@@ -315,7 +315,7 @@ class CommandChannel final {
     std::unordered_set<hci_spec::OpCode> exclusions_;
     CommandCallback callback_;
     bt::SmartTask timeout_task_;
-    pw::bluetooth_sapphire::Lease wake_lease_;
+    std::optional<pw::bluetooth_sapphire::Lease> wake_lease_;
     inspect::Node node_;
     StringInspectable<State> state_;
 

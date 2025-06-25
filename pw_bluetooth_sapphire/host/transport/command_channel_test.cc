@@ -151,7 +151,7 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
                                0x01,  // parameter_total_size (1 byte payload)
                                pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-  EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp0, &rsp1);
+  EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp0);
 
   // Send HCI_Inquiry
   CommandChannel::TransactionId id;
@@ -186,8 +186,13 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
       std::move(packet), cb, hci_spec::kInquiryCompleteEventCode);
   EXPECT_GT(lease_provider().lease_count(), 0u);
   RunUntilIdle();
+  EXPECT_EQ(1, cb_count);
   EXPECT_EQ(lease_provider().lease_count(), 0u);
+
+  test_device()->SendCommandChannelPacket(rsp1);
+  RunUntilIdle();
   EXPECT_EQ(2, cb_count);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
 TEST_F(CommandChannelTest, SingleRequestWithStatusResponse) {

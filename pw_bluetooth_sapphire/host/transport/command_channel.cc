@@ -107,6 +107,7 @@ void CommandChannel::TransactionData::Complete(
   timeout_task_.Cancel();
 
   if (!callback_) {
+    wake_lease_.reset();
     return;
   }
 
@@ -120,6 +121,8 @@ void CommandChannel::TransactionData::Complete(
   // unexpected command complete events or status events do not call this
   // reference to callback_ twice.
   callback_ = nullptr;
+
+  wake_lease_.reset();
 }
 
 void CommandChannel::TransactionData::Cancel() {
