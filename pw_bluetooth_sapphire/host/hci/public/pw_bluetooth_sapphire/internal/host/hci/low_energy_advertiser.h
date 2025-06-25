@@ -274,7 +274,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Build the HCI command packet to remove the advertising set entirely from
   // the controller's memory for the flavor of low energy advertising being
   // implemented.
-  virtual CommandPacket BuildRemoveAdvertisingSet(
+  virtual std::optional<CommandPacket> BuildRemoveAdvertisingSet(
       AdvertisementId advertisement_id) const = 0;
 
   // Called when the command packet created with BuildSetAdvertisingParams

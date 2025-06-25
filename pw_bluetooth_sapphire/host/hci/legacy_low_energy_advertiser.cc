@@ -142,16 +142,6 @@ CommandPacket LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
   return packet;
 }
 
-CommandPacket LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
-    AdvertisementId) const {
-  auto packet =
-      hci::CommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
-          hci_spec::kLESetAdvertisingEnable);
-  auto packet_view = packet.view_t();
-  packet_view.advertising_enable().Write(pwemb::GenericEnableParam::DISABLE);
-  return packet;
-}
-
 static CommandPacket BuildReadAdvertisingTxPower() {
   return CommandPacket::New<pwemb::LEReadAdvertisingChannelTxPowerCommandView>(
       hci_spec::kLEReadAdvertisingChannelTxPower);

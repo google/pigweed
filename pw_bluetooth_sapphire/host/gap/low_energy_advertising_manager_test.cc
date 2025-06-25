@@ -193,7 +193,8 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
         hci_spec::kLESetScanResponseData);
   }
 
-  hci::CommandPacket BuildRemoveAdvertisingSet(AdvertisementId) const override {
+  std::optional<hci::CommandPacket> BuildRemoveAdvertisingSet(
+      AdvertisementId) const override {
     return hci::CommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
         hci_spec::kLERemoveAdvertisingSet);
   }

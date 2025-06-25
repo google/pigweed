@@ -406,12 +406,15 @@ bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(
       BuildUnsetScanResponse(advertisement_id);
   CommandPacket unset_adv_data_packet =
       BuildUnsetAdvertisingData(advertisement_id);
-  CommandPacket remove_packet = BuildRemoveAdvertisingSet(advertisement_id);
+  std::optional<CommandPacket> remove_packet =
+      BuildRemoveAdvertisingSet(advertisement_id);
 
   hci_cmd_runner_->QueueCommand(disable_packet);
   hci_cmd_runner_->QueueCommand(unset_scan_rsp_packet);
   hci_cmd_runner_->QueueCommand(unset_adv_data_packet);
-  hci_cmd_runner_->QueueCommand(remove_packet);
+  if (remove_packet.has_value()) {
+    hci_cmd_runner_->QueueCommand(remove_packet.value());
+  }
 
   return true;
 }

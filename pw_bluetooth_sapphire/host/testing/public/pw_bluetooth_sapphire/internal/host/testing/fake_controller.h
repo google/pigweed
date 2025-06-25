@@ -207,6 +207,7 @@ class FakeController final : public ControllerTestDoubleBase,
     bool IsDirectedAdvertising() const;
 
     bool enabled = false;
+    std::vector<bool> enable_history;
     hci::LowEnergyAdvertiser::AdvertisingEventProperties properties;
 
     std::optional<DeviceAddress> random_address;

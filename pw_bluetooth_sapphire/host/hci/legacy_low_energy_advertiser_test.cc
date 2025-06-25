@@ -675,6 +675,39 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StopWhileStartingWithId) {
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 }
 
+TEST_F(LegacyLowEnergyAdvertiserTest, StartAndStopSendsEnableCommandTwiceOnly) {
+  AdvertisingData ad = GetExampleData();
+  AdvertisingData scan_data = GetExampleData();
+  AdvertisingOptions options(kTestInterval,
+                             kDefaultNoAdvFlags,
+                             /*extended_pdu=*/false,
+                             /*anonymous=*/false,
+                             /*include_tx_power_level=*/true);
+  SetRandomAddress(kRandomAddress);
+
+  advertiser()->StartAdvertising(kRandomAddress,
+                                 ad,
+                                 scan_data,
+                                 options,
+                                 nullptr,
+                                 MakeExpectSuccessCallback());
+  RunUntilIdle();
+  ASSERT_TRUE(last_status());
+  ASSERT_TRUE(last_status()->is_ok());
+  AdvertisementId adv_id = last_status()->value();
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  std::vector<bool> expected_enables = {true};
+  EXPECT_EQ(test_device()->legacy_advertising_state().enable_history,
+            expected_enables);
+
+  advertiser()->StopAdvertising(adv_id);
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
+  expected_enables = {true, false};
+  EXPECT_EQ(test_device()->legacy_advertising_state().enable_history,
+            expected_enables);
+}
+
 }  // namespace
 }  // namespace hci
 }  // namespace bt

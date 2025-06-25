@@ -443,7 +443,8 @@ CommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
   return packet;
 }
 
-CommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+std::optional<CommandPacket>
+ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     hci::AdvertisementId advertisement_id) const {
   hci_spec::AdvertisingHandle advertising_handle =
       advertising_handle_map_.GetHandle(advertisement_id);

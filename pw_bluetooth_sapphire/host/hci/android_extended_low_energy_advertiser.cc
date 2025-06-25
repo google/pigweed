@@ -246,7 +246,8 @@ CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
   return packet;
 }
 
-CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+std::optional<CommandPacket>
+AndroidExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     AdvertisementId advertisement_id) const {
   auto packet =
       hci::CommandPacket::New<android_emb::LEMultiAdvtEnableCommandWriter>(

@@ -2153,11 +2153,25 @@ void FakeController::OnReadBRADDR() {
 
 void FakeController::OnLESetAdvertisingEnable(
     const pwemb::LESetAdvertisingEnableCommandView& params) {
+  bool enable =
+      params.advertising_enable().Read() == pwemb::GenericEnableParam::ENABLE;
+  legacy_advertising_state_.enable_history.push_back(enable);
+
   if (!EnableLegacyAdvertising()) {
     bt_log(
         INFO,
         "fake-hci",
         "legacy advertising command rejected, extended advertising is in use");
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_ADVERTISING_ENABLE,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
+  if (legacy_advertising_state_.enabled == enable) {
+    bt_log(INFO,
+           "fake-hci",
+           "legacy advertising enable rejected; already in desired state: %d",
+           enable);
     RespondWithCommandStatus(pwemb::OpCode::LE_SET_ADVERTISING_ENABLE,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
@@ -2175,8 +2189,7 @@ void FakeController::OnLESetAdvertisingEnable(
     return;
   }
 
-  legacy_advertising_state_.enabled =
-      params.advertising_enable().Read() == pwemb::GenericEnableParam::ENABLE;
+  legacy_advertising_state_.enabled = enable;
   RespondWithCommandComplete(pwemb::OpCode::LE_SET_ADVERTISING_ENABLE,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();

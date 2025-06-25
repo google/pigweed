@@ -91,8 +91,10 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   CommandPacket BuildUnsetScanResponse(
       AdvertisementId advertisement_id) const override;
 
-  CommandPacket BuildRemoveAdvertisingSet(
-      AdvertisementId advertisement_id) const override;
+  std::optional<CommandPacket> BuildRemoveAdvertisingSet(
+      AdvertisementId) const override {
+    return std::nullopt;
+  }
 
   void ResetAdvertisingState();
 

@@ -115,7 +115,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   CommandPacket BuildUnsetScanResponse(
       AdvertisementId advertisement_id) const override;
 
-  CommandPacket BuildRemoveAdvertisingSet(
+  std::optional<CommandPacket> BuildRemoveAdvertisingSet(
       AdvertisementId advertisement_id) const override;
 
   void OnSetAdvertisingParamsComplete(const EventPacket&) override;
