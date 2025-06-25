@@ -490,6 +490,8 @@ TEST(Channel, Conversions) {
           .as<pw::channel::ByteChannel<kReliable, kReadable>>());
 
   TakesAChannel(byte_channel);
+  // Conversions from Channel<> to AnyChannel must be explicit (with .as<>).
+  // TakesAChannel(byte_channel.channel());
   TakesAChannel(byte_channel.as<pw::channel::AnyChannel>());
 
   TakesAWritableByteChannel(datagram_channel.IgnoreDatagramBoundaries());

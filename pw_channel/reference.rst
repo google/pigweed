@@ -42,3 +42,9 @@ Channel implementations
 .. doxygengroup:: pw_channel_stream_channel
    :content-only:
    :members:
+
+Packets
+=======
+.. doxygengroup:: pw_channel_packets
+   :content-only:
+   :members:

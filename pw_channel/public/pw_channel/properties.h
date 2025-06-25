@@ -70,10 +70,22 @@ class Channel;
 
 class AnyChannel;
 
+template <typename Packet, Property... kProperties>
+class PacketChannel;
+
+template <typename Packet>
+class AnyPacketChannel;
+
 namespace internal {
 
 template <DataType kDataType, Property... kProperties>
 class BaseChannelImpl;
+
+template <typename Packet, Property... kProperties>
+class PacketChannelImpl;
+
+template <typename Packet, Property... kProperties>
+class BasePacketChannelImpl;
 
 template <typename>
 struct IsChannel : public std::false_type {};
@@ -85,18 +97,17 @@ struct IsChannel<Channel<kDataType, kProperties...>> : public std::true_type {};
 template <typename Self, typename Sibling>
 using EnableIfConversionIsValid =
     std::enable_if_t<  // Sibling type must be a Channel
-        std::is_same_v<Sibling, AnyChannel> ||
-        (IsChannel<Sibling>::value &&
-         // Datagram and byte channels are not interchangeable
-         (Sibling::data_type() == Self::data_type()) &&
-         // Cannot use a unreliable channel as a reliable channel
-         (!Sibling::reliable() || Self::reliable()) &&
-         // Cannot use a non-readable channel as a readable channel
-         (!Sibling::readable() || Self::readable()) &&
-         // Cannot use a non-writable channel as a writable channel
-         (!Sibling::writable() || Self::writable()) &&
-         // Cannot use a non-seekable channel as a seekable channel
-         (!Sibling::seekable() || Self::seekable()))>;
+        IsChannel<Sibling>::value&&
+        // Datagram and byte channels are not interchangeable
+        (Sibling::data_type() == Self::data_type()) &&
+        // Cannot use a unreliable channel as a reliable channel
+        (!Sibling::reliable() || Self::reliable()) &&
+        // Cannot use a non-readable channel as a readable channel
+        (!Sibling::readable() || Self::readable()) &&
+        // Cannot use a non-writable channel as a writable channel
+        (!Sibling::writable() || Self::writable()) &&
+        // Cannot use a non-seekable channel as a seekable channel
+        (!Sibling::seekable() || Self::seekable())>;
 
 // Performs the same checks as EnableIfConversionIsValid, but generates a
 // static_assert with a helpful message if any condition is not met.
@@ -144,6 +155,45 @@ static constexpr bool PropertiesAreValid() {
                 "Properties must be specified in the following order, without "
                 "duplicates: kReliable, kReadable, kWritable, kSeekable");
   return true;
+}
+
+template <typename, typename>
+struct CompatiblePacketChannels : public std::false_type {};
+
+template <typename Packet,
+          Property... kProperties,
+          Property... kOtherProperties>
+struct CompatiblePacketChannels<PacketChannel<Packet, kProperties...>,
+                                PacketChannel<Packet, kOtherProperties...>>
+    : public std::true_type {};
+
+template <typename Self, typename Sibling>
+using EnableIfConvertibleImpl =
+    std::enable_if_t<CompatiblePacketChannels<Self, Sibling>::value &&
+                     // Cannot use a non-readable channel as a readable channel
+                     (!Sibling::readable() || Self::readable()) &&
+                     // Cannot use a non-writable channel as a writable channel
+                     (!Sibling::writable() || Self::writable())>;
+
+template <typename Self, typename Sibling>
+using EnableIfConvertible =
+    EnableIfConvertibleImpl<std::remove_cv_t<Self>, std::remove_cv_t<Sibling>>;
+
+// Performs the same checks as EnableIfConvertible, but generates a
+// static_assert with a helpful message if any condition is not met.
+template <typename SelfType, typename SiblingType>
+static constexpr void CheckPacketChannelConversion() {
+  using Self = std::remove_cv_t<SelfType>;
+  using Sibling = std::remove_cv_t<SiblingType>;
+  if constexpr (!std::is_same_v<Sibling,
+                                AnyPacketChannel<typename Self::Packet>>) {
+    static_assert(CompatiblePacketChannels<Self, Sibling>::value,
+                  "Only conversions to other PacketChannels are supported");
+    static_assert(!Sibling::readable() || Self::readable(),
+                  "Cannot use a non-readable channel as a readable channel");
+    static_assert(!Sibling::writable() || Self::writable(),
+                  "Cannot use a non-writable channel as a writable channel");
+  }
 }
 
 }  // namespace internal

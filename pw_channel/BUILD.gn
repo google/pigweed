@@ -27,11 +27,9 @@ config("public_include_path") {
 
 pw_source_set("pw_channel") {
   public_configs = [ ":public_include_path" ]
-  public = [
-    "public/pw_channel/channel.h",
-    "public/pw_channel/properties.h",
-  ]
+  public = [ "public/pw_channel/channel.h" ]
   public_deps = [
+    ":properties",
     "$dir_pw_async2:dispatcher",
     "$dir_pw_async2:poll",
     "$dir_pw_multibuf:allocator",
@@ -45,6 +43,25 @@ pw_source_set("pw_channel") {
     dir_pw_status,
   ]
   sources = [ "public/pw_channel/internal/channel_specializations.h" ]
+}
+
+pw_source_set("packet_channel") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_channel/packet_channel.h" ]
+  public_deps = [
+    ":pw_channel",
+    "$dir_pw_async2:dispatcher",
+    "$pw_external_fuchsia:stdcompat",
+    dir_pw_result,
+  ]
+
+  # TODO: b/421962771 - Make packet_channel public when ready.
+  visibility = [ "$dir_pigweed/*" ]
+}
+
+pw_source_set("properties") {
+  public = [ "public/pw_channel/properties.h" ]
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("forwarding_channel") {
@@ -177,6 +194,7 @@ pw_test_group("tests") {
     ":epoll_channel_test",
     ":forwarding_channel_test",
     ":loopback_channel_test",
+    ":packet_channel_test",
     ":stream_channel_test",
   ]
 }
@@ -188,6 +206,20 @@ pw_test("channel_test") {
     "$dir_pw_allocator:testing",
     "$dir_pw_multibuf:allocator_async",
     "$dir_pw_multibuf:simple_allocator",
+  ]
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  negative_compilation_tests = true
+}
+
+pw_test("packet_channel_test") {
+  sources = [ "packet_channel_test.cc" ]
+  deps = [
+    ":packet_channel",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:poll",
+    "$dir_pw_containers",
+    "$dir_pw_unit_test",
+    "$pw_external_fuchsia:stdcompat",
   ]
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
   negative_compilation_tests = true
