@@ -107,28 +107,38 @@ class DmaUartMcuxpressoNonBlocking final : public UartNonBlocking {
   static constexpr size_t kUsartDmaMaxTransferCount =
       DMA_MAX_TRANSFER_COUNT - 1;
 
-  Status DoEnable(bool enable) override;
+  Status DoEnable(bool enable) override PW_LOCKS_EXCLUDED(interrupt_lock_);
   Status DoSetBaudRate(uint32_t baud_rate) override;
   Status DoSetFlowControl(bool enable) override;
 
-  Status DoRead(
-      ByteSpan rx_buffer,
-      size_t min_bytes,
-      Function<void(Status status, ConstByteSpan buffer)>&& callback) override;
-  bool DoCancelRead() override;
+  Status DoRead(ByteSpan rx_buffer,
+                size_t min_bytes,
+                Function<void(Status status, ConstByteSpan buffer)>&& callback)
+      override PW_LOCKS_EXCLUDED(interrupt_lock_);
+  bool DoCancelRead() override PW_LOCKS_EXCLUDED(interrupt_lock_);
 
   Status DoWrite(ConstByteSpan tx_buffer,
-                 Function<void(StatusWithSize status)>&& callback) override;
-  bool DoCancelWrite() override;
+                 Function<void(StatusWithSize status)>&& callback) override
+      PW_LOCKS_EXCLUDED(interrupt_lock_);
+  bool DoCancelWrite() override PW_LOCKS_EXCLUDED(interrupt_lock_);
   Status DoFlushOutput(Function<void(Status status)>&& callback) override;
-  bool DoCancelFlushOutput() override;
-  size_t DoConservativeReadAvailable() override;
-  Status DoClearPendingReceiveBytes() override;
+  bool DoCancelFlushOutput() override PW_LOCKS_EXCLUDED(interrupt_lock_);
+  size_t DoConservativeReadAvailable() override
+      PW_LOCKS_EXCLUDED(interrupt_lock_);
+  Status DoClearPendingReceiveBytes() override
+      PW_LOCKS_EXCLUDED(interrupt_lock_);
 
   // Helper functions
 
-  void Deinit();
-  Status Init();
+  void Deinit() PW_LOCKS_EXCLUDED(interrupt_lock_);
+  Status Init() PW_LOCKS_EXCLUDED(interrupt_lock_);
+
+  bool DoCancelReadLockHeld() PW_EXCLUSIVE_LOCKS_REQUIRED(interrupt_lock_);
+  bool DoCancelWriteLockHeld() PW_EXCLUSIVE_LOCKS_REQUIRED(interrupt_lock_);
+  bool DoCancelFlushOutputLockHeld()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(interrupt_lock_);
+  Status DoClearPendingReceiveBytesLockHeld()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(interrupt_lock_);
 
   void HandleCompletedRxIntoRingBuffer()
       PW_EXCLUSIVE_LOCKS_REQUIRED(interrupt_lock_);
