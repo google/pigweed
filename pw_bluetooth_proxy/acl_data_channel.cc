@@ -871,8 +871,10 @@ bool AclDataChannel::HandleAclData(Direction direction,
     // TODO: https://pwbug.dev/392663102 - Handle rejecting a recombined
     // L2CAP PDU.
     PW_LOG_ERROR(
-        "L2capChannel indicates recombined PDU is unhandled, which is "
-        "unsupported. Dropping entire recombined PDU!");
+        "L2capChannel %#x indicates recombined PDU %s is unhandled, which is "
+        "unsupported. Dropping entire recombined PDU!",
+        local_cid,
+        DirectionToString(direction));
     return kHandled;
   }
 
