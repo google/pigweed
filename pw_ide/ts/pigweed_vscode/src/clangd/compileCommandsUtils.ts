@@ -215,7 +215,38 @@ export async function createBazelInterceptorFile() {
       vscode.Uri.file(path.dirname(pathForBazelBuildInterceptor)),
     );
   }
-  writeFileSync(pathForBazelBuildInterceptor, bazelInterceptorScriptTemplate);
+
+  const usePythonGenerator = settings.usePythonCompileCommandsGenerator();
+  const generatorTarget = usePythonGenerator
+    ? '@pigweed//pw_ide/py:compile_commands_generator_binary'
+    : '@pigweed//pw_ide/ts/pigweed_vscode:compile_commands_generator_binary';
+
+  const bazelInterceptorScript = `#!${SHELL}
+set -uo pipefail
+
+ if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
+  # Run the real Bazel command first
+  $BAZEL_REAL "$@"
+  BAZEL_EXIT_CODE=$? # Capture the exit code of the Bazel command
+  if [ $BAZEL_EXIT_CODE -eq 0 ]; then
+    echo "⏳ Generating compile commands..."
+    $BAZEL_REAL --quiet run \
+      --show_result=0 \
+      ${generatorTarget} -- \
+      --target "$*" --cwd "$(pwd)" --bazelCmd "$BAZEL_REAL"
+    if [ $? -ne 0 ]; then
+      echo "⚠️ Compile commands generation failed (exit code $?), continuing..."
+    fi
+  fi
+else
+  $BAZEL_REAL "$@"
+  BAZEL_EXIT_CODE=$?
+fi
+
+exit $BAZEL_EXIT_CODE
+`;
+
+  writeFileSync(pathForBazelBuildInterceptor, bazelInterceptorScript);
   chmodSync(pathForBazelBuildInterceptor, 0o755);
 }
 

@@ -51,6 +51,7 @@ export interface Settings {
   supportCmakeTargets: Setting<boolean | 'auto'>;
   supportGnTargets: Setting<boolean | 'auto'>;
   terminalShell: Setting<TerminalShell>;
+  usePythonCompileCommandsGenerator: Setting<boolean>;
 }
 
 export type ConfigAccessor<T> = {
@@ -421,6 +422,18 @@ function terminalShell(
   return update(value);
 }
 
+function usePythonCompileCommandsGenerator(): boolean;
+function usePythonCompileCommandsGenerator(
+  value: boolean | undefined,
+): Thenable<void>;
+function usePythonCompileCommandsGenerator(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
+  const { get, update } = boolSettingFor('usePythonCompileCommandsGenerator');
+  if (value === undefined) return get() ?? false;
+  return update(value);
+}
+
 /** Entry point for accessing settings. */
 export const settings: Settings = {
   activateBazeliskInNewTerminals,
@@ -445,6 +458,7 @@ export const settings: Settings = {
   supportCmakeTargets,
   supportGnTargets,
   terminalShell,
+  usePythonCompileCommandsGenerator,
 };
 
 // Config accessors for Bazel extension settings.

@@ -160,6 +160,11 @@
           "default": "false",
           "description": "Disable bazel interceptor that updates code intelligence automatically"
         },
+        "pigweed.usePythonCompileCommandsGenerator": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use Python compile commands generator (experimental)"
+        },
         "pigweed.disableBazeliskCheck": {
           "type": "boolean",
           "default": "false",

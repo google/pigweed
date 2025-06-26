@@ -43,6 +43,22 @@ py_library(
     ],
 )
 
+py_library(
+    name = "compile_commands_generator",
+    srcs = ["pw_ide/compile_commands_generator.py"],
+    imports = ["."],
+    deps = ["@pigweed_python_packages//json5"],
+)
+
+pw_py_binary(
+    name = "compile_commands_generator_binary",
+    srcs = ["pw_ide/compile_commands_generator.py"],
+    main = "pw_ide/compile_commands_generator.py",
+    deps = [
+        ":compile_commands_generator",
+    ],
+)
+
 pw_py_binary(
     name = "pw_ide_cli",
     srcs = ["pw_ide/__main__.py"],
@@ -97,4 +113,14 @@ pw_py_test(
         "vscode_test.py",
     ],
     deps = [":pw_ide"],
+)
+
+pw_py_test(
+    name = "compile_commands_generator_test",
+    size = "small",
+    srcs = ["compile_commands_generator_test.py"],
+    deps = [
+        ":compile_commands_generator",
+        ":pw_ide",
+    ],
 )

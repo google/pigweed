@@ -34,6 +34,7 @@ type CipdReport = {
   isBazelInterceptorEnabled?: boolean;
   bazelCompileCommandsManualBuildCommand?: string;
   bazelCompileCommandsLastBuildCommand?: string;
+  usePythonCompileCommandsGenerator?: boolean;
 };
 
 const vscode = acquireVsCodeApi();
@@ -69,6 +70,13 @@ export class Root extends LitElement {
       type: enabled
         ? 'enableBazelBuildInterceptor'
         : 'disableBazelBuildInterceptor', // Send appropriate message
+    });
+  }
+
+  private _togglePythonCompileCommandsGenerator(enabled: boolean) {
+    vscode.postMessage({
+      type: 'setUsePythonCompileCommandsGenerator',
+      data: enabled,
     });
   }
 
@@ -269,6 +277,20 @@ export class Root extends LitElement {
                     </div>
                   </div>
                 </div>
+              </div>
+              <div class="row">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    .checked=${this.cipdReport
+                      .usePythonCompileCommandsGenerator}
+                    @change=${(e: Event) =>
+                      this._togglePythonCompileCommandsGenerator(
+                        (e.target as HTMLInputElement).checked,
+                      )}
+                  />
+                  Use Python compile commands generator (experimental)
+                </label>
               </div>
               <div class="row">
                 <div>

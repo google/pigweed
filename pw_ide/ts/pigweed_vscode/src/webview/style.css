@@ -193,3 +193,9 @@
 	border-bottom-left-radius: 0;
 	margin-left: -3px;
 }
+
+.checkbox-label {
+	display: flex;
+    align-items: center;
+    gap: 0.1rem;
+}

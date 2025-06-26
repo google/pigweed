@@ -19,22 +19,17 @@ import { getSettingsData } from './configParsing';
 import getCipdReport from './clangd/report';
 import { existsSync, mkdirSync } from 'fs';
 import {
-  deleteFilesInSubDir,
-  generateCompileCommands,
-  generateCompileCommandsWithStatus,
-  parseBazelBuildCommand,
-  saveLastBazelCommandInUserSettings,
-} from './clangd/compileCommandsGenerator';
-import { getReliableBazelExecutable } from './bazel';
-import { settings, workingDir } from './settings/vscode';
-import { CDB_FILE_DIR, CDB_FILE_NAME } from './clangd';
-import {
   createBazelInterceptorFile,
   deleteBazelInterceptorFile,
   getBazelInterceptorPath,
 } from './clangd/compileCommandsUtils';
 import { LoggerUI } from './clangd/compileCommandsGeneratorUI';
 import path from 'path';
+import { spawn } from 'child_process';
+
+import { getReliableBazelExecutable } from './bazel';
+import { settings, workingDir } from './settings/vscode';
+import { saveLastBazelCommandInUserSettings } from './clangd/compileCommandsGenerator';
 
 export async function executeRefreshCompileCommandsManually(buildCmd: string) {
   const bazelBinary = getReliableBazelExecutable();
@@ -47,42 +42,47 @@ export async function executeRefreshCompileCommandsManually(buildCmd: string) {
     return;
   }
   output.show();
-  const inputCmd = `build ${buildCmd}`;
-  const parsedCmd = await parseBazelBuildCommand(
-    inputCmd,
-    bazelBinary,
-    cwd,
-  ).catch((e) => {
-    logging.error(e.message);
-    vscode.window.showErrorMessage(e.message);
-  });
-
-  if (!parsedCmd) {
-    logging.info('Unable to parse build command.');
-    return;
-  }
-
+  const logger = new LoggerUI(logging);
   await settings.bazelCompileCommandsManualBuildCommand(buildCmd);
 
-  logging.info(`Command was parsed to: ${JSON.stringify(parsedCmd)}`);
+  const usePythonGenerator = settings.usePythonCompileCommandsGenerator();
+  const generatorTarget = usePythonGenerator
+    ? '@pigweed//pw_ide/py:compile_commands_generator_binary'
+    : '@pigweed//pw_ide/ts/pigweed_vscode:compile_commands_generator_binary';
 
-  // Delete and recreate the compile_commands directory.
-  const fullCdbDirPath = path.join(workingDir.get(), CDB_FILE_DIR);
-  deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
-  mkdirSync(fullCdbDirPath, { recursive: true });
-
-  logging.info('Cleaned compile_commands directory.');
-  const logger = new LoggerUI(logging);
-  await generateCompileCommandsWithStatus(
+  const args = [
+    'run',
+    generatorTarget,
+    '--',
+    '--target',
+    `build ${buildCmd}`,
+    '--cwd',
+    cwd,
+    '--bazelCmd',
     bazelBinary,
-    workingDir.get(),
-    CDB_FILE_DIR,
-    CDB_FILE_NAME,
-    parsedCmd.targets,
-    parsedCmd.args,
-    logger,
-  );
-  saveLastBazelCommandInUserSettings(workingDir.get(), inputCmd, logger);
+  ];
+
+  const child = spawn(bazelBinary, args, { cwd });
+  logger.addStdout(`Running command: ${bazelBinary} ${args.join(' ')}\n`);
+
+  child.stdout.on('data', (data) => {
+    logger.addStdout(data.toString());
+  });
+
+  child.stderr.on('data', (data) => {
+    logger.addStderr(data.toString());
+  });
+
+  child.on('close', (code) => {
+    if (code === 0) {
+      logger.finish('✅ Compile commands generated successfully.');
+      saveLastBazelCommandInUserSettings(cwd, `build ${buildCmd}`, logger);
+    } else {
+      logger.finishWithError(
+        `❌ Compile commands generation failed with exit code ${code}.`,
+      );
+    }
+  });
 }
 
 export class WebviewProvider implements vscode.WebviewViewProvider {
@@ -186,6 +186,15 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           await this.sendCipdReport();
           break;
         }
+        case 'setUsePythonCompileCommandsGenerator': {
+          const enabled = data.data;
+          await settings.usePythonCompileCommandsGenerator(enabled);
+          if (!settings.disableBazelInterceptor()) {
+            await createBazelInterceptorFile();
+          }
+          await this.sendCipdReport();
+          break;
+        }
 
         case 'refreshCompileCommandsManually': {
           const buildCmd = data.data;
@@ -200,9 +209,12 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     const pathForBazelBuildInterceptor = getBazelInterceptorPath();
     if (!pathForBazelBuildInterceptor) return;
     const bazelInterceptorExists = existsSync(pathForBazelBuildInterceptor);
+    const usePythonCompileCommandsGenerator =
+      settings.usePythonCompileCommandsGenerator();
     report = {
       ...report,
       isBazelInterceptorEnabled: bazelInterceptorExists,
+      usePythonCompileCommandsGenerator,
     };
     logging.info('getCipdReport reported: ' + JSON.stringify(report));
     this._view?.webview.postMessage({

@@ -27,6 +27,7 @@ pw_python_package("py") {
     "pw_ide/activate.py",
     "pw_ide/cli.py",
     "pw_ide/commands.py",
+    "pw_ide/compile_commands_generator.py",
     "pw_ide/cpp.py",
     "pw_ide/editors.py",
     "pw_ide/exceptions.py",
@@ -38,6 +39,7 @@ pw_python_package("py") {
   tests = [
     "activate_tests.py",
     "commands_test.py",
+    "compile_commands_generator_test.py",
     "cpp_test.py",
     "cpp_test_fake_env.py",
     "editors_test.py",
