@@ -185,6 +185,14 @@ class PacketChannel {
  protected:
   // @copydoc AnyPacketChannel::GetAvailableWrites
   uint16_t GetAvailableWrites() const;
+
+ private:
+  static_assert(internal::PacketChannelPropertiesAreValid<kProperties...>());
+
+  template <typename>
+  friend class AnyPacketChannel;
+
+  explicit constexpr PacketChannel() = default;
 };
 
 /// `PacketChannel` that optionally supports reading and writing. Generally,
@@ -492,20 +500,20 @@ async2::Poll<Status> AnyPacketChannel<Packet>::PendClose(async2::Context& cx) {
 template <typename Packet, Property... kProperties>
 constexpr bool PacketChannel<Packet, kProperties...>::is_read_open() const {
   return readable() &&
-         static_cast<const AnyPacketChannel<Packet>&>(*this).is_read_open();
+         static_cast<const AnyPacketChannel<Packet>*>(this)->is_read_open();
 }
 
 template <typename Packet, Property... kProperties>
 constexpr bool PacketChannel<Packet, kProperties...>::is_write_open() const {
   return writable() &&
-         static_cast<const AnyPacketChannel<Packet>&>(*this).is_write_open();
+         static_cast<const AnyPacketChannel<Packet>*>(this)->is_write_open();
 }
 
 template <typename Packet, Property... kProperties>
 async2::Poll<Result<Packet>> PacketChannel<Packet, kProperties...>::PendRead(
     async2::Context& cx) {
   static_assert(readable(), "PendRead may only be called on readable channels");
-  return static_cast<AnyPacketChannel<Packet>&>(*this).PendRead(cx);
+  return static_cast<AnyPacketChannel<Packet>*>(this)->PendRead(cx);
 }
 
 template <typename Packet, Property... kProperties>
@@ -514,7 +522,7 @@ PacketChannel<Packet, kProperties...>::PendReadyToWrite(async2::Context& cx,
                                                         size_t num) {
   static_assert(writable(),
                 "PendReadyToWrite may only be called on writable channels");
-  return static_cast<AnyPacketChannel<Packet>&>(*this).PendReadyToWrite(cx,
+  return static_cast<AnyPacketChannel<Packet>*>(this)->PendReadyToWrite(cx,
                                                                         num);
 }
 template <typename Packet, Property... kProperties>
@@ -522,7 +530,7 @@ async2::Poll<> PacketChannel<Packet, kProperties...>::PendWrite(
     async2::Context& cx) {
   static_assert(writable(),
                 "PendWrite may only be called on writable channels");
-  return static_cast<AnyPacketChannel<Packet>&>(*this).PendWrite(cx);
+  return static_cast<AnyPacketChannel<Packet>*>(this)->PendWrite(cx);
 }
 template <typename Packet, Property... kProperties>
 uint16_t PacketChannel<Packet, kProperties...>::GetAvailableWrites() const {
@@ -536,7 +544,7 @@ void PacketChannel<Packet, kProperties...>::SetAvailableWrites(
     uint16_t available_writes) {
   static_assert(writable(),
                 "SetAvailableWrites may only be called on writable channels");
-  return static_cast<AnyPacketChannel<Packet>&>(*this).SetAvailableWrites(
+  return static_cast<AnyPacketChannel<Packet>*>(this)->SetAvailableWrites(
       available_writes);
 }
 template <typename Packet, Property... kProperties>
@@ -544,14 +552,14 @@ void PacketChannel<Packet, kProperties...>::AcknowledgeWrites(
     uint16_t num_completed) {
   static_assert(writable(),
                 "AcknowledgeWrites may only be called on writable channels");
-  return static_cast<AnyPacketChannel<Packet>&>(*this).AcknowledgeWrites(
+  return static_cast<AnyPacketChannel<Packet>*>(this)->AcknowledgeWrites(
       num_completed);
 }
 
 template <typename Packet, Property... kProperties>
 async2::Poll<Status> PacketChannel<Packet, kProperties...>::PendClose(
     async2::Context& cx) {
-  return static_cast<AnyPacketChannel<Packet>&>(*this).PendClose(cx);
+  return static_cast<AnyPacketChannel<Packet>*>(this)->PendClose(cx);
 }
 
 namespace internal {
@@ -585,6 +593,11 @@ class BasePacketChannelImpl : public AnyPacketChannel<Packet> {
 
   constexpr BasePacketChannelImpl()
       : AnyPacketChannel<Packet>((static_cast<uint8_t>(kProperties) | ...)) {}
+};
+
+template <typename Packet, Property... kProperties>
+class PacketChannelImpl {
+  static_assert(PacketChannelPropertiesAreValid<kProperties...>());
 };
 
 // PacketChannelImpl specialization with no write support.

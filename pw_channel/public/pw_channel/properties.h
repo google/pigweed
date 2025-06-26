@@ -157,6 +157,14 @@ static constexpr bool PropertiesAreValid() {
   return true;
 }
 
+template <Property... kProperties>
+static constexpr bool PacketChannelPropertiesAreValid() {
+  static_assert(
+      ((kProperties != kReliable) && ...),
+      "PacketChannel only supports the kReadable and kWritable properties");
+  return PropertiesAreValid<kProperties...>();
+}
+
 template <typename, typename>
 struct CompatiblePacketChannels : public std::false_type {};
 

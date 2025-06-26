@@ -485,6 +485,40 @@ void ConvertWriterToReader() {
   TestPacketWriterImpl<> ws;
   TakesPacketReader(ws.channel().template as<PacketReader<TestPacket>>());
 }
+#elif PW_NC_TEST(PacketChannelInvalidOrdering)
+PW_NC_EXPECT("Properties must be specified in the following order");
+bool Illegal(
+    pw::channel::PacketChannel<TestPacket, kReadable, pw::channel::kReliable>&
+        foo) {
+  return foo.is_read_open();
+}
+#elif PW_NC_TEST(PacketChannelImplInvalidOrdering)
+PW_NC_EXPECT("Properties must be specified in the following order");
+class BadChannel
+    : public pw::channel::PacketChannelImpl<TestPacket, kWritable, kReadable> {
+};
+#elif PW_NC_TEST(PacketChannelNoReadOrWrite)
+PW_NC_EXPECT("At least one of kReadable or kWritable must be provided");
+bool Illegal(pw::channel::PacketChannel<TestPacket>& foo) {
+  return foo.is_read_open();
+}
+#elif PW_NC_TEST(PacketChannelImplNoReadOrWrite)
+PW_NC_EXPECT("At least one of kReadable or kWritable must be provided");
+class BadChannel : public pw::channel::PacketChannelImpl<TestPacket> {};
+#elif PW_NC_TEST(PacketChannelDuplicateProperties)
+PW_NC_EXPECT("without duplicates");
+bool Illegal(
+    pw::channel::PacketChannel<TestPacket, kReadable, kReadable>& foo) {
+  return foo.is_read_open();
+}
+#elif PW_NC_TEST(PacketChannelUnsupportedProperty)
+PW_NC_EXPECT(
+    "PacketChannel only supports the kReadable and kWritable properties");
+bool Illegal(
+    pw::channel::PacketChannel<TestPacket, pw::channel::kReliable, kReadable>&
+        foo) {
+  return foo.is_read_open();
+}
 #endif  // PW_NC_TEST
 
 }  // namespace
