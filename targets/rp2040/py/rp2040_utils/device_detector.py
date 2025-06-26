@@ -217,12 +217,7 @@ class PicoBoardInfo:
     manufacturer: Optional[str]
     product: Optional[str]
 
-    def address(self) -> int:
-        """Queries this device for its USB address.
-
-        WARNING: This is not necessarily stable, and may change whenever the
-        board is reset or flashed.
-        """
+    def _lookup_device(self) -> usb.core.Device:
         for device in _libusb_raspberry_pi_devices(
             bus_filter=self.bus, port_filter=self.port
         ):
@@ -231,11 +226,27 @@ class PicoBoardInfo:
                     'Unknown device type on bus %s port %s', self.bus, self.port
                 )
             if _device_port_path(device) == self.port:
-                return device.address
+                return device
         raise ValueError(
             'No Pico found, it may have been disconnected or flashed with '
             'an incompatible application'
         )
+
+    def current_address(self) -> int:
+        """Queries this device for its USB address.
+
+        WARNING: This is not necessarily stable, and may change whenever the
+        board is reset or flashed.
+        """
+        return self._lookup_device().address
+
+    def current_serial_number(self) -> str:
+        """Queries this device for its USB serial number.
+
+        WARNING: This is not necessarily stable, and may change whenever the
+        board is reset or flashed.
+        """
+        return self._lookup_device().serial_number
 
     @staticmethod
     def vendor_id() -> int:
@@ -253,6 +264,9 @@ class PicoDebugProbeBoardInfo(PicoBoardInfo):
     """
 
     serial_number: str
+
+    def current_serial_number(self) -> str:
+        return self.serial_number
 
     @staticmethod
     def device_id() -> int:

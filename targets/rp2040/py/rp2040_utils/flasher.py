@@ -113,7 +113,7 @@ def _load_picotool_binary(board_info: PicoBoardInfo, binary: Path) -> bool:
         '--bus',
         str(board_info.bus),
         '--address',
-        str(board_info.address()),
+        str(board_info.current_address()),
         '-F',
     ]
 
@@ -359,7 +359,8 @@ def device_from_args(
     print('Multiple devices detected. Please select one:')
     board_lines = list(
         f'bus {board.bus}, port {board.port}'
-        f' ({board.manufacturer} - {board.product})'
+        f' ({board.manufacturer} - {board.product} -'
+        f' {board.current_serial_number()})'
         for board in boards
     )
     user_input_index, _user_input_text = interactive_index_select(board_lines)
