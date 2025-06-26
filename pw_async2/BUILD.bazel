@@ -546,6 +546,8 @@ sphinx_docs_library(
         "reference.rst",
         "//pw_async2/examples:docs",
         "//pw_async2/size_report:full_size_report",
+        "//pw_async2/size_report:once_sender_size_report",
+        "//pw_async2/size_report:utilities_size_report",
     ],
     prefix = "pw_async2/",
     target_compatible_with = incompatible_with_mcu(),

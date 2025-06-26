@@ -33,8 +33,10 @@ cc_library(
         "//pw_allocator:allocator",
         "//pw_allocator:first_fit",
         "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
         "//pw_bloat:bloat_this_binary",
         "//pw_containers:intrusive_forward_list",
+        "//pw_log",
         "//pw_preprocessor",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:mutex",
@@ -58,6 +60,7 @@ pw_cc_size_binary(
         ":size_report",
         "//pw_assert:check",
         "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
         "//pw_bloat:bloat_this_binary",
     ],
 )
@@ -70,6 +73,7 @@ pw_cc_size_binary(
         ":size_report",
         "//pw_assert:check",
         "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
         "//pw_bloat:bloat_this_binary",
     ],
 )
@@ -83,6 +87,7 @@ pw_cc_size_binary(
         "//pw_assert:check",
         "//pw_async2:dispatcher",
         "//pw_async2:once_sender",
+        "//pw_async2:pendable",
         "//pw_bloat:bloat_this_binary",
     ],
 )
@@ -99,6 +104,7 @@ pw_cc_size_binary(
         "//pw_assert:check",
         "//pw_async2:dispatcher",
         "//pw_async2:once_sender",
+        "//pw_async2:pendable",
         "//pw_bloat:bloat_this_binary",
     ],
 )
@@ -112,7 +118,104 @@ pw_cc_size_binary(
         "//pw_assert:check",
         "//pw_async2:coro",
         "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
         "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "select_size_report",
+    srcs = ["select.cc"],
+    defines = ["_PW_ASYNC2_SIZE_REPORT_SELECT=1"],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
+        "//pw_async2:select",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "incremental_select_size_report",
+    srcs = ["select.cc"],
+    defines = [
+        "_PW_ASYNC2_SIZE_REPORT_SELECT=1",
+        "_PW_ASYNC2_SIZE_REPORT_SELECT_INCREMENTAL=1",
+    ],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
+        "//pw_async2:select",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "select_comparison_manual_size_report",
+    srcs = ["select.cc"],
+    defines = ["_PW_ASYNC_2_SIZE_REPORT_COMPARE_SELECT_MANUAL=1"],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
+        "//pw_async2:select",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "select_comparison_helper_size_report",
+    srcs = ["select.cc"],
+    defines = ["_PW_ASYNC_2_SIZE_REPORT_COMPARE_SELECT_HELPER=1"],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
+        "//pw_async2:select",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "join_size_report",
+    srcs = ["join.cc"],
+    defines = ["_PW_ASYNC2_SIZE_REPORT_JOIN=1"],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:join",
+        "//pw_async2:pendable",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "incremental_join_size_report",
+    srcs = ["join.cc"],
+    defines = [
+        "_PW_ASYNC2_SIZE_REPORT_JOIN=1",
+        "_PW_ASYNC2_SIZE_REPORT_JOIN_INCREMENTAL=1",
+    ],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:join",
+        "//pw_async2:pendable",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
     ],
 )
 
@@ -151,15 +254,67 @@ pw_size_diff(
     target = ":async2_core_coroutine",
 )
 
+pw_size_diff(
+    name = "select_row",
+    base = ":async2_core",
+    label = "Size of calling Select() with several pendables of the same type",
+    target = ":select_size_report",
+)
+
+pw_size_diff(
+    name = "incremental_select_row",
+    base = ":select_size_report",
+    label = "Size of an additional a call to Select() with pendables of different types",
+    target = ":incremental_select_size_report",
+)
+
+pw_size_diff(
+    name = "select_comparison_row",
+    base = ":select_comparison_manual_size_report",
+    label = "Cost of using Select() versus manually polling each pendable",
+    target = ":select_comparison_helper_size_report",
+)
+
+pw_size_diff(
+    name = "join_row",
+    base = ":async2_core",
+    label = "Size of calling Join() with several pendables of the same type",
+    target = ":join_size_report",
+)
+
+pw_size_diff(
+    name = "incremental_join_row",
+    base = ":join_size_report",
+    label = "Size of an additional a call to Join() with pendables of different types",
+    target = ":incremental_join_size_report",
+)
+
 pw_size_table(
     name = "full_size_report",
     reports = [
         ":full_size_report_row",
         ":incremental_task_row",
-        ":once_sender_row",
-        ":incremental_once_sender_row",
     ] + select({
         "//pw_toolchain/cc:c++20_enabled": [":coroutine_row"],
         "//conditions:default": [],
     }),
+)
+
+pw_size_table(
+    name = "once_sender_size_report",
+    reports = [
+        ":once_sender_row",
+        ":incremental_once_sender_row",
+    ],
+)
+
+pw_size_table(
+    name = "utilities_size_report",
+    reports = [
+        ":select_row",
+        ":incremental_select_row",
+        ":select_comparison_row",
+        ":join_row",
+        ":incremental_join_row",
+    ],
 )

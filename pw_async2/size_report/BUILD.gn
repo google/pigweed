@@ -99,3 +99,87 @@ pw_executable("async2_core_once_sender_incremental") {
   ]
   sources = [ "async2_core.cc" ]
 }
+
+pw_executable("select_size_report") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:select",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+  defines = [ "_PW_ASYNC2_SIZE_REPORT_SELECT=1" ]
+  sources = [ "select.cc" ]
+}
+
+pw_executable("incremental_select_size_report") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:select",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+  defines = [
+    "_PW_ASYNC2_SIZE_REPORT_SELECT=1",
+    "_PW_ASYNC2_SIZE_REPORT_SELECT_INCREMENTAL=1",
+  ]
+  sources = [ "select.cc" ]
+}
+
+pw_executable("select_comparison_manual_size_report") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:select",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+  defines = [ "_PW_ASYNC_2_SIZE_REPORT_COMPARE_SELECT_MANUAL=1" ]
+  sources = [ "select.cc" ]
+}
+
+pw_executable("select_comparison_helper_size_report") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:select",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+  defines = [ "_PW_ASYNC_2_SIZE_REPORT_COMPARE_SELECT_HELPER=1" ]
+  sources = [ "select.cc" ]
+}
+
+pw_executable("join_size_report") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:join",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+  defines = [ "_PW_ASYNC2_SIZE_REPORT_JOIN=1" ]
+  sources = [ "join.cc" ]
+}
+
+pw_executable("incremental_join_size_report") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:join",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+  defines = [
+    "_PW_ASYNC2_SIZE_REPORT_JOIN=1",
+    "_PW_ASYNC2_SIZE_REPORT_JOIN_INCREMENTAL=1",
+  ]
+  sources = [ "join.cc" ]
+}
