@@ -15,6 +15,7 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -103,10 +104,17 @@ cc_library(
 # There is no "impl" target: pw_assert_log doesn't have potential circular
 # dependencies.
 
+pw_cc_test(
+    name = "examples",
+    srcs = ["examples.cc"],
+    deps = ["//pw_assert:assert"],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        "examples.cc",
     ],
     prefix = "pw_assert_log/",
     target_compatible_with = incompatible_with_mcu(),

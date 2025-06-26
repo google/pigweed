@@ -210,7 +210,13 @@ pw_test_group("tests") {
     ":assert_test",
     ":assert_backend_compile_test",
     ":assert_facade_test",
+    ":examples",
   ]
+}
+
+pw_test("examples") {
+  sources = [ "examples.cc" ]
+  deps = [ ":check" ]
 }
 
 # The assert facade test doesn't require a backend since a fake one is

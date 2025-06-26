@@ -87,5 +87,11 @@ group("check_backend.impl") {
 group("pw_assert_log.impl") {
 }
 
+pw_test("examples") {
+  sources = [ "examples.cc" ]
+  deps = [ "$dir_pw_assert:assert" ]
+}
+
 pw_test_group("tests") {
+  tests = [ ":examples" ]
 }

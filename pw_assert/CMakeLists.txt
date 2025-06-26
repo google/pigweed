@@ -146,3 +146,13 @@ if((NOT "${pw_assert.assert_BACKEND}" STREQUAL "") AND
       pw_assert
   )
 endif()
+
+pw_add_test(pw_assert.examples
+  SOURCES
+    examples.cc
+  PRIVATE_DEPS
+    pw_assert.check
+  GROUPS
+    modules
+    pw_assert
+)

@@ -21,6 +21,18 @@ To use this module:
 1. Set your assert backend: ``pw_assert_BACKEND = dir_pw_assert_log``
 2. Ensure your logging backend knows how to handle the assert failure flag
 
+``%`` in ``PW_ASSERT`` conditions
+=================================
+``PW_CHECK`` does not support use of the ``%`` character in conditions. See
+:ref:`module-pw_assert-mod` for details. Since the ``pw_assert_log`` backend
+uses ``pw_log`` for ``PW_ASSERT``, the ``%`` character also cannot be used in
+``PW_ASSERT``.
+
+.. literalinclude:: examples.cc
+   :language: cpp
+   :start-after: [pw_assert_log-mod-example]
+   :end-before: [pw_assert_log-mod-example]
+
 ----------------------
 pw_assert_LITE_BACKEND
 ----------------------

@@ -46,3 +46,13 @@ pw_add_library(pw_assert_log.assert_backend INTERFACE
     pw_log
     pw_preprocessor
 )
+
+pw_add_test(pw_assert_log.examples
+  SOURCES
+    examples.cc
+  PRIVATE_DEPS
+    pw_assert.assert
+  GROUPS
+    modules
+    pw_assert_log
+)

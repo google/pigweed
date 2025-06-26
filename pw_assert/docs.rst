@@ -403,6 +403,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
     code; for example ``status == RESOURCE_EXHAUSTED`` instead of ``status ==
     5``.
 
+.. _module-pw_assert-mod:
+
 ``%`` in conditions
 ===================
 ``PW_CHECK`` conditions cannot contain the ``%`` character (e.g. from the
@@ -423,6 +425,11 @@ To avoid errors like this, do not use ``%`` in ``PW_CHECK`` conditions. Modulus
 can be moved to a separate statement outside of the ``PW_CHECK`` or invoked via
 a function or `std::modulus
 <https://en.cppreference.com/w/cpp/utility/functional/modulus>`_.
+
+.. literalinclude:: examples.cc
+   :language: cpp
+   :start-after: [pw_assert-mod-example]
+   :end-before: [pw_assert-mod-example]
 
 This restriction may be removed in the future (`b/235149326
 <https://issues.pigweed.dev/issues/235149326>`_)

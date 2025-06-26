@@ -232,12 +232,19 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "examples",
+    srcs = ["examples.cc"],
+    deps = [":check"],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "assert_test.cc",
         "backends.rst",
         "docs.rst",
+        "examples.cc",
     ],
     prefix = "pw_assert/",
     target_compatible_with = incompatible_with_mcu(),
