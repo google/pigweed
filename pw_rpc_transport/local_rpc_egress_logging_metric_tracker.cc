@@ -12,11 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc_transport/local_rpc_egress_logging_metric_tracker.h"
-
 #define PW_LOG_MODULE_NAME "PW_RPC"
 
+#include "pw_rpc_transport/local_rpc_egress_logging_metric_tracker.h"
+
+#include <cinttypes>
+
 #include "pw_log/log.h"
+#include "pw_rpc/method_id.h"
+#include "pw_rpc/packet_meta.h"
+#include "pw_rpc/service_id.h"
 
 namespace pw::rpc {
 
@@ -56,6 +61,24 @@ void LocalRpcEgressLoggingMetricTracker::NoPacketAvailable(Status status) {
 
 void LocalRpcEgressLoggingMetricTracker::PacketProcessed(
     [[maybe_unused]] ConstByteSpan packet,
-    [[maybe_unused]] chrono::SystemClock::duration processing_duration) {}
+    [[maybe_unused]] chrono::SystemClock::duration processing_duration) {
+  if (processing_duration > packet_processor_threshold_time_) {
+    const auto meta = PacketMeta::FromBuffer(packet);
+    if (meta.ok()) {
+      exceeded_threshold_.Increment();
+      PW_LOG_WARN(
+          "LocalRpcEgress: packet processor took %d ms handling packet for "
+          "service 0x%08" PRIx32 " method 0x%08" PRIx32,
+          static_cast<int>(
+              std::chrono::duration_cast<std::chrono::milliseconds>(
+                  processing_duration)
+                  .count()),
+          internal::UnwrapServiceId(meta->service_id()),
+          internal::UnwrapMethodId(meta->method_id()));
+    } else {
+      FailedToAccessPacket(meta.status());
+    }
+  }
+}
 
 }  // namespace pw::rpc

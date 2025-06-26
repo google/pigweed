@@ -157,11 +157,16 @@ void LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::Run() {
       }
       Result<ConstByteSpan> packet = (*packet_buffer)->GetPacket();
       if (packet.ok()) {
+        auto before = chrono::SystemClock::now();
         if (const auto status = packet_processor_->ProcessRpcPacket(*packet);
             !status.ok()) {
           if (tracker_) {
             tracker_->FailedToProcessPacket(status);
           }
+        }
+        if (tracker_) {
+          tracker_->PacketProcessed(*packet,
+                                    pw::chrono::SystemClock::now() - before);
         }
       } else {
         if (tracker_) {

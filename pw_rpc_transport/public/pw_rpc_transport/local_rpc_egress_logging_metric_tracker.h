@@ -15,6 +15,7 @@
 
 #include <cstddef>
 
+#include "pw_chrono/system_clock.h"
 #include "pw_metric/metric.h"
 #include "pw_rpc_transport/local_rpc_egress.h"
 
@@ -22,6 +23,15 @@ namespace pw::rpc {
 
 class LocalRpcEgressLoggingMetricTracker final : public LocalRpcEgressTracker {
  public:
+  static constexpr chrono::SystemClock::duration
+      kDefaultPacketProcessorThresholdTime =
+          chrono::SystemClock::for_at_least(std::chrono::milliseconds(100));
+
+  LocalRpcEgressLoggingMetricTracker(
+      chrono::SystemClock::duration packet_processor_threshold_time =
+          kDefaultPacketProcessorThresholdTime)
+      : packet_processor_threshold_time_(packet_processor_threshold_time) {}
+
   void NoRpcServiceRegistryError() override;
   void PacketSizeTooLarge(size_t packet_size, size_t max_packet_size) override;
   void EgressThreadNotRunningError() override;
@@ -36,11 +46,14 @@ class LocalRpcEgressLoggingMetricTracker final : public LocalRpcEgressTracker {
   const pw::metric::Group& metrics() const { return metrics_; }
 
  private:
+  const chrono::SystemClock::duration packet_processor_threshold_time_;
+
   PW_METRIC_GROUP(metrics_, "local_egress");
   PW_METRIC(metrics_, packet_size_too_large_, "packet_size_too_large", 0);
   PW_METRIC(metrics_, no_packet_available_, "no_packet_available", 0);
   PW_METRIC(metrics_, failed_to_process_packet_, "failed_to_process_packet", 0);
   PW_METRIC(metrics_, failed_to_access_packet_, "failed_to_access_packet", 0);
+  PW_METRIC(metrics_, exceeded_threshold_, "exceeded_threshold", 0);
 };
 
 }  // namespace pw::rpc
