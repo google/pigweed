@@ -32,15 +32,9 @@ C++ API reference
 
 pw_numeric/checked_arithmetic.h
 ===============================
-.. doxygenfunction:: pw::CheckedAdd
-
-.. doxygenfunction:: pw::CheckedIncrement
-
-.. doxygenfunction:: pw::CheckedSub
-
-.. doxygenfunction:: pw::CheckedDecrement
-
-.. doxygenfunction:: pw::CheckedMul
+.. doxygengroup:: pw_numeric_checked_arithmetic
+   :content-only:
+   :members:
 
 pw_numeric/integer_division.h
 =============================

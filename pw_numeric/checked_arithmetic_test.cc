@@ -64,6 +64,38 @@ void CheckedAddDetectsOverflow() {
 TEST_FOR_STDINT_TYPES(CheckedAdd, Works)
 TEST_FOR_STDINT_TYPES(CheckedAdd, DetectsOverflow)
 
+template <typename T>
+void CheckedAddBoolWorks() {
+  static constexpr T kMax = std::numeric_limits<T>::max();
+  T result;
+
+  EXPECT_TRUE(pw::CheckedAdd(T{0}, T{0}, result));
+  EXPECT_EQ(result, T{0});
+  EXPECT_TRUE(pw::CheckedAdd(T{0}, T{1}, result));
+  EXPECT_EQ(result, T{1});
+  EXPECT_TRUE(pw::CheckedAdd(T{1}, T{0}, result));
+  EXPECT_EQ(result, T{1});
+  EXPECT_TRUE(pw::CheckedAdd(T{1}, T{2}, result));
+  EXPECT_EQ(result, T{3});
+  EXPECT_TRUE(pw::CheckedAdd(kMax - 1, T{1}, result));
+  EXPECT_EQ(result, kMax);
+}
+
+template <typename T>
+void CheckedAddBoolDetectsOverflow() {
+  static constexpr T kMax = std::numeric_limits<T>::max();
+  T result = T{123};
+  EXPECT_FALSE(pw::CheckedAdd(kMax, 1, result));
+  EXPECT_EQ(result, T{123});
+  EXPECT_FALSE(pw::CheckedAdd(1, kMax, result));
+  EXPECT_EQ(result, T{123});
+  EXPECT_FALSE(pw::CheckedAdd(kMax, kMax, result));
+  EXPECT_EQ(result, T{123});
+}
+
+TEST_FOR_STDINT_TYPES(CheckedAddBool, Works)
+TEST_FOR_STDINT_TYPES(CheckedAddBool, DetectsOverflow)
+
 // pw::CheckedIncrement()
 
 template <typename T>
@@ -148,6 +180,38 @@ void CheckedSubDetectsOverflow() {
 TEST_FOR_STDINT_TYPES(CheckedSub, Works)
 TEST_FOR_STDINT_TYPES(CheckedSub, DetectsOverflow)
 
+template <typename T>
+void CheckedSubBoolWorks() {
+  static constexpr T kMax = std::numeric_limits<T>::max();
+  T result;
+
+  EXPECT_TRUE(pw::CheckedSub(T{0}, T{0}, result));
+  EXPECT_EQ(result, T{0});
+  EXPECT_TRUE(pw::CheckedSub(T{1}, T{0}, result));
+  EXPECT_EQ(result, T{1});
+  EXPECT_TRUE(pw::CheckedSub(T{1}, T{1}, result));
+  EXPECT_EQ(result, T{0});
+  EXPECT_TRUE(pw::CheckedSub(T{3}, T{2}, result));
+  EXPECT_EQ(result, T{1});
+  EXPECT_TRUE(pw::CheckedSub(kMax, T{1}, result));
+  EXPECT_EQ(result, kMax - 1);
+}
+
+template <typename T>
+void CheckedSubBoolDetectsOverflow() {
+  static constexpr T kMax = std::numeric_limits<T>::max();
+  static constexpr T kMin = std::numeric_limits<T>::min();
+  T result = T{123};
+
+  EXPECT_FALSE(pw::CheckedSub(kMin, 1, result));
+  EXPECT_EQ(result, T{123});
+  EXPECT_FALSE(pw::CheckedSub(kMin, kMax, result));
+  EXPECT_EQ(result, T{123});
+}
+
+TEST_FOR_STDINT_TYPES(CheckedSubBool, Works)
+TEST_FOR_STDINT_TYPES(CheckedSubBool, DetectsOverflow)
+
 // pw::CheckedDecrement()
 
 template <typename T>
@@ -218,5 +282,42 @@ void CheckedMulDetectsOverflow() {
 
 TEST_FOR_STDINT_TYPES(CheckedMul, Works)
 TEST_FOR_STDINT_TYPES(CheckedMul, DetectsOverflow)
+
+template <typename T>
+void CheckedMulBoolWorks() {
+  static constexpr T kMax = std::numeric_limits<T>::max();
+  static constexpr T kMin = std::numeric_limits<T>::min();
+  T result;
+
+  EXPECT_TRUE(pw::CheckedMul(T{0}, T{0}, result));
+  EXPECT_EQ(result, T{0});
+  EXPECT_TRUE(pw::CheckedMul(T{1}, T{0}, result));
+  EXPECT_EQ(result, T{0});
+  EXPECT_TRUE(pw::CheckedMul(T{1}, T{1}, result));
+  EXPECT_EQ(result, T{1});
+  EXPECT_TRUE(pw::CheckedMul(T{3}, T{2}, result));
+  EXPECT_EQ(result, T{6});
+  EXPECT_TRUE(pw::CheckedMul(kMax, T{1}, result));
+  EXPECT_EQ(result, kMax);
+  EXPECT_TRUE(pw::CheckedMul(kMin, T{1}, result));
+  EXPECT_EQ(result, kMin);
+}
+
+template <typename T>
+void CheckedMulBoolDetectsOverflow() {
+  static constexpr T kMax = std::numeric_limits<T>::max();
+  static constexpr T kMin = std::numeric_limits<T>::min();
+  T result = T{123};
+
+  EXPECT_FALSE(pw::CheckedMul(kMax, 2, result));
+  EXPECT_EQ(result, T{123});
+  if (std::is_signed_v<T>) {
+    EXPECT_FALSE(pw::CheckedMul(kMin, 2, result));
+    EXPECT_EQ(result, T{123});
+  }
+}
+
+TEST_FOR_STDINT_TYPES(CheckedMulBool, Works)
+TEST_FOR_STDINT_TYPES(CheckedMulBool, DetectsOverflow)
 
 }  // namespace
