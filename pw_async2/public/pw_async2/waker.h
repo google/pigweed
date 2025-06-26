@@ -27,6 +27,8 @@ class Waker;
 
 namespace internal {
 
+class WakerQueueBase;
+
 bool CloneWaker(Waker& waker_in,
                 Waker& waker_out,
                 log::Token wait_reason = log::kDefaultToken)
@@ -146,6 +148,7 @@ bool CloneWaker(Waker& waker_in,
 class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   friend class Task;
   friend class NativeDispatcherBase;
+  friend class internal::WakerQueueBase;
 
  public:
   constexpr Waker() = default;

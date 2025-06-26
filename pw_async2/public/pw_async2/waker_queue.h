@@ -47,13 +47,7 @@ class WakerQueueBase {
   ///
   /// NOTE: Prefer using ``PW_ASYNC_STORE_WAKER`` instead of this API directly
   /// as it supports specifying a wait reason.
-  bool Add(Waker&& waker) {
-    if (queue_.full() || waker.IsEmpty()) {
-      return false;
-    }
-    queue_.emplace(std::move(waker));
-    return true;
-  }
+  bool Add(Waker&& waker);
 
  private:
   InlineQueue<Waker>& queue_;
