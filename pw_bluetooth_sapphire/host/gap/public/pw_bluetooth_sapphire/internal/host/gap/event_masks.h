@@ -83,6 +83,7 @@ constexpr uint64_t BuildLEEventMask() {
   ENABLE_EVT(kLECISEstablished);
   ENABLE_EVT(kLELongTermKeyRequest);
   ENABLE_EVT(kLEReadRemoteFeaturesComplete);
+  ENABLE_EVT(kLERequestPeerSCAComplete);
 
 #undef ENABLE_EVT
 
