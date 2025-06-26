@@ -111,13 +111,6 @@ cc_library_static {
     ],
 }
 
-filegroup {
-    name: "pw_rpc_transport.egress_ingress_src_files",
-    srcs: [
-        "egress_ingress.cc",
-    ],
-}
-
 // This rule must be instantiated, e.g.
 //
 //   cc_library_static {
@@ -140,26 +133,42 @@ cc_defaults {
     header_libs: [
         "pw_assert",
         "pw_chrono",
-        "pw_log",
         "pw_sync",
     ],
     export_header_lib_headers: [
         "pw_assert",
-        "pw_log",
         "pw_sync",
     ],
     static_libs: [
         "pw_hdlc",
-        "pw_metric",
         "pw_rpc_transport.rpc_transport",
         "pw_sync.binary_semaphore_thread_notification",
     ],
     export_static_lib_headers: [
         "pw_hdlc",
-        "pw_metric",
         "pw_rpc_transport.rpc_transport",
+    ]
+}
+
+cc_library_static {
+    name: "pw_rpc_transport.egress_ingress_logging_metric_tracker",
+    defaults: [
+        "pw_android_common_backends",
+        "pw_android_common_target_support",
+    ],
+    header_libs: [
+        "pw_log",
+    ],
+    export_header_lib_headers: [
+        "pw_log",
+    ],
+    static_libs: [
+        "pw_metric",
+    ],
+    export_static_lib_headers: [
+        "pw_metric",
     ],
     srcs: [
-        ":pw_rpc_transport.egress_ingress_src_files",
+        "egress_ingress_logging_metric_tracker.cc",
     ],
 }

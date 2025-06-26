@@ -195,16 +195,23 @@ pw_test("simple_framing_test") {
 
 pw_source_set("egress_ingress") {
   public = [ "public/pw_rpc_transport/egress_ingress.h" ]
-  sources = [ "egress_ingress.cc" ]
   public_deps = [
     ":hdlc_framing",
     ":rpc_transport",
     ":simple_framing",
     "$dir_pw_bytes",
-    "$dir_pw_metric",
     "$dir_pw_rpc:client",
     "$dir_pw_status",
     "$dir_pw_sync:mutex",
+  ]
+}
+
+pw_source_set("egress_ingress_logging_metric_tracker") {
+  public = [ "public/pw_rpc_transport/egress_ingress_logging_metric_tracker.h" ]
+  sources = [ "egress_ingress_logging_metric_tracker.cc" ]
+  public_deps = [
+    ":egress_ingress",
+    "$dir_pw_metric",
   ]
   deps = [ "$dir_pw_log" ]
 }
@@ -214,6 +221,7 @@ pw_test("egress_ingress_test") {
   enable_if = pw_thread_THREAD_BACKEND != ""
   deps = [
     ":egress_ingress",
+    ":egress_ingress_logging_metric_tracker",
     ":service_registry",
     ":test_protos.pwpb_rpc",
     "$dir_pw_bytes",
@@ -256,6 +264,7 @@ pw_source_set("stream_rpc_dispatcher") {
   public = [ "public/pw_rpc_transport/stream_rpc_dispatcher.h" ]
   public_deps = [
     ":egress_ingress",
+    "$dir_pw_metric",
     "$dir_pw_status",
     "$dir_pw_stream:pw_stream",
     "$dir_pw_thread:thread",

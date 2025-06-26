@@ -213,9 +213,6 @@ pw_cc_test(
 
 cc_library(
     name = "egress_ingress",
-    srcs = [
-        "egress_ingress.cc",
-    ],
     hdrs = ["public/pw_rpc_transport/egress_ingress.h"],
     features = ["-conversion_warnings"],
     strip_include_prefix = "public",
@@ -224,11 +221,24 @@ cc_library(
         ":rpc_transport",
         ":simple_framing",
         "//pw_bytes",
-        "//pw_log",
-        "//pw_metric:metric",
         "//pw_rpc:client_server",
         "//pw_status",
         "//pw_sync:mutex",
+    ],
+)
+
+cc_library(
+    name = "egress_ingress_logging_metric_tracker",
+    srcs = [
+        "egress_ingress_logging_metric_tracker.cc",
+    ],
+    hdrs = ["public/pw_rpc_transport/egress_ingress_logging_metric_tracker.h"],
+    features = ["-conversion_warnings"],
+    strip_include_prefix = "public",
+    deps = [
+        ":egress_ingress",
+        "//pw_log",
+        "//pw_metric:metric",
     ],
 )
 
@@ -238,10 +248,10 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         ":egress_ingress",
+        ":egress_ingress_logging_metric_tracker",
         ":service_registry",
         ":test_protos_pwpb_rpc",
         "//pw_bytes",
-        "//pw_metric:metric",
         "//pw_status",
         "//pw_sync:thread_notification",
     ],

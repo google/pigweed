@@ -1,3 +1,4 @@
+
 // Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,31 +15,42 @@
 
 #define PW_LOG_MODULE_NAME "PW_RPC"
 
-#include "pw_rpc_transport/egress_ingress.h"
-
-#include <cinttypes>
+#include "pw_rpc_transport/egress_ingress_logging_metric_tracker.h"
 
 #include "pw_log/log.h"
 
-namespace pw::rpc::internal {
+namespace pw::rpc {
 
-void LogBadPacket() { PW_LOG_ERROR("Received malformed RPC packet"); }
+void RpcIngressLoggingMetricTracker::PacketProcessed(ConstByteSpan /*packet*/) {
+  total_packets_.Increment();
+}
 
-void LogChannelIdOverflow(uint32_t channel_id, uint32_t max_channel_id) {
+void RpcIngressLoggingMetricTracker::BadPacket() {
+  bad_packets_.Increment();
+  PW_LOG_ERROR("Received malformed RPC packet");
+}
+
+void RpcIngressLoggingMetricTracker::ChannelIdOverflow(
+    uint32_t channel_id, uint32_t max_channel_id) {
+  overflow_channel_ids_.Increment();
   PW_LOG_ERROR(
       "Received RPC packet for channel ID %d, max supported channel ID %d",
       static_cast<int>(channel_id),
       static_cast<int>(max_channel_id));
 }
 
-void LogMissingEgressForChannel(uint32_t channel_id) {
+void RpcIngressLoggingMetricTracker::MissingEgressForChannel(
+    uint32_t channel_id) {
+  missing_egresses_.Increment();
   PW_LOG_ERROR(
       "Received RPC packet for channel ID %d"
       " which doesn't have a registered egress",
       static_cast<int>(channel_id));
 }
 
-void LogIngressSendFailure(uint32_t channel_id, pw::Status status) {
+void RpcIngressLoggingMetricTracker::IngressSendFailure(uint32_t channel_id,
+                                                        pw::Status status) {
+  egress_errors_.Increment();
   PW_LOG_ERROR(
       "Failed to send RPC packet received on channel ID %d"
       " to its configured egress. Status %d",
@@ -46,4 +58,4 @@ void LogIngressSendFailure(uint32_t channel_id, pw::Status status) {
       static_cast<int>(status.code()));
 }
 
-}  // namespace pw::rpc::internal
+}  // namespace pw::rpc

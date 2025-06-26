@@ -16,7 +16,6 @@
 #include <mutex>
 
 #include "pw_bytes/span.h"
-#include "pw_metric/metric.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/packet_meta.h"
 #include "pw_rpc_transport/hdlc_framing.h"
@@ -27,14 +26,6 @@
 #include "pw_sync/mutex.h"
 
 namespace pw::rpc {
-namespace internal {
-
-void LogBadPacket();
-void LogChannelIdOverflow(uint32_t channel_id, uint32_t max_channel_id);
-void LogMissingEgressForChannel(uint32_t channel_id);
-void LogIngressSendFailure(uint32_t channel_id, Status status);
-
-}  // namespace internal
 
 // Ties RPC transport and RPC frame encoder together.
 class BaseRpcEgress : public RpcEgressHandler, public ChannelOutput {
@@ -90,75 +81,80 @@ struct ChannelEgress {
   RpcEgressHandler* const egress = nullptr;
 };
 
-// Handler for incoming RPC packets. RpcIngress is not thread-safe and must be
-// accessed from a single thread (typically the RPC RX thread).
+// Override and provide to RpcIngress to be notified of events.
+class RpcIngressTracker {
+ public:
+  virtual ~RpcIngressTracker() = default;
+  virtual void PacketProcessed([[maybe_unused]] ConstByteSpan packet) {}
+  virtual void BadPacket() {}
+  virtual void ChannelIdOverflow([[maybe_unused]] uint32_t channel_id,
+                                 [[maybe_unused]] uint32_t max_channel_id) {}
+  virtual void MissingEgressForChannel([[maybe_unused]] uint32_t channel_id) {}
+  virtual void IngressSendFailure([[maybe_unused]] uint32_t channel_id,
+                                  [[maybe_unused]] Status status) {}
+};
+
+// Handler for incoming RPC packets. RpcIngress is not thread-safe and must
+// be accessed from a single thread (typically the RPC RX thread).
 template <typename Decoder>
 class RpcIngress : public RpcIngressHandler {
  public:
   static constexpr size_t kMaxChannelId = 64;
   RpcIngress() = default;
 
-  explicit RpcIngress(span<ChannelEgress> channel_egresses) {
+  RpcIngress(span<ChannelEgress> channel_egresses,
+             RpcIngressTracker* tracker = nullptr)
+      : tracker_(tracker) {
     for (auto& channel : channel_egresses) {
       PW_ASSERT(channel.channel_id <= kMaxChannelId);
       channel_egresses_[channel.channel_id] = channel.egress;
     }
   }
 
-  const metric::Group& metrics() const { return metrics_; }
-
-  uint32_t num_total_packets() const { return total_packets_.value(); }
-
-  uint32_t num_bad_packets() const { return bad_packets_.value(); }
-
-  uint32_t num_overflow_channel_ids() const {
-    return overflow_channel_ids_.value();
-  }
-
-  uint32_t num_missing_egresses() const { return missing_egresses_.value(); }
-
-  uint32_t num_egress_errors() const { return egress_errors_.value(); }
-
   // Finds RPC packets in `buffer`, extracts pw_rpc channel ID from each
   // packet and sends the packet to the egress registered for that channel.
   Status ProcessIncomingData(ConstByteSpan buffer) override {
     return decoder_.Decode(buffer, [this](ConstByteSpan packet) {
       const auto packet_meta = rpc::PacketMeta::FromBuffer(packet);
-      total_packets_.Increment();
+      if (tracker_) {
+        ++num_total_packets_;
+        tracker_->PacketProcessed(packet);
+      }
       if (!packet_meta.ok()) {
-        bad_packets_.Increment();
-        internal::LogBadPacket();
+        if (tracker_) {
+          tracker_->BadPacket();
+        }
         return;
       }
       if (packet_meta->channel_id() > kMaxChannelId) {
-        overflow_channel_ids_.Increment();
-        internal::LogChannelIdOverflow(packet_meta->channel_id(),
-                                       kMaxChannelId);
+        if (tracker_) {
+          tracker_->ChannelIdOverflow(packet_meta->channel_id(), kMaxChannelId);
+        }
         return;
       }
       auto* egress = channel_egresses_[packet_meta->channel_id()];
       if (egress == nullptr) {
-        missing_egresses_.Increment();
-        internal::LogMissingEgressForChannel(packet_meta->channel_id());
+        if (tracker_) {
+          tracker_->MissingEgressForChannel(packet_meta->channel_id());
+        }
         return;
       }
       const auto status = egress->SendRpcPacket(packet);
       if (!status.ok()) {
-        egress_errors_.Increment();
-        internal::LogIngressSendFailure(packet_meta->channel_id(), status);
+        if (tracker_) {
+          tracker_->IngressSendFailure(packet_meta->channel_id(), status);
+        }
       }
     });
   }
 
+  uint32_t num_total_packets() const { return num_total_packets_; }
+
  private:
+  uint32_t num_total_packets_ = 0;
+  RpcIngressTracker* tracker_;
   std::array<RpcEgressHandler*, kMaxChannelId + 1> channel_egresses_{};
   Decoder decoder_;
-  PW_METRIC_GROUP(metrics_, "pw_rpc_transport");
-  PW_METRIC(metrics_, total_packets_, "total_packets", 0u);
-  PW_METRIC(metrics_, bad_packets_, "bad_packets", 0u);
-  PW_METRIC(metrics_, overflow_channel_ids_, "overflow_channel_ids", 0u);
-  PW_METRIC(metrics_, missing_egresses_, "missing_egresses", 0u);
-  PW_METRIC(metrics_, egress_errors_, "egress_errors", 0u);
 };
 
 template <size_t kMaxPacketSize>

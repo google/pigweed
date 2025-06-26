@@ -14,12 +14,14 @@
 
 #include "pw_rpc_transport/egress_ingress.h"
 
-#include <random>
+#include <cinttypes>
 
+#include "pw_assert/check.h"
 #include "pw_bytes/span.h"
 #include "pw_metric/metric.h"
 #include "pw_rpc/client_server.h"
 #include "pw_rpc/packet_meta.h"
+#include "pw_rpc_transport/egress_ingress_logging_metric_tracker.h"
 #include "pw_rpc_transport/hdlc_framing.h"
 #include "pw_rpc_transport/internal/test.rpc.pwpb.h"
 #include "pw_rpc_transport/rpc_transport.h"
@@ -231,8 +233,10 @@ TEST(RpcEgressIngressTest, HdlcFramingRoundtrip) {
       ChannelEgress{kChannelAtoB, local_egress_b},
   };
 
-  HdlcRpcIngress<kMaxPacketSize> ingress_a(a_rx_channels);
-  HdlcRpcIngress<kMaxPacketSize> ingress_b(b_rx_channels);
+  RpcIngressLoggingMetricTracker tracker_a;
+  RpcIngressLoggingMetricTracker tracker_b;
+  HdlcRpcIngress<kMaxPacketSize> ingress_a(a_rx_channels, &tracker_a);
+  HdlcRpcIngress<kMaxPacketSize> ingress_b(b_rx_channels, &tracker_b);
 
   auto client =
       registry_a
@@ -288,8 +292,8 @@ TEST(RpcEgressIngressTest, HdlcFramingRoundtrip) {
             OkStatus());
   EXPECT_EQ(ingress_a.ProcessIncomingData(transport_b_to_a.buffer()),
             OkStatus());
-  EXPECT_EQ(ingress_a.num_total_packets(), 2u);
-  EXPECT_EQ(ingress_b.num_total_packets(), 2u);
+  EXPECT_EQ(tracker_a.total_packets(), 2u);
+  EXPECT_EQ(tracker_b.total_packets(), 2u);
 
   receiver1.done.acquire();
   receiver2.done.acquire();
@@ -308,16 +312,17 @@ TEST(RpcEgressIngressTest, MalformedRpcPacket) {
       ChannelEgress{kTestChannel, local_egress},
   };
 
-  SimpleRpcIngress<kMaxPacketSize> ingress(rx_channels);
+  RpcIngressLoggingMetricTracker tracker;
+  SimpleRpcIngress<kMaxPacketSize> ingress(rx_channels, &tracker);
 
   EXPECT_EQ(egress.Send(kMalformedPacket), OkStatus());
   EXPECT_EQ(ingress.ProcessIncomingData(transport.buffer()), OkStatus());
 
-  EXPECT_EQ(ingress.num_total_packets(), 1u);
-  EXPECT_EQ(ingress.num_bad_packets(), 1u);
-  EXPECT_EQ(ingress.num_overflow_channel_ids(), 0u);
-  EXPECT_EQ(ingress.num_missing_egresses(), 0u);
-  EXPECT_EQ(ingress.num_egress_errors(), 0u);
+  EXPECT_EQ(tracker.total_packets(), 1u);
+  EXPECT_EQ(tracker.bad_packets(), 1u);
+  EXPECT_EQ(tracker.overflow_channel_ids(), 0u);
+  EXPECT_EQ(tracker.missing_egresses(), 0u);
+  EXPECT_EQ(tracker.egress_errors(), 0u);
 }
 
 TEST(RpcEgressIngressTest, ChannelIdOverflow) {
@@ -336,17 +341,18 @@ TEST(RpcEgressIngressTest, ChannelIdOverflow) {
           .CreateClient<pw_rpc_transport::testing::pw_rpc::pwpb::TestService>(
               kInvalidChannelId);
 
-  SimpleRpcIngress<kMaxPacketSize> ingress;
+  RpcIngressLoggingMetricTracker tracker;
+  SimpleRpcIngress<kMaxPacketSize> ingress({}, &tracker);
 
   auto receiver = client.Echo({.msg = "test"});
 
   EXPECT_EQ(ingress.ProcessIncomingData(transport.buffer()), OkStatus());
 
-  EXPECT_EQ(ingress.num_total_packets(), 1u);
-  EXPECT_EQ(ingress.num_bad_packets(), 0u);
-  EXPECT_EQ(ingress.num_overflow_channel_ids(), 1u);
-  EXPECT_EQ(ingress.num_missing_egresses(), 0u);
-  EXPECT_EQ(ingress.num_egress_errors(), 0u);
+  EXPECT_EQ(tracker.total_packets(), 1u);
+  EXPECT_EQ(tracker.bad_packets(), 0u);
+  EXPECT_EQ(tracker.overflow_channel_ids(), 1u);
+  EXPECT_EQ(tracker.missing_egresses(), 0u);
+  EXPECT_EQ(tracker.egress_errors(), 0u);
 }
 
 TEST(RpcEgressIngressTest, MissingEgressForIncomingPacket) {
@@ -366,17 +372,18 @@ TEST(RpcEgressIngressTest, MissingEgressForIncomingPacket) {
               kChannelA);
 
   std::array ingress_channels = {ChannelEgress(kChannelB, egress)};
-  SimpleRpcIngress<kMaxPacketSize> ingress(ingress_channels);
+  RpcIngressLoggingMetricTracker tracker;
+  SimpleRpcIngress<kMaxPacketSize> ingress(ingress_channels, &tracker);
 
   auto receiver = client.Echo({.msg = "test"});
 
   EXPECT_EQ(ingress.ProcessIncomingData(transport.buffer()), OkStatus());
 
-  EXPECT_EQ(ingress.num_total_packets(), 1u);
-  EXPECT_EQ(ingress.num_bad_packets(), 0u);
-  EXPECT_EQ(ingress.num_overflow_channel_ids(), 0u);
-  EXPECT_EQ(ingress.num_missing_egresses(), 1u);
-  EXPECT_EQ(ingress.num_egress_errors(), 0u);
+  EXPECT_EQ(tracker.total_packets(), 1u);
+  EXPECT_EQ(tracker.bad_packets(), 0u);
+  EXPECT_EQ(tracker.overflow_channel_ids(), 0u);
+  EXPECT_EQ(tracker.missing_egresses(), 1u);
+  EXPECT_EQ(tracker.egress_errors(), 0u);
 }
 
 TEST(RpcEgressIngressTest, EgressSendFailureForIncomingPacket) {
@@ -398,17 +405,18 @@ TEST(RpcEgressIngressTest, EgressSendFailureForIncomingPacket) {
               kChannelId);
 
   std::array ingress_channels = {ChannelEgress(kChannelId, bad_egress)};
-  SimpleRpcIngress<kMaxPacketSize> ingress(ingress_channels);
+  RpcIngressLoggingMetricTracker tracker;
+  SimpleRpcIngress<kMaxPacketSize> ingress(ingress_channels, &tracker);
 
   auto receiver = client.Echo({.msg = "test"});
 
   EXPECT_EQ(ingress.ProcessIncomingData(good_transport.buffer()), OkStatus());
 
-  EXPECT_EQ(ingress.num_total_packets(), 1u);
-  EXPECT_EQ(ingress.num_bad_packets(), 0u);
-  EXPECT_EQ(ingress.num_overflow_channel_ids(), 0u);
-  EXPECT_EQ(ingress.num_missing_egresses(), 0u);
-  EXPECT_EQ(ingress.num_egress_errors(), 1u);
+  EXPECT_EQ(tracker.total_packets(), 1u);
+  EXPECT_EQ(tracker.bad_packets(), 0u);
+  EXPECT_EQ(tracker.overflow_channel_ids(), 0u);
+  EXPECT_EQ(tracker.missing_egresses(), 0u);
+  EXPECT_EQ(tracker.egress_errors(), 1u);
 }
 
 }  // namespace
