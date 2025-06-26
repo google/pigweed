@@ -38,20 +38,6 @@ using namespace std::literals::string_view_literals;
 
 const auto kTestMessage = "I hope that someone gets my message in a bottle"sv;
 
-const pw::metric::Metric& GetMetric(pw::metric::Group& metrics,
-                                    pw::tokenizer::Token name) {
-  for (const auto& metric : metrics.metrics()) {
-    if (metric.name() == name) {
-      return metric;
-    }
-  }
-  PW_CRASH("Metric 0x%X not found", name);
-}
-
-// Tokens (names) for metrics defined in LocalRpcEgressLoggingMetricTracker
-static constexpr pw::tokenizer::Token kToken_no_packet_available =
-    PW_METRIC_TOKEN("no_packet_available");
-
 class TestEchoService final
     : public pw_rpc_transport::testing::pw_rpc::pwpb::TestService::Service<
           TestEchoService> {
@@ -233,8 +219,7 @@ TEST(LocalRpcEgressTest, PacketQueueExhausted) {
 
   EXPECT_TRUE(egress_ok);
 
-  EXPECT_GT(GetMetric(tracker.metrics(), kToken_no_packet_available).as_int(),
-            0U);
+  EXPECT_GT(tracker.no_packet_available(), 0U);
 
   egress.Stop();
   egress_thread.join();

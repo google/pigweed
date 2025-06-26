@@ -45,6 +45,18 @@ class LocalRpcEgressLoggingMetricTracker final : public LocalRpcEgressTracker {
   pw::metric::Group& metrics() { return metrics_; }
   const pw::metric::Group& metrics() const { return metrics_; }
 
+  uint32_t packet_size_too_large() const {
+    return packet_size_too_large_.value();
+  }
+  uint32_t no_packet_available() const { return no_packet_available_.value(); }
+  uint32_t failed_to_process_packet() const {
+    return failed_to_process_packet_.value();
+  }
+  uint32_t failed_to_access_packet() const {
+    return failed_to_access_packet_.value();
+  }
+  uint32_t exceeded_threshold() const { return exceeded_threshold_.value(); }
+
  private:
   const chrono::SystemClock::duration packet_processor_threshold_time_;
 
