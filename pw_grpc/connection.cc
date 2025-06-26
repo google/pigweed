@@ -24,7 +24,7 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_grpc_private/hpack.h"
 #include "pw_log/log.h"
-#include "pw_preprocessor/compiler.h"
+#include "pw_numeric/checked_arithmetic.h"
 #include "pw_status/try.h"
 
 namespace pw::grpc {
@@ -992,8 +992,7 @@ Status Connection::Reader::ProcessHeadersFrame(const FrameHeader& frame) {
 }
 
 Status Connection::SharedState::AddConnectionSendWindow(int32_t delta) {
-  if (PW_ADD_OVERFLOW(
-          connection_send_window_, delta, &connection_send_window_)) {
+  if (!CheckedIncrement(connection_send_window_, delta)) {
     return Status::Internal();
   }
 
@@ -1007,8 +1006,7 @@ Status Connection::SharedState::AddAllStreamsSendWindow(int32_t delta) {
     if (streams_[i].id == 0) {
       continue;
     }
-    if (PW_ADD_OVERFLOW(
-            streams_[i].send_window, delta, &streams_[i].send_window)) {
+    if (!CheckedIncrement(streams_[i].send_window, delta)) {
       return Status::Internal();
     }
   }
@@ -1025,7 +1023,7 @@ Status Connection::SharedState::AddStreamSendWindow(StreamId id,
     return Status::NotFound();
   }
 
-  if (PW_ADD_OVERFLOW(stream->send_window, delta, &stream->send_window)) {
+  if (!CheckedIncrement(stream->send_window, delta)) {
     return Status::Internal();
   }
 

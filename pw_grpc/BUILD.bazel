@@ -80,6 +80,7 @@ cc_library(
         "//pw_log",
         "//pw_multibuf",
         "//pw_multibuf:allocator",
+        "//pw_numeric:checked_arithmetic",
         "//pw_result",
         "//pw_span",
         "//pw_status",

@@ -15,7 +15,7 @@
 
 #include "pw_allocator/config.h"
 #include "pw_assert/assert.h"
-#include "pw_preprocessor/compiler.h"
+#include "pw_numeric/checked_arithmetic.h"
 
 namespace pw::allocator {
 
@@ -46,7 +46,7 @@ struct Hardening {
   template <typename T, typename U>
   static constexpr void Increment(T& value, U increment) {
     if constexpr (Hardening::kIncludesRobustChecks) {
-      PW_ASSERT(!PW_ADD_OVERFLOW(value, increment, &value));
+      PW_ASSERT(CheckedIncrement(value, increment));
     } else {
       value += increment;
     }
@@ -55,7 +55,7 @@ struct Hardening {
   template <typename T, typename U>
   static constexpr void Decrement(T& value, U increment) {
     if constexpr (Hardening::kIncludesRobustChecks) {
-      PW_ASSERT(!PW_SUB_OVERFLOW(value, increment, &value));
+      PW_ASSERT(CheckedDecrement(value, increment));
     } else {
       value -= increment;
     }
@@ -64,7 +64,7 @@ struct Hardening {
   template <typename T, typename U>
   static constexpr void Multiply(T& value, U increment) {
     if constexpr (Hardening::kIncludesRobustChecks) {
-      PW_ASSERT(!PW_MUL_OVERFLOW(value, increment, &value));
+      PW_ASSERT(CheckedMul(value, increment, value));
     } else {
       value *= increment;
     }

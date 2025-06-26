@@ -55,6 +55,7 @@ pw_add_facade(pw_assert.check INTERFACE
     public
   PUBLIC_DEPS
     pw_assert.config
+    pw_numeric.checked_arithmetic
     pw_preprocessor
 )
 

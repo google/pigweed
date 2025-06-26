@@ -24,6 +24,7 @@ pw_add_library(pw_metric STATIC
     pw_assert
     pw_containers
     pw_log
+    pw_numeric.checked_arithmetic
     pw_tokenizer
   SOURCES
     metric.cc

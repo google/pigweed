@@ -51,7 +51,7 @@ pw_add_library(pw_malloc.common INTERFACE
     pw_allocator.tracking_allocator
     pw_assert
     pw_bytes
-    pw_preprocessor
+    pw_numeric.checked_arithmetic
   PUBLIC_LINK_OPTIONS
     "-Wl,--wrap=malloc"
     "-Wl,--wrap=free"

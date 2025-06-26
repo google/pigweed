@@ -43,7 +43,7 @@ pw_add_library(pw_bytes.alignment STATIC
   PUBLIC_DEPS
     pw_assert
     pw_bytes
-    pw_preprocessor
+    pw_numeric.checked_arithmetic
     pw_third_party.fuchsia.stdcompat
   SOURCES
     alignment.cc

@@ -48,9 +48,9 @@ pw_source_set("alignment") {
   public = [ "public/pw_bytes/alignment.h" ]
   public_deps = [
     ":pw_bytes",
+    "$dir_pw_numeric:checked_arithmetic",
     "$pw_external_fuchsia:stdcompat",
     dir_pw_assert,
-    dir_pw_preprocessor,
   ]
   sources = [ "alignment.cc" ]
 }

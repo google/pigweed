@@ -29,6 +29,7 @@ pw_source_set("pw_metric") {
   public = [ "public/pw_metric/metric.h" ]
   sources = [ "metric.cc" ]
   public_deps = [
+    "$dir_pw_numeric:checked_arithmetic",
     "$dir_pw_tokenizer:base64",
     dir_pw_assert,
     dir_pw_containers,

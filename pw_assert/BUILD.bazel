@@ -61,6 +61,7 @@ pw_facade(
     tags = ["noclangtidy"],
     deps = [
         ":config",
+        "//pw_numeric:checked_arithmetic",
         "//pw_preprocessor",
     ],
 )

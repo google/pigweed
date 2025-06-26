@@ -334,7 +334,7 @@ pw_add_library(pw_allocator.hardening INTERFACE
   PUBLIC_DEPS
     pw_allocator.config
     pw_assert.assert
-    pw_preprocessor
+    pw_numeric.checked_arithmetic
 )
 
 # TODO(b/376730645): Remove deprecated interfaces.

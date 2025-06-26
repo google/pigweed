@@ -19,7 +19,7 @@
 #include "lib/stdcompat/bit.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
-#include "pw_preprocessor/compiler.h"
+#include "pw_numeric/checked_arithmetic.h"
 
 namespace pw {
 
@@ -37,7 +37,7 @@ bool IsAlignedAs(const void* ptr) {
 
 /// Returns the value rounded down to the nearest multiple of alignment.
 constexpr size_t AlignDown(uintptr_t value, size_t alignment) {
-  PW_ASSERT(!PW_MUL_OVERFLOW((value / alignment), alignment, &value));
+  PW_ASSERT(CheckedMul((value / alignment), alignment, value));
   return value;
 }
 
@@ -50,7 +50,7 @@ constexpr T* AlignDown(T* value, size_t alignment) {
 
 /// Returns the value rounded up to the nearest multiple of alignment.
 constexpr size_t AlignUp(uintptr_t value, size_t alignment) {
-  PW_ASSERT(!PW_ADD_OVERFLOW(value, alignment - 1, &value));
+  PW_ASSERT(CheckedIncrement(value, alignment - 1));
   return AlignDown(value, alignment);
 }
 

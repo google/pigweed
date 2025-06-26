@@ -324,7 +324,7 @@ pw_source_set("hardening") {
   public_deps = [
     ":config",
     "$dir_pw_assert:assert",
-    dir_pw_preprocessor,
+    "$dir_pw_numeric:checked_arithmetic",
   ]
 }
 

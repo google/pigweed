@@ -20,7 +20,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
-#include "pw_preprocessor/compiler.h"
+#include "pw_numeric/checked_arithmetic.h"
 #include "pw_span/span.h"
 #include "pw_tokenizer/base64.h"
 
@@ -84,7 +84,7 @@ void Metric::Increment(uint32_t amount) {
   }
 
   do {
-    if (PW_ADD_OVERFLOW(value, amount, &updated)) {
+    if (!CheckedAdd(value, amount, updated)) {
       updated = std::numeric_limits<uint32_t>::max();
     }
   } while (!uint_.compare_exchange_weak(value, updated));
@@ -101,7 +101,7 @@ void Metric::Decrement(uint32_t amount) {
       return;
     }
 
-    if (PW_SUB_OVERFLOW(value, amount, &updated)) {
+    if (!CheckedSub(value, amount, updated)) {
       updated = 0;
     }
   } while (!uint_.compare_exchange_weak(value, updated));

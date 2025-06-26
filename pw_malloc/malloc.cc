@@ -24,6 +24,7 @@
 #include "pw_assert/check.h"
 #include "pw_malloc/config.h"
 #include "pw_metric/metric.h"
+#include "pw_numeric/checked_arithmetic.h"
 #include "pw_tokenizer/tokenize.h"
 
 namespace {
@@ -103,7 +104,7 @@ void* __wrap_realloc(void* ptr, size_t size) {
 }
 
 void* __wrap_calloc(size_t num, size_t size) {
-  if (PW_MUL_OVERFLOW(num, size, &size)) {
+  if (!pw::CheckedMul(num, size, size)) {
     return nullptr;
   }
   void* ptr = __wrap_malloc(size);

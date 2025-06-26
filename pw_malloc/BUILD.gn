@@ -81,9 +81,9 @@ group("common") {
   public_deps = [
     ":config",
     "$dir_pw_allocator:allocator",
+    "$dir_pw_numeric:checked_arithmetic",
     dir_pw_assert,
     dir_pw_bytes,
-    dir_pw_preprocessor,
   ]
 }
 

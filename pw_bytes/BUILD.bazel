@@ -59,7 +59,7 @@ cc_library(
     deps = [
         "//pw_assert:assert",
         "//pw_bytes",
-        "//pw_preprocessor",
+        "//pw_numeric:checked_arithmetic",
         "//third_party/fuchsia:stdcompat",
     ],
 )

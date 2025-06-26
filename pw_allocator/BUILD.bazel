@@ -346,7 +346,7 @@ cc_library(
     deps = [
         ":config",
         "//pw_assert:assert",
-        "//pw_preprocessor",
+        "//pw_numeric:checked_arithmetic",
     ],
 )
 

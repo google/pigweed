@@ -90,6 +90,7 @@ pw_facade("check") {
   ]
   public_deps = [
     ":config",
+    "$dir_pw_numeric:checked_arithmetic",
     dir_pw_preprocessor,
   ]
 
