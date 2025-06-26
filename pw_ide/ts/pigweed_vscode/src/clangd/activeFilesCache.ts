@@ -150,7 +150,7 @@ export class ClangdActiveFilesCache extends Disposable {
     // 1. *Not* add configuration to disable clangd for any files
     // 2. *Remove* any prior such configuration that may have existed
     if (!settings.disableInactiveFileCodeIntelligence()) {
-      await handleInactiveFileCodeIntelligenceEnabled(
+      handleInactiveFileCodeIntelligenceEnabled(
         settingsPath,
         sharedSettingsPath,
       );
@@ -193,8 +193,10 @@ export class ClangdActiveFilesCache extends Disposable {
  *
  * - If there's a `.clangd.shared` file, that will become `.clangd`
  * - If there's not, `.clangd` will be removed
+ *
+ * Note: We use sync ops here to be able to use this in extension's deactivate()
  */
-async function handleInactiveFileCodeIntelligenceEnabled(
+export function handleInactiveFileCodeIntelligenceEnabled(
   settingsPath: string,
   sharedSettingsPath: string,
 ) {
@@ -202,25 +204,26 @@ async function handleInactiveFileCodeIntelligenceEnabled(
     if (!fs.existsSync(settingsPath)) {
       // If there's a shared settings file, but no active settings file, copy
       // the shared settings file to make an active settings file.
-      await fs_p.copyFile(sharedSettingsPath, settingsPath);
+      // await fs_p.copyFile(sharedSettingsPath, settingsPath);
+      fs.copyFileSync(sharedSettingsPath, settingsPath);
     } else {
       // If both shared settings and active settings are present, check if they
       // are identical. If so, no action is required. Otherwise, copy the shared
       // settings file over the active settings file.
       const settingsHash = createHash('md5').update(
-        await fs_p.readFile(settingsPath),
+        fs.readFileSync(settingsPath),
       );
       const sharedSettingsHash = createHash('md5').update(
-        await fs_p.readFile(sharedSettingsPath),
+        fs.readFileSync(sharedSettingsPath),
       );
 
       if (settingsHash !== sharedSettingsHash) {
-        await fs_p.copyFile(sharedSettingsPath, settingsPath);
+        fs.copyFileSync(sharedSettingsPath, settingsPath);
       }
     }
   } else if (fs.existsSync(settingsPath)) {
     // If there's no shared settings file, then we just need to remove the
     // active settings file if it's present.
-    await fs_p.unlink(settingsPath);
+    fs.unlinkSync(settingsPath);
   }
 }

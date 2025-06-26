@@ -77,8 +77,13 @@ import { shouldSupportGn } from './gn';
 import { shouldSupportCmake } from './cmake';
 import { CompileCommandsWatcher } from './clangd/compileCommandsWatcher';
 import { existsSync, statSync } from 'node:fs';
-import { createBazelInterceptorFile } from './clangd/compileCommandsUtils';
+import {
+  createBazelInterceptorFile,
+  deleteBazelInterceptorFile,
+} from './clangd/compileCommandsUtils';
 import { checkClangdVersion } from './clangd/extensionChecker';
+import { handleInactiveFileCodeIntelligenceEnabled } from './clangd/activeFilesCache';
+import * as path from 'path';
 
 interface CommandEntry {
   name: string;
@@ -557,6 +562,14 @@ export async function activate(context: vscode.ExtensionContext) {
   didInit.fire();
 }
 
-export function deactivate() {
+export async function deactivate() {
+  // Clean up the Bazel interceptor script
+  deleteBazelInterceptorFile();
+
+  // Clean up the .clangd file to a default state
+  const rootClangdPath = path.join(workingDir.get(), '.clangd');
+  const sharedClangdPath = path.join(workingDir.get(), '.clangd.shared');
+  handleInactiveFileCodeIntelligenceEnabled(rootClangdPath, sharedClangdPath);
+
   disposer.dispose();
 }

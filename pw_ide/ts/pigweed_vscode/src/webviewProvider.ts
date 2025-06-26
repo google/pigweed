@@ -178,7 +178,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         }
         case 'disableBazelBuildInterceptor': {
           logging.info('Disabling bazel build interceptor');
-          await deleteBazelInterceptorFile();
+          deleteBazelInterceptorFile();
           settings.disableBazelInterceptor(true);
           vscode.window.showInformationMessage(
             'Bazel build interceptor disabled',

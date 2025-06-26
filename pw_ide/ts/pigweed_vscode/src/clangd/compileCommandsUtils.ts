@@ -25,7 +25,7 @@ import {
   CompilationDatabaseMap,
   inferTarget,
 } from './parser';
-import { chmodSync, existsSync, writeFileSync } from 'fs';
+import { chmodSync, existsSync, rmSync, writeFileSync } from 'fs';
 
 interface CompDbProcessingSettings {
   compDbSearchPaths: string[][];
@@ -250,16 +250,13 @@ exit $BAZEL_EXIT_CODE
   chmodSync(pathForBazelBuildInterceptor, 0o755);
 }
 
-export async function deleteBazelInterceptorFile() {
+export function deleteBazelInterceptorFile() {
   const pathForBazelBuildInterceptor = getBazelInterceptorPath();
   if (!pathForBazelBuildInterceptor) return;
   if (existsSync(pathForBazelBuildInterceptor)) {
-    await vscode.workspace.fs.delete(
-      vscode.Uri.file(pathForBazelBuildInterceptor),
-      {
-        recursive: true,
-        useTrash: false,
-      },
-    );
+    rmSync(pathForBazelBuildInterceptor, {
+      recursive: true,
+      force: true,
+    });
   }
 }
