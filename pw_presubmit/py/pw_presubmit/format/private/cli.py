@@ -68,6 +68,7 @@ class FormattingSuite:
         base: str | None,
         exclude: Collection[Pattern] = tuple(),
         apply_fixes: bool = True,
+        jobs: int | None = None,
     ) -> bool:
         """Formats files in a repository.
 
@@ -77,9 +78,7 @@ class FormattingSuite:
                 specified Git ref.
             exclude: Regex patterns to exclude from the set of collected files.
             apply_fixes: Whether or not to apply formatting fixes to files.
-
-        Returns:
-            True if operation was successful.
+            jobs: Number of parallel jobs to use.
         """
         all_files = collect_files_in_current_repo(
             paths,
@@ -102,7 +101,7 @@ class FormattingSuite:
             all_files, self._formatters
         )
 
-        findings = cli_support.check(files_by_formatter)
+        findings = cli_support.check(files_by_formatter, jobs=jobs)
         findings_as_list = list(
             itertools.chain.from_iterable(findings.values())
         )

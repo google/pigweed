@@ -15,6 +15,7 @@
 
 import argparse
 import collections
+from concurrent.futures import ThreadPoolExecutor, Future
 import json
 import logging
 from pathlib import Path
@@ -147,6 +148,12 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         dest='apply_fixes',
         help='Only display findings, do not apply formatting fixes.',
     )
+    parser.add_argument(
+        '-j',
+        '--jobs',
+        type=int,
+        help='Number of parallel jobs to use. Defaults to the number of CPUs.',
+    )
 
 
 def relativize_paths(
@@ -161,15 +168,36 @@ def relativize_paths(
 
 
 def check(
-    files_by_formatter: Mapping[FileFormatter, Iterable[Path]]
+    files_by_formatter: Mapping[FileFormatter, Iterable[Path]],
+    jobs: int | None = None,
 ) -> Mapping[FileFormatter, Sequence[FormattedDiff]]:
     """Returns expected diffs for files with incorrect formatting."""
-    findings_by_formatter = {}
-    for code_formatter, files in files_by_formatter.items():
-        _LOG.debug('Checking %s', ', '.join(str(f) for f in files))
-        diffs = list(code_formatter.get_formatting_diffs(files))
-        if diffs:
-            findings_by_formatter[code_formatter] = diffs
+    findings_by_formatter: Dict[FileFormatter, List[FormattedDiff]] = {}
+
+    def check_file(
+        code_formatter: FileFormatter, file_path: Path
+    ) -> FormattedDiff | None:
+        return code_formatter.get_formatting_diff(file_path)
+
+    with ThreadPoolExecutor(max_workers=jobs) as exe:
+        futures: Dict[
+            Future[FormattedDiff | None],
+            FileFormatter,
+        ] = {}
+
+        for code_formatter, files in files_by_formatter.items():
+            _LOG.debug('Checking %s', ', '.join(str(f) for f in files))
+            for file_path in files:
+                future = exe.submit(check_file, code_formatter, file_path)
+                futures[future] = code_formatter
+
+        for future, code_formatter in futures.items():
+            diff = future.result()
+            if diff:
+                if code_formatter not in findings_by_formatter:
+                    findings_by_formatter[code_formatter] = []
+                findings_by_formatter[code_formatter].append(diff)
+
     return findings_by_formatter
 
 
