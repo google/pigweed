@@ -246,4 +246,132 @@ PW_CONSTEXPR_TEST(MulSatUint64, PositiveSaturation, {
   PW_TEST_EXPECT_EQ(UINT64_MAX, pw::mul_sat<uint64_t>(UINT64_MAX, UINT64_MAX));
 });
 
+PW_CONSTEXPR_TEST(AddSatInt8, NoSaturation, {
+  PW_TEST_EXPECT_EQ(int8_t{15}, pw::add_sat<int8_t>(int8_t{10}, int8_t{5}));
+  PW_TEST_EXPECT_EQ(int8_t{5}, pw::add_sat<int8_t>(int8_t{10}, int8_t{-5}));
+  PW_TEST_EXPECT_EQ(int8_t{-15}, pw::add_sat<int8_t>(int8_t{-10}, int8_t{-5}));
+  PW_TEST_EXPECT_EQ(int8_t{-5}, pw::add_sat<int8_t>(int8_t{-10}, int8_t{5}));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt8, PositiveSaturation, {
+  PW_TEST_EXPECT_EQ(INT8_MAX, pw::add_sat<int8_t>(INT8_MAX, int8_t{1}));
+  PW_TEST_EXPECT_EQ(INT8_MAX, pw::add_sat<int8_t>(int8_t{1}, INT8_MAX));
+  PW_TEST_EXPECT_EQ(INT8_MAX, pw::add_sat<int8_t>(INT8_MAX, INT8_MAX));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt8, NegativeSaturation, {
+  PW_TEST_EXPECT_EQ(INT8_MIN, pw::add_sat<int8_t>(INT8_MIN, int8_t{-1}));
+  PW_TEST_EXPECT_EQ(INT8_MIN, pw::add_sat<int8_t>(int8_t{-1}, INT8_MIN));
+  PW_TEST_EXPECT_EQ(INT8_MIN, pw::add_sat<int8_t>(INT8_MIN, INT8_MIN));
+});
+
+PW_CONSTEXPR_TEST(AddSatUint8, NoSaturation, {
+  PW_TEST_EXPECT_EQ(uint8_t{15u},
+                    pw::add_sat<uint8_t>(uint8_t{10u}, uint8_t{5u}));
+});
+
+PW_CONSTEXPR_TEST(AddSatUint8, PositiveSaturation, {
+  PW_TEST_EXPECT_EQ(UINT8_MAX, pw::add_sat<uint8_t>(UINT8_MAX, uint8_t{1u}));
+  PW_TEST_EXPECT_EQ(UINT8_MAX, pw::add_sat<uint8_t>(uint8_t{1u}, UINT8_MAX));
+  PW_TEST_EXPECT_EQ(UINT8_MAX, pw::add_sat<uint8_t>(UINT8_MAX, UINT8_MAX));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt16, NoSaturation, {
+  PW_TEST_EXPECT_EQ(int16_t{15}, pw::add_sat<int16_t>(int16_t{10}, int16_t{5}));
+  PW_TEST_EXPECT_EQ(int16_t{5}, pw::add_sat<int16_t>(int16_t{10}, int16_t{-5}));
+  PW_TEST_EXPECT_EQ(int16_t{-15},
+                    pw::add_sat<int16_t>(int16_t{-10}, int16_t{-5}));
+  PW_TEST_EXPECT_EQ(int16_t{-5},
+                    pw::add_sat<int16_t>(int16_t{-10}, int16_t{5}));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt16, PositiveSaturation, {
+  PW_TEST_EXPECT_EQ(INT16_MAX, pw::add_sat<int16_t>(INT16_MAX, int16_t{1}));
+  PW_TEST_EXPECT_EQ(INT16_MAX, pw::add_sat<int16_t>(int16_t{1}, INT16_MAX));
+  PW_TEST_EXPECT_EQ(INT16_MAX, pw::add_sat<int16_t>(INT16_MAX, INT16_MAX));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt16, NegativeSaturation, {
+  PW_TEST_EXPECT_EQ(INT16_MIN, pw::add_sat<int16_t>(INT16_MIN, int16_t{-1}));
+  PW_TEST_EXPECT_EQ(INT16_MIN, pw::add_sat<int16_t>(int16_t{-1}, INT16_MIN));
+  PW_TEST_EXPECT_EQ(INT16_MIN, pw::add_sat<int16_t>(INT16_MIN, INT16_MIN));
+});
+
+PW_CONSTEXPR_TEST(AddSatUint16, NoSaturation, {
+  PW_TEST_EXPECT_EQ(uint16_t{15u},
+                    pw::add_sat<uint16_t>(uint16_t{10u}, uint16_t{5u}));
+});
+
+PW_CONSTEXPR_TEST(AddSatUint16, PositiveSaturation, {
+  PW_TEST_EXPECT_EQ(UINT16_MAX,
+                    pw::add_sat<uint16_t>(UINT16_MAX, uint16_t{1u}));
+  PW_TEST_EXPECT_EQ(UINT16_MAX,
+                    pw::add_sat<uint16_t>(uint16_t{1u}, UINT16_MAX));
+  PW_TEST_EXPECT_EQ(UINT16_MAX, pw::add_sat<uint16_t>(UINT16_MAX, UINT16_MAX));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt32, NoSaturation, {
+  PW_TEST_EXPECT_EQ(INT32_C(15), pw::add_sat<int32_t>(INT32_C(10), INT32_C(5)));
+  PW_TEST_EXPECT_EQ(INT32_C(5), pw::add_sat<int32_t>(INT32_C(10), INT32_C(-5)));
+  PW_TEST_EXPECT_EQ(INT32_C(-15),
+                    pw::add_sat<int32_t>(INT32_C(-10), INT32_C(-5)));
+  PW_TEST_EXPECT_EQ(INT32_C(-5),
+                    pw::add_sat<int32_t>(INT32_C(-10), INT32_C(5)));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt32, PositiveSaturation, {
+  PW_TEST_EXPECT_EQ(INT32_MAX, pw::add_sat<int32_t>(INT32_MAX, INT32_C(1)));
+  PW_TEST_EXPECT_EQ(INT32_MAX, pw::add_sat<int32_t>(INT32_C(1), INT32_MAX));
+  PW_TEST_EXPECT_EQ(INT32_MAX, pw::add_sat<int32_t>(INT32_MAX, INT32_MAX));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt32, NegativeSaturation, {
+  PW_TEST_EXPECT_EQ(INT32_MIN, pw::add_sat<int32_t>(INT32_MIN, INT32_C(-1)));
+  PW_TEST_EXPECT_EQ(INT32_MIN, pw::add_sat<int32_t>(INT32_C(-1), INT32_MIN));
+  PW_TEST_EXPECT_EQ(INT32_MIN, pw::add_sat<int32_t>(INT32_MIN, INT32_MIN));
+});
+
+PW_CONSTEXPR_TEST(AddSatUint32, NoSaturation, {
+  PW_TEST_EXPECT_EQ(UINT32_C(15),
+                    pw::add_sat<uint32_t>(UINT32_C(10), UINT32_C(5)));
+});
+
+PW_CONSTEXPR_TEST(AddSatUint32, PositiveSaturation, {
+  PW_TEST_EXPECT_EQ(UINT32_MAX, pw::add_sat<uint32_t>(UINT32_MAX, UINT32_C(1)));
+  PW_TEST_EXPECT_EQ(UINT32_MAX, pw::add_sat<uint32_t>(UINT32_C(1), UINT32_MAX));
+  PW_TEST_EXPECT_EQ(UINT32_MAX, pw::add_sat<uint32_t>(UINT32_MAX, UINT32_MAX));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt64, NoSaturation, {
+  PW_TEST_EXPECT_EQ(INT64_C(15), pw::add_sat<int64_t>(INT64_C(10), INT64_C(5)));
+  PW_TEST_EXPECT_EQ(INT64_C(5), pw::add_sat<int64_t>(INT64_C(10), INT64_C(-5)));
+  PW_TEST_EXPECT_EQ(INT64_C(-15),
+                    pw::add_sat<int64_t>(INT64_C(-10), INT64_C(-5)));
+  PW_TEST_EXPECT_EQ(INT64_C(-5),
+                    pw::add_sat<int64_t>(INT64_C(-10), INT64_C(5)));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt64, PositiveSaturation, {
+  PW_TEST_EXPECT_EQ(INT64_MAX, pw::add_sat<int64_t>(INT64_MAX, INT64_C(1)));
+  PW_TEST_EXPECT_EQ(INT64_MAX, pw::add_sat<int64_t>(INT64_C(1), INT64_MAX));
+  PW_TEST_EXPECT_EQ(INT64_MAX, pw::add_sat<int64_t>(INT64_MAX, INT64_MAX));
+});
+
+PW_CONSTEXPR_TEST(AddSatInt64, NegativeSaturation, {
+  PW_TEST_EXPECT_EQ(INT64_MIN, pw::add_sat<int64_t>(INT64_MIN, INT64_C(-1)));
+  PW_TEST_EXPECT_EQ(INT64_MIN, pw::add_sat<int64_t>(INT64_C(-1), INT64_MIN));
+  PW_TEST_EXPECT_EQ(INT64_MIN, pw::add_sat<int64_t>(INT64_MIN, INT64_MIN));
+});
+
+PW_CONSTEXPR_TEST(AddSatUint64, NoSaturation, {
+  PW_TEST_EXPECT_EQ(UINT64_C(15),
+                    pw::add_sat<uint64_t>(UINT64_C(10), UINT64_C(5)));
+});
+
+PW_CONSTEXPR_TEST(AddSatUint64, PositiveSaturation, {
+  PW_TEST_EXPECT_EQ(UINT64_MAX, pw::add_sat<uint64_t>(UINT64_MAX, UINT64_C(1)));
+  PW_TEST_EXPECT_EQ(UINT64_MAX, pw::add_sat<uint64_t>(UINT64_C(1), UINT64_MAX));
+  PW_TEST_EXPECT_EQ(UINT64_MAX, pw::add_sat<uint64_t>(UINT64_MAX, UINT64_MAX));
+});
+
 }  // namespace

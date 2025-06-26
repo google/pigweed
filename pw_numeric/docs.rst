@@ -42,4 +42,5 @@ pw_numeric/integer_division.h
 
 pw_numeric/saturating_arithmetic.h
 ==================================
+.. doxygenfunction:: pw::add_sat
 .. doxygenfunction:: pw::mul_sat
