@@ -58,7 +58,10 @@ cc_library(
 pw_cc_test(
     name = "saturating_arithmetic_test",
     srcs = ["saturating_arithmetic_test.cc"],
-    deps = [":saturating_arithmetic"],
+    deps = [
+        ":saturating_arithmetic",
+        "//pw_unit_test:constexpr",
+    ],
 )
 
 filegroup(

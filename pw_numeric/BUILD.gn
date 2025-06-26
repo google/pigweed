@@ -51,7 +51,10 @@ pw_source_set("saturating_arithmetic") {
 
 pw_test("saturating_arithmetic_test") {
   sources = [ "saturating_arithmetic_test.cc" ]
-  deps = [ ":saturating_arithmetic" ]
+  deps = [
+    ":saturating_arithmetic",
+    "$dir_pw_unit_test:constexpr",
+  ]
 }
 
 pw_test_group("tests") {

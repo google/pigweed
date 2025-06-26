@@ -45,9 +45,9 @@ namespace pw {
 /// For example, for `100 * 10 = 1000`, `mul_sat<uint8_t>(100, 10)` returns
 /// `255` instead of the overflowed value (`232`).
 template <typename T>
-T mul_sat(T lhs, T rhs) noexcept {
+constexpr T mul_sat(T lhs, T rhs) noexcept {
   static_assert(std::is_integral_v<T>);
-  if (T product; !PW_MUL_OVERFLOW(lhs, rhs, &product)) {
+  if (T product = 0; !PW_MUL_OVERFLOW(lhs, rhs, &product)) {
     return product;
   }
   if constexpr (std::is_unsigned_v<T>) {

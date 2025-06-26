@@ -63,4 +63,5 @@ pw_add_test(pw_numeric.saturating_arithmetic_test
     saturating_arithmetic_test.cc
   PRIVATE_DEPS
     pw_numeric.saturating_arithmetic
+    pw_unit_test.constexpr
 )
