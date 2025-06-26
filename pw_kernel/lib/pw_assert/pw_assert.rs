@@ -13,8 +13,15 @@
 // the License.
 #![no_std]
 
+#[cfg(not(feature = "default_handler"))]
 extern "C" {
     pub fn pw_assert_HandleFailure() -> !;
+}
+
+#[cfg(feature = "default_handler")]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn pw_assert_HandleFailure() -> ! {
+    core::panic!("pw_assert panic")
 }
 
 // Re-export pw_log for use by panic/assert macros.

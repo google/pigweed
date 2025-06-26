@@ -164,7 +164,13 @@ pub trait Adapter {
 /// are optional):
 ///
 /// ```
-/// define_adapter!(pub Adapter<T: Bound> => Node<T>::link);
+/// use list::{Link, define_adapter};
+///
+/// struct Node<T: Copy> {
+///     data: T,
+///     link: Link,
+/// }
+/// define_adapter!(pub Adapter<T: Copy> => Node<T>::link);
 /// ```
 #[macro_export]
 macro_rules! define_adapter {

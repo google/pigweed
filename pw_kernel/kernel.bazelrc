@@ -13,9 +13,14 @@
 # the License.
 
 build:k_common -c opt
-build:k_common --build_tag_filters=-do_not_build
-test:k_common --test_tag_filters=-integration,-do_not_build,-do_not_run_test
+build:k_common --build_tag_filters=-do_not_build,-kernel_doc_test
+test:k_common --test_tag_filters=-integration,-do_not_build,-do_not_run_test,-kernel_doc_test
 test:k_common --@pigweed//pw_kernel:enable_tests=true
+
+common:k_doctest --config=k_common
+common:k_doctest --platforms=//pw_kernel/target/host:doctest
+build:k_doctest --build_tag_filters=-do_not_build,-kernel_panic_test
+test:k_doctest --test_tag_filters=-integration,-do_not_build,-do_not_run_test,-kernel_panic_test
 
 # Lint configuration
 # ==================

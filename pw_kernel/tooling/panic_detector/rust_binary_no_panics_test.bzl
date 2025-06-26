@@ -68,8 +68,20 @@ _rust_binary_no_panics_test = rule(
 )
 
 def rust_binary_no_panics_test(name, binary, **kwargs):
+    """Check whether the rust binary contains any panics.
+
+    Args:
+        name: Name of the target
+        binary: Target to check for panics
+        **kwargs: Args to pass through to the underlying rule.
+    """
+
     if kwargs.get("target_compatible_with") == None:
         kwargs["target_compatible_with"] = incompatible_with_mcu()
+
+    tags = kwargs.get("tags", default = [])
+    tags.append("kernel_panic_test")
+    kwargs["tags"] = tags
 
     _rust_binary_no_panics_test(
         name = name,

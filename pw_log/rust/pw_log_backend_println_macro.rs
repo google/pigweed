@@ -73,6 +73,7 @@ impl CoreFmtFormatMacroGenerator for LogfGenerator<'_> {
         let format_string = format!("[{{}}] {format_string}");
         Ok(quote! {
           {
+            extern crate std;
             use std::println;
             println!(#format_string, __pw_log_backend_crate::log_level_tag(#log_level), #(#args),*);
           }

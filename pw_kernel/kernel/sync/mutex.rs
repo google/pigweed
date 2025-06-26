@@ -93,7 +93,7 @@ impl<C: SchedulerStateContext, T> Mutex<C, T> {
         if let Some(val) = state.count.checked_add(1) {
             state.count = val;
         } else {
-            pw_assert::debug_assert!(false)
+            pw_assert::debug_assert!(false);
         }
 
         // TODO - konkers: investigate using core::intrinsics::unlikely() or
@@ -123,7 +123,7 @@ impl<C: SchedulerStateContext, T> Mutex<C, T> {
         if let Some(val) = state.count.checked_add(1) {
             state.count = val;
         } else {
-            pw_assert::debug_assert!(false)
+            pw_assert::debug_assert!(false);
         }
 
         // TODO - konkers: investigate using core::intrinsics::unlikely() or

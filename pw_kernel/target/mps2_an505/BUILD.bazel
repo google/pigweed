@@ -59,7 +59,10 @@ system_image(
 rust_binary_no_panics_test(
     name = "kernel_only_demo_no_panics_test",
     binary = ":kernel_only_demo",
-    tags = ["kernel"],
+    tags = [
+        "kernel",
+        "kernel_panic_test",
+    ],
 )
 
 system_image(

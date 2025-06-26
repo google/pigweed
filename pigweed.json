@@ -236,6 +236,11 @@
             "//pw_kernel/..."
           ],
           [
+            "test",
+            "--config=k_doctest",
+            "//pw_kernel/..."
+          ],
+          [
             "build",
             "--config=k_qemu_mps2_an505",
             "//pw_kernel/..."
