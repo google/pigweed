@@ -437,25 +437,19 @@ class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
   constexpr pointer data() { return derived().data(); }
   constexpr const_pointer data() const { return derived().data(); }
 
-  // Called when an operation will increase the size beyond the capacity. Not
-  // called if the new size would have exceeded the maximum value of size_type.
-  constexpr bool GrowCapacityIfSupported(size_type new_size) {
-    if constexpr (Derived::kFixedCapacity) {
-      return false;
-    } else {
-      return derived().GrowCapacityToFit(new_size);
-    }
-  }
-
   // Make sure the container can hold one more item.
   constexpr bool CheckCapacityAddOne() {
     return size() != std::numeric_limits<size_type>::max() &&
            CheckCapacity(size() + 1);
   }
 
-  // Make sure the container can hold at least this many elements.
+  // Ensures that the container can hold at least this many elements.
   constexpr bool CheckCapacity(size_type new_size) {
-    return new_size <= capacity() || GrowCapacityIfSupported(new_size);
+    if constexpr (Derived::kFixedCapacity) {
+      return new_size <= capacity();
+    } else {
+      return derived().try_reserve(new_size);
+    }
   }
 
   // Appends items without checking the capacity. Capacity MUST be large enough.

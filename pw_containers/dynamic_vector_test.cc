@@ -100,6 +100,13 @@ TEST_F(DynamicVectorTest, CapacityMethods) {
   vec.shrink_to_fit();
   EXPECT_EQ(vec.size(), 2u);
   EXPECT_GE(vec.capacity(), 2u);
+
+  allocator_.EnableAll();
+  EXPECT_TRUE(vec.try_reserve_exact(23));
+  EXPECT_EQ(vec.capacity(), 23u);
+
+  vec.reserve_exact(5);
+  EXPECT_EQ(vec.capacity(), 23u);
 }
 
 TEST_F(DynamicVectorTest, ElementAccess) {

@@ -77,12 +77,21 @@ class DynamicQueue
     return deque_.try_emplace_back(std::forward<Args>(args)...);
   }
 
-  /// Sets the queue capacity to `max(capacity, size())` elements.
+  /// Sets the queue capacity to at least `max(capacity, size())` elements.
   void reserve(size_type capacity) { deque_.reserve(capacity); }
 
-  /// Attempts to set the queue capacity to `max(capacity, size())` elements.
+  /// Attempts to set the queue capacity to at least `max(capacity, size())`
+  /// elements.
   [[nodiscard]] bool try_reserve(size_type capacity) {
     return deque_.try_reserve(capacity);
+  }
+
+  /// Sets the queue capacity to `max(capacity, size())` elements.
+  void reserve_exact(size_type capacity) { deque_.reserve_exact(capacity); }
+
+  /// Attempts to set the queue capacity to `max(capacity, size())` elements.
+  [[nodiscard]] bool try_reserve_exact(size_type capacity) {
+    return deque_.try_reserve_exact(capacity);
   }
 
   /// Reduces memory usage by releasing unused capacity, if possible.

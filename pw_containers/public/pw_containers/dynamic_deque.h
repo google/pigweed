@@ -37,12 +37,13 @@ namespace pw {
 /// - Provides the `std::deque` API, but adds `try_*` versions of
 ///   operations that crash on allocation failure.
 ///   - `assign()` & `try_assign()`.
-///   - `push_front()` & `try_push_front`, `push_back()` & `try_push_back`
-///   - `emplace_front()` & `try_emplace_front`, `emplace_back()` &
-///   `try_emplace_back`
+///   - `push_front()` & `try_push_front()`, `push_back()` & `try_push_back()`
+///   - `emplace_front()` & `try_emplace_front()`, `emplace_back()` &
+///   `try_emplace_back()`
 ///   - `resize()` & `try_resize()`.
-/// - Offers `reserve()`/`try_reserve()` and `shrink_to_fit()` to manage memory
-///   usage.
+/// - Offers `reserve()`/`try_reserve()`,
+///   `reserve_exact()`/`try_reserve_exact()``, and `shrink_to_fit()` to manage
+///   memory usage.
 /// - Never allocates in the constructor. `constexpr` constructible.
 /// - Compact representation when used with a `size_type` of `uint8_t` or
 ///   `uint16_t`.
@@ -102,13 +103,38 @@ class DynamicDeque : public containers::internal::GenericDeque<
   using Base::try_push_front;
   using Base::try_resize;
 
-  /// Attempts to change `capacity()` to `new_capacity`. If `new_capacity` is
-  /// larger than `capacity()`, attempts to allocate memory and returns whether
-  /// it succeeded. Otherwise, does nothing and returns `true`.
+  /// Attempts to increase `capacity()` to at least `new_capacity`, allocating
+  /// memory if needed. Does nothing if `new_capacity` is less than or equal to
+  /// `capacity()`. Iterators are invalidated if allocation occurs.
+  ///
+  /// `try_reserve` may increase the capacity to be larger than `new_capacity`,
+  /// with the same behavior as if the size were increased to `new_capacity`.
+  /// To increase the capacity to a precise value, use `try_reserve_exact()`.
+  ///
+  /// @returns true if allocation succeeded or `capacity()` was already large
+  /// enough; false if allocation failed
   [[nodiscard]] bool try_reserve(size_type new_capacity);
 
-  /// Changes `capacity()` to `new_capacity`. Crashes on failure.
+  /// Increases `capacity()` to at least `new_capacity`. Crashes on failure.
   void reserve(size_type new_capacity) { PW_ASSERT(try_reserve(new_capacity)); }
+
+  /// Attempts to increase `capacity()` to `new_capacity`, allocating memory if
+  /// needed. Does nothing if `new_capacity` is less than or equal to
+  /// `capacity()`.
+  ///
+  /// This differs from `try_reserve()`, which may reserve space for more than
+  /// `new_capacity`.
+  ///
+  /// @returns true if allocation succeeded or `capacity()` was already large
+  /// enough; false if allocation failed
+  [[nodiscard]] bool try_reserve_exact(size_type new_capacity) {
+    return new_capacity <= Base::capacity() || IncreaseCapacity(new_capacity);
+  }
+
+  /// Increases `capacity()` to exactly `new_capacity`. Crashes on failure.
+  void reserve_exact(size_type new_capacity) {
+    PW_ASSERT(try_reserve_exact(new_capacity));
+  }
 
   /// Attempts to reduce `capacity()` to `size()`. Not guaranteed to succeed.
   void shrink_to_fit();
@@ -140,6 +166,8 @@ class DynamicDeque : public containers::internal::GenericDeque<
     return std::launder(reinterpret_cast<const_pointer>(buffer_));
   }
 
+  [[nodiscard]] bool IncreaseCapacity(size_type new_capacity);
+
   size_type GetNewCapacity(const size_type new_size) {
     // For the initial allocation, allocate at least 4 words worth of items.
     if (Base::capacity() == 0) {
@@ -147,12 +175,7 @@ class DynamicDeque : public containers::internal::GenericDeque<
                       new_size);
     }
     // Double the capacity. May introduce other allocation policies later.
-    return mul_sat(Base::capacity(), size_type{2});
-  }
-
-  // Called by the base when the capacity must increase to accommodate the size.
-  bool GrowCapacityToFit(const size_type new_size) {
-    return try_reserve(GetNewCapacity(new_size));
+    return std::max(mul_sat(Base::capacity(), size_type{2}), new_size);
   }
 
   bool ReallocateBuffer(size_type new_capacity);
@@ -183,10 +206,14 @@ DynamicDeque<ValueType, SizeType>::~DynamicDeque() {
 
 template <typename ValueType, typename SizeType>
 bool DynamicDeque<ValueType, SizeType>::try_reserve(size_type new_capacity) {
-  if (new_capacity <= Base::capacity()) {
-    return true;  // Cannot shrink the container with reserve.
-  }
+  return new_capacity <= Base::capacity() ||
+         IncreaseCapacity(GetNewCapacity(new_capacity)) ||
+         IncreaseCapacity(new_capacity);
+}
 
+template <typename ValueType, typename SizeType>
+bool DynamicDeque<ValueType, SizeType>::IncreaseCapacity(
+    size_type new_capacity) {
   // Try resizing the existing array. Only works if inserting at the end.
   if (buffer_ != nullptr && Base::CanExtendBuffer() &&
       allocator_->Resize(buffer_, new_capacity * sizeof(value_type))) {

@@ -124,31 +124,45 @@ TEST_F(DynamicQueueTest, TryEmplaceFailure) {
   EXPECT_TRUE(queue.empty());
 }
 
-TEST_F(DynamicQueueTest, Reserve) {
+TEST_F(DynamicQueueTest, ReserveExact) {
   pw::DynamicQueue<int> queue(allocator_);
 
   ASSERT_EQ(queue.capacity(), 0u);
-  queue.reserve(7);
+  queue.reserve_exact(7);
   EXPECT_GE(queue.capacity(), 7u);
   EXPECT_TRUE(queue.empty());
 }
 
-TEST_F(DynamicQueueTest, TryReserveSuccess) {
+TEST_F(DynamicQueueTest, TryReserveExactSuccess) {
   pw::DynamicQueue<int> queue(allocator_);
 
-  EXPECT_TRUE(queue.try_reserve(5));
+  EXPECT_TRUE(queue.try_reserve_exact(5));
   EXPECT_GE(queue.capacity(), 5u);
   EXPECT_TRUE(queue.empty());
 }
 
-TEST_F(DynamicQueueTest, TryReserveFailure) {
+TEST_F(DynamicQueueTest, TryReserveExactFailure) {
   allocator_.DisableAll();
 
   pw::DynamicQueue<int> queue(allocator_);
 
   ASSERT_EQ(queue.capacity(), 0u);
-  EXPECT_FALSE(queue.try_reserve(5));
+  EXPECT_FALSE(queue.try_reserve_exact(5));
   EXPECT_EQ(queue.capacity(), 0u);
+}
+
+TEST_F(DynamicQueueTest, Reserve_IncreasesByMoreThanOne) {
+  pw::DynamicQueue<int> queue(allocator_);
+
+  ASSERT_TRUE(queue.try_reserve_exact(50));
+
+  queue.reserve(51);
+
+  EXPECT_GT(queue.capacity(), 51);
+
+  const auto original_capacity = queue.capacity();
+  queue.reserve(52);
+  EXPECT_EQ(original_capacity, queue.capacity());
 }
 
 TEST_F(DynamicQueueTest, ShrinkToFit) {
@@ -192,7 +206,7 @@ TEST_F(DynamicQueueTest, Capacity) {
   queue.push(10);
   EXPECT_GE(queue.capacity(), 1u);
 
-  queue.reserve(20);
+  queue.reserve_exact(20);
   EXPECT_GE(queue.capacity(), 20u);
 }
 

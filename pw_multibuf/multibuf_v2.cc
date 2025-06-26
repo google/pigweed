@@ -549,7 +549,7 @@ bool GenericMultiBuf::TryReserveEntries(size_type num_entries, bool split) {
     PW_CHECK_ADD(num_entries, depth_, &num_entries);
   }
   PW_CHECK_ADD(num_entries, deque_.size(), &num_entries);
-  return deque_.try_reserve(num_entries);
+  return deque_.try_reserve_exact(num_entries);
 }
 
 GenericMultiBuf::size_type GenericMultiBuf::InsertEntries(

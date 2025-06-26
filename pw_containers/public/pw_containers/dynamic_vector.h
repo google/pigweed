@@ -114,14 +114,19 @@ class DynamicVector {
 
   /// Requests that the vector capacity be at least `new_capacity` elements.
   ///
-  /// Note: This operation is potentially fallible if memory allocation is
-  /// required and fails. Depending on the underlying DynamicDeque
-  /// implementation and Pigweed configuration, allocation failure may result
-  /// in a panic or assertion failure. Use `try_reserve()` for a fallible
-  /// version.
+  /// Crashes if allocation fails.
   ///
   /// @param new_capacity The minimum desired capacity.
   void reserve(size_type new_capacity) { deque_.reserve(new_capacity); }
+
+  /// Requests that the vector capacity be exactly `new_capacity` elements.
+  ///
+  /// Crashes if allocation fails.
+  ///
+  /// @param new_capacity The minimum desired capacity.
+  void reserve_exact(size_type new_capacity) {
+    deque_.reserve_exact(new_capacity);
+  }
 
   /// Attempts to request that the vector capacity be at least `new_capacity`
   /// elements.
@@ -132,6 +137,16 @@ class DynamicVector {
   /// @return `true` if successful, `false` otherwise.
   [[nodiscard]] bool try_reserve(size_type new_capacity) {
     return deque_.try_reserve(new_capacity);
+  }
+
+  /// Attempts to set the vector capacity to exactly `new_capacity` elements.
+  ///
+  /// Returns `true` on success, or `false` if allocation fails.
+  ///
+  /// @param new_capacity The exact desired capacity.
+  /// @return `true` if successful, `false` otherwise.
+  [[nodiscard]] bool try_reserve_exact(size_type new_capacity) {
+    return deque_.try_reserve_exact(new_capacity);
   }
 
   /// Reduces memory usage by releasing unused capacity.

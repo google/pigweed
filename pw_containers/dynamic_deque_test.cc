@@ -137,21 +137,23 @@ TEST_F(DynamicDequeTest, Capacity_ResizesWhenPossible) {
     ASSERT_TRUE(deque.try_push_back(i));
   }
 
-  ASSERT_FALSE(deque.try_reserve(deque.capacity() + 1)) << "Wrapped";
+  ASSERT_FALSE(deque.try_reserve_exact(deque.capacity() + 1)) << "Wrapped";
 
   deque.pop_back();  // remove wrapped element
 
-  ASSERT_TRUE(deque.try_reserve(deque.capacity() + 1)) << "No longer wrapped";
+  ASSERT_TRUE(deque.try_reserve_exact(deque.capacity() + 1))
+      << "No longer wrapped";
 
   // Wrap from the front to the back
   ASSERT_TRUE(deque.try_push_front(123));
   ASSERT_TRUE(deque.try_push_front(1234));
 
-  ASSERT_FALSE(deque.try_reserve(deque.capacity() + 1)) << "Wrapped";
+  ASSERT_FALSE(deque.try_reserve_exact(deque.capacity() + 1)) << "Wrapped";
 
   deque.pop_front();  // remove wrapped element
 
-  ASSERT_TRUE(deque.try_reserve(deque.capacity() + 1)) << "No longer wrapped";
+  ASSERT_TRUE(deque.try_reserve_exact(deque.capacity() + 1))
+      << "No longer wrapped";
 
   // Fill to capacity and wrap to the back
   ASSERT_TRUE(deque.try_push_front(123));
@@ -181,10 +183,10 @@ TEST_F(DynamicDequeTest, Move_MovesBufferWithoutAllocation) {
   EXPECT_EQ(deque_2_first, &deque_1.front());
 }
 
-TEST_F(DynamicDequeTest, Capacity_ReserveBeforeBufferIsAllocated) {
+TEST_F(DynamicDequeTest, Capacity_ReserveExactBeforeBufferIsAllocated) {
   pw::DynamicDeque<int> deque(allocator_);
 
-  ASSERT_TRUE(deque.try_reserve(3));
+  ASSERT_TRUE(deque.try_reserve_exact(3));
   allocator_.DisableAll();
 
   deque.push_front(1);
@@ -194,10 +196,49 @@ TEST_F(DynamicDequeTest, Capacity_ReserveBeforeBufferIsAllocated) {
   EXPECT_FALSE(deque.try_push_back(0));
 }
 
+TEST_F(DynamicDequeTest, Capacity_ReserveExactRetriesIfAllocationFails) {
+  pw::DynamicDeque<int> deque(allocator_);
+
+  ASSERT_TRUE(deque.try_reserve_exact(3));
+  allocator_.DisableAll();
+
+  deque.push_front(1);
+  deque.push_front(2);
+  deque.push_front(3);
+
+  EXPECT_FALSE(deque.try_push_back(0));
+}
+
+TEST_F(DynamicDequeTest, Capacity_ReserveIncreasesByMoreThanOne) {
+  pw::DynamicDeque<int> deque(allocator_);
+
+  ASSERT_TRUE(deque.try_reserve_exact(50));
+
+  deque.reserve(51);
+
+  EXPECT_GT(deque.capacity(), 51);
+
+  const auto original_capacity = deque.capacity();
+  deque.reserve(52);
+  EXPECT_EQ(original_capacity, deque.capacity());
+}
+
+TEST_F(DynamicDequeTest, Capacity_ReserveSucceedsWhenCannotDouble) {
+  pw::DynamicDeque<int> deque(allocator_);
+
+  ASSERT_TRUE(deque.try_reserve_exact(200));
+  ASSERT_EQ(deque.capacity(), 200u);
+  ASSERT_FALSE(deque.try_reserve_exact(400));
+
+  EXPECT_TRUE(deque.try_reserve(201));
+  EXPECT_LT(deque.capacity(), 400);
+  EXPECT_GE(deque.capacity(), 201);
+}
+
 TEST_F(DynamicDequeTest, Capacity_ShrinkToFitNopWhenFull) {
   pw::DynamicDeque<int> deque(allocator_);
 
-  deque.reserve(3);
+  deque.reserve_exact(3);
   deque.assign({1, 2, 3});
   ASSERT_EQ(deque.capacity(), 3u);
   ASSERT_EQ(deque.size(), 3u);
@@ -209,7 +250,7 @@ TEST_F(DynamicDequeTest, Capacity_ShrinkToFitNopWhenFull) {
 TEST_F(DynamicDequeTest, Capacity_ShrinkToFitResizesWhenPossible) {
   pw::DynamicDeque<int> deque(allocator_);
 
-  deque.reserve(10);
+  deque.reserve_exact(10);
   deque.push_back(1);
   ASSERT_EQ(deque.capacity(), 10u);
 
@@ -223,7 +264,7 @@ TEST_F(DynamicDequeTest, Capacity_ShrinkToFitOnlyResizesIfHeadIs0) {
   pw::DynamicDeque<int> deque(allocator_);
 
   // Empty slot is in front, so resize is not possible.
-  deque.reserve(4);
+  deque.reserve_exact(4);
   deque.assign({1, 2, 3, 4});
   deque.pop_front();
   ASSERT_TRUE(Equal(deque, std::array{2, 3, 4}));
@@ -245,7 +286,7 @@ TEST_F(DynamicDequeTest, Capacity_ShrinkToFitOnlyResizesIfHeadIs0) {
 TEST_F(DynamicDequeTest, Capacity_ShrinkToFitEmptyFreesBuffer) {
   pw::DynamicDeque<int> deque(allocator_);
 
-  deque.reserve(4);
+  deque.reserve_exact(4);
   ASSERT_EQ(deque.capacity(), 4u);
   deque.clear();
   ASSERT_EQ(deque.capacity(), 4u);
@@ -257,7 +298,7 @@ TEST_F(DynamicDequeTest, Capacity_ShrinkToFitEmptyFreesBuffer) {
 
 TEST_F(DynamicDequeTest, Capacity_ShrinkToFailsSilentlyIfCannotShrink) {
   pw::DynamicDeque<int> deque(allocator_);
-  deque.reserve(8);
+  deque.reserve_exact(8);
   deque.assign(3u, 123);
   ASSERT_TRUE(Equal(deque, std::array{123, 123, 123}));
 
@@ -314,7 +355,7 @@ TEST_F(DynamicDequeTest, TryAssign_NoPartialAssignments) {
   std::array<FailOnCopy, 5> array{};
 
   pw::DynamicDeque<FailOnCopy> deque(allocator_);
-  deque.reserve(4);
+  deque.reserve_exact(4);
   allocator_.DisableAll();
 
   EXPECT_FALSE(deque.try_assign(array.begin(), array.end()));
@@ -360,7 +401,7 @@ TEST_F(DynamicDequeTest, MaxSize_CapacityClamps) {
 
 TEST_F(DynamicDequeTest, Erase_Wrapped) {
   pw::DynamicDeque<int> deque(allocator_);
-  deque.reserve(5);
+  deque.reserve_exact(5);
   deque.assign({1, 2, 3, 4, 5});
   deque.pop_front();
   deque.pop_front();
@@ -388,7 +429,7 @@ TEST_F(DynamicDequeTest, Erase_Wrapped) {
 
 TEST_F(DynamicDequeTest, Erase_Wrapped_RangeAcrossWrap) {
   pw::DynamicDeque<int> deque(allocator_);
-  deque.reserve(5);
+  deque.reserve_exact(5);
   deque.assign({1, 2, 3, 4, 5});
   deque.pop_front();
   deque.pop_front();
@@ -408,7 +449,7 @@ TEST_F(DynamicDequeTest, Erase_Wrapped_RangeAcrossWrap) {
 
 TEST_F(DynamicDequeTest, Erase_Wrapped_All) {
   pw::DynamicDeque<int> deque(allocator_);
-  deque.reserve(5);
+  deque.reserve_exact(5);
   deque.assign({1, 2, 3, 4, 5});
   deque.pop_front();
   deque.pop_front();
@@ -554,7 +595,8 @@ void PerformRandomOperations(int iterations, uint_fast32_t seed) {
         if (random_uint() % 2 == 0) {  // Reduce frequency by 1/2
           continue;
         }
-        std::ignore = deque.try_reserve(deque.size() + random_uint() % 100);
+        std::ignore =
+            deque.try_reserve_exact(deque.size() + random_uint() % 100);
         break;
       case kShrinkToFit:
         if (random_uint() % 2 == 0) {  // Reduce frequency by 1/2
