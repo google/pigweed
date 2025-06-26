@@ -14,11 +14,13 @@
 
 #include "pw_rpc_transport/local_rpc_egress.h"
 
+#include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
 #include "pw_rpc/client_server.h"
 #include "pw_rpc/packet_meta.h"
 #include "pw_rpc_transport/internal/test.rpc.pwpb.h"
+#include "pw_rpc_transport/local_rpc_egress_logging_metric_tracker.h"
 #include "pw_rpc_transport/rpc_transport.h"
 #include "pw_rpc_transport/service_registry.h"
 #include "pw_status/status.h"
@@ -35,6 +37,20 @@ using namespace std::literals::chrono_literals;
 using namespace std::literals::string_view_literals;
 
 const auto kTestMessage = "I hope that someone gets my message in a bottle"sv;
+
+const pw::metric::Metric& GetMetric(pw::metric::Group& metrics,
+                                    pw::tokenizer::Token name) {
+  for (const auto& metric : metrics.metrics()) {
+    if (metric.name() == name) {
+      return metric;
+    }
+  }
+  PW_CRASH("Metric 0x%X not found", name);
+}
+
+// Tokens (names) for metrics defined in LocalRpcEgressLoggingMetricTracker
+static constexpr pw::tokenizer::Token kToken_no_packet_available =
+    PW_METRIC_TOKEN("no_packet_available");
 
 class TestEchoService final
     : public pw_rpc_transport::testing::pw_rpc::pwpb::TestService::Service<
@@ -177,7 +193,8 @@ TEST(LocalRpcEgressTest, PacketQueueExhausted) {
   constexpr size_t kPacketQueueSize = 1;
   constexpr uint32_t kChannelId = 1;
 
-  LocalRpcEgress<kPacketQueueSize, kMaxPacketSize> egress;
+  LocalRpcEgressLoggingMetricTracker tracker;
+  LocalRpcEgress<kPacketQueueSize, kMaxPacketSize> egress(&tracker);
   std::array channels = {rpc::Channel::Create<kChannelId>(&egress)};
   ServiceRegistry registry(channels);
 
@@ -215,6 +232,9 @@ TEST(LocalRpcEgressTest, PacketQueueExhausted) {
   }
 
   EXPECT_TRUE(egress_ok);
+
+  EXPECT_GT(GetMetric(tracker.metrics(), kToken_no_packet_available).as_int(),
+            0U);
 
   egress.Stop();
   egress_thread.join();

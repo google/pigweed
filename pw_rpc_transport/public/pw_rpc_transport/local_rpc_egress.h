@@ -17,6 +17,7 @@
 #include <cstddef>
 
 #include "pw_bytes/span.h"
+#include "pw_chrono/system_clock.h"
 #include "pw_result/result.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc_transport/internal/packet_buffer_queue.h"
@@ -27,14 +28,21 @@
 
 namespace pw::rpc {
 
-namespace internal {
-void LogNoRpcServiceRegistryError();
-void LogPacketSizeTooLarge(size_t packet_size, size_t max_packet_size);
-void LogEgressThreadNotRunningError();
-void LogFailedToProcessPacket(Status status);
-void LogFailedToAccessPacket(Status status);
-void LogNoPacketAvailable(Status status);
-}  // namespace internal
+// Override and provide to LocalRpcEgress to be notified of events.
+class LocalRpcEgressTracker {
+ public:
+  virtual ~LocalRpcEgressTracker() = default;
+  virtual void NoRpcServiceRegistryError() {}
+  virtual void PacketSizeTooLarge([[maybe_unused]] size_t packet_size,
+                                  [[maybe_unused]] size_t max_packet_size) {}
+  virtual void EgressThreadNotRunningError() {}
+  virtual void FailedToProcessPacket([[maybe_unused]] Status status) {}
+  virtual void FailedToAccessPacket([[maybe_unused]] Status status) {}
+  virtual void NoPacketAvailable([[maybe_unused]] Status status) {}
+  virtual void PacketProcessed(
+      [[maybe_unused]] ConstByteSpan packet,
+      [[maybe_unused]] chrono::SystemClock::duration processing_duration) {}
+};
 
 // Handles RPC packets destined for the local receiver.
 template <size_t kPacketQueueSize, size_t kMaxPacketSize>
@@ -45,7 +53,8 @@ class LocalRpcEgress : public RpcEgressHandler,
       typename internal::PacketBufferQueue<kMaxPacketSize>::PacketBuffer;
 
  public:
-  LocalRpcEgress() : ChannelOutput("RPC local egress") {}
+  LocalRpcEgress(LocalRpcEgressTracker* tracker = nullptr)
+      : ChannelOutput("RPC local egress"), tracker_(tracker) {}
   ~LocalRpcEgress() override { Stop(); }
 
   // Packet processor cannot be passed as a construction dependency as it would
@@ -77,6 +86,7 @@ class LocalRpcEgress : public RpcEgressHandler,
   virtual void PacketQueued() {}
   virtual void PacketProcessed() {}
 
+  LocalRpcEgressTracker* tracker_;
   sync::ThreadNotification process_queue_;
   RpcPacketProcessor* packet_processor_ = nullptr;
   std::array<PacketBuffer, kPacketQueueSize> packet_storage_;
@@ -89,15 +99,21 @@ template <size_t kPacketQueueSize, size_t kMaxPacketSize>
 Status LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::SendRpcPacket(
     ConstByteSpan packet) {
   if (!packet_processor_) {
-    internal::LogNoRpcServiceRegistryError();
+    if (tracker_) {
+      tracker_->NoRpcServiceRegistryError();
+    }
     return Status::FailedPrecondition();
   }
   if (packet.size() > kMaxPacketSize) {
-    internal::LogPacketSizeTooLarge(packet.size(), kMaxPacketSize);
+    if (tracker_) {
+      tracker_->PacketSizeTooLarge(packet.size(), kMaxPacketSize);
+    }
     return Status::InvalidArgument();
   }
   if (stopped_) {
-    internal::LogEgressThreadNotRunningError();
+    if (tracker_) {
+      tracker_->EgressThreadNotRunningError();
+    }
     return Status::FailedPrecondition();
   }
 
@@ -105,7 +121,9 @@ Status LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::SendRpcPacket(
   // push it into the queue for processing.
   auto packet_buffer = packet_queue_.Pop();
   if (!packet_buffer.ok()) {
-    internal::LogNoPacketAvailable(packet_buffer.status());
+    if (tracker_) {
+      tracker_->NoPacketAvailable(packet_buffer.status());
+    }
     return packet_buffer.status();
   }
 
@@ -117,7 +135,9 @@ Status LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::SendRpcPacket(
   process_queue_.release();
 
   if (stopped_) {
-    internal::LogEgressThreadNotRunningError();
+    if (tracker_) {
+      tracker_->EgressThreadNotRunningError();
+    }
     return Status::DataLoss();
   }
 
@@ -139,10 +159,14 @@ void LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::Run() {
       if (packet.ok()) {
         if (const auto status = packet_processor_->ProcessRpcPacket(*packet);
             !status.ok()) {
-          internal::LogFailedToProcessPacket(status);
+          if (tracker_) {
+            tracker_->FailedToProcessPacket(status);
+          }
         }
       } else {
-        internal::LogFailedToAccessPacket(packet.status());
+        if (tracker_) {
+          tracker_->FailedToAccessPacket(packet.status());
+        }
       }
       packet_queue_.Push(**packet_buffer);
       PacketProcessed();

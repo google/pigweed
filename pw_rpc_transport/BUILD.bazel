@@ -99,7 +99,6 @@ pw_cc_test(
 
 cc_library(
     name = "local_rpc_egress",
-    srcs = ["local_rpc_egress.cc"],
     hdrs = ["public/pw_rpc_transport/local_rpc_egress.h"],
     strip_include_prefix = "public",
     deps = [
@@ -107,12 +106,24 @@ cc_library(
         ":rpc_transport",
         ":test_protos_pwpb_rpc",
         "//pw_bytes",
-        "//pw_log",
+        "//pw_chrono:system_clock",
         "//pw_result",
         "//pw_rpc:client_server",
         "//pw_status",
         "//pw_sync:thread_notification",
         "//pw_thread:thread_core",
+    ],
+)
+
+cc_library(
+    name = "local_rpc_egress_logging_metric_tracker",
+    srcs = ["local_rpc_egress_logging_metric_tracker.cc"],
+    hdrs = ["public/pw_rpc_transport/local_rpc_egress_logging_metric_tracker.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":local_rpc_egress",
+        "//pw_log",
+        "//pw_metric:metric",
     ],
 )
 
@@ -126,6 +137,7 @@ pw_cc_test(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":local_rpc_egress",
+        ":local_rpc_egress_logging_metric_tracker",
         ":rpc_transport",
         ":service_registry",
         ":test_protos_pwpb_rpc",

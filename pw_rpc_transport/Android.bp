@@ -40,12 +40,6 @@ cc_library_static {
         "pw_android_common_backends",
         "pw_android_common_target_support",
     ],
-    header_libs: [
-        "pw_log",
-    ],
-    export_header_lib_headers: [
-        "pw_log",
-    ],
     static_libs: [
         "pw_containers",
         "pw_polyfill",
@@ -57,9 +51,31 @@ cc_library_static {
         "pw_containers",
         "pw_result",
         "pw_rpc_transport.rpc_transport",
+    ]
+}
+
+cc_library_static {
+    name: "pw_rpc_transport.local_rpc_egress_logging_metric_tracker",
+    defaults: [
+        "pw_android_common_backends",
+        "pw_android_common_target_support",
+    ],
+    header_libs: [
+        "pw_log",
+    ],
+    export_header_lib_headers: [
+        "pw_log",
+    ],
+    static_libs: [
+        "pw_metric",
+        "pw_rpc_transport.local_rpc_egress",
+    ],
+    export_static_lib_headers: [
+        "pw_metric",
+        "pw_rpc_transport.local_rpc_egress",
     ],
     srcs: [
-        "local_rpc_egress.cc",
+        "local_rpc_egress_logging_metric_tracker.cc",
     ],
 }
 

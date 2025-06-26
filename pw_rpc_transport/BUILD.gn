@@ -102,7 +102,6 @@ pw_test("packet_buffer_queue_test") {
 
 pw_source_set("local_rpc_egress") {
   public = [ "public/pw_rpc_transport/local_rpc_egress.h" ]
-  sources = [ "local_rpc_egress.cc" ]
   public_deps = [
     ":packet_buffer_queue",
     ":rpc_transport",
@@ -113,7 +112,17 @@ pw_source_set("local_rpc_egress") {
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:thread_core",
   ]
-  deps = [ "$dir_pw_log" ]
+}
+
+pw_source_set("local_rpc_egress_logging_metric_tracker") {
+  public =
+      [ "public/pw_rpc_transport/local_rpc_egress_logging_metric_tracker.h" ]
+  sources = [ "local_rpc_egress_logging_metric_tracker.cc" ]
+  public_deps = [
+    ":local_rpc_egress",
+    "$dir_pw_log",
+    "$dir_pw_metric",
+  ]
 }
 
 pw_test("local_rpc_egress_test") {
@@ -121,6 +130,7 @@ pw_test("local_rpc_egress_test") {
   enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   deps = [
     ":local_rpc_egress",
+    ":local_rpc_egress_logging_metric_tracker",
     ":rpc_transport",
     ":service_registry",
     ":test_protos.pwpb_rpc",
