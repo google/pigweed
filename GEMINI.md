@@ -128,9 +128,8 @@ commands:
 - **`gn` (Meta-build system):**
 
   - **Generate build files:** `gn gen out`
-  - **Build all targets:** `ninja -C out`
-  - **Run all tests:** `ninja -C out test`
-  - **Clean the build:** `rm -rf out`
+  - **Build all targets and run tests:** `ninja -C out --quiet`
+  - **Clean the build:** `gn clean out`
 
 - **`bazel` (Build system):**
   - **Note:** Always use `bazelisk` and not `bazel` to ensure the correct `bazel`
