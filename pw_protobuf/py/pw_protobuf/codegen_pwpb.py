@@ -3427,6 +3427,23 @@ def generate_sizes_for_message(
     if len(statically_known_property_sizes) == len(all_property_sizes):
         output.write_line('inline constexpr size_t kMaxEncodedSizeBytes =')
         sum_sizes(all_property_sizes)
+    else:
+        # TODO: b/379868242 - Temporarily keep the old `kMaxEncodedSizeBytes`
+        # definition to allow projects to migrate to using
+        # `kMaxEncodedSizeBytesWithoutValues` where appropriate.
+        # This else block should be removed following migration.
+        output.write_line(
+            '// This size is misleading as this generated struct contains '
+            'callback-based'
+        )
+        output.write_line('// fields, whose value sizes are unconstrained.')
+        output.write_line(
+            '// Future versions of pw_protobuf will not generate this constant '
+            'for this struct.'
+        )
+        output.write_line('// Use `kMaxEncodedSizeBytesWithoutValues` instead.')
+        output.write_line('inline constexpr size_t kMaxEncodedSizeBytes =')
+        sum_sizes(all_property_sizes)
 
     output.write_line(
         'inline constexpr size_t kMaxEncodedSizeBytesWithoutValues ='
