@@ -52,6 +52,7 @@ py_library(
     ],
     imports = ["."],
     deps = [
+        "//pw_cli_analytics/py:pw_cli_analytics",
         "@pigweed_python_packages//prompt_toolkit",
         "@pigweed_python_packages//psutil",
     ],

@@ -25,3 +25,4 @@ multiple build systems, including:
    project_builder
    python_api
    linker_scripts
+   workflows_launcher

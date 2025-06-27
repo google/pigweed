@@ -44,6 +44,11 @@ filegroup(
 )
 
 alias(
+    name = "pw",
+    actual = "//pw_build/py:workflows_launcher",
+)
+
+alias(
     name = "watch",
     actual = "//pw_watch/py:bazel",
 )

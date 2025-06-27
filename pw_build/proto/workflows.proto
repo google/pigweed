@@ -1,0 +1,164 @@
+// Copyright 2025 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+syntax = "proto3";
+
+package pw.build.proto;
+
+import "google/protobuf/any.proto";
+
+// A distinct build configuration.
+//
+// Build configurations are expected to be hermetic, meaning that if the
+// same build configuration is reused across multiple builds it should be safe
+// to reuse the same build directory.
+message BuildConfig {
+  // Descriptive name for this build configuration.
+  // This is used as an ID and must be unique across a workflow configuration.
+  string name = 1;
+
+  // A help string that describes this configuration.
+  string description = 2;
+
+  // The name of the driver that should be used for this build configuration.
+  string build_type = 3;
+
+  // Arguments that should be passed to underlying build system.
+  repeated string args = 4;
+
+  // Environment variables unique to this build configuration.
+  map<string, string> env = 5;
+}
+
+// A discrete build.
+message Build {
+  // A human-readable name for this build.
+  // This is the name that users will write out to trigger this build.
+  string name = 1;
+
+  // A help string that describes this build.
+  string description = 2;
+
+  // The configuration that should be used when building the targets specified
+  // by this build.
+  oneof config {
+    // The ID/name of a shared BuildConfig.
+    string use_config = 3;
+    // A unique one-off config.
+    BuildConfig build_config = 4;
+  }
+
+  // Target patterns that should be built/tested by this configuration.
+  repeated string targets = 5;
+}
+
+// A runnable tool.
+message Tool {
+  // The name that is used to launch this tool.
+  string name = 1;
+
+  // A descriptive help string for this tool.
+  string description = 2;
+
+  // The configuration that this tool will be built under.
+  oneof config {
+    // The ID/name of a shared BuildConfig.
+    string use_config = 3;
+    // A unique one-off config.
+    BuildConfig build_config = 4;
+  }
+
+  // Target to build and launch.
+  string target = 5;
+
+  enum Type {
+    // A tool that may produce output, mutate the world, require realtime user
+    // interaction, or have side-effects that affect hermeticity of subsequent
+    // actions.
+    // By default, all tools are assumed to be of this kind.
+    GENERAL = 0;
+
+    // A runnable tool that exists *purely* to surface information.
+    // e.g. linters, code style checks, etc.
+    // Theses tools may NOT:
+    //   - Modify files.
+    //   - Upload/download arbitrary files.
+    //   - Modify local system state.
+    //   - Interact with attached devices.
+    ANALYZER = 1;
+  }
+
+  // The type of tool.
+  Type type = 6;
+
+  // Arguments to inject that make a Tool safe to run as an ANALYZER.
+  // These are not injected when this tool is normally launched, only when
+  // the tool is launched in a way that requires behavior that doesn't affect
+  // hermeticity.
+  repeated string analyzer_friendly_args = 7;
+}
+
+// A series of builds and analyzers that are launchable as a group to
+// accelerate workflows.
+//
+// The builds and analyzers listed in this workflow *may* be ran in order,
+// but no guarantee is provided. Builds and analyzers listed here should
+// behave predictably and deterministically when run out-of-order.
+// Having order-based dependencies in a workflow is considered an antipattern.
+message TaskGroup {
+  // The name used to launch this workflow.
+  string name = 1;
+
+  // A descriptive help string for this tool.
+  string description = 2;
+
+  // The name of builds that should be performed as part of this workflow.
+  repeated string builds = 3;
+
+  // The name of analyzers that should be run as part of this workflow.
+  //
+  // Note: Only ANALYZER tools, or tools that have analyzer_friendly_args
+  // may be listed here.
+  repeated string analyzers = 4;
+}
+
+// These options are used when loading ProtoJSON files since JSON doesn't
+// have any inherent mechanism for sharing/reusing snippets from other files.
+message ConfigLoaderOptions {
+  message ImportedConfigFragment {
+    // The file to import entries from.
+    // This path is the result of strip/import_prefix of any dependent
+    // configurations.
+    string config_path = 1;
+
+    // The `name`s that should be imported into the current config.
+    // Note that all transitive requirements are also imported. i.e.
+    // importing a LaunchableWorkflow will import all referenced builds,
+    // analyzers, build configs, etc.
+    repeated string imported_ids = 2;
+  }
+
+  // Config fragments that should be imported from another externally-provided
+  // file.
+  repeated ImportedConfigFragment imports = 1;
+}
+
+// The launcher config.
+message WorkflowSuite {
+  ConfigLoaderOptions loader_options = 1;
+  repeated BuildConfig configs = 2;
+  repeated Build builds = 3;
+  repeated Tool tools = 4;
+  repeated TaskGroup groups = 5;
+}

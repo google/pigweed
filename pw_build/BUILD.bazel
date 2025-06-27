@@ -12,7 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:glob_dirs.bzl", "glob_dirs", "match_dir", "match_dir_internal")
@@ -33,6 +35,23 @@ config_setting(
     values = {
         "define": "kythe_corpus=pigweed.googlesource.com/pigweed/pigweed",
     },
+)
+
+proto_library(
+    name = "workflows_proto",
+    srcs = [
+        "proto/workflows.proto",
+    ],
+    # Make private until the proto stabilizes.
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@com_google_protobuf//:any_proto",
+    ],
+)
+
+py_proto_library(
+    name = "workflows_proto_py_pb2",
+    deps = [":workflows_proto"],
 )
 
 pw_cc_blob_info(
@@ -348,10 +367,12 @@ sphinx_docs_library(
         "pigweed.bazelrc",
         "pigweed_recommended.bazelrc",
         "project_builder.rst",
+        "proto/workflows.proto",
         "python.gni",
         "python.rst",
         "python_api.rst",
         "python_gn_args.gni",
+        "workflows_launcher.rst",
         "//pw_build/py:docs",
     ],
     prefix = "pw_build/",

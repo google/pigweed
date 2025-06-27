@@ -73,6 +73,21 @@ py_library(
 )
 
 py_library(
+    name = "workflows",
+    srcs = [
+        "pw_build/workflows/launcher.py",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":pw_build",
+        ":pw_project_builder",
+        "//pw_build:workflows_proto_py_pb2",
+        "//pw_cli/py:pw_cli",
+        "//pw_config_loader/py:pw_config_loader",
+    ],
+)
+
+py_library(
     name = "pw_project_builder",
     srcs = [
         "pw_build/project_builder.py",
@@ -97,6 +112,17 @@ pw_py_binary(
     name = "generate_cc_blob_library",
     srcs = [
         "pw_build/generate_cc_blob_library.py",
+    ],
+)
+
+pw_py_binary(
+    name = "workflows_launcher",
+    srcs = [
+        "pw_build/workflows/launcher.py",
+    ],
+    main = "pw_build/workflows/launcher.py",
+    deps = [
+        ":workflows",
     ],
 )
 
@@ -295,11 +321,24 @@ pw_py_test(
     ],
 )
 
+pw_py_test(
+    name = "workflows_launcher_test",
+    size = "small",
+    srcs = [
+        "workflows_launcher_test.py",
+    ],
+    deps = [
+        ":workflows",
+        "//pw_build:workflows_proto_py_pb2",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "gn_tests/BUILD.gn",
         "pw_build/generate_python_wheel_cache.py",
+        "workflows_launcher_test.py",
     ],
     target_compatible_with = incompatible_with_mcu(),
 )
