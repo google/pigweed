@@ -1,4 +1,4 @@
-// Copyright 2024 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,18 +12,18 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#define PW_LOG_MODULE_NAME "PW_STRING_EXAMPLES"
+// DOCSTAG: [contributing-docs-examples]
+#define PW_LOG_MODULE_NAME "EXAMPLES_BUILD_STRING_IN_BUFFER"
 
 #include "pw_unit_test/framework.h"
 
-// DOCSTAG[start-pw_string-buffer-example]
+// DOCSTAG: [build-string-in-buffer]
 #include "pw_log/log.h"
-#include "pw_span/span.h"
 #include "pw_string/string_builder.h"
 
 namespace examples {
 
-void BuildString(pw::StringBuilder& sb) {
+void BuildStringInBuffer(pw::StringBuilder& sb) {
   // Add to the builder with idiomatic C++.
   sb << "Is it really this easy?";
   sb << " YES!";
@@ -32,24 +32,27 @@ void BuildString(pw::StringBuilder& sb) {
   PW_LOG_DEBUG("%s", sb.c_str());
 }
 
-void BuildStringDemo() {
+void main() {
   // Create a builder with a built-in buffer.
   std::byte buffer[64];
   pw::StringBuilder sb(buffer);
-  BuildString(sb);
+  BuildStringInBuffer(sb);
 }
 
 }  // namespace examples
-// DOCSTAG[end-pw_string-buffer-example]
+// DOCSTAG: [build-string-in-buffer]
 
 namespace {
 
-TEST(StringExamples, BufferExample) {
+TEST(ExampleTests, BuildStringInBufferTest) {
+  examples::main();  // Call the secondary example, just for coverage.
   std::byte buffer[64];
   pw::StringBuilder sb(buffer);
-  examples::BuildString(sb);
-  auto expected = "Is it really this easy? YES!";
-  EXPECT_STREQ(sb.c_str(), expected);
+  examples::BuildStringInBuffer(sb);
+  const char* expected = "Is it really this easy? YES!";
+  const char* actual = sb.c_str();
+  EXPECT_STREQ(expected, actual);
 }
 
 }  // namespace
+// DOCSTAG: [contributing-docs-examples]

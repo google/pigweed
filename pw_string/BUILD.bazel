@@ -277,29 +277,23 @@ pw_size_table(
     ],
 )
 
+# DOCSTAG: [contributing-docs-examples]
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "BUILD.bazel",
+        "BUILD.gn",
         "Kconfig",
         "api.rst",
         "code_size.rst",
         "design.rst",
         "docs.rst",
-        "examples.cc",
         "guide.rst",
         ":format_size_report",
         ":string_builder_size_report",
+        "//pw_string/examples",
     ],
     prefix = "pw_string/",
     target_compatible_with = incompatible_with_mcu(),
 )
-
-pw_cc_test(
-    name = "examples",
-    srcs = ["examples.cc"],
-    deps = [
-        "//pw_log",
-        "//pw_span",
-        "//pw_string",
-    ],
-)
+# DOCSTAG: [contributing-docs-examples]

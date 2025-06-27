@@ -32,11 +32,15 @@ pw_string
    ``std::ostringstream``, but with most of the efficiency and memory benefits
    of :cpp:type:`pw::InlineString`:
 
-   .. literalinclude:: ./examples.cc
+   .. DOCSTAG: [contributing-docs-examples]
+
+   .. literalinclude:: ./examples/build_string_in_buffer_test.cc
       :language: cpp
       :dedent:
-      :start-after: // DOCSTAG[start-pw_string-buffer-example]
-      :end-before: // DOCSTAG[end-pw_string-buffer-example]
+      :start-after: // DOCSTAG: [build-string-in-buffer]
+      :end-before: // DOCSTAG: [build-string-in-buffer]
+
+   .. DOCSTAG: [contributing-docs-examples]
 
    Check out :ref:`module-pw_string-guide` for more code samples.
 

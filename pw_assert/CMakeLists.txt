@@ -148,6 +148,7 @@ if((NOT "${pw_assert.assert_BACKEND}" STREQUAL "") AND
   )
 endif()
 
+# DOCSTAG: [contributing-docs-examples]
 pw_add_test(pw_assert.examples
   SOURCES
     examples.cc
@@ -157,3 +158,4 @@ pw_add_test(pw_assert.examples
     modules
     pw_assert
 )
+# DOCSTAG: [contributing-docs-examples]

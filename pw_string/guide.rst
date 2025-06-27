@@ -213,16 +213,11 @@ Build a string inside an pw::InlineString with a pw::StringBuilder
 :cpp:class:`pw::StringBuilder` can build a string in a
 :cpp:type:`pw::InlineString`:
 
-.. code-block:: c++
-
-   #include "pw_string/string.h"
-
-   void DoFoo() {
-     InlineString<32> inline_str;
-     StringBuilder sb(inline_str);
-     sb << 123 << "456";
-     // inline_str contains "456"
-   }
+.. literalinclude:: ./examples/build_inlinestring_with_stringbuilder_test.cc
+   :language: cpp
+   :dedent:
+   :start-after: // DOCSTAG: [build-inlinestring-with-stringbuilder]
+   :end-before: // DOCSTAG: [build-inlinestring-with-stringbuilder]
 
 Pass an pw::InlineString object as a parameter
 ==============================================

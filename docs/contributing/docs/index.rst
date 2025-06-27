@@ -72,5 +72,6 @@ Authoring guidelines and style guides for ``pigweed.dev`` contributors.
 
    Build system <build>
    modules
+   Code examples <examples>
    website
    changelog

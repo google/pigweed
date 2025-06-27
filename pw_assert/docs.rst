@@ -426,10 +426,14 @@ can be moved to a separate statement outside of the ``PW_CHECK`` or invoked via
 a function or `std::modulus
 <https://en.cppreference.com/w/cpp/utility/functional/modulus>`_.
 
+.. DOCSTAG: [contributing-docs-examples]
+
 .. literalinclude:: examples.cc
    :language: cpp
    :start-after: [pw_assert-mod-example]
    :end-before: [pw_assert-mod-example]
+
+.. DOCSTAG: [contributing-docs-examples]
 
 This restriction may be removed in the future (`b/235149326
 <https://issues.pigweed.dev/issues/235149326>`_)

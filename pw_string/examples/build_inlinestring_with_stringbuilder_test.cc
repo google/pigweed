@@ -12,37 +12,38 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// DOCSTAG: [contributing-docs-examples]
 #include "pw_unit_test/framework.h"
 
-// DOCSTAG[pw_assert-mod-example]
-#include <functional>
-
+// DOCSTAG: [build-inlinestring-with-stringbuilder]
 #include "pw_assert/check.h"
+#include "pw_string/string.h"
+#include "pw_string/string_builder.h"
 
 namespace examples {
 
-void CheckValueIsOdd(int value) {
-  // This will not compile due to use of the % character:
-  // PW_CHECK(value % 2 != 0);
+void BuildInlineStringWithStringBuilder(pw::InlineString<32>& is) {
+  pw::StringBuilder sb(is);
+  sb << 123 << "456";
+  PW_CHECK(std::string_view(sb) == "123456");
+}
 
-  // Instead, store the result in a variable.
-  const int mod_2 = value % 2;
-  PW_CHECK_INT_NE(mod_2, 0);
-
-  // Or, perform the % operation in a function, such as std::modulus.
-  PW_CHECK_INT_NE(std::modulus{}(value, 2), 0);
+void main() {
+  pw::InlineString<32> is;
+  BuildInlineStringWithStringBuilder(is);
 }
 
 }  // namespace examples
-// DOCSTAG[pw_assert-mod-example]
+// DOCSTAG: [build-inlinestring-with-stringbuilder]
 
 namespace {
 
-TEST(AssertExamples, CheckOrAssertValueIsOdd) {
-  examples::CheckValueIsOdd(1);
-  examples::CheckValueIsOdd(3);
+TEST(ExampleTests, BuildInlineStringWithStringBuilderTest) {
+  examples::main();  // Call the secondary example, just for coverage.
+  pw::InlineString<32> is;
+  examples::BuildInlineStringWithStringBuilder(is);
+  const char* actual = is.c_str();
+  const char* expected = "123456";
+  EXPECT_STREQ(actual, expected);
 }
 
 }  // namespace
-// DOCSTAG: [contributing-docs-examples]

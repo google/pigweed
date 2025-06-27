@@ -206,6 +206,7 @@ pw_test("assert_test") {
   negative_compilation_tests = true
 }
 
+# DOCSTAG: [contributing-docs-examples]
 pw_test_group("tests") {
   tests = [
     ":assert_test",
@@ -219,6 +220,8 @@ pw_test("examples") {
   sources = [ "examples.cc" ]
   deps = [ ":check" ]
 }
+
+# DOCSTAG: [contributing-docs-examples]
 
 # The assert facade test doesn't require a backend since a fake one is
 # provided. However, since this doesn't depend on the backend it re-includes

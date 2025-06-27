@@ -233,6 +233,7 @@ pw_cc_test(
     ],
 )
 
+# DOCSTAG: [contributing-docs-examples]
 pw_cc_test(
     name = "examples",
     srcs = ["examples.cc"],
@@ -242,6 +243,9 @@ pw_cc_test(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "BUILD.bazel",
+        "BUILD.gn",
+        "CMakeLists.txt",
         "assert_test.cc",
         "backends.rst",
         "docs.rst",
@@ -250,3 +254,4 @@ sphinx_docs_library(
     prefix = "pw_assert/",
     target_compatible_with = incompatible_with_mcu(),
 )
+# DOCSTAG: [contributing-docs-examples]
