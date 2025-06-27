@@ -78,6 +78,7 @@ py_library(
         "pw_build/workflows/bazel_driver.py",
         "pw_build/workflows/build_driver.py",
         "pw_build/workflows/launcher.py",
+        "pw_build/workflows/private/validator.py",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -354,6 +355,18 @@ pw_py_test(
     size = "small",
     srcs = [
         "bazel_driver_test.py",
+    ],
+    deps = [
+        ":workflows",
+        "//pw_build:build_driver_proto_py_pb2",
+    ],
+)
+
+pw_py_test(
+    name = "workflows_validator_test",
+    size = "small",
+    srcs = [
+        "workflows_validator_test.py",
     ],
     deps = [
         ":workflows",
