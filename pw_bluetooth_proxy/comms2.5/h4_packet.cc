@@ -1,0 +1,57 @@
+// Copyright 2025 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+#include "pw_bluetooth_proxy/comms2.5/h4_packet.h"
+
+#include "pw_assert/check.h"
+#include "pw_status/try.h"
+
+namespace pw::bluetooth::proxy {
+
+bool H4Packet::CanConstructFrom(const multibuf::MultiBuf& buffer) {
+  return buffer.size() >= kMinSize && buffer.NumLayers() >= kLayer;
+}
+
+Status H4Packet::Prepare(multibuf::MultiBuf& buffer) {
+  if (!CanConstructFrom(buffer)) {
+    return Status::InvalidArgument();
+  }
+
+  return multibuf().TryReserveForPushBack(buffer) ? OkStatus()
+                                                  : Status::ResourceExhausted();
+}
+
+void H4Packet::Assign(multibuf::MultiBuf&& buffer) {
+  PW_CHECK(CanConstructFrom(buffer),
+           "Buffer does not contain a valid H4 packet");
+
+  while (buffer.NumLayers() > H4Packet::kLayer) {
+    std::ignore = buffer.PopLayer();
+  }
+
+  multibuf().PushBack(std::move(buffer));
+
+  type_ = static_cast<H4Packet::Type>((*this)[0]);
+  AddLayer(sizeof(Type));
+}
+
+Status H4Packet::SetType(H4Packet::Type h4_type) {
+  ResizeTopLayer(0);
+  (*this)[0] = static_cast<std::byte>(h4_type);
+  ResizeTopLayer(sizeof(Type));
+  type_ = h4_type;
+  return OkStatus();
+}
+
+}  // namespace pw::bluetooth::proxy
