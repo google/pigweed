@@ -54,6 +54,25 @@ py_proto_library(
     deps = [":workflows_proto"],
 )
 
+proto_library(
+    name = "build_driver_proto",
+    srcs = [
+        "proto/build_driver.proto",
+    ],
+    # Restrict API to Pigweed until the api stabilizes.
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":workflows_proto",
+    ],
+)
+
+py_proto_library(
+    name = "build_driver_proto_py_pb2",
+    # Restrict API to Pigweed until the api stabilizes.
+    visibility = ["//:__subpackages__"],
+    deps = [":build_driver_proto"],
+)
+
 pw_cc_blob_info(
     name = "test_blob_aligned",
     alignas = "512",
@@ -372,6 +391,7 @@ sphinx_docs_library(
         "python.rst",
         "python_api.rst",
         "python_gn_args.gni",
+        "workflows_build_drivers.rst",
         "workflows_launcher.rst",
         "//pw_build/py:docs",
     ],

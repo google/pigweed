@@ -1,0 +1,36 @@
+{
+  "jobs": [
+    {
+      "build": {
+        "targets": [
+          "//..."
+        ],
+        "build_config": {
+          "args": []
+        }
+      }
+    },
+    {
+      "build": {
+        "targets": [
+          "//...",
+          "//pw_bloat:bloat_base",
+          "//pw_status:status_test"
+        ],
+        "build_config": {
+          "args": [
+            "--config=rp2040"
+          ]
+        }
+      }
+    },
+    {
+      "tool": {
+        "target": "@pigweed//format",
+        "build_config": {
+          "args": []
+        }
+      }
+    }
+  ]
+}

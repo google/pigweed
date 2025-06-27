@@ -75,12 +75,15 @@ py_library(
 py_library(
     name = "workflows",
     srcs = [
+        "pw_build/workflows/bazel_driver.py",
+        "pw_build/workflows/build_driver.py",
         "pw_build/workflows/launcher.py",
     ],
     visibility = ["//visibility:private"],
     deps = [
         ":pw_build",
         ":pw_project_builder",
+        "//pw_build:build_driver_proto_py_pb2",
         "//pw_build:workflows_proto_py_pb2",
         "//pw_cli/py:pw_cli",
         "//pw_config_loader/py:pw_config_loader",
@@ -112,6 +115,19 @@ pw_py_binary(
     name = "generate_cc_blob_library",
     srcs = [
         "pw_build/generate_cc_blob_library.py",
+    ],
+)
+
+pw_py_binary(
+    name = "bazel_build_driver",
+    srcs = [
+        "pw_build/workflows/bazel_driver.py",
+    ],
+    main = "pw_build/workflows/bazel_driver.py",
+    deps = [
+        ":pw_build",
+        "//pw_build:build_driver_proto_py_pb2",
+        "//pw_build:workflows_proto_py_pb2",
     ],
 )
 
@@ -330,6 +346,18 @@ pw_py_test(
     deps = [
         ":workflows",
         "//pw_build:workflows_proto_py_pb2",
+    ],
+)
+
+pw_py_test(
+    name = "bazel_driver_test",
+    size = "small",
+    srcs = [
+        "bazel_driver_test.py",
+    ],
+    deps = [
+        ":workflows",
+        "//pw_build:build_driver_proto_py_pb2",
     ],
 )
 

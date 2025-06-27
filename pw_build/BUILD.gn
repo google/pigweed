@@ -24,7 +24,10 @@ import("$dir_pw_unit_test/test.gni")
 import("target_types.gni")
 
 pw_proto_library("workflows_proto") {
-  sources = [ "proto/workflows.proto" ]
+  sources = [
+    "proto/build_driver.proto",
+    "proto/workflows.proto",
+  ]
   prefix = "pw_build"
   python_package = "py:workflows"
 }

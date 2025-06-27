@@ -181,3 +181,15 @@ From the example ``workflows.json`` above, the following command is created:
 
 This will launch a series of builds followed by code health check tooling as
 enumerated by the group named ``presubmit``.
+
+-----------------
+Build programming
+-----------------
+The definition of how build configurations become a series of actions is defined
+by :ref:`docs-workflows-build-drivers`.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   workflows_build_drivers
