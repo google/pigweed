@@ -859,15 +859,16 @@ def run_as_cli() -> None:
         parsed_cmd.args,
         tui_manager,
     )
-    try:
-        save_last_bazel_command_in_user_settings(
-            args.cwd, args.target, tui_manager
-        )
-    except (OSError, ValueError) as e:
-        tui_manager.add_stderr(
-            'Warning: Failed to save last bazel command to user '
-            f'settings.json: {e}'
-        )
+    # TODO(b/428235619) This corrupts the jsonc config
+    # try:
+    #     save_last_bazel_command_in_user_settings(
+    #         args.cwd, args.target, tui_manager
+    #     )
+    # except (OSError, ValueError) as e:
+    #     tui_manager.add_stderr(
+    #         'Warning: Failed to save last bazel command to user '
+    #         f'settings.json: {e}'
+    #     )
 
 
 if __name__ == '__main__':
