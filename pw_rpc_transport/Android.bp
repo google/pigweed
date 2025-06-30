@@ -51,7 +51,7 @@ cc_library_static {
         "pw_containers",
         "pw_result",
         "pw_rpc_transport.rpc_transport",
-    ]
+    ],
 }
 
 cc_library_static {
@@ -147,7 +147,7 @@ cc_defaults {
     export_static_lib_headers: [
         "pw_hdlc",
         "pw_rpc_transport.rpc_transport",
-    ]
+    ],
 }
 
 cc_library_static {
