@@ -377,7 +377,7 @@ class DynamicVector {
  private:
   typename DynamicDeque<T, size_type>::const_iterator ToDequeIterator(
       const_iterator it) const {
-    return {&deque_, static_cast<size_type>(it - cbegin())};
+    return {deque_, static_cast<size_type>(it - cbegin())};
   }
 
   // The underlying DynamicDeque instance that provides the storage.

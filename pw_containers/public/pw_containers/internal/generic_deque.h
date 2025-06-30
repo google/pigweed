@@ -271,8 +271,7 @@ class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
   constexpr std::pair<span<const value_type>, span<const value_type>>
   contiguous_data() const;
   constexpr std::pair<span<value_type>, span<value_type>> contiguous_data() {
-    auto [first, second] =
-        static_cast<const GenericDeque&>(*this).contiguous_data();
+    auto [first, second] = std::as_const(*this).contiguous_data();
     return {{const_cast<pointer>(first.data()), first.size()},
             {const_cast<pointer>(second.data()), second.size()}};
   }
@@ -284,20 +283,20 @@ class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
       return end();
     }
 
-    return iterator(&derived(), 0);
+    return iterator(derived(), 0);
   }
   constexpr const_iterator begin() const noexcept { return cbegin(); }
   constexpr const_iterator cbegin() const noexcept {
     if (empty()) {
       return cend();
     }
-    return const_iterator(&derived(), 0);
+    return const_iterator(derived(), 0);
   }
 
-  constexpr iterator end() noexcept { return iterator(&derived(), size()); }
+  constexpr iterator end() noexcept { return iterator(derived(), size()); }
   constexpr const_iterator end() const noexcept { return cend(); }
   constexpr const_iterator cend() const noexcept {
-    return const_iterator(&derived(), size());
+    return const_iterator(derived(), size());
   }
 
   // Infallible modify
@@ -602,8 +601,8 @@ typename GenericDeque<Derived, ValueType, CountAndCapacityType>::iterator
 GenericDeque<Derived, ValueType, CountAndCapacityType>::erase(
     const_iterator first, const_iterator last) {
   PW_DASSERT(first <= last);
-  const iterator first_it(static_cast<Derived*>(this), first.pos_);
-  const iterator last_it(static_cast<Derived*>(this), last.pos_);
+  const iterator first_it(derived(), first.pos_);
+  const iterator last_it(derived(), last.pos_);
 
   const size_type items_to_erase = static_cast<size_type>(last - first);
   if (items_to_erase == 0) {

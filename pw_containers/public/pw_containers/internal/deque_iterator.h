@@ -44,14 +44,17 @@ class DequeIterator {
   using difference_type = std::ptrdiff_t;
   using iterator_category = std::forward_iterator_tag;
 
-  constexpr DequeIterator() = default;
+  constexpr DequeIterator() : container_(nullptr), pos_(0) {}
 
   constexpr DequeIterator(const DequeIterator& other) = default;
   constexpr DequeIterator& operator=(const DequeIterator& other) = default;
 
   // Support converting non-const iterators to const_iterators.
   constexpr operator DequeIterator<std::add_const_t<Container>>() const {
-    return {container_, pos_};
+    DequeIterator<std::add_const_t<Container>> const_it;
+    const_it.container_ = container_;
+    const_it.pos_ = pos_;
+    return const_it;
   }
 
   constexpr DequeIterator& operator+=(difference_type n) {
@@ -95,15 +98,9 @@ class DequeIterator {
     return a.pos_ - b.pos_;
   }
 
-  constexpr reference operator*() const {
-    PW_DASSERT(pos_ < container_->size());
-    return container_->at(pos_);
-  }
+  constexpr reference operator*() const { return container_->at(pos_); }
 
-  constexpr pointer operator->() const {
-    PW_DASSERT(pos_ < container_->size());
-    return &**this;
-  }
+  constexpr pointer operator->() const { return &operator*(); }
 
   constexpr reference operator[](difference_type n) { return *(*this + n); }
 
@@ -143,8 +140,8 @@ class DequeIterator {
 
   using size_type = typename Container::size_type;
 
-  constexpr DequeIterator(Container* container, size_type pos)
-      : container_(container), pos_(pos) {}
+  constexpr DequeIterator(Container& container, size_type pos)
+      : container_(&container), pos_(pos) {}
 
   Container* container_;  // pointer to container this iterator is from
   size_type pos_;         // logical index of iterator
