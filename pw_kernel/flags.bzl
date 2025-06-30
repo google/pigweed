@@ -21,7 +21,6 @@ KERNEL_COMMON_FLAGS = {
     # Default to using the tokenized backend.  Platforms can overwrite this value
     "@pigweed//pw_log/rust:pw_log_backend": "//pw_kernel/subsys/console:pw_log_backend_tokenized",
     "@pigweed//pw_toolchain:cortex-m_toolchain_kind": "clang",
-    "@rules_rust//rust/toolchain/channel": "nightly",
 }
 
 KERNEL_DEVICE_COMMON_FLAGS = dicts.add(KERNEL_COMMON_FLAGS, {
