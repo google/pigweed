@@ -24,8 +24,8 @@ config("public_include_path") {
 pw_source_set("packets") {
   public_configs = [ ":public_include_path" ]
   public = [
-    "public/pw_bluetooth_proxy/comms2.5/embossed_multibuf.h",
-    "public/pw_bluetooth_proxy/comms2.5/h4_packet.h",
+    "public/pw_bluetooth_proxy/comms2/embossed_multibuf.h",
+    "public/pw_bluetooth_proxy/comms2/h4_packet.h",
   ]
   sources = [ "h4_packet.cc" ]
   deps = [ "$dir_pw_assert:check" ]

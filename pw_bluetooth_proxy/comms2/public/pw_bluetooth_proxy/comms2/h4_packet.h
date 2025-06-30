@@ -16,7 +16,7 @@
 #include <cstddef>
 
 #include "pw_bluetooth/hci_h4.emb.h"
-#include "pw_bluetooth_proxy/comms2.5/embossed_multibuf.h"
+#include "pw_bluetooth_proxy/comms2/embossed_multibuf.h"
 
 namespace pw::bluetooth::proxy {
 

@@ -28,8 +28,8 @@ cc_library(
         "h4_packet.cc",
     ],
     hdrs = [
-        "public/pw_bluetooth_proxy/comms2.5/embossed_multibuf.h",
-        "public/pw_bluetooth_proxy/comms2.5/h4_packet.h",
+        "public/pw_bluetooth_proxy/comms2/embossed_multibuf.h",
+        "public/pw_bluetooth_proxy/comms2/h4_packet.h",
     ],
     implementation_deps = [
         "//pw_assert:check",

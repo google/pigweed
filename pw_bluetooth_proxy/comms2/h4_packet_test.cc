@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_proxy/comms2.5/h4_packet.h"
+#include "pw_bluetooth_proxy/comms2/h4_packet.h"
 
 #include "pw_allocator/testing.h"
 #include "pw_bluetooth/hci_commands.emb.h"
