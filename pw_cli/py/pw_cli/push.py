@@ -33,7 +33,7 @@ def _default_at_google_com(x):
 # This looks like URL-encoding but it's different in which characters need to be
 # escaped and which do not.
 def _escaped_string(x):
-    for ch in '%^@.,~-+_:/!\'"':
+    for ch in '%^@.,~-+_:/!\'"[](){}':
         x = x.replace(ch, f'%{ord(ch):02x}')
     return x.replace(' ', '_')
 
@@ -163,7 +163,7 @@ def push(argv=None):
         options.append(f'l={label}')
 
     if args.hashtag:
-        options.append(f'hashtag={args.hashtag}')
+        options.append(f'hashtag={_escaped_string(args.hashtag)}')
 
     if args.message:
         options.append(f'message={args.message}')
