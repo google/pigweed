@@ -203,6 +203,9 @@ class BasicInlineAsyncQueue<ValueType,
     return deque().PendNotEmpty(context);
   }
 
+ protected:
+  constexpr BasicInlineAsyncQueue() = default;
+
  private:
   template <typename, typename>
   friend class containers::internal::GenericQueue;

@@ -32,6 +32,9 @@ using pw::async2::Pending;
 using pw::async2::Poll;
 using pw::async2::Ready;
 
+static_assert(!std::is_constructible_v<pw::InlineAsyncDeque<int>>,
+              "Cannot construct generic capacity container");
+
 // Instantiate shared deque tests.
 template <size_t kCapacity>
 class CommonTest

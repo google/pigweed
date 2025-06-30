@@ -28,6 +28,9 @@ using containers::test::CopyOnly;
 using containers::test::Counter;
 using containers::test::MoveOnly;
 
+static_assert(!std::is_constructible_v<pw::Vector<int>>,
+              "Cannot construct generic capacity container");
+
 // Since pw::Vector<T, N> downcasts to a pw::Vector<T, 0>, ensure that the
 // alignment doesn't change.
 static_assert(alignof(Vector<std::max_align_t, 0>) ==

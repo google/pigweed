@@ -31,6 +31,9 @@ using test::CopyOnly;
 using test::Counter;
 using test::MoveOnly;
 
+static_assert(!std::is_constructible_v<pw::InlineQueue<int>>,
+              "Cannot construct generic capacity container");
+
 TEST(InlineQueue, Construct_Sized) {
   InlineQueue<int, 3> queue;
   EXPECT_TRUE(queue.empty());

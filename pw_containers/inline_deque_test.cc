@@ -31,6 +31,9 @@ using test::CopyOnly;
 using test::Counter;
 using test::MoveOnly;
 
+static_assert(!std::is_constructible_v<pw::InlineDeque<int>>,
+              "Cannot construct generic capacity container");
+
 // Instantiate shared deque tests.
 template <size_t kCapacity>
 class CommonTest

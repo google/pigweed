@@ -30,6 +30,9 @@ using pw::async2::Pending;
 using pw::async2::Poll;
 using pw::async2::Ready;
 
+static_assert(!std::is_constructible_v<pw::InlineAsyncQueue<int>>,
+              "Cannot construct generic capacity container");
+
 TEST(InlineAsyncQueueTest, PendHasZeroSpaceReturnsSuccessImmediately) {
   pw::InlineAsyncQueue<int, 4> queue;
 
