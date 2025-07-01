@@ -46,6 +46,38 @@ namespace bt::hci {
 // until shutdown completes.
 class CommandChannel final {
  public:
+  // Used to identify an individual HCI event handler that was registered with
+  // this CommandChannel.
+  using EventHandlerId = size_t;
+
+  class OwnedEventHandle {
+   public:
+    OwnedEventHandle(hci::CommandChannel* cmd_channel,
+                     hci::CommandChannel::EventHandlerId id)
+        : cmd_channel_(cmd_channel), id_(id) {
+      PW_CHECK(id_ != 0);
+    }
+    OwnedEventHandle() = default;
+    OwnedEventHandle(OwnedEventHandle&& other) { swap(other); }
+    OwnedEventHandle& operator=(OwnedEventHandle&& other) {
+      swap(other);
+      return *this;
+    }
+
+    void swap(OwnedEventHandle& other) {
+      std::swap(cmd_channel_, other.cmd_channel_);
+      std::swap(id_, other.id_);
+    }
+    ~OwnedEventHandle() {
+      if (cmd_channel_) {
+        cmd_channel_->RemoveEventHandler(id_);
+      }
+    }
+
+   private:
+    hci::CommandChannel* cmd_channel_ = nullptr;
+    hci::CommandChannel::EventHandlerId id_ = 0;
+  };
   // Starts listening for HCI commands and starts handling commands and events.
   explicit CommandChannel(
       pw::bluetooth::Controller* hci,
@@ -143,10 +175,6 @@ class CommandChannel final {
   // effect and returns false.
   [[nodiscard]] bool RemoveQueuedCommand(TransactionId id);
 
-  // Used to identify an individual HCI event handler that was registered with
-  // this CommandChannel.
-  using EventHandlerId = size_t;
-
   // Return values for EventCallbacks.
   enum class EventCallbackResult {
     // Continue handling this event.
@@ -198,6 +226,11 @@ class CommandChannel final {
   // - HCI_Vendor_Debug event code (use AddVendorEventHandler instead)
   EventHandlerId AddEventHandler(hci_spec::EventCode event_code,
                                  EventCallback event_callback);
+
+  // Same as `AddEventHandler` but the return is an OwnedEventHandle
+  // which gets cleaned up automatically when dropped.
+  std::optional<OwnedEventHandle> AddOwnedEventHandler(
+      hci_spec::EventCode event_code, EventCallback event_callback);
 
   // Works just like AddEventHandler but the passed in event code is only valid
   // within the LE Meta Event sub-event code namespace. |event_callback| will

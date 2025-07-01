@@ -116,6 +116,8 @@ std::optional<pw::bluetooth::emboss::StatusCode> EventPacket::StatusCode()
     }
     case hci_spec::kRoleChangeEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::RoleChangeEventView>();
+    case hci_spec::kModeChangeEventCode:
+      return StatusCodeFromView<pw::bluetooth::emboss::ModeChangeEventView>();
     case hci_spec::kSimplePairingCompleteEventCode:
       return StatusCodeFromView<
           pw::bluetooth::emboss::SimplePairingCompleteEventView>();

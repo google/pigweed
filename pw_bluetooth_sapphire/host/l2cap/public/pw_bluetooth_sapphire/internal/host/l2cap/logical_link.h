@@ -25,6 +25,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/a2dp_offload_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/autosniff.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_command_handler.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
@@ -34,6 +35,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/low_energy_command_handler.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/recombiner.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
 
 namespace bt::l2cap::internal {
@@ -189,6 +191,17 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // Called by ChannelImpl::OnRxPacket() to return credits after the associated
   // packet has been handled.
   void SignalCreditsAvailable(ChannelId channel, uint16_t credits);
+
+  // Returns true if autosniff is enabled
+  bool AutosniffEnabled() const;
+
+  // Returns the current connection mode as per autosniff. This will always
+  // return ACTIVE if autosniff is not enabled.
+  pw::bluetooth::emboss::AclConnectionMode AutosniffMode() const;
+
+  // Duration to wait without events before switching into sniff mode.
+  static constexpr pw::chrono::SystemClock::duration kAutosniffTimeout =
+      std::chrono::seconds(1);
 
  private:
   friend class ChannelImpl;
@@ -350,6 +363,9 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // Search function for inbound service requests. Returns handler that accepts
   // opened channels.
   QueryServiceCallback query_service_cb_;
+
+  // Automatically toggles the connection between sniff mode and active.
+  std::optional<Autosniff> autosniff_;
 
   struct InspectProperties {
     inspect::Node node;

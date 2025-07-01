@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/logical_link.h"
 
 #include <cpp-string/string_printf.h>
+#include <lib/fit/function.h>
 #include <pw_assert/check.h>
 
 #include <cinttypes>
@@ -67,6 +68,15 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
   }
   return false;
 }
+
+// Constants taken verbatim from CHRE (non-sco)
+// TODO(fxbug.dev/421454138): Possibly make these parameters 1. configurable
+// or 2. dynamically chosen per connection
+constexpr SniffModeParams kDefaultSniffParams =
+    SniffModeParams{.min_interval = 400,
+                    .max_interval = 816,
+                    .sniff_attempt = 4,
+                    .sniff_timeout = 1};
 
 FixedChannelsSupported FixedChannelsSupportedBitForChannelId(
     ChannelId channel_id) {
@@ -123,6 +133,14 @@ LogicalLink::LogicalLink(
 
   // Allow packets to be sent on this link immediately.
   acl_data_channel_->RegisterConnection(weak_conn_interface_.GetWeakPtr());
+
+  if (type == bt::LinkType::kACL) {
+    autosniff_.emplace(kDefaultSniffParams,
+                       cmd_channel,
+                       handle,
+                       &dispatcher,
+                       kAutosniffTimeout);
+  }
 
   // Set up the signaling channel and dynamic channels.
   if (type_ == bt::LinkType::kLE) {
@@ -289,6 +307,10 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
     return;
   }
 
+  if (autosniff_.has_value()) {
+    autosniff_->MarkPacketRx();
+  }
+
   auto result = recombiner_.ConsumeFragment(std::move(packet));
   if (result.frames_dropped) {
     bt_log(TRACE, "l2cap", "Frame(s) dropped due to recombination error");
@@ -430,7 +452,13 @@ std::unique_ptr<hci::ACLDataPacket> LogicalLink::GetNextOutboundPacket() {
 
     if (current_pdus_channel_.is_alive()) {
       // Next packet will either be a starting or continuing fragment
-      return current_pdus_channel_->GetNextOutboundPacket();
+      auto pdu = current_pdus_channel_->GetNextOutboundPacket();
+      if (pdu) {
+        if (autosniff_.has_value()) {
+          autosniff_->MarkPacketTx();
+        }
+      }
+      return pdu;
     }
   }
   // All channels are empty
@@ -1090,4 +1118,15 @@ void LogicalLink::OnRxFlowControlCreditInd(ChannelId remote_cid,
   }
   channel->AddCredits(credits);
 }
+
+bool LogicalLink::AutosniffEnabled() const { return autosniff_.has_value(); }
+
+pw::bluetooth::emboss::AclConnectionMode LogicalLink::AutosniffMode() const {
+  if (autosniff_.has_value()) {
+    return autosniff_->CurrentMode();
+  } else {
+    return pw::bluetooth::emboss::AclConnectionMode::ACTIVE;
+  }
+}
+
 }  // namespace bt::l2cap::internal

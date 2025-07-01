@@ -21,6 +21,8 @@
 #include <pw_bluetooth/hci_common.emb.h>
 #include <pw_bytes/endian.h>
 
+#include <optional>
+
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/trace.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/slab_allocators.h"
@@ -331,6 +333,17 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
                                               std::move(event_callback));
   event_code_handlers_.emplace(event_code, handler_id);
   return handler_id;
+}
+
+std::optional<CommandChannel::OwnedEventHandle>
+CommandChannel::AddOwnedEventHandler(hci_spec::EventCode event_code,
+                                     EventCallback event_callback) {
+  EventHandlerId id = AddEventHandler(event_code, std::move(event_callback));
+  if (id != 0) {
+    return OwnedEventHandle(this, id);
+  } else {
+    return std::nullopt;
+  }
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
