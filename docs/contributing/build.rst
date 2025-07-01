@@ -130,7 +130,7 @@ Run a single test
 Run on-device tests
 -------------------
 On-device tests are only supported for the Raspberry Pi RP2040. See
-:ref:`target-rp2040-upstream-tests`.
+:ref:`target-rp2-upstream-tests`.
 
 .. _docs-contributing-build-gn:
 

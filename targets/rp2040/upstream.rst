@@ -1,77 +1,99 @@
-.. _target-rp2040-upstream:
+.. _target-rp2-upstream:
 
-========================================
-Working with RP2040s in upstream Pigweed
-========================================
-.. _upstream Pigweed: https://pigweed.googlesource.com/pigweed/pigweed/
+=====================================
+Working with RP2s in upstream Pigweed
+=====================================
+RP2 is a family of microcontrollers (MCUs) from Raspberry Pi. The RP2040 MCU
+(which powers the Pico 1) and the RP2350 MCU (which powers the Pico 2) are both
+part of the RP2 family.
 
-This guide is intended for `upstream Pigweed`_ maintainers working with
-Raspberry Pi RP2040s. It shows maintainers how to do common RP2040-related
-tasks within upstream Pigweed, such as running on-device tests.
+This guide shows :ref:`docs-glossary-upstream` maintainers how to do common
+RP2-related development tasks in upstream Pigweed, such as building the upstream
+repo for the RP2350, running on-device unit tests on a Pico 2, etc.
 
-If you're trying to develop a Pigweed-based application that runs on the
-RP2040 or Pico, check out :ref:`docs-get-started-bazel` and
-:ref:`target-rp2040`.
+Most maintainers should use the newer Bazel-based workflows. If you need to use
+the older GN-based workflows, see :ref:`target-rp2-upstream-gn`.
 
-.. _target-rp2040-contributors-quickstarts:
+--------
+Hardware
+--------
+.. _PicoPico: https://pigweed.googlesource.com/pigweed/hardware/picopico
+.. _Debug Probe: https://www.raspberrypi.com/products/debug-probe/
 
-------------
-Bazel guides
-------------
-This section quickly explains the Bazel workflows for the most common
-upstream Pigweed tasks related to RP2040s.
+Supported MCUs:
 
-Build everything
-================
+* RP2040
+* RP2350
+
+Supported Boards:
+
+* Pico 1
+* Pico 2
+
+Unsupported boards:
+
+* Pico 1W
+* Pico 2W
+
+The core Pigweed team uses `PicoPico`_, a custom development board that makes
+parallel on-device testing easier.
+
+If you don't have access to a PicoPico, the next best option is a Pico 2
+and a `Debug Probe`_.
+
+-------------------------------------------------
+MCU selection flags (``--config`` and ``--chip``)
+-------------------------------------------------
+If your command requires a ``-config`` flag (e.g. ``--config=<mcu>``)
+or a ``--chip`` flag (e.g. ``--chip <mcu>``) then you must replace
+the ``<mcu>`` placeholder with one of these values:
+
+* ``rp2040``
+* ``rp2350``
+
+For example, to build upstream Pigweed for a Pico 1 you run:
+
 .. code-block:: console
 
    $ bazelisk build --config=rp2040 //...
 
-.. _target-rp2040-upstream-tests:
+Whereas to build upstream Pigweed for a Pico 2 you run:
 
+.. code-block:: console
+
+   $ bazelisk build --config=rp2350 //...
+
+.. important::
+
+   The target path should always be ``//targets/rp2040``, even if you're
+   working with an RP2350. When we originally created this target, the
+   RP2350 didn't exist yet, so we called the target ``rp2040`` and placed
+   its code in the ``//targets/rp2040`` directory. The target now supports
+   both RP2040 and RP2350. We just haven't got around to making the target
+   name more general. If you try to reference ``//targets/rp2350`` you will
+   see an error like this ``ERROR: no such package 'targets/rp2350'``
+   because no directory exists at that location.
+
+.. _target-rp2-upstream-build:
+
+----------------
+Build everything
+----------------
+.. code-block:: console
+
+   $ bazelisk build --config=<mcu> //...
+
+.. _target-rp2-upstream-tests:
+
+-------------------
 Run on-device tests
-===================
-.. _PicoPico: https://pigweed.googlesource.com/pigweed/hardware/picopico
-
-The recommended way to run on-device RP2040 tests is with a
-`Raspberry Pi Pico <https://www.raspberrypi.com/products/raspberry-pi-pico/>`_
-connected through a
-`Raspberry Pi Debug Probe <https://www.raspberrypi.com/products/debug-probe/>`_.
-
-The Pigweed team uses
-`PicoPico <https://pigweed.googlesource.com/pigweed/hardware/picopico>`_,
-a custom hardware setup that makes parallel on-device testing easier.
-
+-------------------
 .. _Updating the firmware on the Debug Probe: https://www.raspberrypi.com/documentation/microcontrollers/debug-probe.html#updating-the-firmware-on-the-debug-probe
 .. _Getting Started: https://www.raspberrypi.com/documentation/microcontrollers/debug-probe.html#getting-started
-
 
 #. Set up your hardware:
 
    .. tab-set::
-
-      .. tab-item:: Raspberry Pi Debug Probe
-         :sync: debug_probe
-
-         Make sure that your Debug Probe is running firmware version 2.0.1
-         or later. See `Updating the firmware on the Debug Probe`_.
-
-         Wire up your Pico to the Debug Probe as described in `Getting Started`_.
-
-         .. important::
-
-            UART must be wired up as described in `Getting Started`_.
-
-      .. tab-item:: Standalone Raspberry Pi Pico
-         :sync: single_pico
-
-         You can run Pigweed's tests with a single Pi Pico and no additional
-         hardware with the following limitations:
-
-         * Tests will not be parallelized if more than one Pi Pico is attached.
-         * If the Pi Pico crashes during a test, the failure will cascade into
-           subsequent tests. You'll need to manually disconnect and re-connect
-           the device to get it working again.
 
       .. tab-item:: PicoPico
          :sync: picopico
@@ -80,46 +102,65 @@ a custom hardware setup that makes parallel on-device testing easier.
          to a USB port on your development host. Don't connect the
          **DEVICE UNDER TEST** Pico to anything.
 
+      .. tab-item:: Debug Probe
+         :sync: probe
+
+         Make sure that your Debug Probe is running firmware version 2.0.1
+         or later. See `Updating the firmware on the Debug Probe`_.
+
+         Wire up your Pico to the Debug Probe as described in `Getting Started`_.
+
+      .. tab-item:: Standalone
+         :sync: standalone
+
+         You can run Pigweed's tests with a single Pico and no additional
+         hardware with the following limitations:
+
+         * Tests will not be parallelized if more than one Pico is attached.
+
+         * If the Pico crashes during a test, the failure will cascade into
+           subsequent tests. You'll need to manually disconnect and re-connect
+           the device to get it working again.
+
 #. Start the test runner server:
 
    .. tab-set::
-
-      .. tab-item:: Raspberry Pi Debug Probe
-         :sync: debug_probe
-
-         .. code-block:: console
-
-            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip RP2040 --debug-probe-only
-
-      .. tab-item:: Standalone Raspberry Pi Pico
-         :sync: single_pico
-
-         .. code-block:: console
-
-            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip RP2040
 
       .. tab-item:: PicoPico
          :sync: picopico
 
          .. code-block:: console
 
-            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip RP2040
+            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip <mcu>
+
+      .. tab-item:: Debug Probe
+         :sync: probe
+
+         .. code-block:: console
+
+            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip <mcu> --debug-probe-only
+
+      .. tab-item:: Standalone
+         :sync: standalone
+
+         .. code-block:: console
+
+            $ bazelisk run //targets/rp2040/py:unit_test_server -- --chip <mcu>
 
 
 #. Open another terminal and run the tests:
 
    .. code-block:: console
 
-      $ bazelisk test --config=rp2040 //...
+      $ bazelisk test --config=<mcu> //...
 
----------------
-Older GN guides
----------------
-The following guides may be outdated. Most Pigweed contributors use
-(and should use) the Bazel workflows explained in
-:ref:`target-rp2040-contributors-quickstarts`. We're keeping these
-older GN guides around for Pigweed contributors that are maintaining
-the upstream GN build system.
+.. _target-rp2-upstream-gn:
+
+--------------------
+GN (less maintained)
+--------------------
+The following guides may be outdated. We're keeping them around for Pigweed
+contributors that are maintaining the upstream GN build system.
 
 First-time setup
 ================
