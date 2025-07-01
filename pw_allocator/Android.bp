@@ -53,7 +53,7 @@ cc_library {
         "block/poisonable.cc",
         "block_allocator.cc",
         "chunk_pool.cc",
-        "control_block.cc"
+        "control_block.cc",
         "libc_allocator.cc",
         "managed_ptr.cc",
     ],
