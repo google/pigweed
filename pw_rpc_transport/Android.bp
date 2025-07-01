@@ -19,6 +19,7 @@ package {
 cc_library_static {
     name: "pw_rpc_transport.rpc_transport",
     defaults: [
+        "pw_android_common_backends",
         "pw_android_common_target_support",
     ],
     export_include_dirs: ["public"],
@@ -54,11 +55,22 @@ cc_library_static {
     ],
 }
 
-cc_library_static {
-    name: "pw_rpc_transport.local_rpc_egress_logging_metric_tracker",
+// This rule must be instantiated, e.g.
+//
+//   cc_library_static {
+//       name: "<instance_name>",
+//       cflags: [
+//       ],
+//       defaults: [
+//           "pw_rpc_transport.local_rpc_egress_logging_metric_tracker_defaults",
+//       ],
+//   }
+cc_defaults {
+    name: "pw_rpc_transport.local_rpc_egress_logging_metric_tracker_defaults",
     defaults: [
         "pw_android_common_backends",
         "pw_android_common_target_support",
+        "pw_rpc_defaults",
     ],
     header_libs: [
         "pw_log",
@@ -150,11 +162,22 @@ cc_defaults {
     ],
 }
 
-cc_library_static {
-    name: "pw_rpc_transport.egress_ingress_logging_metric_tracker",
+// This rule must be instantiated, e.g.
+//
+//   cc_library_static {
+//       name: "<instance_name>",
+//       cflags: [
+//       ],
+//       defaults: [
+//           "pw_rpc_transport.egress_ingress_logging_metric_tracker_defaults",
+//       ],
+//   }
+cc_defaults {
+    name: "pw_rpc_transport.egress_ingress_logging_metric_tracker_defaults",
     defaults: [
         "pw_android_common_backends",
         "pw_android_common_target_support",
+        "pw_rpc_defaults",
     ],
     header_libs: [
         "pw_log",
