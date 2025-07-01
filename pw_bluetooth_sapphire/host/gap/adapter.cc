@@ -1097,6 +1097,26 @@ void AdapterImpl::InitializeStep2() {
 
   PW_DCHECK(init_seq_runner_->IsReady());
 
+  if (state_.SupportedCommands().write_default_link_policy_settings().Read()) {
+    // HCI_Write_Default_Link_Policy_Settings
+    auto write_default_link_policy_cmd = hci::CommandPacket::New<
+        pw::bluetooth::emboss::WriteDefaultLinkPolicySettingsCommandWriter>(
+        hci_spec::kWriteDefaultLinkPolicySettings);
+    auto view = write_default_link_policy_cmd.view_t();
+    view.default_link_policy_settings().enable_role_switch().Write(1);
+    view.default_link_policy_settings().enable_hold_mode().Write(0);
+    view.default_link_policy_settings().enable_sniff_mode().Write(1);
+    init_seq_runner_->QueueCommand(
+        write_default_link_policy_cmd,
+        [](const hci::EventPacket& cmd_complete) {
+          if (cmd_complete.ToResult().is_error()) {
+            bt_log(WARN, "gap", "Set Default Link Policy command FAILED");
+          } else {
+            bt_log(INFO, "gap", "Set Default Link Policy succeeded");
+          }
+        });
+  }
+
   // If the controller supports the Read Buffer Size command then send it.
   // Otherwise we'll default to 0 when initializing the ACLDataChannel.
   if (state_.SupportedCommands().read_buffer_size().Read()) {

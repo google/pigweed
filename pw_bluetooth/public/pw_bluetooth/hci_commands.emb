@@ -77,6 +77,11 @@ enum ScanWindow:
   MIN = 0x0011
   MAX = 0x1000
 
+bits LinkPolicySettings:
+  0 [+1] Flag enable_role_switch
+  1 [+1] Flag enable_hold_mode
+  2 [+1] Flag enable_sniff_mode
+
 
 bits ScoPacketType:
   -- Bitmask of SCO packet types.
@@ -1125,6 +1130,16 @@ struct ExitSniffModeCommand:
   $next [+2]         UInt               connection_handle
     -- Identifies an ACL connection
     [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct WriteDefaultLinkPolicySettingsCommand:
+  -- 7.2.12 Write Default Link Policy Settings command (v1.1)
+  -- HCI_Write_Default_Link_Policy_Settings
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]  hci.CommandHeader  header
+  $next [+2]  bits:
+    0     [+LinkPolicySettings.$size_in_bits]  LinkPolicySettings  default_link_policy_settings
+
 
 # ========== 7.3 Controller & Baseband Commands ==========
 

@@ -264,6 +264,11 @@ inline constexpr OpCode kSniffMode = LinkPolicyOpCode(0x0003);
 // Exit Sniff Mode Command (v1.1)
 inline constexpr OpCode kExitSniffMode = LinkPolicyOpCode(0x0004);
 
+// =========================================
+// Write Default Link Policy Settings (v1.1)
+inline constexpr OpCode kWriteDefaultLinkPolicySettings =
+    LinkPolicyOpCode(0x000F);
+
 // ======= Controller & Baseband Commands =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.3
 inline constexpr uint8_t kControllerAndBasebandOGF = 0x03;
