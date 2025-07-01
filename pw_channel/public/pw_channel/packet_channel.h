@@ -49,28 +49,38 @@ class PendingWrite {
   PendingWrite& operator=(const PendingWrite&) = delete;
 
   constexpr PendingWrite(PendingWrite&& other)
-      : channel_(cpp20::exchange(other.channel_, nullptr)) {}
+      : channel_(other.channel_),
+        num_packets_(cpp20::exchange(other.num_packets_, 0u)) {}
   constexpr PendingWrite& operator=(PendingWrite&& other) {
-    channel_ = cpp20::exchange(other.channel_, nullptr);
+    channel_ = other.channel_;
+    num_packets_ = cpp20::exchange(other.num_packets_, 0u);
   }
 
-  ~PendingWrite() { PW_ASSERT(channel_ == nullptr); }
+  ~PendingWrite() {
+    // TODO: b/421961717 - Consider allowing staged writes to be discarded
+    PW_ASSERT(num_packets_ == 0u);
+  }
 
   /// Enqueues a packet to be written. Must be called before the `PendingWrite`
   /// goes out of scope.
+  ///
+  /// `Stage` may be called up to `num_packets()` times.
   void Stage(Packet&& packet) {
-    PW_ASSERT(channel_ != nullptr);
+    PW_ASSERT(num_packets_ > 0u);
     channel_->DoStageWrite(std::move(packet));
-    channel_ = nullptr;
+    num_packets_ -= 1;
   }
+
+  size_t num_packets() const { return num_packets_; }
 
  private:
   friend class AnyPacketChannel<Packet>;
 
-  constexpr explicit PendingWrite(AnyPacketChannel<Packet>& channel)
-      : channel_(&channel) {}
+  constexpr PendingWrite(AnyPacketChannel<Packet>& channel, size_t num_packets)
+      : channel_(&channel), num_packets_(num_packets) {}
 
   AnyPacketChannel<Packet>* channel_;
+  size_t num_packets_;
 };
 
 /// @defgroup pw_channel_packets
@@ -356,6 +366,9 @@ class AnyPacketChannel : private PacketChannel<T, kReadable>,
   /// Ready(), regardless of the status.
   void set_read_write_closed() { read_write_open_ = 0; }
 
+  /// Allows implementations to access the write waker.
+  async2::Waker& write_waker() { return write_waker_; }
+
  private:
   template <typename, Property...>
   friend class PacketChannel;  // Allow static_casts to AnyPacketChannel
@@ -425,6 +438,8 @@ class Implement<PacketChannel<Packet, kProperties...>>
 template <typename Packet>
 async2::Poll<Result<PendingWrite<Packet>>>
 AnyPacketChannel<Packet>::PendReadyToWrite(async2::Context& cx, size_t num) {
+  PW_DASSERT(num > 0u);
+
   if (!is_write_open()) {
     return Status::FailedPrecondition();
   }
@@ -437,7 +452,7 @@ AnyPacketChannel<Packet>::PendReadyToWrite(async2::Context& cx, size_t num) {
   if (!ready.ok()) {
     return ready;
   }
-  return Result(PendingWrite<Packet>(*this));
+  return Result(PendingWrite<Packet>(*this, num));
 }
 
 template <typename Packet>

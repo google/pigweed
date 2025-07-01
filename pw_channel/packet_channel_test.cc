@@ -114,8 +114,8 @@ class TestPacketWriterImpl
   void set_ready_to_write(bool ready) {
     bool old_ready_to_write = ready_to_write_;
     ready_to_write_ = ready;
-    if (!old_ready_to_write && ready_to_write_ && !waker_.IsEmpty()) {
-      std::move(waker_).Wake();
+    if (!old_ready_to_write && ready_to_write_ && !write_waker().IsEmpty()) {
+      std::move(write_waker()).Wake();
     }
   }
   void ClearPackets() { packets_.clear(); }
@@ -125,12 +125,15 @@ class TestPacketWriterImpl
       pw::channel::PacketWriter<Packet>>::GetAvailableWrites;
 
  private:
+  using AnyPacketChannel<Packet>::write_waker;
+
   Poll<Status> DoPendReadyToWrite(pw::async2::Context& context,
                                   size_t /*num*/) override {
     if (ready_to_write_) {
       return pw::async2::Ready(pw::OkStatus());
     }
-    PW_ASYNC_STORE_WAKER(context, waker_, "waiting for set_ready_to_write");
+    PW_ASYNC_STORE_WAKER(
+        context, write_waker(), "waiting for set_ready_to_write");
     return pw::async2::Pending();
   }
 
@@ -148,7 +151,6 @@ class TestPacketWriterImpl
   }
 
   bool ready_to_write_ = true;
-  pw::async2::Waker waker_;
   pw::Vector<Packet, 5> packets_;
 };
 
