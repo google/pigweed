@@ -181,7 +181,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Stops advertisement on all currently advertising addresses. Idempotent and
   // asynchronous.
-  virtual void StopAdvertising();
+  virtual void StopAdvertising() = 0;
 
   // Stops the advertisement identified by |handle|. Idempotent and
   // asynchronous.
@@ -310,6 +310,10 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                 const AdvertisingOptions& options,
                                 ConnectionCallback connect_callback,
                                 StartAdvertisingInternalCallback callback);
+
+  // Unconditionally stop all advertising (all checks muts be performed in the
+  // methods that call this one).
+  void StopAdvertisingInternal();
 
   // Unconditionally stop advertising (all checks muts be performed in the
   // methods that call this one).

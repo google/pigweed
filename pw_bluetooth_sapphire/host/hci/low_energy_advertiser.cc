@@ -342,7 +342,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternalStep2(
 // new ones. Called in quick succession, StopAdvertising(address) won't have a
 // chance to finish its previous HCI commands before being cancelled. Instead,
 // we must enqueue them all at once and then run them together.
-void LowEnergyAdvertiser::StopAdvertising() {
+void LowEnergyAdvertiser::StopAdvertisingInternal() {
   if (!hci_cmd_runner_->IsReady()) {
     hci_cmd_runner_->Cancel();
   }

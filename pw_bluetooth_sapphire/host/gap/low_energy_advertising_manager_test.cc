@@ -115,6 +115,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     result_callback(fit::ok(adv_id));
   }
 
+  void StopAdvertising() override { StopAdvertisingInternal(); }
   void StopAdvertising(AdvertisementId adv_id) override { ads_->erase(adv_id); }
 
   void OnIncomingConnection(hci_spec::ConnectionHandle handle,

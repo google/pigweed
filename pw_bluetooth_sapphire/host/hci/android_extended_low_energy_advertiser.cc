@@ -341,7 +341,7 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
 }
 
 void AndroidExtendedLowEnergyAdvertiser::StopAdvertising() {
-  LowEnergyAdvertiser::StopAdvertising();
+  StopAdvertisingInternal();
   advertising_handle_map_.Clear();
 
   // std::queue doesn't have a clear method so we have to resort to this
@@ -364,7 +364,7 @@ void AndroidExtendedLowEnergyAdvertiser::StopAdvertising(
     return;
   }
 
-  LowEnergyAdvertiser::StopAdvertisingInternal(advertisement_id);
+  StopAdvertisingInternal(advertisement_id);
   advertising_handle_map_.Erase(advertisement_id);
 }
 

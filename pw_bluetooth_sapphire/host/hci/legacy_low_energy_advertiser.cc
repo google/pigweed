@@ -274,7 +274,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
 }
 
 void LegacyLowEnergyAdvertiser::StopAdvertising() {
-  LowEnergyAdvertiser::StopAdvertising();
+  StopAdvertisingInternal();
   ResetAdvertisingState();
 }
 
@@ -289,7 +289,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertising(
     hci_cmd_runner().Cancel();
   }
 
-  LowEnergyAdvertiser::StopAdvertisingInternal(advertisement_id);
+  StopAdvertisingInternal(advertisement_id);
   ResetAdvertisingState();
 }
 
