@@ -31,13 +31,21 @@ config("disable_psabi_warning") {
   cflags = [ "-Wno-psabi" ]
 }
 
-config("mingw_z_format") {
+# Pigweed's Windows MinGW GCC compiler is outdated and some workarounds.
+config("mingw_compatibility") {
   if (host_os == "win") {
-    # MinGW can't handle %z format specifiers without this flag enabled. This
-    # flag is deprecated in future versions of MinGW, and should be replaced by
-    # setting __MINGW_FEATURES__=__MINGW_ANSI_STDIO__ when switching to a
-    # version of MinGW that uses the new flags.
-    cflags = [ "-D__USE_MINGW_ANSI_STDIO=1" ]
+    cflags = [
+      # MinGW can't handle %z format specifiers without this flag enabled. This
+      # flag is deprecated in future versions of MinGW, and should be replaced
+      # by setting __MINGW_FEATURES__=__MINGW_ANSI_STDIO__ when switching to a
+      # version of MinGW that uses the new flags.
+      "-D__USE_MINGW_ANSI_STDIO=1",
+
+      # The old version of GCC used in Windows builds has numerous
+      # -Wmaybe-uninitialized false positives.  Disable it for GCC on Windows.
+      # TODO: b/429030319 - Remove this when Windows GCC is upgraded.
+      "-Wno-maybe-uninitialized",
+    ]
   }
 }
 

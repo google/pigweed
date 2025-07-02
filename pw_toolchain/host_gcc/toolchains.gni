@@ -28,7 +28,7 @@ _host_gcc_toolchain = {
 # Common configs shared by all host GCC toolchains.
 _configs = [
   "$dir_pw_toolchain/host_gcc:disable_psabi_warning",
-  "$dir_pw_toolchain/host_gcc:mingw_z_format",
+  "$dir_pw_toolchain/host_gcc:mingw_compatibility",
 ]
 
 pw_toolchain_host_gcc = {
