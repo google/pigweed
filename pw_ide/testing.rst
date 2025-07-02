@@ -119,6 +119,30 @@ These steps assume you have completed the "First Start Experience" steps.
        | - "Go to Definition" (e.g., right-click a symbol) navigates correctly.
      - |checkbox|
 
+Fish Shell Verification
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This test should be run when making changes to the Bazel interceptor script
+generation logic in ``pw_ide/ts/pigweed_vscode/src/clangd/compileCommandsUtils.ts``.
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Change your default shell to ``fish``.
+       | In the Extension Development Host, open a new "Pigweed: Activate Bazelisk Terminal".
+       | Run: ``bazelisk build //pw_log``
+     - | The build completes successfully.
+       | Files in ``pw_log`` should become active.
+       | Intellisense should work for files like ``pw_log/public/pw_log/log.h``.
+     - |checkbox|
+
 .. |checkbox| raw:: html
 
     <input type="checkbox">

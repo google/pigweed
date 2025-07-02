@@ -221,7 +221,35 @@ export async function createBazelInterceptorFile() {
     ? '@pigweed//pw_ide/py:compile_commands_generator_binary'
     : '@pigweed//pw_ide/ts/pigweed_vscode:compile_commands_generator_binary';
 
-  const bazelInterceptorScript = `#!${SHELL}
+  let bazelInterceptorScript;
+
+  if (SHELL.endsWith('fish')) {
+    bazelInterceptorScript = `#!/usr/bin/env fish
+set -u
+
+if contains -- $argv[1] build run test
+  # Run the real Bazel command first
+  $BAZEL_REAL $argv
+  set BAZEL_EXIT_CODE $status # Capture the exit code of the Bazel command
+  if [ $BAZEL_EXIT_CODE -eq 0 ]
+    echo "⏳ Generating compile commands..."
+    $BAZEL_REAL --quiet run \
+      --show_result=0 \
+      $generatorTarget -- \
+      --target "$argv" --cwd (pwd) --bazelCmd "$BAZEL_REAL"
+    if [ $status -ne 0 ]
+      echo "⚠️ Compile commands generation failed (exit code $status), continuing..."
+    end
+  end
+else
+  $BAZEL_REAL $argv
+  set BAZEL_EXIT_CODE $status
+end
+
+exit $BAZEL_EXIT_CODE
+`;
+  } else {
+    bazelInterceptorScript = `#!${SHELL}
 set -uo pipefail
 
  if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
@@ -245,6 +273,7 @@ fi
 
 exit $BAZEL_EXIT_CODE
 `;
+  }
 
   writeFileSync(pathForBazelBuildInterceptor, bazelInterceptorScript);
   chmodSync(pathForBazelBuildInterceptor, 0o755);
