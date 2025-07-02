@@ -268,6 +268,41 @@ pw_cc_test(
 )
 
 cc_library(
+    name = "test_packet_channel",
+    testonly = True,
+    hdrs = [
+        "public/pw_channel/packet_channel.h",
+        "public/pw_channel/test_packet_channel.h",
+    ],
+    strip_include_prefix = "public",
+    # TODO: b/421962771 - Make test_packet_channel public when ready.
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":packet_channel",
+        "//pw_allocator:allocator",
+        "//pw_async2:dispatcher",
+        "//pw_async2:poll",
+        "//pw_containers:dynamic_deque",
+        "//pw_containers:dynamic_vector",
+        "//pw_result",
+    ],
+)
+
+pw_cc_test(
+    name = "test_packet_channel_test",
+    srcs = ["test_packet_channel_test.cc"],
+    deps = [
+        ":test_packet_channel",
+        "//pw_allocator:testing",
+        "//pw_assert:assert",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pend_func_task",
+        "//pw_async2:poll",
+        "//pw_result",
+    ],
+)
+
+cc_library(
     name = "properties",
     hdrs = ["public/pw_channel/properties.h"],
     strip_include_prefix = "public",
@@ -283,6 +318,7 @@ filegroup(
         "public/pw_channel/packet_channel.h",
         "public/pw_channel/rp2_stdio_channel.h",
         "public/pw_channel/stream_channel.h",
+        "public/pw_channel/test_packet_channel.h",
     ],
 )
 

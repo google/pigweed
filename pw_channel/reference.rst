@@ -48,3 +48,6 @@ Packets
 .. doxygengroup:: pw_channel_packets
    :content-only:
    :members:
+
+.. doxygenclass:: pw::channel::TestPacketReaderWriter
+   :members:

@@ -72,6 +72,7 @@ pw_add_test(pw_channel.packet_channel_test
     packet_channel_test.cc
   PRIVATE_DEPS
     pw_channel.packet_channel
+    pw_allocator.allocator
     pw_async2.dispatcher
     pw_async2.poll
     pw_containers
@@ -181,4 +182,31 @@ pw_add_test(pw_channel.stream_channel_test
     pw_stream.mpsc_stream
     pw_thread.thread
     pw_thread.test_thread_context
+)
+
+pw_add_library(pw_channel.test_packet_channel INTERFACE
+  HEADERS
+    public/pw_channel/test_packet_channel.h
+  PUBLIC_DEPS
+    pw_allocator.testing
+    pw_assert
+    pw_async2.dispatcher
+    pw_channel.packet_channel
+    pw_containers.dynamic_deque
+    pw_containers.dynamic_vector
+    pw_span
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_channel.test_packet_channel_test
+  SOURCES
+    test_packet_channel_test.cc
+  PRIVATE_DEPS
+    pw_allocator.testing
+    pw_async2.dispatcher
+    pw_async2.pend_func_task
+    pw_async2.poll
+    pw_channel.test_packet_channel
+    pw_result
 )
