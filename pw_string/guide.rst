@@ -257,17 +257,11 @@ Known size strings
 :cpp:type:`pw::InlineString` operations on known-size strings may be used in
 ``constexpr`` expressions.
 
-.. code-block:: c++
-
-   static constexpr pw::InlineString<64> kMyString = [] {
-     pw::InlineString<64> string;
-
-     for (int i = 0; i < 10; ++i) {
-       string += "Hello";
-     }
-
-     return string;
-   }();
+.. literalinclude:: ./examples/known_size_string_test.cc
+   :language: cpp
+   :dedent:
+   :start-after: // DOCSTAG: [known_size_string]
+   :end-before: // DOCSTAG: [known_size_string]
 
 Initialization of pw::InlineString objects
 ===========================================

@@ -8,7 +8,9 @@
 .. #. Run ``bazelisk test //...`` to verify that your new unit test fails.
 .. #. Fix the unit test.
 .. #. Run ``bazelisk test //...`` again and verify that the new unit test now
-      passes.
+..    passes.
+.. #. Run ``bazelisk build //docs`` to verify that the docs build succeeds.
+.. #. Run ``bazelisk run //:format`` to fix formatting errors.
 
 .. _contributing-docs-examples:
 

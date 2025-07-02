@@ -40,6 +40,14 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "known_size_string_test",
+    srcs = ["known_size_string_test.cc"],
+    deps = [
+        "//pw_string:string",
+    ],
+)
+
 sphinx_docs_library(
     name = "examples",
     srcs = [
@@ -48,6 +56,7 @@ sphinx_docs_library(
         "CMakeLists.txt",
         "build_inlinestring_with_stringbuilder_test.cc",
         "build_string_in_buffer_test.cc",
+        "known_size_string_test.cc",
     ],
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:public"],

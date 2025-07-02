@@ -39,4 +39,14 @@ pw_add_test(pw_string.examples.build_string_in_buffer_test
     modules
     pw_string
 )
+
+pw_add_test(pw_string.examples.known_size_string_test
+  PRIVATE_DEPS
+    pw_string.string
+  SOURCES
+    known_size_string_test.cc
+  GROUPS
+    modules
+    pw_string
+)
 # DOCSTAG: [contributing-docs-examples]
