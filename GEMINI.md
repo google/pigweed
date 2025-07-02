@@ -95,6 +95,9 @@ refer to the full style guide.
   - Standalone statement macros must require a semicolon.
 - **Unsigned Integers:** Permitted, but be careful when mixing with signed
   integers.
+- **Unused Variables:** The `PW_MAYBE_UNUSED` macro is deprecated and has been
+  removed. For handling unused variables, the standard C++ attribute
+  `[[maybe_unused]]` should be used instead.
 
 ## Python Development Guidance
 

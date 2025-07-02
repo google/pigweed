@@ -1,27 +1,27 @@
-.. Instructions for AI agents (e.g. Gemini CLI):
-.. #. Follow the workflow described in :ref:`contributing-docs-quickstart-a`.
-..    Do not use Option B.
-.. #. Inspect the files in ``//pw_string/examples``. This is a working example
-..    of the kind of code that you need to create.
-.. #. Create the code example, unit test, and build targets. The first
-..    iteration of the unit test should fail.
-.. #. Run ``bazelisk test //...`` to verify that your new unit test fails.
-.. #. Fix the unit test.
-.. #. Run ``bazelisk test //...`` again and verify that the new unit test now
-..    passes.
-.. #. Run ``bazelisk build //docs`` to verify that the docs build succeeds.
-.. #. Run ``bazelisk run //:format`` to fix formatting errors.
-
 .. _contributing-docs-examples:
 
 ===================================================
 Guidelines for buildable and testable code examples
 ===================================================
-This guide shows :ref:`docs-glossary-upstream` maintainers how to write
-buildable and testable code examples for ``pigweed.dev``. It's focused on
-C++ but the general pattern is theoretically applicable to any language.
+.. inclusive-language: disable
+.. _code-block: https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#directive-code-block
+.. inclusive-language: enable
 
-.. _contributing-docs-philosophy:
+To date, most ``pigweed.dev`` code examples have been embedded within our
+reStructuredText files via Sphinx's `code-block`_ directive. The problem with
+this approach is that the code blocks aren't built or tested, so there's little
+guarantee that the code actually works. This guide shows
+:ref:`docs-glossary-upstream` maintainers how to migrate these code examples
+into a buildable and testable format. The guide is focused on C++ but the
+general pattern is theoretically applicable to any language.
+
+.. note::
+
+   Code examples that aren't built or tested are sometimes called "dead"
+   examples. Code examples that are built and tested are sometimes called
+   "living" examples.
+
+.. _contributing-docs-examples-philosophy:
 
 ----------
 Philosophy
@@ -42,16 +42,61 @@ Our goal is to make all code examples on ``pigweed.dev``:
 * Complete. ``pigweed.dev`` readers should be able to copy-and-paste the code
   example and have it just work, with little or zero modification needed.
 
-.. _contributing-docs-quickstart:
+.. _contributing-docs-examples-workflow:
+
+--------
+Workflow
+--------
+The exact mechanics of migrating a code example to be buildable and testable
+are covered in :ref:`contributing-docs-examples-quickstart-a` (recommended) and
+:ref:`contributing-docs-examples-quickstart-b`. Regardless of whether you use Option
+A or Option B, we recommend that you always use the following iterative
+workflow. This workflow minimizes risk and makes debugging easier.
+
+#. **Make sure that the code example is intended to be compiled.**
+   Some examples are pseudo-code. When in doubt, check with the module's
+   owners.
+
+#. **Create a minimal test.** Add a single, empty test. Run
+   ``bazelisk test //...`` and ensure that all tests pass.
+
+#. **Migrate one code example.** Find a code example in one of the module's
+   reStructuredText files. Copy-paste the code example into the minimal test.
+   Iterate until the test compiles and passes.
+
+#. **Ensure that the test fails.** Insert a trivial error into the test.
+   Run ``bazelisk test //...`` and ensure that the test now fails.
+
+#. **Fix the test.** Get the test back to a passing state. Run
+   ``bazelisk test //...`` again and ensure that all tests pass again.
+
+#. **Update the documentation.** Remove the unbuilt and untested code
+   example in a ``code-block`` from the reStructuredText file and replace it
+   with a ``literalinclude`` that points to the new code example that is
+   built and tested.
+
+#. **Verify the documentation build.** Run ``bazelisk build //docs`` and
+   ensure that the docs build succeeds.
+
+#. **Fix formatting errors**. Run ``bazelisk run //:format`` to ensure that
+   all formatting errors are fixed.
+
+#. **Visually inspect the result.** Compare the old generated HTML with the
+   new HTML and verify that the original intent of the documentation is
+   preserved.
+
+#. **Repeat.** Repeat the previous steps for another code example.
+
+.. _contributing-docs-examples-quickstart:
 
 ----------
 Quickstart
 ----------
 
-Choose either :ref:`contributing-docs-quickstart-a` (recommended) or
-:ref:`contributing-docs-quickstart-b`. They're mutually exclusive workflows.
+Choose either :ref:`contributing-docs-examples-quickstart-a` (recommended) or
+:ref:`contributing-docs-examples-quickstart-b`. They're mutually exclusive workflows.
 
-.. _contributing-docs-quickstart-a:
+.. _contributing-docs-examples-quickstart-a:
 
 Option A: Separate file for each example
 ========================================
@@ -59,10 +104,10 @@ Placing each example into its own file with its own build target is the
 recommended approach because it provides the strongest guarantee that the
 example completely compiles and passes tests on its own, without interference
 from other examples. However, if this approach feels too toilsome, you're
-welcome to use the more lightweight :ref:`contributing-docs-quickstart-b`
+welcome to use the more lightweight :ref:`contributing-docs-examples-quickstart-b`
 instead.
 
-.. _contributing-docs-quickstart-a-dir:
+.. _contributing-docs-examples-quickstart-a-dir:
 
 Create an examples directory
 ----------------------------
@@ -76,7 +121,7 @@ for the examples with a single wildcard command, like this:
 
    bazelisk build //pw_string/examples/...
 
-.. _contributing-docs-quickstart-a-file:
+.. _contributing-docs-examples-quickstart-a-file:
 
 Create the code example
 -----------------------
@@ -89,7 +134,7 @@ Create the code example
       :start-after: // DOCSTAG: [contributing-docs-examples]
       :end-before: // DOCSTAG: [contributing-docs-examples]
 
-.. _contributing-docs-quickstart-a-key-points:
+.. _contributing-docs-examples-quickstart-a-key-points:
 
 Key points
 ~~~~~~~~~~
@@ -123,13 +168,13 @@ Guidelines for your code example file:
 * Follow the usual unit testing best practice of making sure that the
   test initially fails.
 
-.. _contributing-docs-quickstart-a-targets:
+.. _contributing-docs-examples-quickstart-a-targets:
 
 Create build targets
 --------------------
 Create build targets for upstream Pigweed's Bazel, GN, and CMake build systems.
 
-.. _contributing-docs-quickstart-a-targets-bazel:
+.. _contributing-docs-examples-quickstart-a-targets-bazel:
 
 Bazel
 ~~~~~
@@ -146,7 +191,7 @@ Bazel
    docs build. There is no equivalent of this in the GN or CMake files
    because the docs are only built with Bazel.
 
-.. _contributing-docs-quickstart-a-targets-gn:
+.. _contributing-docs-examples-quickstart-a-targets-gn:
 
 GN
 ~~
@@ -170,7 +215,7 @@ GN
    Notice how ``$dir_pw_string/examples:tests`` is included in
    the list of tests.
 
-.. _contributing-docs-quickstart-a-targets-cmake:
+.. _contributing-docs-examples-quickstart-a-targets-cmake:
 
 CMake
 ~~~~~
@@ -181,7 +226,7 @@ CMake
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
 
-.. _contributing-docs-quickstart-a-include:
+.. _contributing-docs-examples-quickstart-a-include:
 
 Pull the example into a doc
 ---------------------------
@@ -208,7 +253,7 @@ Pull the example into a doc
 
 You're done!
 
-.. _contributing-docs-quickstart-b:
+.. _contributing-docs-examples-quickstart-b:
 
 Option B: Single file for all examples
 ======================================
@@ -221,7 +266,7 @@ dependencies for all of the code examples are mixed into a single target.
 
 However, Option B is still a major improvement over the status quo
 of not building or testing code examples, so you're welcome to use Option B if
-:ref:`contributing-docs-quickstart-a` feels too toilsome.
+:ref:`contributing-docs-examples-quickstart-a` feels too toilsome.
 
 Create a file for the code examples
 -----------------------------------
@@ -235,7 +280,7 @@ Create a file for the code examples
 
 #. Make sure that your code examples and unit tests follow all of the
    guidelines that are described in
-   :ref:`contributing-docs-quickstart-a-key-points`.
+   :ref:`contributing-docs-examples-quickstart-a-key-points`.
 
 Create build targets
 --------------------
@@ -278,3 +323,19 @@ Pull the example into a doc
       :end-before: .. DOCSTAG: [contributing-docs-examples]
 
 You're done!
+
+--------------------------
+Instructions for AI agents
+--------------------------
+This section provides instructions for AI agents like Gemini CLI.
+AI agents MUST follow this process:
+
+#. You MUST follow the workflow described in
+   :ref:`contributing-docs-examples-workflow`.
+
+#. You MUST use :ref:`contributing-docs-examples-quickstart-a`.
+   You MUST NOT use :ref:`contributing-docs-examples-quickstart-b`.
+
+#. Inspect ``//pw_string/docs.rst`` and the files in the
+   ``//pw_string/examples`` directory to see a working demonstration
+   of buildable and testable code examples.

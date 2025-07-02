@@ -1,0 +1,9 @@
+{
+  "contextFileName": [
+    "GEMINI.md",
+    "docs/work_order/work_order.md",
+    "docs/work_order/compile_docs_examples_trigger.md",
+    "docs/work_order/new_feature_trigger.md",
+    "docs/work_order/test_enhancement_audit_trigger.md"
+  ]
+}

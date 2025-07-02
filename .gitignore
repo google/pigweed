@@ -109,4 +109,4 @@ pw_console-device-logs.txt
 
 # AI files
 .aider*
-.gemini
+.gemini/logs.json
