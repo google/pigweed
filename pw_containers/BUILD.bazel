@@ -196,6 +196,7 @@ cc_library(
     deps = [
         ":common",
         "//pw_assert:assert",
+        "//pw_numeric:checked_arithmetic",
         "//pw_span",
     ],
 )

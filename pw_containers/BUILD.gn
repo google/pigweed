@@ -95,6 +95,7 @@ pw_source_set("deque_common") {
   visibility = [ ":*" ]
   public_deps = [
     ":common",
+    "$dir_pw_numeric:checked_arithmetic",
     dir_pw_assert,
     dir_pw_span,
   ]

@@ -20,12 +20,14 @@
 #include <limits>
 #include <memory>
 #include <new>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
 #include "pw_assert/assert.h"
 #include "pw_containers/internal/deque_iterator.h"
 #include "pw_containers/internal/traits.h"
+#include "pw_numeric/checked_arithmetic.h"
 #include "pw_span/span.h"
 
 namespace pw::containers::internal {
@@ -142,36 +144,36 @@ class GenericDequeBase {
     return AbsoluteIndex(relative_index);
   }
 
-  constexpr void PushBack() {
-    IncrementWithWrap(tail_);
-    count_and_capacity_.IncrementCount();
+  constexpr void PushBack(size_type count = 1) {
+    IncrementWithWrap(tail_, count);
+    count_and_capacity_.IncrementCount(count);
   }
-  constexpr void PushFront() {
-    DecrementWithWrap(head_);
-    count_and_capacity_.IncrementCount();
+  constexpr void PushFront(size_type count = 1) {
+    DecrementWithWrap(head_, count);
+    count_and_capacity_.IncrementCount(count);
   }
   constexpr void PopFront() {
-    IncrementWithWrap(head_);
+    IncrementWithWrap(head_, 1);
     count_and_capacity_.DecrementCount();
   }
   constexpr void PopBack() {
-    DecrementWithWrap(tail_);
+    DecrementWithWrap(tail_, 1);
     count_and_capacity_.DecrementCount();
   }
 
-  constexpr void IncrementWithWrap(size_type& index) const {
-    index++;
+  constexpr void IncrementWithWrap(size_type& index, size_type count) const {
+    index += count;
     // Note: branch is faster than mod (%) on common embedded architectures.
-    if (index == capacity()) {
-      index = 0;
+    if (index >= capacity()) {
+      index -= capacity();
     }
   }
 
-  constexpr void DecrementWithWrap(size_type& index) const {
-    if (index == 0) {
-      index = capacity();
+  constexpr void DecrementWithWrap(size_type& index, size_type count) const {
+    if (index < count) {
+      index += capacity();
     }
-    index--;
+    index -= count;
   }
 
   CountAndCapacityType count_and_capacity_;
@@ -344,6 +346,66 @@ class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
 
   void pop_front();
 
+  /// Constructs an item in place at `pos`. Crashes if memory allocation
+  /// fails.
+  ///
+  /// @returns an iterator to the emplaced item.
+  template <typename... Args>
+  iterator emplace(const_iterator pos, Args&&... args) {
+    std::optional<iterator> result =
+        try_emplace(pos, std::forward<Args>(args)...);
+    PW_ASSERT(result.has_value());
+    return *result;
+  }
+
+  /// Inserts a copy of an item at `pos`. Crashes if memory allocation fails.
+  ///
+  /// @returns an iterator to the inserted item.
+  iterator insert(const_iterator pos, const value_type& value) {
+    std::optional<iterator> result = try_insert(pos, value);
+    PW_ASSERT(result.has_value());
+    return *result;
+  }
+
+  /// Inserts an item at `pos` using move semanatics. Crashes if memory
+  /// allocation fails.
+  ///
+  /// @returns an iterator to the inserted item.
+  iterator insert(const_iterator pos, value_type&& value) {
+    std::optional<iterator> result = try_insert(pos, std::move(value));
+    PW_ASSERT(result.has_value());
+    return *result;
+  }
+
+  /// Inserts `count` copies of `value` at `pos`. Crashes if memory allocation
+  /// fails.
+  ///
+  /// @returns an iterator to the first inserted item.
+  iterator insert(const_iterator pos,
+                  size_type count,
+                  const value_type& value) {
+    std::optional<iterator> result = try_insert(pos, count, value);
+    PW_ASSERT(result.has_value());
+    return *result;
+  }
+
+  /// Inserts the contents of an iterator at `pos`. Crashes if memory
+  /// allocation fails.
+  ///
+  /// @returns an iterator to the first inserted item.
+  template <typename InputIt,
+            typename = containers::internal::EnableIfInputIterator<InputIt>>
+  iterator insert(const_iterator pos, InputIt first, InputIt last);
+
+  /// Inserts an initializer list at `pos`. Crashes if memory allocation fails.
+  ///
+  /// @returns an iterator to the first inserted item.
+  iterator insert(const_iterator pos, std::initializer_list<value_type> ilist) {
+    std::optional<iterator> result = try_insert(pos, ilist);
+    PW_ASSERT(result.has_value());
+    return *result;
+  }
+
   void resize(size_type new_size) { resize(new_size, value_type()); }
 
   void resize(size_type new_size, const value_type& value) {
@@ -395,6 +457,65 @@ class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
 
   // Fallible modify
 
+  /// Tries to construct an item in place at `pos`.
+  ///
+  /// @returns an `std::optional` iterator to the emplaced item. If memory
+  ///          allocation fails, returns `std::nullopt` and the container is
+  ///          left unchanged.
+  template <typename... Args>
+  [[nodiscard]] std::optional<iterator> try_emplace(const_iterator pos,
+                                                    Args&&... args);
+
+  /// Tries to insert a copy of an item at `pos`.
+  ///
+  /// @returns an `std::optional` iterator to the inserted item. If memory
+  ///          allocation fails, returns `std::nullopt` and the container is
+  ///          left unchanged.
+  [[nodiscard]] std::optional<iterator> try_insert(const_iterator pos,
+                                                   const value_type& value) {
+    return try_emplace(pos, value);
+  }
+
+  /// Tries to insert an item at `pos` using move semanatics.
+  ///
+  /// @returns an `std::optional` iterator to the inserted item. If memory
+  ///          allocation fails, returns `std::nullopt` and the container is
+  ///          left unchanged.
+  [[nodiscard]] std::optional<iterator> try_insert(const_iterator pos,
+                                                   value_type&& value) {
+    return try_emplace(pos, std::move(value));
+  }
+
+  /// Tries to insert `count` copies of `value` at `pos`.
+  ///
+  /// @returns an `std::optional` iterator to the first inserted item. If memory
+  ///          allocation fails, returns `std::nullopt` and the container is
+  ///          left unchanged.
+  [[nodiscard]] std::optional<iterator> try_insert(const_iterator pos,
+                                                   size_type count,
+                                                   const value_type& value);
+
+  /// Tries to insert the contents of an iterator at `pos`.
+  ///
+  /// @returns an `std::optional` iterator to the first inserted item. If memory
+  ///          allocation fails, returns `std::nullopt` and the container is
+  ///          left unchanged.
+  template <typename ForwardIt,
+            typename = containers::internal::EnableIfForwardIterator<ForwardIt>>
+  [[nodiscard]] std::optional<iterator> try_insert(const_iterator pos,
+                                                   ForwardIt first,
+                                                   ForwardIt last);
+
+  /// Tries to insert an initializer list at `pos`.
+  ///
+  /// @returns an `std::optional` iterator to the first inserted item. If memory
+  ///          allocation fails, returns `std::nullopt` and the container is
+  ///          left unchanged.
+  [[nodiscard]] std::optional<iterator> try_insert(
+      const_iterator pos, std::initializer_list<value_type> ilist) {
+    return try_insert(pos, ilist.begin(), ilist.end());
+  }
+
   [[nodiscard]] bool try_push_back(const value_type& value) {
     return try_emplace_back(value);
   }
@@ -436,10 +557,17 @@ class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
   constexpr pointer data() { return derived().data(); }
   constexpr const_pointer data() const { return derived().data(); }
 
-  // Make sure the container can hold one more item.
-  constexpr bool CheckCapacityAddOne() {
-    return size() != std::numeric_limits<size_type>::max() &&
-           CheckCapacity(size() + 1);
+  // Creates an uninitialized slot of `new_items` at `insert_index`.
+  bool ShiftForInsert(size_type insert_index, size_type new_items);
+
+  // Called by ShiftForInsert depending on where the insert happens.
+  void ShiftLeft(size_type insert_index, size_type new_items);
+  void ShiftRight(size_type insert_index, size_type new_items);
+
+  // Make sure the container can hold count additional items.
+  bool CheckCapacityAdd(size_type count) {
+    size_type new_size;
+    return CheckedAdd(size(), count, new_size) && CheckCapacity(new_size);
   }
 
   // Ensures that the container can hold at least this many elements.
@@ -472,7 +600,8 @@ void GenericDeque<Derived, ValueType, CountAndCapacityType>::assign(It start,
                     std::input_iterator_tag>) {
     clear();
     while (start != finish) {
-      push_back(*start++);
+      push_back(*start);
+      ++start;
     }
   } else {
     PW_ASSERT(try_assign(start, finish));
@@ -486,9 +615,8 @@ bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_assign(
     return false;
   }
   clear();
-  for (size_type i = 0; i < count; ++i) {
-    EmplaceBackUnchecked(value);
-  }
+  Base::PushBack(count);
+  std::uninitialized_fill_n(data(), count, value);
   return true;
 }
 
@@ -503,15 +631,17 @@ bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_assign(
   const auto items = std::distance(start, finish);
   PW_DASSERT(items >= 0);
   if (static_cast<std::make_unsigned_t<decltype(items)>>(items) >
-          std::numeric_limits<size_type>::max() ||
-      !CheckCapacity(static_cast<size_type>(items))) {
+      std::numeric_limits<size_type>::max()) {
+    return false;
+  }
+  const size_type count = static_cast<size_type>(items);
+  if (!CheckCapacity(count)) {
     return false;
   }
 
   clear();
-  while (start != finish) {
-    EmplaceBackUnchecked(*start++);
-  }
+  Base::PushBack(count);
+  std::uninitialized_move(start, finish, data());
   return true;
 }
 
@@ -540,7 +670,7 @@ template <typename Derived, typename ValueType, typename CountAndCapacityType>
 template <typename... Args>
 bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_emplace_back(
     Args&&... args) {
-  if (!CheckCapacityAddOne()) {
+  if (!CheckCapacityAdd(1)) {
     return false;
   }
   EmplaceBackUnchecked(std::forward<Args>(args)...);
@@ -560,7 +690,7 @@ template <typename Derived, typename ValueType, typename CountAndCapacityType>
 template <typename... Args>
 bool GenericDeque<Derived, ValueType, CountAndCapacityType>::try_emplace_front(
     Args&&... args) {
-  if (!CheckCapacityAddOne()) {
+  if (!CheckCapacityAdd(1)) {
     return false;
   }
   Base::PushFront();
@@ -626,6 +756,153 @@ GenericDeque<Derived, ValueType, CountAndCapacityType>::erase(
   }
   Base::count_and_capacity().SetCount(size() - items_to_erase);
   return first_it;
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+template <typename... Args>
+std::optional<
+    typename GenericDeque<Derived, ValueType, CountAndCapacityType>::iterator>
+GenericDeque<Derived, ValueType, CountAndCapacityType>::try_emplace(
+    const_iterator pos, Args&&... args) {
+  // Insert in the middle of the deque, shifting other items out of the way.
+  if (!ShiftForInsert(pos.pos_, 1)) {
+    return std::nullopt;
+  }
+  iterator it(derived(), pos.pos_);
+  new (std::addressof(*it)) value_type(std::forward<Args>(args)...);
+  return it;
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+bool GenericDeque<Derived, ValueType, CountAndCapacityType>::ShiftForInsert(
+    const size_type insert_index, size_type new_items) {
+  if (!CheckCapacityAdd(new_items)) {
+    return false;
+  }
+
+  if (insert_index < size() / 2) {  // Fewer items before than after.
+    ShiftLeft(insert_index, new_items);
+  } else {
+    ShiftRight(insert_index, new_items);
+  }
+  return true;
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+void GenericDeque<Derived, ValueType, CountAndCapacityType>::ShiftLeft(
+    const size_type insert_index, size_type new_items) {
+  Base::PushFront(new_items);
+  iterator original_begin(derived(), new_items);
+
+  const size_type move_to_new_slots = std::min(new_items, insert_index);
+  auto [next_src, next_dst] =
+      std::uninitialized_move_n(original_begin, move_to_new_slots, begin());
+
+  const size_type move_to_existing_slots = insert_index - move_to_new_slots;
+  std::move(next_src, next_src + move_to_existing_slots, next_dst);
+
+  // For consistency, ensure the whole opening is uninitialized.
+  // TODO: b/429231491 - Consider having callers handle moved vs uninitialized
+  // slots or doing the insert in this function.
+  if constexpr (!std::is_trivially_destructible_v<value_type>) {
+    std::destroy(
+        iterator(derived(), std::max(insert_index, original_begin.pos_)),
+        iterator(derived(), insert_index + new_items));
+  }
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+void GenericDeque<Derived, ValueType, CountAndCapacityType>::ShiftRight(
+    const size_type insert_index, size_type new_items) {
+  const size_type items_after = size() - insert_index;
+  iterator original_end = end();
+  Base::PushBack(new_items);
+
+  const size_type move_to_new_slots = std::min(new_items, items_after);
+  std::uninitialized_move(original_end - move_to_new_slots,
+                          original_end,
+                          end() - move_to_new_slots);
+
+  const size_type move_to_existing_slots = items_after - move_to_new_slots;
+  iterator pos(derived(), insert_index);
+  std::move_backward(pos, pos + move_to_existing_slots, original_end);
+
+  // For consistency, ensure the whole opening is uninitialized.
+  // TODO: b/429231491 - Consider having callers handle moved vs uninitialized
+  // slots or doing the insert in this function.
+  if constexpr (!std::is_trivially_destructible_v<value_type>) {
+    std::destroy(
+        iterator(derived(), insert_index),
+        iterator(derived(),
+                 std::min(static_cast<size_type>(insert_index + new_items),
+                          original_end.pos_)));
+  }
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+std::optional<
+    typename GenericDeque<Derived, ValueType, CountAndCapacityType>::iterator>
+GenericDeque<Derived, ValueType, CountAndCapacityType>::try_insert(
+    const_iterator pos, size_type count, const value_type& value) {
+  if (count == 0) {
+    return iterator(derived(), pos.pos_);
+  }
+  if (!ShiftForInsert(pos.pos_, count)) {
+    return std::nullopt;
+  }
+
+  iterator it(derived(), pos.pos_);
+  std::uninitialized_fill_n(it, count, value);
+  return it;
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+template <typename InputIt, typename>
+typename GenericDeque<Derived, ValueType, CountAndCapacityType>::iterator
+GenericDeque<Derived, ValueType, CountAndCapacityType>::insert(
+    const_iterator pos, InputIt first, InputIt last) {
+  // Can't safely check std::distance for InputIterator, so repeatedly emplace()
+  if constexpr (std::is_same_v<
+                    typename std::iterator_traits<InputIt>::iterator_category,
+                    std::input_iterator_tag>) {
+    // Inserting M items into an N-item deque is O(N*M) due to repeated
+    // emplace() calls. DynamicDeque reads into a temporary deque instead.
+    iterator insert_pos = iterator(derived(), pos.pos_);
+    while (first != last) {
+      insert_pos = emplace(insert_pos, *first);
+      ++first;
+      ++insert_pos;
+    }
+    return iterator(derived(), pos.pos_);
+  } else {
+    std::optional<iterator> result = try_insert(pos, first, last);
+    PW_ASSERT(result.has_value());
+    return *result;
+  }
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+template <typename ForwardIt, typename>
+std::optional<
+    typename GenericDeque<Derived, ValueType, CountAndCapacityType>::iterator>
+GenericDeque<Derived, ValueType, CountAndCapacityType>::try_insert(
+    const_iterator pos, ForwardIt first, ForwardIt last) {
+  static_assert(std::is_convertible_v<
+                typename std::iterator_traits<ForwardIt>::iterator_category,
+                std::forward_iterator_tag>);
+  const auto distance = std::distance(first, last);
+  PW_DASSERT(distance >= 0);
+  const size_type count = static_cast<size_type>(distance);
+
+  const iterator it(derived(), pos.pos_);
+  if (count == 0) {
+    return it;
+  }
+  if (!ShiftForInsert(pos.pos_, count)) {
+    return std::nullopt;
+  }
+  std::uninitialized_move(first, last, it);
+  return it;
 }
 
 }  // namespace pw::containers::internal

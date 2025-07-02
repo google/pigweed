@@ -97,11 +97,38 @@ class DynamicDeque : public containers::internal::GenericDeque<
 
   // Provide try_* versions of functions that return false if allocation fails.
   using Base::try_assign;
+  using Base::try_emplace;
   using Base::try_emplace_back;
   using Base::try_emplace_front;
+  using Base::try_insert;
   using Base::try_push_back;
   using Base::try_push_front;
   using Base::try_resize;
+
+  // The GenericDeque's input iterator insert implementation emplaces items one
+  // at a time, which is inefficient. For DynamicDeque, use a more efficient
+  // implementation that inserts all items into a temporary DynamicDeque first.
+  template <typename InputIt,
+            typename = containers::internal::EnableIfInputIterator<InputIt>>
+  iterator insert(const_iterator pos, InputIt first, InputIt last);
+
+  iterator insert(const_iterator pos, const value_type& value) {
+    return Base::insert(pos, value);
+  }
+
+  iterator insert(const_iterator pos, value_type&& value) {
+    return Base::insert(pos, std::move(value));
+  }
+
+  iterator insert(const_iterator pos,
+                  size_type count,
+                  const value_type& value) {
+    return Base::insert(pos, count, value);
+  }
+
+  iterator insert(const_iterator pos, std::initializer_list<value_type> ilist) {
+    return Base::insert(pos, ilist);
+  }
 
   /// Attempts to increase `capacity()` to at least `new_capacity`, allocating
   /// memory if needed. Does nothing if `new_capacity` is less than or equal to
@@ -278,6 +305,29 @@ bool DynamicDeque<ValueType, SizeType>::ReallocateBuffer(
 
   Base::HandleNewBuffer(new_capacity);
   return true;
+}
+
+template <typename ValueType, typename SizeType>
+template <typename InputIt, typename>
+typename DynamicDeque<ValueType, SizeType>::iterator
+DynamicDeque<ValueType, SizeType>::insert(const_iterator pos,
+                                          InputIt first,
+                                          InputIt last) {
+  // Can't safely check std::distance for InputIterator. Use a workaround.
+  if constexpr (std::is_same_v<std::input_iterator_tag,
+                               typename std::iterator_traits<
+                                   InputIt>::iterator_category>) {
+    // Read into a temporary deque so the items can be counted. Then, move into
+    // this deque in one operation. This way, existing items are shifted once to
+    // their final positions, instead of shifting N times for repeated inserts.
+    DynamicDeque temp(*allocator_);
+    temp.assign(first, last);
+    return Base::insert(pos,
+                        std::make_move_iterator(temp.data()),
+                        std::make_move_iterator(temp.data() + temp.size()));
+  } else {  // Use the efficient base implementation for forward iterators.
+    return Base::insert(pos, first, last);
+  }
 }
 
 }  // namespace pw

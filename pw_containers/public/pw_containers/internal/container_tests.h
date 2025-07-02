@@ -86,6 +86,74 @@
     Modify_EraseRange_AfterPopFront();                                        \
   }                                                                           \
                                                                               \
+  TEST_F(f, Modify_Emplace_Empty) { Modify_Emplace_Empty(); }                 \
+  TEST_F(f, Modify_Emplace_Front) { Modify_Emplace_Front(); }                 \
+  TEST_F(f, Modify_Emplace_Back) { Modify_Emplace_Back(); }                   \
+  TEST_F(f, Modify_Emplace_Middle) { Modify_Emplace_Middle(); }               \
+  TEST_F(f, Modify_Emplace_BeginPlusOne) { Modify_Emplace_BeginPlusOne(); }   \
+  TEST_F(f, Modify_Emplace_EndMinusOne) { Modify_Emplace_EndMinusOne(); }     \
+                                                                              \
+  TEST_F(f, Modify_InsertCopy) { Modify_InsertCopy(); }                       \
+  TEST_F(f, Modify_InsertMove) { Modify_InsertMove(); }                       \
+  TEST_F(f, Modify_InsertCopies_NearBegin_FewerThanBefore) {                  \
+    Modify_InsertCopies_NearBegin_FewerThanBefore();                          \
+  }                                                                           \
+  TEST_F(f, Modify_InsertCopies_NearBegin_SameAsBefore) {                     \
+    Modify_InsertCopies_NearBegin_SameAsBefore();                             \
+  }                                                                           \
+  TEST_F(f, Modify_InsertCopies_NearBegin_MoreThanBefore) {                   \
+    Modify_InsertCopies_NearBegin_MoreThanBefore();                           \
+  }                                                                           \
+  TEST_F(f, Modify_InsertCopies_NearEnd_FewerThanAfter) {                     \
+    Modify_InsertCopies_NearEnd_FewerThanAfter();                             \
+  }                                                                           \
+  TEST_F(f, Modify_InsertCopies_NearEnd_SameAsAfter) {                        \
+    Modify_InsertCopies_NearEnd_SameAsAfter();                                \
+  }                                                                           \
+  TEST_F(f, Modify_InsertCopies_NearEnd_MoreThanAfter) {                      \
+    Modify_InsertCopies_NearEnd_MoreThanAfter();                              \
+  }                                                                           \
+  TEST_F(f, Modify_InsertCopies_AtBegin_1) {                                  \
+    Modify_InsertCopies_AtBegin_1();                                          \
+  }                                                                           \
+  TEST_F(f, Modify_InsertCopies_AtBegin_2) {                                  \
+    Modify_InsertCopies_AtBegin_2();                                          \
+  }                                                                           \
+  TEST_F(f, Modify_InsertCopies_AtEnd_1) { Modify_InsertCopies_AtEnd_1(); }   \
+  TEST_F(f, Modify_InsertCopies_AtEnd_2) { Modify_InsertCopies_AtEnd_2(); }   \
+  TEST_F(f, Modify_InsertIterators_NearBegin_FewerThanBefore) {               \
+    Modify_InsertIterators_NearBegin_FewerThanBefore();                       \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_NearBegin_SameAsBefore) {                  \
+    Modify_InsertIterators_NearBegin_SameAsBefore();                          \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_NearBegin_MoreThanBefore) {                \
+    Modify_InsertIterators_NearBegin_MoreThanBefore();                        \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_NearEnd_FewerThanAfter) {                  \
+    Modify_InsertIterators_NearEnd_FewerThanAfter();                          \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_NearEnd_SameAsAfter) {                     \
+    Modify_InsertIterators_NearEnd_SameAsAfter();                             \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_NearEnd_MoreThanAfter) {                   \
+    Modify_InsertIterators_NearEnd_MoreThanAfter();                           \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_AtBegin_1) {                               \
+    Modify_InsertIterators_AtBegin_1();                                       \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_AtBegin_2) {                               \
+    Modify_InsertIterators_AtBegin_2();                                       \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_AtEnd_1) {                                 \
+    Modify_InsertIterators_AtEnd_1();                                         \
+  }                                                                           \
+  TEST_F(f, Modify_InsertIterators_AtEnd_2) {                                 \
+    Modify_InsertIterators_AtEnd_2();                                         \
+  }                                                                           \
+  TEST_F(f, Modify_InsertInitializerList) { Modify_InsertInitializerList(); } \
+  TEST_F(f, Modify_InsertInputIterator) { Modify_InsertInputIterator(); }     \
+                                                                              \
   TEST_F(f, Algorithm_StdMaxElement) { Algorithm_StdMaxElement(); }           \
   TEST_F(f, Algorithm_StdMaxElementConst) { Algorithm_StdMaxElementConst(); } \
                                                                               \
@@ -118,6 +186,36 @@
   static_assert(std::is_same_v<f::Container<int>::const_pointer, const int*>)
 
 namespace pw::containers::test {
+
+class InputIt {
+ public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = int;
+  using difference_type = void;
+  using pointer = const int*;
+  using reference = const int&;
+
+  explicit constexpr InputIt(value_type value) : value_(value) {}
+
+  constexpr InputIt(const InputIt&) = default;
+  constexpr InputIt& operator=(const InputIt&) = default;
+
+  constexpr InputIt& operator++() {
+    value_ += 1;
+    return *this;
+  }
+  constexpr void operator++(int) { operator++(); }
+
+  constexpr pointer operator->() const { return &value_; }
+  constexpr reference operator*() const { return value_; }
+
+  constexpr bool operator!=(const InputIt& other) const {
+    return value_ != other.value_;
+  }
+
+ private:
+  value_type value_;
+};
 
 // Checks iterator properties.
 template <template <typename> typename Container>
@@ -302,43 +400,6 @@ class CommonTestFixture : public ::testing::Test {
   }
 
   void Assign_InputIterator() {
-    class InputIt {
-     public:
-      using iterator_category [[maybe_unused]] = std::input_iterator_tag;
-      using value_type = int;
-      using difference_type [[maybe_unused]] = void;
-      using pointer = const int*;
-      using reference = const int&;
-
-      constexpr InputIt(value_type value) : value_(value) {}
-
-      constexpr InputIt(const InputIt&) = default;
-      constexpr InputIt& operator=(const InputIt&) = default;
-
-      constexpr InputIt& operator++() {
-        value_ += 1;
-        return *this;
-      }
-      constexpr InputIt operator++(int) {
-        InputIt prev = *this;
-        operator++();
-        return prev;
-      }
-
-      constexpr pointer operator->() const { return &value_; }
-      constexpr reference operator*() const { return value_; }
-
-      constexpr bool operator==(const InputIt& other) const {
-        return value_ == other.value_;
-      }
-      constexpr bool operator!=(const InputIt& other) const {
-        return value_ != other.value_;
-      }
-
-     private:
-      value_type value_;
-    };
-
     Container<Derived, int> container(fixture());
     container.assign(InputIt(5), InputIt(9));
 
@@ -853,6 +914,395 @@ class CommonTestFixture : public ::testing::Test {
     EXPECT_EQ(*it, 6);
     EXPECT_TRUE(Equal(container, std::array{2, 6}));
     EXPECT_EQ(Counter::destroyed, 3);
+  }
+
+  void Modify_Emplace_Empty() {
+    Container<Derived, Counter> container(fixture());
+    Counter::Reset();
+
+    auto it = container.emplace(container.cbegin(), 1);
+    EXPECT_EQ(*it, 1);
+    EXPECT_TRUE(Equal(container, std::array{1}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_Emplace_Front() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3});
+    Counter::Reset();
+
+    auto it = container.emplace(container.cbegin(), 0);
+    EXPECT_EQ(*it, 0);
+    EXPECT_TRUE(Equal(container, std::array{0, 1, 2, 3}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_Emplace_Back() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 3});
+    Counter::Reset();
+
+    auto it = container.emplace(container.cend(), 4);
+    EXPECT_EQ(*it, 4);
+    EXPECT_TRUE(Equal(container, std::array{1, 2, 3, 4}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_Emplace_Middle() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({0, 1, 3});
+
+    auto it = container.emplace(container.cbegin() + 2, 2);
+    EXPECT_EQ(*it, 2);
+    EXPECT_TRUE(Equal(container, std::array{0, 1, 2, 3}));
+  }
+
+  void Modify_Emplace_BeginPlusOne() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 30, 40});
+    Counter::Reset();
+
+    auto it = container.emplace(container.cbegin() + 1, 20);
+    EXPECT_EQ(it, container.begin() + 1);
+    EXPECT_EQ(*it, 20);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_Emplace_EndMinusOne() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 40});
+    Counter::Reset();
+
+    auto it = container.emplace(container.cend() - 1, 30);
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 30);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_InsertCopy() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 4});
+    Counter value(3);
+
+    auto it = container.insert(container.cbegin() + 2, value);
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 3);
+    EXPECT_TRUE(Equal(container, std::array{1, 2, 3, 4}));
+  }
+
+  void Modify_InsertMove() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 2, 4});
+    Counter value(3);
+
+    auto it = container.insert(container.cbegin() + 2, std::move(value));
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 3);
+    EXPECT_TRUE(Equal(container, std::array{1, 2, 3, 4}));
+  }
+
+  void Modify_InsertCopies_NearBegin_FewerThanBefore() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 2, 1, value);
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 99, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_InsertCopies_NearBegin_SameAsBefore() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 2, 2, value);
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 99, 99, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 2);
+  }
+
+  void Modify_InsertCopies_NearBegin_MoreThanBefore() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 2, 3, value);
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(
+        Equal(container, std::array{10, 20, 99, 99, 99, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 3);
+  }
+
+  void Modify_InsertCopies_NearEnd_FewerThanAfter() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 4, 1, value);
+    EXPECT_EQ(it, container.begin() + 4);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40, 99, 50, 60}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_InsertCopies_NearEnd_SameAsAfter() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 4, 2, value);
+    EXPECT_EQ(it, container.begin() + 4);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40, 99, 99, 50, 60}));
+    EXPECT_EQ(Counter::created, 2);
+  }
+
+  void Modify_InsertCopies_NearEnd_MoreThanAfter() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 4, 3, value);
+    EXPECT_EQ(it, container.begin() + 4);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(
+        Equal(container, std::array{10, 20, 30, 40, 99, 99, 99, 50, 60}));
+    EXPECT_EQ(Counter::created, 3);
+  }
+
+  void Modify_InsertCopies_AtBegin_1() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin(), 1, value);
+    EXPECT_EQ(it, container.begin());
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{99, 10, 20, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_InsertCopies_AtBegin_2() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin(), 2, value);
+    EXPECT_EQ(it, container.begin());
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{99, 99, 10, 20, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 2);
+  }
+
+  void Modify_InsertCopies_AtEnd_1() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cend(), 1, value);
+    EXPECT_EQ(it, container.end() - 1);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40, 50, 60, 99}));
+    EXPECT_EQ(Counter::created, 1);
+  }
+
+  void Modify_InsertCopies_AtEnd_2() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    Counter value(99);
+    Counter::Reset();
+
+    auto it = container.insert(container.cend(), 2, value);
+    EXPECT_EQ(it, container.end() - 2);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40, 50, 60, 99, 99}));
+    EXPECT_EQ(Counter::created, 2);
+  }
+
+  void Modify_InsertIterators_NearBegin_FewerThanBefore() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 1> values{Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 2,
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 99, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_NearBegin_SameAsBefore() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 2> values{Counter(99), Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 2,
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 99, 99, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_NearBegin_MoreThanBefore() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 3> values{Counter(99), Counter(99), Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 2,
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.begin() + 2);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(
+        Equal(container, std::array{10, 20, 99, 99, 99, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_NearEnd_FewerThanAfter() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 1> values{Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 4,
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.begin() + 4);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40, 99, 50, 60}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_NearEnd_SameAsAfter() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 2> values{Counter(99), Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 4,
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.begin() + 4);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40, 99, 99, 50, 60}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_NearEnd_MoreThanAfter() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 3> values{Counter(99), Counter(99), Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin() + 4,
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.begin() + 4);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(
+        Equal(container, std::array{10, 20, 30, 40, 99, 99, 99, 50, 60}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_AtBegin_1() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 1> values{Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin(),
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.begin());
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{99, 10, 20, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_AtBegin_2() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 2> values{Counter(99), Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cbegin(),
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.begin());
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{99, 99, 10, 20, 30, 40, 50, 60}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_AtEnd_1() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 1> values{Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cend(),
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.end() - 1);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40, 50, 60, 99}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertIterators_AtEnd_2() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({10, 20, 30, 40, 50, 60});
+    std::array<Counter, 2> values{Counter(99), Counter(99)};
+    Counter::Reset();
+
+    auto it = container.insert(container.cend(),
+                               std::make_move_iterator(values.begin()),
+                               std::make_move_iterator(values.end()));
+    EXPECT_EQ(it, container.end() - 2);
+    EXPECT_EQ(*it, 99);
+    EXPECT_TRUE(Equal(container, std::array{10, 20, 30, 40, 50, 60, 99, 99}));
+    EXPECT_EQ(Counter::created, 0);
+  }
+
+  void Modify_InsertInitializerList() {
+    Container<Derived, Counter> container(fixture());
+    container.assign({1, 5});
+
+    auto it = container.insert(container.cbegin() + 1, {2, 3, 4});
+    EXPECT_EQ(it, container.begin() + 1);
+    EXPECT_TRUE(Equal(container, std::array{1, 2, 3, 4, 5}));
+  }
+
+  void Modify_InsertInputIterator() {
+    Container<Derived, int> container(fixture());
+    container.assign({1, 5});
+
+    auto it = container.insert(container.cbegin() + 1, InputIt(2), InputIt(5));
+    EXPECT_EQ(it, container.begin() + 1);
+    EXPECT_TRUE(Equal(container, std::array{1, 2, 3, 4, 5}));
   }
 
   void Algorithm_StdMaxElement() {

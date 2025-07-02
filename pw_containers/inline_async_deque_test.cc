@@ -47,10 +47,10 @@ class CommonTest
   };
 };
 
-using InlineAsyncDequeCommonTest5 = CommonTest<5>;
+using InlineAsyncDequeCommonTest9 = CommonTest<9>;
 using InlineAsyncDequeCommonTest16 = CommonTest<16>;
 
-PW_CONTAINERS_COMMON_DEQUE_TESTS(InlineAsyncDequeCommonTest5);
+PW_CONTAINERS_COMMON_DEQUE_TESTS(InlineAsyncDequeCommonTest9);
 PW_CONTAINERS_COMMON_DEQUE_TESTS(InlineAsyncDequeCommonTest16);
 
 TEST(InlineAsyncDequeTest, PendHasZeroSpaceReturnsSuccessImmediately) {
