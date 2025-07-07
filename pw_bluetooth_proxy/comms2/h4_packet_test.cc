@@ -23,7 +23,7 @@
 
 namespace {
 
-using pw::MultiBufInstance;
+using pw::MultiBuf;
 using pw::OkStatus;
 using pw::Status;
 using pw::allocator::test::AllocatorForTest;
@@ -36,9 +36,9 @@ class H4PacketTest : public ::testing::Test {
 
 TEST_F(H4PacketTest, CanConstructFrom) {
   auto h4_buffer = pw::bytes::Array<H4Packet::Type::COMMAND, 1, 2, 3, 4>();
-  MultiBufInstance empty(allocator_);
-  MultiBufInstance single_byte(allocator_);
-  MultiBufInstance valid_packet(allocator_);
+  MultiBuf::Instance empty(allocator_);
+  MultiBuf::Instance single_byte(allocator_);
+  MultiBuf::Instance valid_packet(allocator_);
   single_byte->PushBack(pw::ByteSpan(h4_buffer).first(1));
   valid_packet->PushBack(h4_buffer);
 
@@ -54,7 +54,7 @@ TEST_F(H4PacketTest, ConstructEmpty) {
 }
 
 TEST_F(H4PacketTest, Prepare_EmptyMultiBuf) {
-  MultiBufInstance multibuf(allocator_);
+  MultiBuf::Instance multibuf(allocator_);
   H4Packet h4_packet(allocator_);
   EXPECT_EQ(h4_packet.Prepare(multibuf), Status::InvalidArgument());
 }
@@ -62,7 +62,7 @@ TEST_F(H4PacketTest, Prepare_EmptyMultiBuf) {
 TEST_F(H4PacketTest, From_ValidMultiBuf) {
   auto h4_buffer = pw::bytes::Array<0, 1, 2, 3, 4>();
   h4_buffer[0] = static_cast<std::byte>(H4Packet::Type::COMMAND);
-  MultiBufInstance multibuf(allocator_);
+  MultiBuf::Instance multibuf(allocator_);
   multibuf->PushBack(h4_buffer);
 
   H4Packet h4_packet(allocator_);
@@ -87,7 +87,7 @@ TEST_F(H4PacketTest, From_ValidMultiBuf) {
 
 TEST_F(H4PacketTest, From_IncompleteMultiBuf) {
   auto incomplete_h4_buffer = pw::bytes::Array<1>();
-  MultiBufInstance multibuf(allocator_);
+  MultiBuf::Instance multibuf(allocator_);
   multibuf->PushBack(incomplete_h4_buffer);
   H4Packet h4_packet(allocator_);
   EXPECT_EQ(h4_packet.Prepare(multibuf), Status::InvalidArgument());
@@ -96,7 +96,7 @@ TEST_F(H4PacketTest, From_IncompleteMultiBuf) {
 TEST_F(H4PacketTest, SetType) {
   auto h4_buffer = pw::bytes::Initialized<5>(0xff);
   h4_buffer[0] = static_cast<std::byte>(H4Packet::Type::COMMAND);
-  MultiBufInstance multibuf(allocator_);
+  MultiBuf::Instance multibuf(allocator_);
   multibuf->PushBack(h4_buffer);
 
   H4Packet h4_packet(allocator_);
@@ -121,7 +121,7 @@ TEST_F(H4PacketTest, Visit) {
           pw::endian::little,
           static_cast<uint32_t>(pw::bluetooth::emboss::OpCode::DISCONNECT)));
 
-  MultiBufInstance multibuf(allocator_);
+  MultiBuf::Instance multibuf(allocator_);
   multibuf->PushBack(h4_buffer);
 
   H4Packet h4_packet(allocator_);

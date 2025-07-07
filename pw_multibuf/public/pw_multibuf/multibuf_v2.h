@@ -47,17 +47,14 @@ namespace pw {
 template <multibuf::Property...>
 class BasicMultiBuf;
 
-namespace multibuf {
+namespace multibuf::internal {
 
 template <typename>
 class Instance;
 
-namespace internal {
-
 class GenericMultiBuf;
 
-}  // namespace internal
-}  // namespace multibuf
+}  // namespace multibuf::internal
 
 /// @defgroup pw_multibuf
 /// @{
@@ -67,66 +64,37 @@ class GenericMultiBuf;
 /// Basic MultiBuf interface with mutable data.
 using FlatMultiBuf = BasicMultiBuf<>;
 
-/// Instantiatable type corresponding to the ``FlatMultiBuf`` interface type.
-using FlatMultiBufInstance = multibuf::Instance<FlatMultiBuf>;
-
 /// Basic MultiBuf interface with read-only data.
 using FlatConstMultiBuf = BasicMultiBuf<multibuf::Property::kConst>;
-
-/// Instantiatable type corresponding to the ``FlatConstMultiBuf`` interface
-/// type.
-using FlatConstMultiBufInstance = multibuf::Instance<FlatConstMultiBuf>;
 
 /// MultiBuf interface with mutable data and the option of adding layered data
 /// views.
 using MultiBuf = BasicMultiBuf<multibuf::Property::kLayerable>;
-
-/// Instantiatable type corresponding to the ``MultiBuf`` interface type.
-using MultiBufInstance = multibuf::Instance<MultiBuf>;
 
 /// MultiBuf interface with read-only data and the option of adding layered data
 /// views.
 using ConstMultiBuf =
     BasicMultiBuf<multibuf::Property::kConst, multibuf::Property::kLayerable>;
 
-/// Instantiatable type corresponding to the ``ConstMultiBuf`` interface type.
-using ConstMultiBufInstance = multibuf::Instance<ConstMultiBuf>;
-
 /// Basic MultiBuf interface with mutable data that notifies its observer, if
 /// set, on change.
 using TrackedFlatMultiBuf = BasicMultiBuf<multibuf::Property::kObservable>;
-
-/// Instantiatable type corresponding to the ``TrackedFlatMultiBuf`` interface
-/// type.
-using TrackedFlatMultiBufInstance = multibuf::Instance<TrackedFlatMultiBuf>;
 
 /// Basic MultiBuf interface with read-only data that notifies its observer, if
 /// set, on change.
 using TrackedFlatConstMultiBuf =
     BasicMultiBuf<multibuf::Property::kConst, multibuf::Property::kObservable>;
 
-/// Instantiatable type corresponding to the ``TrackedFlatConstMultiBuf``
-/// interface type.
-using TrackedFlatConstMultiBufInstance =
-    multibuf::Instance<TrackedFlatConstMultiBuf>;
-
 /// Basic MultiBuf interface with mutable data that notifies its observer, if
 /// set, on change. It has the option of adding layered data views.
 using TrackedMultiBuf = BasicMultiBuf<multibuf::Property::kLayerable,
                                       multibuf::Property::kObservable>;
-
-/// Instantiatable type corresponding to the ``TrackedMultiBuf`` interface type.
-using TrackedMultiBufInstance = multibuf::Instance<TrackedMultiBuf>;
 
 /// Basic MultiBuf interface with read-only data that notifies its observer, if
 /// set, on change. It has the option of adding layered data views.
 using TrackedConstMultiBuf = BasicMultiBuf<multibuf::Property::kConst,
                                            multibuf::Property::kLayerable,
                                            multibuf::Property::kObservable>;
-
-/// Instantiatable type corresponding to the ``TrackedConstMultiBuf`` interface
-/// type.
-using TrackedConstMultiBufInstance = multibuf::Instance<TrackedConstMultiBuf>;
 
 /// Logical byte sequence representing a sequence of memory buffers.
 ///
@@ -260,6 +228,27 @@ class BasicMultiBuf {
   using value_type = std::conditional_t<is_const(),
                                         const_iterator::value_type,
                                         iterator::value_type>;
+
+  /// An instantiation of a `MultiBuf`.
+  ///
+  /// `BasicMultiBuf` represents the interface of a particular MultiBuf type.
+  /// It stores no state, and cannot be instantiated directly. Instead, this
+  /// type can be used to create variables and members of a particular MultiBuf
+  /// type.
+  ///
+  /// These can then be "deferenced" to be passed to routines that take a
+  /// parameter of the same MultiBuf type, or converted to a different type
+  /// using `as`, e.g.
+  ///
+  /// @code{.cpp}
+  /// extern void AdjustLayers(LayerableMultiBuf&);
+  /// extern void DoTheThing(MyMultiBuf&);
+  ///
+  /// MyMultiBuf::Instance mb = InitMyMultiBufInstance();
+  /// AdjustLayers(mb->as<LayerableMultiBuf>());
+  /// DoTheThing(*mb);
+  /// @endcode
+  using Instance = multibuf::internal::Instance<BasicMultiBuf>;
 
   // Interfaces are not copyable or movable; copy and move `Instance`s instead.
 
@@ -833,8 +822,7 @@ class BasicMultiBuf {
   ///    RESOURCE_EXHAUSTED:  Failed to allocate memory for the new MultiBuf's
   ///                         metadata.
   /// @endrst
-  Result<multibuf::Instance<BasicMultiBuf>> Remove(const_iterator pos,
-                                                   size_t size);
+  Result<Instance> Remove(const_iterator pos, size_t size);
 
   /// Removes the first fragment from this object and returns it.
   ///
@@ -853,7 +841,7 @@ class BasicMultiBuf {
   ///                         failed.
   ///
   /// @endrst
-  Result<multibuf::Instance<BasicMultiBuf>> PopFrontFragment();
+  Result<Instance> PopFrontFragment();
 
   /// Removes if a range of bytes from this object.
   ///
@@ -1200,7 +1188,7 @@ class GenericMultiBuf final
   friend class ::pw::BasicMultiBuf;
 
   template <typename>
-  friend class ::pw::multibuf::Instance;
+  friend class ::pw::multibuf::internal::Instance;
 
   /// Constructs an empty MultiBuf.
   constexpr explicit GenericMultiBuf(Allocator& allocator)
@@ -1590,10 +1578,6 @@ class GenericMultiBuf final
   MultiBufObserver* observer_ = nullptr;
 };
 
-}  // namespace multibuf::internal
-
-namespace multibuf {
-
 /// An instantiation of a MultiBuf.
 ///
 /// ``BasicMultiBuf`` represents the interface of a particular MultiBuf type.
@@ -1621,8 +1605,9 @@ class Instance {
   constexpr Instance& operator=(Instance&&) = default;
 
   constexpr Instance(MultiBufType&& mb)
-      : base_(
-            std::move(static_cast<multibuf::internal::GenericMultiBuf&>(mb))) {}
+      : base_(std::move(static_cast<GenericMultiBuf&>(mb))) {}
+
+  constexpr Instance& operator=(MultiBufType&& mb) { base_ = std::move(mb); }
 
   MultiBufType& operator*() { return base_.as<MultiBufType>(); }
   const MultiBufType& operator*() const { return base_.as<MultiBufType>(); }
@@ -1634,10 +1619,10 @@ class Instance {
   operator const MultiBufType&() const { return base_.as<MultiBufType>(); }
 
  private:
-  multibuf::internal::GenericMultiBuf base_;
+  GenericMultiBuf base_;
 };
 
-}  // namespace multibuf
+}  // namespace multibuf::internal
 
 /// @}
 
@@ -1844,23 +1829,23 @@ void BasicMultiBuf<kProperties...>::PushBack(
 }
 
 template <multibuf::Property... kProperties>
-Result<multibuf::Instance<BasicMultiBuf<kProperties...>>>
+Result<multibuf::internal::Instance<BasicMultiBuf<kProperties...>>>
 BasicMultiBuf<kProperties...>::Remove(const_iterator pos, size_t size) {
   auto result = generic().Remove(pos, size);
   if (!result.ok()) {
     return result.status();
   }
-  return multibuf::Instance<BasicMultiBuf<kProperties...>>(std::move(*result));
+  return Instance(std::move(*result));
 }
 
 template <multibuf::Property... kProperties>
-Result<multibuf::Instance<BasicMultiBuf<kProperties...>>>
+Result<multibuf::internal::Instance<BasicMultiBuf<kProperties...>>>
 BasicMultiBuf<kProperties...>::PopFrontFragment() {
   Result<GenericMultiBuf> result = generic().PopFrontFragment();
   if (!result.ok()) {
     return result.status();
   }
-  return multibuf::Instance<BasicMultiBuf<kProperties...>>(std::move(*result));
+  return Instance(std::move(*result));
 }
 
 template <multibuf::Property... kProperties>

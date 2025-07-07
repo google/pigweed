@@ -53,7 +53,7 @@ class EmbossedMultiBuf {
   }
 
  private:
-  multibuf::Instance<MultiBuf> multibuf_;
+  MultiBuf::Instance multibuf_;
 };
 
 // Template method implementations.
