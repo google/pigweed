@@ -28,14 +28,17 @@ pw_python_package("workflows") {
     "pw_build/workflows/bazel_driver.py",
     "pw_build/workflows/build_driver.py",
     "pw_build/workflows/launcher.py",
+    "pw_build/workflows/manager.py",
     "pw_build/workflows/private/validator.py",
   ]
   tests = [
     "bazel_driver_test.py",
     "workflows_launcher_test.py",
     "workflows_validator_test.py",
+    "workflows_manager_test.py",
   ]
   python_deps = [
+    "$dir_pw_build/py",
     "$dir_pw_cli/py",
     "$dir_pw_config_loader/py",
   ]

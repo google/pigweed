@@ -51,6 +51,31 @@ Fragment = (
 )
 
 
+def collect_all_fragments(
+    workflow_suite: workflows_pb2.WorkflowSuite,
+) -> list[Fragment]:
+    all_fragments: list[Fragment] = []
+    all_fragments.extend(workflow_suite.configs)
+    all_fragments.extend(workflow_suite.builds)
+    all_fragments.extend(
+        [
+            build.build_config
+            for build in workflow_suite.builds
+            if build.WhichOneof('config') == 'build_config'
+        ]
+    )
+    all_fragments.extend(workflow_suite.tools)
+    all_fragments.extend(
+        [
+            tool.build_config
+            for tool in workflow_suite.tools
+            if tool.WhichOneof('config') == 'build_config'
+        ]
+    )
+    all_fragments.extend(workflow_suite.groups)
+    return all_fragments
+
+
 class Validator:
     """A class for validating workflows configurations."""
 
@@ -62,35 +87,13 @@ class Validator:
         self._workflow_suite = workflow_suite
         self._build_drivers = build_drivers
         self._fragments_by_name: dict[str, Fragment] = {}
-        self._all_fragments = self._collect_all_fragments()
+        self._all_fragments = collect_all_fragments(self._workflow_suite)
         self._fragments_by_name = {
             fragment.name: fragment for fragment in self._all_fragments
         }
         self._shared_config_names = {
             config.name for config in self._workflow_suite.configs
         }
-
-    def _collect_all_fragments(self) -> list[Fragment]:
-        all_fragments: list[Fragment] = []
-        all_fragments.extend(self._workflow_suite.configs)
-        all_fragments.extend(self._workflow_suite.builds)
-        all_fragments.extend(
-            [
-                build.build_config
-                for build in self._workflow_suite.builds
-                if build.WhichOneof('config') == 'build_config'
-            ]
-        )
-        all_fragments.extend(self._workflow_suite.tools)
-        all_fragments.extend(
-            [
-                tool.build_config
-                for tool in self._workflow_suite.tools
-                if tool.WhichOneof('config') == 'build_config'
-            ]
-        )
-        all_fragments.extend(self._workflow_suite.groups)
-        return all_fragments
 
     def validate(self) -> None:
         """Runs all checks on the loaded Workflows config.
