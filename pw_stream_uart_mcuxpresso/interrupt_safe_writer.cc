@@ -36,6 +36,12 @@ pw::Status InterruptSafeUartWriterMcuxpresso::Enable() {
 }
 
 pw::Status InterruptSafeUartWriterMcuxpresso::DoWrite(pw::ConstByteSpan data) {
+  if (data.empty()) {
+    // USART_WriteBlocking() will abort if its data argument is null, even if
+    // length is zero.
+    return pw::OkStatus();
+  }
+
   const status_t hal_status = USART_WriteBlocking(
       base(), reinterpret_cast<const uint8_t*>(data.data()), data.size_bytes());
   return hal_status == kStatus_Success ? pw::OkStatus()
