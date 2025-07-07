@@ -132,7 +132,7 @@ void TokenizedTracer::HandleNextItemInQueue(
   PW_TRACE_TIME_TYPE trace_time = pw_trace_GetTraceTime();
   PW_TRACE_TIME_TYPE delta =
       (last_trace_time_ == 0)
-          ? 0
+          ? trace_time
           : PW_TRACE_GET_TIME_DELTA(last_trace_time_, trace_time);
   header_size += pw::varint::Encode(
       delta,
