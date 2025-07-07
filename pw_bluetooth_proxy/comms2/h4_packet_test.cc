@@ -23,11 +23,11 @@
 
 namespace {
 
+using pw::MultiBufInstance;
 using pw::OkStatus;
 using pw::Status;
 using pw::allocator::test::AllocatorForTest;
 using pw::bluetooth::proxy::H4Packet;
-using pw::multibuf::MultiBufInstance;
 
 class H4PacketTest : public ::testing::Test {
  protected:

@@ -15,7 +15,7 @@
 
 #include <cstddef>
 
-namespace pw::multibuf {
+namespace pw {
 
 /// Base class for a subscriber that can be notified when a MultiBuf changes.
 ///
@@ -24,7 +24,7 @@ namespace pw::multibuf {
 /// and sent from one or more MultiBufs. It uses this information to update
 /// peers on how much more to send, and to update local tasks how much they may
 /// send.
-class Observer {
+class MultiBufObserver {
  public:
   /// A notification from a MultiBuf.
   ///
@@ -48,7 +48,7 @@ class Observer {
     kLayerRemoved,
   };
 
-  virtual ~Observer() = default;
+  virtual ~MultiBufObserver() = default;
 
   /// Notifies the observer that an event has occurred.
   void Notify(Event event, size_t value) { DoNotify(event, value); }
@@ -57,4 +57,4 @@ class Observer {
   virtual void DoNotify(Event event, size_t value) = 0;
 };
 
-}  // namespace pw::multibuf
+}  // namespace pw

@@ -37,10 +37,10 @@ namespace multibuf {
 
 enum class Property : uint8_t;
 
-template <Property...>
-class BasicMultiBuf;
-
 }  // namespace multibuf
+
+template <multibuf::Property...>
+class BasicMultiBuf;
 
 /// A `std::shared_ptr<T>`-like type that integrates with `pw::Allocator`.
 ///
@@ -189,7 +189,7 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
 
   // Allow MultiBufs to decompose SharedPtr<T>.
   template <multibuf::Property...>
-  friend class multibuf::BasicMultiBuf;
+  friend class BasicMultiBuf;
 
   /// Constructs and object of type `T` from the given `args`, and wraps it in a
   /// `SharedPtr`

@@ -115,10 +115,10 @@ void GenericMultiBuf::Insert(const_iterator pos, GenericMultiBuf&& mb) {
     index += depth_;
   }
   if (mb.observer_ != nullptr) {
-    mb.observer_->Notify(Observer::Event::kBytesRemoved, size);
+    mb.observer_->Notify(MultiBufObserver::Event::kBytesRemoved, size);
   }
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kBytesAdded, size);
+    observer_->Notify(MultiBufObserver::Event::kBytesAdded, size);
   }
 }
 
@@ -175,7 +175,7 @@ Result<GenericMultiBuf> GenericMultiBuf::Remove(const_iterator pos,
   CopyRange(pos, size, out);
   EraseRange(pos, size);
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kBytesRemoved, size);
+    observer_->Notify(MultiBufObserver::Event::kBytesRemoved, size);
   }
   return Result<GenericMultiBuf>(std::move(out));
 }
@@ -206,7 +206,7 @@ Result<GenericMultiBuf::const_iterator> GenericMultiBuf::Discard(
   ClearRange(pos, size);
   EraseRange(pos, size);
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kBytesRemoved, size);
+    observer_->Notify(MultiBufObserver::Event::kBytesRemoved, size);
   }
   return cbegin() + out_offset;
 }
@@ -225,7 +225,7 @@ UniquePtr<std::byte[]> GenericMultiBuf::Release(const_iterator pos) {
   auto* deallocator = GetDeallocator();
   EraseRange(pos - offset, size_t{GetLength(index)});
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kBytesRemoved, bytes.size());
+    observer_->Notify(MultiBufObserver::Event::kBytesRemoved, bytes.size());
   }
   return UniquePtr<std::byte[]>(bytes.data(), bytes.size(), *deallocator);
 }
@@ -320,7 +320,7 @@ void GenericMultiBuf::Clear() {
   deque_.clear();
   ClearMemoryContext();
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kBytesRemoved, num_bytes);
+    observer_->Notify(MultiBufObserver::Event::kBytesRemoved, num_bytes);
     observer_ = nullptr;
   }
 }
@@ -367,7 +367,7 @@ bool GenericMultiBuf::AddLayer(size_t offset, size_t length) {
     deque_.back().view.boundary = true;
   }
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kLayerAdded, num_fragments);
+    observer_->Notify(MultiBufObserver::Event::kLayerAdded, num_fragments);
   }
   return true;
 }
@@ -433,7 +433,7 @@ bool GenericMultiBuf::PopLayer() {
     deque_.pop_front();
   }
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kLayerRemoved, num_fragments);
+    observer_->Notify(MultiBufObserver::Event::kLayerRemoved, num_fragments);
   }
   return true;
 }
@@ -601,7 +601,7 @@ GenericMultiBuf::size_type GenericMultiBuf::Insert(const_iterator pos,
     };
   }
   if (observer_ != nullptr) {
-    observer_->Notify(Observer::Event::kBytesAdded, length);
+    observer_->Notify(MultiBufObserver::Event::kBytesAdded, length);
   }
   return index;
 }

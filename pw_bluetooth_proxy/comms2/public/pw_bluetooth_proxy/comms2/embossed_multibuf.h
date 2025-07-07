@@ -42,8 +42,8 @@ class EmbossedMultiBuf {
  protected:
   EmbossedMultiBuf(Allocator& allocator) : multibuf_(allocator) {}
 
-  multibuf::MultiBuf& multibuf() { return multibuf_; }
-  const multibuf::MultiBuf& multibuf() const { return multibuf_; }
+  MultiBuf& multibuf() { return multibuf_; }
+  const MultiBuf& multibuf() const { return multibuf_; }
 
   bool AddLayer(size_t offset, size_t length = dynamic_extent) {
     return multibuf_->AddLayer(offset, length);
@@ -53,7 +53,7 @@ class EmbossedMultiBuf {
   }
 
  private:
-  multibuf::Instance<multibuf::MultiBuf> multibuf_;
+  multibuf::Instance<MultiBuf> multibuf_;
 };
 
 // Template method implementations.

@@ -19,11 +19,11 @@
 
 namespace pw::bluetooth::proxy {
 
-bool H4Packet::CanConstructFrom(const multibuf::MultiBuf& buffer) {
+bool H4Packet::CanConstructFrom(const MultiBuf& buffer) {
   return buffer.size() >= kMinSize && buffer.NumLayers() >= kLayer;
 }
 
-Status H4Packet::Prepare(multibuf::MultiBuf& buffer) {
+Status H4Packet::Prepare(MultiBuf& buffer) {
   if (!CanConstructFrom(buffer)) {
     return Status::InvalidArgument();
   }
@@ -32,7 +32,7 @@ Status H4Packet::Prepare(multibuf::MultiBuf& buffer) {
                                                   : Status::ResourceExhausted();
 }
 
-void H4Packet::Assign(multibuf::MultiBuf&& buffer) {
+void H4Packet::Assign(MultiBuf&& buffer) {
   PW_CHECK(CanConstructFrom(buffer),
            "Buffer does not contain a valid H4 packet");
 

@@ -31,13 +31,13 @@ class H4Packet : public EmbossedMultiBuf {
 
   /// Returns ``true`` if an ``H4Packet`` can be created from the data
   // in ``buffer``.
-  static bool CanConstructFrom(const multibuf::MultiBuf& buffer);
+  static bool CanConstructFrom(const MultiBuf& buffer);
 
-  Status Prepare(multibuf::MultiBuf& buffer);
+  Status Prepare(MultiBuf& buffer);
 
   /// Moves data from ``buffer`` into an empty ``H4Packet`` to initialize it.
   /// Crashes if this ``H4Packet`` is not empty.
-  void PopulateFrom(multibuf::MultiBuf&& buffer) {
+  void PopulateFrom(MultiBuf&& buffer) {
     PW_ASSERT(empty());
     Assign(std::move(buffer));
   }
@@ -51,7 +51,7 @@ class H4Packet : public EmbossedMultiBuf {
   // H4 packets should contain a type and at least one byte of data.
   static constexpr size_t kMinSize = sizeof(Type) + 1;
 
-  void Assign(multibuf::MultiBuf&& buffer);
+  void Assign(MultiBuf&& buffer);
 
   Type type_ = Type::UNKNOWN;
 };

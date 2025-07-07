@@ -16,7 +16,8 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace pw::multibuf {
+namespace pw {
+namespace multibuf {
 
 /// Basic properties of a MultiBuf.
 enum class Property : uint8_t {
@@ -37,7 +38,15 @@ enum class Property : uint8_t {
   kObservable = 1 << 2,
 };
 
+}  // namespace multibuf
+
+template <multibuf::Property...>
+class BasicMultiBuf;
+
+namespace multibuf {
 namespace internal {
+
+class GenericMultiBuf;
 
 /// Verifies the template parameters of a MultiBuf are in canonical order.
 /// @{
@@ -63,16 +72,6 @@ constexpr bool PropertiesAreValid() {
   return true;
 }
 
-}  // namespace internal
-
-// Forward declarations.
-template <Property...>
-class BasicMultiBuf;
-
-namespace internal {
-
-class GenericMultiBuf;
-
 /// Type trait to identify MultiBuf types.
 template <typename>
 struct IsBasicMultiBuf : public std::false_type {};
@@ -85,7 +84,7 @@ struct IsBasicMultiBuf<BasicMultiBuf<kProperties...>> : public std::true_type {
 /// can be converted to another MultiBuf type.
 template <typename From, typename To>
 using EnableIfConvertible =
-    std::enable_if_t<std::is_same_v<To, internal::GenericMultiBuf> ||
+    std::enable_if_t<std::is_same_v<To, GenericMultiBuf> ||
                      // Only conversion to other MultiBuf types are supported.
                      (IsBasicMultiBuf<To>::value &&
                       // Read-only data cannot be converted to mutable data.
@@ -100,7 +99,7 @@ using EnableIfConvertible =
 /// static_assert with a helpful message if any condition is not met.
 template <typename From, typename To>
 static constexpr void AssertIsConvertible() {
-  if constexpr (!std::is_same_v<To, internal::GenericMultiBuf>) {
+  if constexpr (!std::is_same_v<To, GenericMultiBuf>) {
     static_assert(IsBasicMultiBuf<To>::value,
                   "Only conversion to other MultiBuf types are supported.");
     static_assert(!From::is_const() || To::is_const(),
@@ -113,4 +112,5 @@ static constexpr void AssertIsConvertible() {
 }
 
 }  // namespace internal
-}  // namespace pw::multibuf
+}  // namespace multibuf
+}  // namespace pw

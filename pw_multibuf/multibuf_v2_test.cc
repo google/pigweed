@@ -30,24 +30,24 @@ namespace {
 
 // Test fixtures. //////////////////////////////////////////////////////////////
 
+using ::pw::ConstMultiBuf;
+using ::pw::ConstMultiBufInstance;
+using ::pw::FlatConstMultiBuf;
+using ::pw::FlatConstMultiBufInstance;
+using ::pw::FlatMultiBuf;
+using ::pw::FlatMultiBufInstance;
+using ::pw::MultiBuf;
+using ::pw::MultiBufInstance;
+using ::pw::TrackedConstMultiBuf;
+using ::pw::TrackedConstMultiBufInstance;
+using ::pw::TrackedFlatConstMultiBuf;
+using ::pw::TrackedFlatConstMultiBufInstance;
+using ::pw::TrackedFlatMultiBuf;
+using ::pw::TrackedFlatMultiBufInstance;
+using ::pw::TrackedMultiBuf;
+using ::pw::TrackedMultiBufInstance;
 using ::pw::allocator::test::AllocatorForTest;
-using ::pw::multibuf::ConstMultiBuf;
-using ::pw::multibuf::ConstMultiBufInstance;
-using ::pw::multibuf::FlatConstMultiBuf;
-using ::pw::multibuf::FlatConstMultiBufInstance;
-using ::pw::multibuf::FlatMultiBuf;
-using ::pw::multibuf::FlatMultiBufInstance;
-using ::pw::multibuf::MultiBuf;
-using ::pw::multibuf::MultiBufInstance;
-using ::pw::multibuf::TrackedConstMultiBuf;
-using ::pw::multibuf::TrackedConstMultiBufInstance;
-using ::pw::multibuf::TrackedFlatConstMultiBuf;
-using ::pw::multibuf::TrackedFlatConstMultiBufInstance;
-using ::pw::multibuf::TrackedFlatMultiBuf;
-using ::pw::multibuf::TrackedFlatMultiBufInstance;
-using ::pw::multibuf::TrackedMultiBuf;
-using ::pw::multibuf::TrackedMultiBufInstance;
-using Event = ::pw::multibuf::Observer::Event;
+using Event = ::pw::MultiBufObserver::Event;
 
 constexpr size_t kN = 32;
 
@@ -141,7 +141,7 @@ class MultiBufTest : public ::testing::Test {
 };
 
 // A test fixture that receives events when a MultiBuf changes.
-struct TestObserver : public pw::multibuf::Observer {
+struct TestObserver : public pw::MultiBufObserver {
   std::optional<Event> event;
   size_t value = 0;
 
