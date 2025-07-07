@@ -21,8 +21,8 @@
 
 namespace {
 
-using ::pw::multibuf::internal::Chunks;
-using ::pw::multibuf::internal::IteratorTest;
+using ::pw::multibuf_impl::Chunks;
+using ::pw::multibuf_impl::IteratorTest;
 
 template <typename IteratorType>
 class ChunkIteratorTestImpl : public IteratorTest {
@@ -68,7 +68,7 @@ using ChunksTest = IteratorTest;
 TEST_F(ChunkIteratorTest, CheckFixture) {}
 TEST_F(ChunkConstIteratorTest, CheckFixture) {}
 
-static_assert(sizeof(pw::multibuf::internal::Entry) == sizeof(std::byte*));
+static_assert(sizeof(pw::multibuf_impl::Entry) == sizeof(std::byte*));
 
 template <typename IteratorType>
 void ChunkIteratorTestImpl<

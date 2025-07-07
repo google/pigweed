@@ -22,7 +22,7 @@
 #include "pw_assert/check.h"
 #include "pw_status/try.h"
 
-namespace pw::multibuf::internal {
+namespace pw::multibuf_impl {
 
 GenericMultiBuf& GenericMultiBuf::operator=(GenericMultiBuf&& other) {
   deque_ = std::move(other.deque_);
@@ -892,4 +892,4 @@ void GenericMultiBuf::SetLayer(size_t offset, size_t length) {
   }
 }
 
-}  // namespace pw::multibuf::internal
+}  // namespace pw::multibuf_impl

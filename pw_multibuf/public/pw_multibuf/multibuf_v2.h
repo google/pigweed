@@ -44,17 +44,17 @@
 namespace pw {
 
 // Forward declarations.
-template <multibuf::Property...>
+template <MultiBufProperty...>
 class BasicMultiBuf;
 
-namespace multibuf::internal {
+namespace multibuf_impl {
 
 template <typename>
 class Instance;
 
 class GenericMultiBuf;
 
-}  // namespace multibuf::internal
+}  // namespace multibuf_impl
 
 /// @defgroup pw_multibuf
 /// @{
@@ -65,36 +65,36 @@ class GenericMultiBuf;
 using FlatMultiBuf = BasicMultiBuf<>;
 
 /// Basic MultiBuf interface with read-only data.
-using FlatConstMultiBuf = BasicMultiBuf<multibuf::Property::kConst>;
+using FlatConstMultiBuf = BasicMultiBuf<MultiBufProperty::kConst>;
 
 /// MultiBuf interface with mutable data and the option of adding layered data
 /// views.
-using MultiBuf = BasicMultiBuf<multibuf::Property::kLayerable>;
+using MultiBuf = BasicMultiBuf<MultiBufProperty::kLayerable>;
 
 /// MultiBuf interface with read-only data and the option of adding layered data
 /// views.
 using ConstMultiBuf =
-    BasicMultiBuf<multibuf::Property::kConst, multibuf::Property::kLayerable>;
+    BasicMultiBuf<MultiBufProperty::kConst, MultiBufProperty::kLayerable>;
 
 /// Basic MultiBuf interface with mutable data that notifies its observer, if
 /// set, on change.
-using TrackedFlatMultiBuf = BasicMultiBuf<multibuf::Property::kObservable>;
+using TrackedFlatMultiBuf = BasicMultiBuf<MultiBufProperty::kObservable>;
 
 /// Basic MultiBuf interface with read-only data that notifies its observer, if
 /// set, on change.
 using TrackedFlatConstMultiBuf =
-    BasicMultiBuf<multibuf::Property::kConst, multibuf::Property::kObservable>;
+    BasicMultiBuf<MultiBufProperty::kConst, MultiBufProperty::kObservable>;
 
 /// Basic MultiBuf interface with mutable data that notifies its observer, if
 /// set, on change. It has the option of adding layered data views.
-using TrackedMultiBuf = BasicMultiBuf<multibuf::Property::kLayerable,
-                                      multibuf::Property::kObservable>;
+using TrackedMultiBuf =
+    BasicMultiBuf<MultiBufProperty::kLayerable, MultiBufProperty::kObservable>;
 
 /// Basic MultiBuf interface with read-only data that notifies its observer, if
 /// set, on change. It has the option of adding layered data views.
-using TrackedConstMultiBuf = BasicMultiBuf<multibuf::Property::kConst,
-                                           multibuf::Property::kLayerable,
-                                           multibuf::Property::kObservable>;
+using TrackedConstMultiBuf = BasicMultiBuf<MultiBufProperty::kConst,
+                                           MultiBufProperty::kLayerable,
+                                           MultiBufProperty::kObservable>;
 
 /// Logical byte sequence representing a sequence of memory buffers.
 ///
@@ -189,15 +189,15 @@ using TrackedConstMultiBuf = BasicMultiBuf<multibuf::Property::kConst,
 /// @tparam   kProperties   Zero or more ``Property`` values. These must not be
 ///                         duplicated, and must appear in the order specified
 ///                         by that type.
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 class BasicMultiBuf {
  protected:
-  using Deque = DynamicDeque<multibuf::internal::Entry>;
-  using ChunksType = multibuf::internal::Chunks<typename Deque::size_type>;
-  using ConstChunksType =
-      multibuf::internal::ConstChunks<typename Deque::size_type>;
-  using GenericMultiBuf = multibuf::internal::GenericMultiBuf;
-  using Property = multibuf::Property;
+  using Deque = DynamicDeque<multibuf_impl::Entry>;
+  using ChunksType = multibuf_impl::Chunks<typename Deque::size_type>;
+  using ConstChunksType = multibuf_impl::ConstChunks<typename Deque::size_type>;
+  using GenericMultiBuf = multibuf_impl::GenericMultiBuf;
+
+  using Property = MultiBufProperty;
 
  public:
   /// Returns whether the MultiBuf data is immutable.
@@ -217,10 +217,9 @@ class BasicMultiBuf {
 
   using size_type = typename Deque::size_type;
   using difference_type = typename Deque::difference_type;
-  using iterator =
-      multibuf::internal::ByteIterator<size_type, /*kIsConst=*/false>;
+  using iterator = multibuf_impl::ByteIterator<size_type, /*kIsConst=*/false>;
   using const_iterator =
-      multibuf::internal::ByteIterator<size_type, /*kIsConst=*/true>;
+      multibuf_impl::ByteIterator<size_type, /*kIsConst=*/true>;
   using pointer = iterator::pointer;
   using const_pointer = const_iterator::pointer;
   using reference = iterator::reference;
@@ -248,7 +247,7 @@ class BasicMultiBuf {
   /// AdjustLayers(mb->as<LayerableMultiBuf>());
   /// DoTheThing(*mb);
   /// @endcode
-  using Instance = multibuf::internal::Instance<BasicMultiBuf>;
+  using Instance = multibuf_impl::Instance<BasicMultiBuf>;
 
   // Interfaces are not copyable or movable; copy and move `Instance`s instead.
 
@@ -276,26 +275,26 @@ class BasicMultiBuf {
 
   template <typename OtherMultiBuf>
   OtherMultiBuf& as() {
-    multibuf::internal::AssertIsConvertible<BasicMultiBuf, OtherMultiBuf>();
+    multibuf_impl::AssertIsConvertible<BasicMultiBuf, OtherMultiBuf>();
     return generic().template as<OtherMultiBuf>();
   }
 
   template <typename OtherMultiBuf>
   const OtherMultiBuf& as() const {
-    multibuf::internal::AssertIsConvertible<BasicMultiBuf, OtherMultiBuf>();
+    multibuf_impl::AssertIsConvertible<BasicMultiBuf, OtherMultiBuf>();
     return generic().template as<OtherMultiBuf>();
   }
 
   template <typename OtherMultiBuf,
-            typename = multibuf::internal::EnableIfConvertible<BasicMultiBuf,
-                                                               OtherMultiBuf>>
+            typename = multibuf_impl::EnableIfConvertible<BasicMultiBuf,
+                                                          OtherMultiBuf>>
   operator OtherMultiBuf&() {
     return as<OtherMultiBuf>();
   }
 
   template <typename OtherMultiBuf,
-            typename = multibuf::internal::EnableIfConvertible<BasicMultiBuf,
-                                                               OtherMultiBuf>>
+            typename = multibuf_impl::EnableIfConvertible<BasicMultiBuf,
+                                                          OtherMultiBuf>>
   operator const OtherMultiBuf&() const {
     return as<OtherMultiBuf>();
   }
@@ -1115,7 +1114,7 @@ class BasicMultiBuf {
   }
 
  protected:
-  constexpr BasicMultiBuf() { multibuf::internal::PropertiesAreValid(); }
+  constexpr BasicMultiBuf() { multibuf_impl::PropertiesAreValid(); }
 
  private:
   template <Property...>
@@ -1129,7 +1128,7 @@ class BasicMultiBuf {
   }
 };
 
-namespace multibuf::internal {
+namespace multibuf_impl {
 
 // A generic MultiBuf implementation that provides the functionality of any
 // `BasicMultiBuf<kProperties>` type.
@@ -1142,18 +1141,18 @@ namespace multibuf::internal {
 // propreties.
 class GenericMultiBuf final
     : private BasicMultiBuf<>,
-      private BasicMultiBuf<multibuf::Property::kObservable>,
-      private BasicMultiBuf<multibuf::Property::kLayerable>,
-      private BasicMultiBuf<multibuf::Property::kConst>,
-      private BasicMultiBuf<multibuf::Property::kConst,
-                            multibuf::Property::kObservable>,
-      private BasicMultiBuf<multibuf::Property::kConst,
-                            multibuf::Property::kLayerable>,
-      private BasicMultiBuf<multibuf::Property::kLayerable,
-                            multibuf::Property::kObservable>,
-      private BasicMultiBuf<multibuf::Property::kConst,
-                            multibuf::Property::kLayerable,
-                            multibuf::Property::kObservable> {
+      private BasicMultiBuf<MultiBufProperty::kObservable>,
+      private BasicMultiBuf<MultiBufProperty::kLayerable>,
+      private BasicMultiBuf<MultiBufProperty::kConst>,
+      private BasicMultiBuf<MultiBufProperty::kConst,
+                            MultiBufProperty::kObservable>,
+      private BasicMultiBuf<MultiBufProperty::kConst,
+                            MultiBufProperty::kLayerable>,
+      private BasicMultiBuf<MultiBufProperty::kLayerable,
+                            MultiBufProperty::kObservable>,
+      private BasicMultiBuf<MultiBufProperty::kConst,
+                            MultiBufProperty::kLayerable,
+                            MultiBufProperty::kObservable> {
  private:
   using typename BasicMultiBuf<>::ChunksType;
   using typename BasicMultiBuf<>::ConstChunksType;
@@ -1184,11 +1183,11 @@ class GenericMultiBuf final
   GenericMultiBuf& operator=(GenericMultiBuf&& other);
 
  private:
-  template <multibuf::Property...>
+  template <MultiBufProperty...>
   friend class ::pw::BasicMultiBuf;
 
   template <typename>
-  friend class ::pw::multibuf::internal::Instance;
+  friend class ::pw::multibuf_impl::Instance;
 
   /// Constructs an empty MultiBuf.
   constexpr explicit GenericMultiBuf(Allocator& allocator)
@@ -1622,23 +1621,23 @@ class Instance {
   GenericMultiBuf base_;
 };
 
-}  // namespace multibuf::internal
+}  // namespace multibuf_impl
 
 /// @}
 
 // Template method implementations.
 
-template <multibuf::Property... kProperties>
-template <multibuf::Property... kOtherProperties>
+template <MultiBufProperty... kProperties>
+template <MultiBufProperty... kOtherProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForInsert(
     const_iterator pos, const BasicMultiBuf<kOtherProperties...>& mb) {
-  multibuf::internal::AssertIsConvertible<BasicMultiBuf<kOtherProperties...>,
-                                          BasicMultiBuf>();
+  multibuf_impl::AssertIsConvertible<BasicMultiBuf<kOtherProperties...>,
+                                     BasicMultiBuf>();
   return generic().TryReserveForInsert(pos,
                                        static_cast<const GenericMultiBuf&>(mb));
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 template <int&... kExplicitGuard, typename T, typename>
 bool BasicMultiBuf<kProperties...>::TryReserveForInsert(const_iterator pos,
                                                         const T& bytes) {
@@ -1648,13 +1647,13 @@ bool BasicMultiBuf<kProperties...>::TryReserveForInsert(const_iterator pos,
   return generic().TryReserveForInsert(pos, bytes.size());
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForInsert(
     const_iterator pos, const UniquePtr<std::byte[]>& bytes) {
   return generic().TryReserveForInsert(pos, bytes.size(), bytes.deallocator());
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForInsert(
     const_iterator pos, const UniquePtr<const std::byte[]>& bytes) {
   static_assert(is_const(),
@@ -1662,14 +1661,14 @@ bool BasicMultiBuf<kProperties...>::TryReserveForInsert(
   return generic().TryReserveForInsert(pos, bytes.size(), bytes.deallocator());
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForInsert(
     const_iterator pos, const SharedPtr<std::byte[]>& bytes) {
   return generic().TryReserveForInsert(
       pos, bytes.size(), bytes.control_block());
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForInsert(
     const_iterator pos, const SharedPtr<const std::byte[]>& bytes) {
   static_assert(is_const(),
@@ -1678,16 +1677,16 @@ bool BasicMultiBuf<kProperties...>::TryReserveForInsert(
       pos, bytes.size(), bytes.control_block());
 }
 
-template <multibuf::Property... kProperties>
-template <multibuf::Property... kOtherProperties>
+template <MultiBufProperty... kProperties>
+template <MultiBufProperty... kOtherProperties>
 void BasicMultiBuf<kProperties...>::Insert(
     const_iterator pos, BasicMultiBuf<kOtherProperties...>&& mb) {
-  multibuf::internal::AssertIsConvertible<BasicMultiBuf<kOtherProperties...>,
-                                          BasicMultiBuf>();
+  multibuf_impl::AssertIsConvertible<BasicMultiBuf<kOtherProperties...>,
+                                     BasicMultiBuf>();
   generic().Insert(pos, std::move(mb.generic()));
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 template <int&... kExplicitGuard, typename T, typename>
 void BasicMultiBuf<kProperties...>::Insert(const_iterator pos, const T& bytes) {
   using data_ptr_type = decltype(std::data(std::declval<T&>()));
@@ -1696,7 +1695,7 @@ void BasicMultiBuf<kProperties...>::Insert(const_iterator pos, const T& bytes) {
   generic().Insert(pos, bytes);
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 void BasicMultiBuf<kProperties...>::Insert(const_iterator pos,
                                            UniquePtr<std::byte[]>&& bytes,
                                            size_t offset,
@@ -1706,7 +1705,7 @@ void BasicMultiBuf<kProperties...>::Insert(const_iterator pos,
   bytes.Release();
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 void BasicMultiBuf<kProperties...>::Insert(const_iterator pos,
                                            UniquePtr<const std::byte[]>&& bytes,
                                            size_t offset,
@@ -1718,7 +1717,7 @@ void BasicMultiBuf<kProperties...>::Insert(const_iterator pos,
   bytes.Release();
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 void BasicMultiBuf<kProperties...>::Insert(const_iterator pos,
                                            const SharedPtr<std::byte[]>& bytes,
                                            size_t offset,
@@ -1727,7 +1726,7 @@ void BasicMultiBuf<kProperties...>::Insert(const_iterator pos,
   generic().Insert(pos, chunk, offset, length, bytes.control_block());
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 void BasicMultiBuf<kProperties...>::Insert(
     const_iterator pos,
     const SharedPtr<const std::byte[]>& bytes,
@@ -1739,14 +1738,14 @@ void BasicMultiBuf<kProperties...>::Insert(
   generic().Insert(pos, chunk, offset, length, bytes.control_block());
 }
 
-template <multibuf::Property... kProperties>
-template <multibuf::Property... kOtherProperties>
+template <MultiBufProperty... kProperties>
+template <MultiBufProperty... kOtherProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(
     const BasicMultiBuf<kOtherProperties...>& mb) {
   return TryReserveForInsert(end(), mb);
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 template <int&... kExplicitGuard, typename T, typename>
 bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(const T& bytes) {
   using data_ptr_type = decltype(std::data(std::declval<T&>()));
@@ -1755,13 +1754,13 @@ bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(const T& bytes) {
   return TryReserveForInsert(end(), bytes);
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(
     const UniquePtr<std::byte[]>& bytes) {
   return TryReserveForInsert(end(), std::move(bytes));
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(
     const UniquePtr<const std::byte[]>& bytes) {
   static_assert(is_const(),
@@ -1769,13 +1768,13 @@ bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(
   return TryReserveForInsert(end(), std::move(bytes));
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(
     const SharedPtr<std::byte[]>& bytes) {
   return TryReserveForInsert(end(), bytes);
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(
     const SharedPtr<const std::byte[]>& bytes) {
   static_assert(is_const(),
@@ -1783,14 +1782,14 @@ bool BasicMultiBuf<kProperties...>::TryReserveForPushBack(
   return TryReserveForInsert(end(), bytes);
 }
 
-template <multibuf::Property... kProperties>
-template <multibuf::Property... kOtherProperties>
+template <MultiBufProperty... kProperties>
+template <MultiBufProperty... kOtherProperties>
 void BasicMultiBuf<kProperties...>::PushBack(
     BasicMultiBuf<kOtherProperties...>&& mb) {
   Insert(end(), std::move(mb));
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 template <int&... kExplicitGuard, typename T, typename>
 void BasicMultiBuf<kProperties...>::PushBack(const T& bytes) {
   using data_ptr_type = decltype(std::data(std::declval<T&>()));
@@ -1799,14 +1798,14 @@ void BasicMultiBuf<kProperties...>::PushBack(const T& bytes) {
   Insert(end(), bytes);
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 void BasicMultiBuf<kProperties...>::PushBack(UniquePtr<std::byte[]>&& bytes,
                                              size_t offset,
                                              size_t length) {
   Insert(end(), std::move(bytes), offset, length);
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 void BasicMultiBuf<kProperties...>::PushBack(
     UniquePtr<const std::byte[]>&& bytes, size_t offset, size_t length) {
   static_assert(is_const(),
@@ -1814,13 +1813,13 @@ void BasicMultiBuf<kProperties...>::PushBack(
   Insert(end(), std::move(bytes), offset, length);
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 void BasicMultiBuf<kProperties...>::PushBack(
     const SharedPtr<std::byte[]>& bytes, size_t offset, size_t length) {
   Insert(end(), bytes, offset, length);
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 void BasicMultiBuf<kProperties...>::PushBack(
     const SharedPtr<const std::byte[]>& bytes, size_t offset, size_t length) {
   static_assert(is_const(),
@@ -1828,8 +1827,8 @@ void BasicMultiBuf<kProperties...>::PushBack(
   Insert(end(), bytes, offset, length);
 }
 
-template <multibuf::Property... kProperties>
-Result<multibuf::internal::Instance<BasicMultiBuf<kProperties...>>>
+template <MultiBufProperty... kProperties>
+Result<multibuf_impl::Instance<BasicMultiBuf<kProperties...>>>
 BasicMultiBuf<kProperties...>::Remove(const_iterator pos, size_t size) {
   auto result = generic().Remove(pos, size);
   if (!result.ok()) {
@@ -1838,8 +1837,8 @@ BasicMultiBuf<kProperties...>::Remove(const_iterator pos, size_t size) {
   return Instance(std::move(*result));
 }
 
-template <multibuf::Property... kProperties>
-Result<multibuf::internal::Instance<BasicMultiBuf<kProperties...>>>
+template <MultiBufProperty... kProperties>
+Result<multibuf_impl::Instance<BasicMultiBuf<kProperties...>>>
 BasicMultiBuf<kProperties...>::PopFrontFragment() {
   Result<GenericMultiBuf> result = generic().PopFrontFragment();
   if (!result.ok()) {
@@ -1848,7 +1847,7 @@ BasicMultiBuf<kProperties...>::PopFrontFragment() {
   return Instance(std::move(*result));
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 UniquePtr<typename BasicMultiBuf<kProperties...>::value_type[]>
 BasicMultiBuf<kProperties...>::Release(const_iterator pos) {
   UniquePtr<std::byte[]> bytes = generic().Release(pos);
@@ -1862,7 +1861,7 @@ BasicMultiBuf<kProperties...>::Release(const_iterator pos) {
   }
 }
 
-template <multibuf::Property... kProperties>
+template <MultiBufProperty... kProperties>
 SharedPtr<typename BasicMultiBuf<kProperties...>::value_type[]>
 BasicMultiBuf<kProperties...>::Share(const_iterator pos) {
   return SharedPtr<value_type[]>(generic().Share(pos),

@@ -23,7 +23,7 @@
 #include "pw_multibuf/internal/entry.h"
 #include "pw_preprocessor/compiler.h"
 
-namespace pw::multibuf::internal {
+namespace pw::multibuf_impl {
 
 // Forward declarations.
 template <typename, typename>
@@ -159,8 +159,8 @@ class ChunksImpl {
   using size_type = typename Deque::size_type;
   using value_type = typename Deque::value_type;
   using difference_type = typename Deque::difference_type;
-  using iterator = internal::ChunkIterator<size_type, /*kIsConst=*/false>;
-  using const_iterator = internal::ChunkIterator<size_type, /*kIsConst=*/true>;
+  using iterator = ChunkIterator<size_type, /*kIsConst=*/false>;
+  using const_iterator = ChunkIterator<size_type, /*kIsConst=*/true>;
 
   constexpr ChunksImpl() = default;
 
@@ -196,11 +196,10 @@ class ChunksImpl {
 /// chunk iterators.
 template <typename SizeType = uint16_t>
 class Chunks
-    : public internal::ChunksImpl<Chunks<SizeType>,
-                                  DynamicDeque<internal::Entry, SizeType>> {
+    : public ChunksImpl<Chunks<SizeType>, DynamicDeque<Entry, SizeType>> {
  private:
-  using Deque = DynamicDeque<internal::Entry, SizeType>;
-  using Base = internal::ChunksImpl<Chunks<SizeType>, Deque>;
+  using Deque = DynamicDeque<Entry, SizeType>;
+  using Base = ChunksImpl<Chunks<SizeType>, Deque>;
 
  public:
   using typename Base::const_iterator;
@@ -241,12 +240,11 @@ class Chunks
 /// @warning Modifying the structure of a MultiBuf invalidates any outstanding
 /// chunk iterators.
 template <typename SizeType = uint16_t>
-class ConstChunks : public internal::ChunksImpl<
-                        ConstChunks<SizeType>,
-                        const DynamicDeque<internal::Entry, SizeType>> {
+class ConstChunks : public ChunksImpl<ConstChunks<SizeType>,
+                                      const DynamicDeque<Entry, SizeType>> {
  private:
-  using Deque = const DynamicDeque<internal::Entry, SizeType>;
-  using Base = internal::ChunksImpl<ConstChunks<SizeType>, Deque>;
+  using Deque = const DynamicDeque<Entry, SizeType>;
+  using Base = ChunksImpl<ConstChunks<SizeType>, Deque>;
 
  public:
   using typename Base::const_iterator;
@@ -338,4 +336,4 @@ constexpr void ChunkIterator<SizeType, kIsConst>::ResetCurrent() {
   }
 }
 
-}  // namespace pw::multibuf::internal
+}  // namespace pw::multibuf_impl

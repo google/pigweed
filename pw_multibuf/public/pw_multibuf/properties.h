@@ -17,10 +17,9 @@
 #include <type_traits>
 
 namespace pw {
-namespace multibuf {
 
 /// Basic properties of a MultiBuf.
-enum class Property : uint8_t {
+enum class MultiBufProperty : uint8_t {
   /// Indicates the data contained within the MultiBuf is read-only. Note the
   /// difference from the MultiBuf itself being `const`, which restricts changes
   /// to its structure, e.g. adding or removing layers.
@@ -38,23 +37,22 @@ enum class Property : uint8_t {
   kObservable = 1 << 2,
 };
 
-}  // namespace multibuf
-
-template <multibuf::Property...>
+template <MultiBufProperty...>
 class BasicMultiBuf;
 
-namespace multibuf {
-namespace internal {
+namespace multibuf_impl {
 
 class GenericMultiBuf;
 
 /// Verifies the template parameters of a MultiBuf are in canonical order.
 /// @{
-template <Property>
+template <MultiBufProperty>
 constexpr bool PropertiesAreInOrderWithoutDuplicates() {
   return true;
 }
-template <Property kLhs, Property kRhs, Property... kOthers>
+template <MultiBufProperty kLhs,
+          MultiBufProperty kRhs,
+          MultiBufProperty... kOthers>
 constexpr bool PropertiesAreInOrderWithoutDuplicates() {
   return (kLhs < kRhs) &&
          PropertiesAreInOrderWithoutDuplicates<kRhs, kOthers...>();
@@ -62,7 +60,7 @@ constexpr bool PropertiesAreInOrderWithoutDuplicates() {
 /// @}
 
 /// Verifies the template parameters of a MultiBuf are valid.
-template <Property... kProperties>
+template <MultiBufProperty... kProperties>
 constexpr bool PropertiesAreValid() {
   if constexpr (sizeof...(kProperties) != 0) {
     static_assert(PropertiesAreInOrderWithoutDuplicates<kProperties...>(),
@@ -76,7 +74,7 @@ constexpr bool PropertiesAreValid() {
 template <typename>
 struct IsBasicMultiBuf : public std::false_type {};
 
-template <Property... kProperties>
+template <MultiBufProperty... kProperties>
 struct IsBasicMultiBuf<BasicMultiBuf<kProperties...>> : public std::true_type {
 };
 
@@ -111,6 +109,5 @@ static constexpr void AssertIsConvertible() {
   }
 }
 
-}  // namespace internal
-}  // namespace multibuf
+}  // namespace multibuf_impl
 }  // namespace pw

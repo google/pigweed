@@ -147,7 +147,7 @@ API Reference
    :content-only:
    :members:
 
-.. doxygenenum:: pw::multibuf::Property
+.. doxygenenum:: pw::MultiBufProperty
 
 .. doxygenclass:: pw::MultiBufObserver
    :members:

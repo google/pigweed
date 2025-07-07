@@ -23,7 +23,7 @@
 #include "pw_multibuf/internal/entry.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::multibuf::internal {
+namespace pw::multibuf_impl {
 
 /// A test fixture that manually constructs a multibuf sequence of entries.
 ///
@@ -128,4 +128,4 @@ class IteratorTest : public ::testing::Test {
   Chunks<> chunks_;
 };
 
-}  // namespace pw::multibuf::internal
+}  // namespace pw::multibuf_impl

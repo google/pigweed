@@ -75,7 +75,7 @@ class MultiBufTest : public ::testing::Test {
   }
 
   /// Helper method to instantiate a layered MultiBuf that resembles the entries
-  /// used by `multibuf::internal::IteratorTest`.
+  /// used by `multibuf_impl::IteratorTest`.
   ///
   /// The created sequence represents 4 chunks with three layers, i.e.
   ///

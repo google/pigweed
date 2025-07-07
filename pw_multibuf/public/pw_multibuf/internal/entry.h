@@ -17,7 +17,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace pw::multibuf::internal {
+namespace pw::multibuf_impl {
 
 /// Describes either a memory location or a view of an associated location.
 ///
@@ -81,4 +81,4 @@ union Entry {
   } view;
 };
 
-}  // namespace pw::multibuf::internal
+}  // namespace pw::multibuf_impl

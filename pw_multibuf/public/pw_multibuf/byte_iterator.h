@@ -22,7 +22,7 @@
 #include "pw_multibuf/chunk_iterator.h"
 #include "pw_multibuf/internal/entry.h"
 
-namespace pw::multibuf::internal {
+namespace pw::multibuf_impl {
 
 class GenericMultiBuf;
 
@@ -195,4 +195,4 @@ class ByteIterator {
   size_t offset_ = 0;
 };
 
-}  // namespace pw::multibuf::internal
+}  // namespace pw::multibuf_impl
