@@ -206,7 +206,7 @@ def _snapshot_symbolizer_matcher(
 def _load_and_dump_snapshots(
     in_file: BinaryIO,
     out_file: TextIO,
-    token_db: TextIO | None,
+    token_db: str | None,
     artifacts_dir: Path | None,
 ):
     detokenizer = None
@@ -235,12 +235,11 @@ def _parse_args():
         '--out-file',
         '-o',
         default='-',
-        type=argparse.FileType('wb'),
+        type=argparse.FileType('w'),
         help='File to output decoded snapshots to. Defaults to stdout.',
     )
     parser.add_argument(
         '--token-db',
-        type=argparse.FileType('r'),
         help='Token database or ELF file to use for detokenization.',
     )
     parser.add_argument(
