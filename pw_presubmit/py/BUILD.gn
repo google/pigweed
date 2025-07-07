@@ -67,6 +67,7 @@ pw_python_package("py") {
   tests = [
     "bazel_checks_test.py",
     "bazel_parser_test.py",
+    "block_submission_test.py",
     "context_test.py",
     "cpp_checks_test.py",
     "format_core_test.py",

@@ -17,16 +17,22 @@ import re
 
 from . import presubmit, presubmit_context, inclusive_language
 
+WORDS_REGEX = re.compile(
+    r"do[\s_-]*not[\s_-]*submit|don'?t[\s_-]*submit", re.IGNORECASE
+)
+DISABLE_TAG = 'block-submission: disable'
+ENABLE_TAG = 'block-submission: enable'
+IGNORE_TAG = 'block-submission: ignore'
+ISSUE_TYPE = 'submission-blocking phrase'
+
 
 @presubmit.check(name='block_submission')
 def presubmit_check(ctx: presubmit_context.PresubmitContext) -> None:
     inclusive_language.generic_presubmit_check(
         ctx,
-        words_regex=re.compile(
-            r"do[\s_-]not[\s_-]submit|don'?t[\s_-]submit", re.IGNORECASE
-        ),
-        disable_tag='block-submission: disable',
-        enable_tag='block-submission: enable',
-        ignore_tag='block-submission: ignore',
-        issue_type='submission-blocking phrase',
+        words_regex=WORDS_REGEX,
+        disable_tag=DISABLE_TAG,
+        enable_tag=ENABLE_TAG,
+        ignore_tag=IGNORE_TAG,
+        issue_type=ISSUE_TYPE,
     )

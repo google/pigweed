@@ -158,6 +158,12 @@ py_library(
 )
 
 pw_py_test(
+    name = "block_submission_test",
+    srcs = ["block_submission_test.py"],
+    deps = [":pw_presubmit"],
+)
+
+pw_py_test(
     name = "bazel_checks_test",
     srcs = ["bazel_checks_test.py"],
     deps = [":pw_presubmit"],
