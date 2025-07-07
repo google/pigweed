@@ -23,3 +23,10 @@ cc_action_type(
     name = "objdump_disassemble",
     action_name = PW_ACTION_NAMES.objdump_disassemble,
 )
+
+# TODO: https://pwbug.dev/367352331 - Rename and upstream this to Bazel
+# (rules_cc, bazeltools).
+cc_action_type(
+    name = "readelf",
+    action_name = PW_ACTION_NAMES.readelf,
+)

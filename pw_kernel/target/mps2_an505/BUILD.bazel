@@ -54,6 +54,7 @@ system_image(
     kernel = ":target",
     platform = ":mps2_an505",
     tags = ["kernel"],
+    visibility = ["//visibility:public"],
 )
 
 rust_binary_no_panics_test(
@@ -75,6 +76,7 @@ system_image(
     platform = ":mps2_an505",
     system_config = ":userspace_demo_config",
     tags = ["kernel"],
+    visibility = ["//visibility:public"],
 )
 
 rust_binary_no_panics_test(
@@ -126,7 +128,6 @@ rust_binary(
     edition = "2021",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
-    visibility = ["//visibility:public"],
     deps = [
         "//pw_kernel/userspace",
         "//pw_log/rust:pw_log",

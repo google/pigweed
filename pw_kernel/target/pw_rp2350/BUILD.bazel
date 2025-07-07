@@ -53,6 +53,7 @@ system_image(
     kernel = ":target",
     platform = ":pw_rp2350",
     tags = ["kernel"],
+    visibility = ["//visibility:public"],
 )
 
 system_image(
@@ -65,6 +66,7 @@ system_image(
     platform = ":pw_rp2350",
     system_config = ":userspace_demo_config",
     tags = ["kernel"],
+    visibility = ["//visibility:public"],
 )
 
 SRCS = ["target.rs"]
@@ -111,7 +113,6 @@ rust_binary(
     edition = "2021",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
-    visibility = ["//visibility:public"],
     deps = [
         ":console",
         "//pw_log/rust:pw_log",
