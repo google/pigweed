@@ -115,8 +115,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     result_callback(fit::ok(adv_id));
   }
 
-  void StopAdvertising() override { StopAdvertisingInternal(); }
-  void StopAdvertising(AdvertisementId adv_id) override { ads_->erase(adv_id); }
+  void StopAdvertising(
+      fit::function<void(hci::Result<>)> result_cb = nullptr) override {
+    StopAdvertisingInternal(std::move(result_cb));
+  }
+  void StopAdvertising(AdvertisementId adv_id,
+                       fit::function<void(hci::Result<>)>) override {
+    ads_->erase(adv_id);
+  }
 
   void OnIncomingConnection(hci_spec::ConnectionHandle handle,
                             pwemb::ConnectionRole role,

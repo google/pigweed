@@ -340,8 +340,9 @@ void AndroidExtendedLowEnergyAdvertiser::StartAdvertising(
                            std::move(result_cb_wrapper));
 }
 
-void AndroidExtendedLowEnergyAdvertiser::StopAdvertising() {
-  StopAdvertisingInternal();
+void AndroidExtendedLowEnergyAdvertiser::StopAdvertising(
+    fit::function<void(Result<>)> result_cb) {
+  StopAdvertisingInternal(std::move(result_cb));
   advertising_handle_map_.Clear();
 
   // std::queue doesn't have a clear method so we have to resort to this
@@ -351,7 +352,7 @@ void AndroidExtendedLowEnergyAdvertiser::StopAdvertising() {
 }
 
 void AndroidExtendedLowEnergyAdvertiser::StopAdvertising(
-    AdvertisementId advertisement_id) {
+    AdvertisementId advertisement_id, fit::function<void(Result<>)> result_cb) {
   // if there is an operation currently in progress, enqueue this operation and
   // we will get to it the next time we have a chance
   if (!hci_cmd_runner().IsReady()) {
@@ -360,11 +361,13 @@ void AndroidExtendedLowEnergyAdvertiser::StopAdvertising(
         "hci-le",
         "hci cmd runner not ready, queueing stop advertising command for now");
     op_queue_.push(
-        [this, advertisement_id]() { StopAdvertising(advertisement_id); });
+        [this, advertisement_id, cb = std::move(result_cb)]() mutable {
+          StopAdvertising(advertisement_id, std::move(cb));
+        });
     return;
   }
 
-  StopAdvertisingInternal(advertisement_id);
+  StopAdvertisingInternal(advertisement_id, std::move(result_cb));
   advertising_handle_map_.Erase(advertisement_id);
 }
 

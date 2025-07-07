@@ -342,7 +342,8 @@ void LowEnergyAdvertiser::StartAdvertisingInternalStep2(
 // new ones. Called in quick succession, StopAdvertising(address) won't have a
 // chance to finish its previous HCI commands before being cancelled. Instead,
 // we must enqueue them all at once and then run them together.
-void LowEnergyAdvertiser::StopAdvertisingInternal() {
+void LowEnergyAdvertiser::StopAdvertisingInternal(
+    fit::function<void(Result<>)> result_cb) {
   if (!hci_cmd_runner_->IsReady()) {
     hci_cmd_runner_->Cancel();
   }
@@ -364,16 +365,23 @@ void LowEnergyAdvertiser::StopAdvertisingInternal() {
   }
 
   if (hci_cmd_runner_->HasQueuedCommands()) {
-    hci_cmd_runner_->RunCommands([this](hci::Result<> result) {
-      bt_log(INFO, "hci-le", "advertising stopped: %s", bt_str(result));
-      OnCurrentOperationComplete();
-    });
+    hci_cmd_runner_->RunCommands(
+        [this, cb = std::move(result_cb)](hci::Result<> result) {
+          bt_log(INFO, "hci-le", "advertising stopped: %s", bt_str(result));
+          if (cb) {
+            cb(result);
+          }
+          OnCurrentOperationComplete();
+        });
   }
 }
 
 void LowEnergyAdvertiser::StopAdvertisingInternal(
-    AdvertisementId advertisement_id) {
+    AdvertisementId advertisement_id, fit::function<void(Result<>)> result_cb) {
   if (!IsAdvertising(advertisement_id)) {
+    if (result_cb) {
+      result_cb(ToResult(HostError::kFailed));
+    }
     return;
   }
 
@@ -383,17 +391,24 @@ void LowEnergyAdvertiser::StopAdvertisingInternal(
            "hci-le",
            "cannot stop advertising for %s",
            bt_str(advertisement_id));
+    if (result_cb) {
+      result_cb(ToResult(HostError::kInvalidParameters));
+    }
     return;
   }
 
-  hci_cmd_runner_->RunCommands([this, advertisement_id](Result<> result) {
-    bt_log(INFO,
-           "hci-le",
-           "advertising stopped for %s: %s",
-           bt_str(advertisement_id),
-           bt_str(result));
-    OnCurrentOperationComplete();
-  });
+  hci_cmd_runner_->RunCommands(
+      [this, advertisement_id, cb = std::move(result_cb)](Result<> result) {
+        bt_log(INFO,
+               "hci-le",
+               "advertising stopped for %s: %s",
+               bt_str(advertisement_id),
+               bt_str(result));
+        if (cb) {
+          cb(result);
+        }
+        OnCurrentOperationComplete();
+      });
 
   connection_callbacks_.erase(advertisement_id);
 }

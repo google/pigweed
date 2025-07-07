@@ -47,8 +47,11 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       ConnectionCallback connect_callback,
       ResultFunction<hci::AdvertisementId> result_callback) override;
 
-  void StopAdvertising() override;
-  void StopAdvertising(hci::AdvertisementId advertisement_id) override;
+  void StopAdvertising(
+      fit::function<void(Result<>)> result_cb = nullptr) override;
+  void StopAdvertising(
+      hci::AdvertisementId advertisement_id,
+      fit::function<void(Result<>)> result_cb = nullptr) override;
 
   void OnIncomingConnection(
       hci_spec::ConnectionHandle handle,

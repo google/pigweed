@@ -47,14 +47,12 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       ConnectionCallback connect_callback,
       ResultFunction<AdvertisementId> result_callback) override;
 
-  void StopAdvertising() override;
+  void StopAdvertising(
+      fit::function<void(Result<>)> result_cb = nullptr) override;
 
-  // If called while a stop request is pending, returns false.
-  // If called while a start request is pending, then cancels the start
-  // request and proceeds with start.
-  // Returns false if called while not advertising.
-  // TODO(fxbug.dev/42127634): Update documentation.
-  void StopAdvertising(AdvertisementId advertisement_id) override;
+  void StopAdvertising(
+      AdvertisementId advertisement_id,
+      fit::function<void(Result<>)> result_cb = nullptr) override;
 
   void OnIncomingConnection(
       hci_spec::ConnectionHandle handle,

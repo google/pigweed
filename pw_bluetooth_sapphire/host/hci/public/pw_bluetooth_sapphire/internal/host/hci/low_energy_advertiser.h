@@ -181,11 +181,14 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Stops advertisement on all currently advertising addresses. Idempotent and
   // asynchronous.
-  virtual void StopAdvertising() = 0;
+  virtual void StopAdvertising(
+      fit::function<void(Result<>)> result_cb = nullptr) = 0;
 
   // Stops the advertisement identified by |handle|. Idempotent and
   // asynchronous.
-  virtual void StopAdvertising(hci::AdvertisementId advertisement_id) = 0;
+  virtual void StopAdvertising(
+      hci::AdvertisementId advertisement_id,
+      fit::function<void(Result<>)> result_cb = nullptr) = 0;
 
   // Callback for an incoming LE connection. This function should be called in
   // reaction to any connection that was not initiated locally. This object will
@@ -313,11 +316,12 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Unconditionally stop all advertising (all checks muts be performed in the
   // methods that call this one).
-  void StopAdvertisingInternal();
+  void StopAdvertisingInternal(fit::function<void(Result<>)> result_cb);
 
   // Unconditionally stop advertising (all checks muts be performed in the
   // methods that call this one).
-  void StopAdvertisingInternal(AdvertisementId advertisement_id);
+  void StopAdvertisingInternal(AdvertisementId advertisement_id,
+                               fit::function<void(Result<>)> result_cb);
 
   // Handle shared housekeeping tasks when an incoming connection is completed
   // (e.g. clean up internal state, call callbacks, etc)

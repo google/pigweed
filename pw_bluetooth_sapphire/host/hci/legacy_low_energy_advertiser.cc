@@ -273,15 +273,19 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
                            std::move(result_cb_wrapper));
 }
 
-void LegacyLowEnergyAdvertiser::StopAdvertising() {
-  StopAdvertisingInternal();
+void LegacyLowEnergyAdvertiser::StopAdvertising(
+    fit::function<void(Result<>)> result_cb) {
+  StopAdvertisingInternal(std::move(result_cb));
   ResetAdvertisingState();
 }
 
 void LegacyLowEnergyAdvertiser::StopAdvertising(
-    AdvertisementId advertisement_id) {
+    AdvertisementId advertisement_id, fit::function<void(Result<>)> result_cb) {
   if (!active_advertisement_id_ ||
       active_advertisement_id_.value() != advertisement_id) {
+    if (result_cb) {
+      result_cb(ToResult(HostError::kInvalidParameters));
+    }
     return;
   }
 
@@ -289,7 +293,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertising(
     hci_cmd_runner().Cancel();
   }
 
-  StopAdvertisingInternal(advertisement_id);
+  StopAdvertisingInternal(advertisement_id, std::move(result_cb));
   ResetAdvertisingState();
 }
 
