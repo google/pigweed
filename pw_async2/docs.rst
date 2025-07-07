@@ -6,14 +6,14 @@ pw_async2
 .. pigweed-module::
    :name: pw_async2
 
-   - **Simple Ownership**: Say goodbye to that jumble of callbacks and shared
-     state! Complex tasks with many concurrent elements can be expressed by
-     simply combining smaller tasks.
-   - **Efficient**: No dynamic memory allocation required.
-   - **Pluggable**: Your existing event loop, work queue, or task scheduler
-     can run the ``Dispatcher`` without any extra threads.
-   - **Coroutine-capable**: C++20 coroutines work just like other tasks, and can
-     easily plug into an existing ``pw_async2`` system.
+- **Simple Ownership**: Say goodbye to that jumble of callbacks and shared
+  state! Complex tasks with many concurrent elements can be expressed by
+  simply combining smaller tasks.
+- **Efficient**: No dynamic memory allocation required.
+- **Pluggable**: Your existing event loop, work queue, or task scheduler
+  can run the ``Dispatcher`` without any extra threads.
+- **Coroutine-capable**: C++20 coroutines work just like other tasks, and can
+  easily plug into an existing ``pw_async2`` system.
 
 :cpp:class:`pw::async2::Task` is Pigweed's async primitive. ``Task`` objects
 are cooperatively-scheduled "threads" which yield to the
@@ -47,7 +47,7 @@ Tasks can then be run on a :cpp:class:`pw::async2::Dispatcher` using the
    :start-after: [pw_async2-examples-basic-dispatcher]
    :end-before: [pw_async2-examples-basic-dispatcher]
 
-.. grid:: 2
+.. grid:: 1
 
    .. grid-item-card:: :octicon:`rocket` Quickstart & guides
       :link: module-pw_async2-quickstart-guides
@@ -61,6 +61,16 @@ Tasks can then be run on a :cpp:class:`pw::async2::Dispatcher` using the
       * Use coroutines
 
       And more.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`stack` Design
+      :link: module-pw_async2-design
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Core concepts, the pendable function interface, execution
+      model, memory model, interoperability, and more.
 
    .. grid-item-card:: :octicon:`code-square` Reference
       :link: module-pw_async2-reference
@@ -98,6 +108,7 @@ Tasks can then be run on a :cpp:class:`pw::async2::Dispatcher` using the
    :maxdepth: 1
 
    guides
+   design
    reference
    backends
    code_size
