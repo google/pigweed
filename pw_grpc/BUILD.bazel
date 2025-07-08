@@ -30,7 +30,6 @@ load(":config.bzl", "PW_GRPC_PW_RPC_CONFIG_OVERRIDES")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 log_defines = [
@@ -76,6 +75,7 @@ cc_library(
         "//pw_async:dispatcher",
         "//pw_async_basic:dispatcher",
         "//pw_bytes",
+        "//pw_chrono:system_clock",
         "//pw_function",
         "//pw_log",
         "//pw_multibuf",
@@ -86,6 +86,7 @@ cc_library(
         "//pw_status",
         "//pw_stream",
         "//pw_string",
+        "//pw_string:string",
         "//pw_sync:inline_borrowable",
         "//pw_thread:thread",
         "//pw_thread:thread_core",
@@ -141,9 +142,12 @@ cc_library(
         ":grpc_channel_output",
         "//pw_bytes",
         "//pw_log",
+        "//pw_result",
         "//pw_rpc",
         "//pw_rpc_transport:rpc_transport",
+        "//pw_status",
         "//pw_string",
+        "//pw_sync:inline_borrowable",
     ],
 )
 
@@ -165,7 +169,9 @@ cc_library(
         "//pw_result",
         "//pw_span",
         "//pw_status",
-        "//pw_string",
+        "//pw_string:builder",
+        "//pw_string:string",
+        "//pw_string:util",
     ],
 )
 
@@ -175,6 +181,7 @@ pw_cc_test(
     tags = ["noclangtidy"],
     deps = [
         ":hpack",
+        "//pw_bytes",
     ],
 )
 

@@ -19,7 +19,6 @@
 #include <type_traits>
 
 #include "pw_allocator/libc_allocator.h"
-#include "pw_assert/check.h"
 #include "pw_bytes/byte_builder.h"
 #include "pw_bytes/span.h"
 #include "pw_checksum/crc32.h"
@@ -38,7 +37,6 @@
 #include "pw_status/try.h"
 #include "pw_stream/socket_stream.h"
 #include "pw_stream/stream.h"
-#include "pw_string/string.h"
 #include "pw_thread/test_thread_context.h"
 #include "pw_thread/thread.h"
 
