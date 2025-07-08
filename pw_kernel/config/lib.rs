@@ -32,7 +32,13 @@ pub trait CortexMKernelConfigInterface {
 }
 
 /// RISC-V specific configuration.
-// TODO: davidroth - Once Arch is out of tree, move this configuration also.
+// TODO: davidrotOnce Arch is out of tree, move this configuration also.
+/// mtvec exception mode.
+pub enum ExceptionMode {
+    Direct,
+    Vectored(usize),
+}
+
 pub trait RiscVKernelConfigInterface {
     /// Number of PMP entries.  Per the architecture spec this may be 0, 16
     /// or 64.
@@ -41,4 +47,13 @@ pub trait RiscVKernelConfigInterface {
     /// Number of pmpcfgN registers.  For rv32 this is `PMP_ENTRIES / 4`, for
     /// rv64 it is `PMP_ENTRIES / 8`.
     const PMP_CFG_REGISTERS: usize;
+
+    /// mtvec exception mode. When in direct mode, base address will be set
+    /// to the `_start_trap` address.
+    /// When in vectored mode, the address of the vector table is passed
+    /// as a usize.
+    /// This isn't const, as rust doesn't allow an address only know at
+    /// link time to be const.
+    /// https://users.rust-lang.org/t/using-linker-defined-symbols-in-const-context-as-integers/120081
+    fn get_exception_mode() -> ExceptionMode;
 }

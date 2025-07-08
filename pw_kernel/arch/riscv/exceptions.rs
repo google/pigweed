@@ -13,6 +13,7 @@
 // the License.
 
 use kernel::syscall::raw_handle_syscall;
+use kernel_config::{ExceptionMode, KernelConfig, RiscVKernelConfigInterface};
 use log_if::debug_if;
 use pw_log::info;
 #[cfg(not(feature = "user_space"))]
@@ -28,11 +29,11 @@ const LOG_EXCEPTIONS: bool = false;
 pub fn early_init() {
     // Explicitly set up MTVEC to point to the kernel's handler to ensure
     // that it is set to the correct mode.
-    MtVec::write(
-        MtVec::read()
-            .with_base(_start_trap as usize)
-            .with_mode(MtVecMode::Direct),
-    );
+    let (base, mode) = match KernelConfig::get_exception_mode() {
+        ExceptionMode::Direct => (_start_trap as usize, MtVecMode::Direct),
+        ExceptionMode::Vectored(vec_table) => (vec_table, MtVecMode::Vectored),
+    };
+    MtVec::write(MtVec::read().with_base(base).with_mode(mode));
 }
 
 /// Type of all exception handlers.

@@ -13,7 +13,7 @@
 // the License.
 #![no_std]
 
-pub use kernel_config::{KernelConfigInterface, RiscVKernelConfigInterface};
+pub use kernel_config::{ExceptionMode, KernelConfigInterface, RiscVKernelConfigInterface};
 
 pub struct KernelConfig;
 
@@ -22,4 +22,7 @@ impl KernelConfigInterface for KernelConfig {}
 impl RiscVKernelConfigInterface for KernelConfig {
     const PMP_ENTRIES: usize = 16;
     const PMP_CFG_REGISTERS: usize = 4;
+    fn get_exception_mode() -> ExceptionMode {
+        ExceptionMode::Direct
+    }
 }
