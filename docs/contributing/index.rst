@@ -15,7 +15,7 @@ Thank you for your interest in improving :ref:`docs-glossary-upstream`! This
 guide quickly walks you through the end-to-end contribution process.
 
 .. _good first issues: https://issues.pigweed.dev/issues?q=id:256050233%20OR%20parentid:256050233%2B
-.. _bring it home changes: https://pigweed-review.googlesource.com/q/hashtag:%22BringItHome
+.. _bring it home changes: https://pigweed-review.googlesource.com/q/hashtag:%22BringItHome%22
 
 .. tip::
 
