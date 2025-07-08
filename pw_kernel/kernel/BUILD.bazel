@@ -23,7 +23,6 @@ CORTEX_M_DEPS = [
 
 RISCV_DEPS = [
     "@rust_crates//:riscv",
-    "@rust_crates//:riscv-rt",
 ]
 
 rust_library(

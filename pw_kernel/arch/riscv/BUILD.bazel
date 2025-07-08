@@ -54,7 +54,6 @@ rust_library(
         "//pw_kernel/syscall:syscall_defs",
         "@pigweed//pw_log/rust:pw_log",
         "@rust_crates//:riscv",
-        "@rust_crates//:riscv-rt",
     ] + KERNEL_TEST_DEPS,
 )
 
