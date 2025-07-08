@@ -33,6 +33,9 @@ from pw_build.workflows.private.validator import (
 # Regex for template/variable expansion.
 _TEMPLATE_PATTERN = re.compile(r'(?:\${?)([a-zA-Z_][a-zA-Z0-9_]*)')
 
+_BAZEL_PROJECT_ROOT_ENV_VAR = 'BUILD_WORKSPACE_DIRECTORY'
+_BOOTSTRAP_PROJECT_ROOT_ENV_VAR = 'PW_PROJECT_ROOT'
+
 
 def expand_action(
     action: build_driver_pb2.Action,
@@ -72,7 +75,12 @@ def expand_action(
 
 
 class WorkflowsManager:
-    """A class for creating build recipes from a workflows.json file."""
+    """A class for creating build recipes from a workflows.json file.
+
+    This class is responsible for validating Workflows configuration files,
+    and converting them into executable build actions. Execution of builds
+    is left to the caller to support diversity in build execution schemes.
+    """
 
     def __init__(
         self,
@@ -94,10 +102,12 @@ class WorkflowsManager:
         }
         if project_root is not None:
             self._project_root = project_root
-        elif 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
-            self._project_root = Path(os.environ['BUILD_WORKSPACE_DIRECTORY'])
-        elif 'PW_PROJECT_ROOT' in os.environ:
-            self._project_root = Path(os.environ['PW_PROJECT_ROOT'])
+        elif _BAZEL_PROJECT_ROOT_ENV_VAR in os.environ:
+            self._project_root = Path(os.environ[_BAZEL_PROJECT_ROOT_ENV_VAR])
+        elif _BOOTSTRAP_PROJECT_ROOT_ENV_VAR in os.environ:
+            self._project_root = Path(
+                os.environ[_BOOTSTRAP_PROJECT_ROOT_ENV_VAR]
+            )
         else:
             raise ValueError('Cannot locate project root')
         self._base_out_dir = base_out_dir
@@ -275,7 +285,19 @@ class WorkflowsManager:
         forwarded_arguments: Sequence[str],
         as_analyzer: bool = False,
     ) -> list[BuildRecipe]:
-        """Generates build recipes for a workflows_pb2.Tool by name."""
+        """Generates build recipes for a workflows_pb2.Tool by name.
+
+        Args:
+            tool_name: The name of the Tool to launch.
+            forwarded_arguments: Arguments to forward when launching the
+                underlying tool.
+            as_analyzer: If true, launches the requested tool in analyzer
+                mode (if supported). This tells the tool to not modify
+                any in-tree sources.
+
+        Returns:
+            A list of BuildRecipes that fulfill this request.
+        """
         tool = self._fragments_by_name.get(tool_name, None)
         if not isinstance(tool, workflows_pb2.Tool):
             raise TypeError(f'{tool_name} is not a tool.')
@@ -296,14 +318,28 @@ class WorkflowsManager:
         return self._create_build_recipes([tool], forwarded_arguments)
 
     def program_build(self, build_name: str) -> list[BuildRecipe]:
-        """Generates build recipes for a workflows_pb2.Build by name."""
+        """Generates build recipes for a workflows_pb2.Build by name.
+
+        Args:
+            build_name: The name of the Build to launch.
+
+        Returns:
+            A list of BuildRecipes that fulfill this request.
+        """
         build = self._fragments_by_name.get(build_name, None)
         if not isinstance(build, workflows_pb2.Build):
             raise TypeError(f'{build_name} is not a build.')
         return self._create_build_recipes([build])
 
     def program_group(self, group_name: str) -> list[BuildRecipe]:
-        """Generates build recipes for a workflows_pb2.TaskGroup by name."""
+        """Generates build recipes for a workflows_pb2.TaskGroup by name.
+
+        Args:
+            group_name: The name of the Group to launch.
+
+        Returns:
+            A list of BuildRecipes that fulfill this request.
+        """
         group = self._fragments_by_name.get(group_name, None)
         if not isinstance(group, workflows_pb2.TaskGroup):
             raise TypeError(f'{group_name} is not a group.')
