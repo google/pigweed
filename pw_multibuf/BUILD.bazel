@@ -340,12 +340,14 @@ cc_library(
 )
 
 cc_library(
-    name = "chunk_iterator",
+    name = "iterators",
     hdrs = [
-        "public/pw_multibuf/chunk_iterator.h",
+        "public/pw_multibuf/internal/byte_iterator.h",
+        "public/pw_multibuf/internal/chunk_iterator.h",
         "public/pw_multibuf/internal/entry.h",
     ],
     strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         ":chunk",
         "//pw_assert:assert",
@@ -361,21 +363,8 @@ pw_cc_test(
         "chunk_iterator_test.cc",
     ],
     deps = [
-        ":chunk_iterator",
         ":iterator_testing",
-    ],
-)
-
-cc_library(
-    name = "byte_iterator",
-    hdrs = [
-        "public/pw_multibuf/byte_iterator.h",
-    ],
-    strip_include_prefix = "public",
-    deps = [
-        ":chunk_iterator",
-        "//pw_assert:assert",
-        "//pw_containers:dynamic_deque",
+        ":iterators",
     ],
 )
 
@@ -385,8 +374,8 @@ pw_cc_test(
         "byte_iterator_test.cc",
     ],
     deps = [
-        ":byte_iterator",
         ":iterator_testing",
+        ":iterators",
     ],
 )
 
@@ -398,8 +387,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        ":byte_iterator",
-        ":chunk_iterator",
+        ":iterators",
         "//pw_allocator:bump_allocator",
         "//pw_unit_test",
     ],
@@ -419,8 +407,7 @@ cc_library(
     strip_include_prefix = "public",
     visibility = ["//visibility:public"],
     deps = [
-        ":byte_iterator",
-        ":chunk_iterator",
+        ":iterators",
         "//pw_allocator",
         "//pw_bytes",
         "//pw_containers:dynamic_deque",
@@ -433,9 +420,8 @@ pw_cc_test(
         "multibuf_v2_test.cc",
     ],
     deps = [
-        ":byte_iterator",
         ":chunk",
-        ":chunk_iterator",
+        ":iterators",
         ":multibuf_v2",
         "//pw_allocator:chunk_pool",
         "//pw_allocator:testing",

@@ -306,9 +306,10 @@ pw_add_library(pw_multibuf.v2_config INTERFACE
     PW_MULTIBUF_VERSION=PW_MULTIBUF_V2
 )
 
-pw_add_library(pw_multibuf.chunk_iterator INTERFACE
+pw_add_library(pw_multibuf._iterators INTERFACE
   HEADERS
-    public/pw_multibuf/chunk_iterator.h
+    public/pw_multibuf/internal/byte_iterator.h
+    public/pw_multibuf/internal/chunk_iterator.h
     public/pw_multibuf/internal/entry.h
   PUBLIC_INCLUDES
     public
@@ -323,29 +324,18 @@ pw_add_test(pw_multibuf.chunk_iterator_test
   SOURCES
     chunk_iterator_test.cc
   PRIVATE_DEPS
-    pw_multibuf.chunk_iterator
+    pw_multibuf._iterators
     pw_multibuf.iterator_testing
   GROUPS
     modules
     pw_multibuf
 )
 
-pw_add_library(pw_multibuf.byte_iterator INTERFACE
-  HEADERS
-    public/pw_multibuf/byte_iterator.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_assert.assert
-    pw_containers.dynamic_deque
-    pw_multibuf.chunk_iterator
-)
-
 pw_add_test(pw_multibuf.byte_iterator_test
   SOURCES
     byte_iterator_test.cc
   PRIVATE_DEPS
-    pw_multibuf.byte_iterator
+    pw_multibuf._iterators
     pw_multibuf.iterator_testing
   GROUPS
     modules
@@ -359,8 +349,7 @@ pw_add_library(pw_multibuf.iterator_testing INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.bump_allocator
-    pw_multibuf.byte_iterator
-    pw_multibuf.chunk_iterator
+    pw_multibuf._iterators
     pw_unit_test
 )
 
@@ -375,8 +364,7 @@ pw_add_library(pw_multibuf.multibuf_v2 STATIC
     pw_allocator
     pw_bytes
     pw_containers.dynamic_deque
-    pw_multibuf.chunk_iterator
-    pw_multibuf.byte_iterator
+    pw_multibuf._iterators
   SOURCES
     multibuf_v2.cc
   PRIVATE_DEPS
@@ -392,9 +380,8 @@ pw_add_test(pw_multibuf.multibuf_v2_test
     pw_assert.check
     pw_bytes
     pw_compilation_testing._pigweed_only_negative_compilation
-    pw_multibuf.byte_iterator
+    pw_multibuf._iterators
     pw_multibuf.chunk
-    pw_multibuf.chunk_iterator
     pw_multibuf.multibuf_v2
     pw_result
     pw_status

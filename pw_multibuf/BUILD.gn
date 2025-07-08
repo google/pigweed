@@ -277,10 +277,11 @@ config("v2_config") {
   defines = [ "PW_MULTIBUF_VERSION=PW_MULTIBUF_V2" ]
 }
 
-pw_source_set("chunk_iterator") {
+pw_source_set("iterators") {
   public_configs = [ ":public_include_path" ]
   public = [
-    "public/pw_multibuf/chunk_iterator.h",
+    "public/pw_multibuf/internal/byte_iterator.h",
+    "public/pw_multibuf/internal/chunk_iterator.h",
     "public/pw_multibuf/internal/entry.h",
   ]
   public_deps = [
@@ -290,31 +291,22 @@ pw_source_set("chunk_iterator") {
     dir_pw_bytes,
     dir_pw_preprocessor,
   ]
+  visibility = [ ":*" ]
 }
 
 pw_test("chunk_iterator_test") {
   sources = [ "chunk_iterator_test.cc" ]
   deps = [
-    ":chunk_iterator",
     ":iterator_testing",
-  ]
-}
-
-pw_source_set("byte_iterator") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_multibuf/byte_iterator.h" ]
-  deps = [
-    ":chunk_iterator",
-    "$dir_pw_assert:assert",
-    "$dir_pw_containers:dynamic_deque",
+    ":iterators",
   ]
 }
 
 pw_test("byte_iterator_test") {
   sources = [ "byte_iterator_test.cc" ]
   deps = [
-    ":byte_iterator",
     ":iterator_testing",
+    ":iterators",
   ]
 }
 
@@ -322,8 +314,7 @@ pw_source_set("iterator_testing") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_multibuf/internal/iterator_testing.h" ]
   public_deps = [
-    ":byte_iterator",
-    ":chunk_iterator",
+    ":iterators",
     "$dir_pw_allocator:bump_allocator",
     dir_pw_unit_test,
   ]
@@ -337,8 +328,7 @@ pw_source_set("multibuf_v2") {
     "public/pw_multibuf/properties.h",
   ]
   public_deps = [
-    ":byte_iterator",
-    ":chunk_iterator",
+    ":iterators",
     "$dir_pw_containers:dynamic_deque",
     dir_pw_allocator,
     dir_pw_bytes,
@@ -350,9 +340,8 @@ pw_source_set("multibuf_v2") {
 pw_test("multibuf_v2_test") {
   sources = [ "multibuf_v2_test.cc" ]
   deps = [
-    ":byte_iterator",
     ":chunk",
-    ":chunk_iterator",
+    ":iterators",
     ":multibuf_v2",
     "$dir_pw_allocator:chunk_pool",
     "$dir_pw_allocator:testing",

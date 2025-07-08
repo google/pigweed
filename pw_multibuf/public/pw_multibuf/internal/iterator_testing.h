@@ -18,8 +18,8 @@
 
 #include "pw_allocator/bump_allocator.h"
 #include "pw_containers/dynamic_deque.h"
-#include "pw_multibuf/byte_iterator.h"
-#include "pw_multibuf/chunk_iterator.h"
+#include "pw_multibuf/internal/byte_iterator.h"
+#include "pw_multibuf/internal/chunk_iterator.h"
 #include "pw_multibuf/internal/entry.h"
 #include "pw_unit_test/framework.h"
 

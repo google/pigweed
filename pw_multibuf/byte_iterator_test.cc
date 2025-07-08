@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_multibuf/byte_iterator.h"
+#include "pw_multibuf/internal/byte_iterator.h"
 
 #include "pw_multibuf/internal/iterator_testing.h"
 #include "pw_unit_test/framework.h"

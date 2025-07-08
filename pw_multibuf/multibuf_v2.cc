@@ -17,9 +17,9 @@
 #include <cstring>
 #include <utility>
 
-#include "public/pw_multibuf/byte_iterator.h"
 #include "public/pw_multibuf/multibuf_v2.h"
 #include "pw_assert/check.h"
+#include "pw_multibuf/internal/byte_iterator.h"
 #include "pw_status/try.h"
 
 namespace pw::multibuf_impl {
