@@ -20,10 +20,20 @@ pub(crate) use riscv_macro::kernel_only_exception as exception;
 #[cfg(feature = "user_space")]
 pub(crate) use riscv_macro::user_space_exception as exception;
 
-use crate::regs::{Cause, Exception, Interrupt, MCause, MCauseVal, MStatus};
+use crate::regs::{Cause, Exception, Interrupt, MCause, MCauseVal, MStatus, MtVec, MtVecMode};
 use crate::timer;
 
 const LOG_EXCEPTIONS: bool = false;
+
+pub fn early_init() {
+    // Explicitly set up MTVEC to point to the kernel's handler to ensure
+    // that it is set to the correct mode.
+    MtVec::write(
+        MtVec::read()
+            .with_base(_start_trap as usize)
+            .with_mode(MtVecMode::Direct),
+    );
+}
 
 /// Type of all exception handlers.
 #[allow(dead_code)]

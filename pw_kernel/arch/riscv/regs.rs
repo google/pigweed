@@ -48,7 +48,7 @@ macro_rules! rw_csr_reg {
             #[allow(dead_code)]
             #[inline]
             pub fn write(val: $val_type) {
-              unsafe {core::arch::asm!(concat!("csrw stringify!($addr), {0}", stringify!($reg_name)), in(reg) val.0)};
+              unsafe {core::arch::asm!(concat!("csrw ", stringify!($reg_name), ", {0}"), in(reg) val.0)};
             }
         }
     };
@@ -178,3 +178,37 @@ impl MStatusVal {
 }
 
 rw_csr_reg!(MStatus, MStatusVal, mstatus, "Machine Status Register");
+
+/// Machine Trap-Vector Base-Address Register Mode
+#[allow(dead_code)]
+#[repr(usize)]
+#[non_exhaustive]
+pub enum MtVecMode {
+    /// All taps set pc to `base`.
+    Direct = 0b00,
+
+    /// Interrupts set pc to `base` + 4 * cause.
+    Vectored = 0b01,
+}
+
+/// Machine Trap-Vector Base-Address Register value
+#[derive(Copy, Clone, Default)]
+#[repr(transparent)]
+pub struct MtVecVal(pub usize);
+
+impl MtVecVal {
+    rw_masked_field!(
+        base,
+        !0b11,
+        usize,
+        "Machine Trap-Vector Base-Address Register"
+    );
+    rw_enum_field!(usize, mode, 0, 1, MtVecMode, "Mode");
+}
+
+rw_csr_reg!(
+    MtVec,
+    MtVecVal,
+    mtvec,
+    "Machine Trap-Vector Base-Address Register"
+);

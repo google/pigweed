@@ -41,6 +41,8 @@ impl kernel::KernelContext for Arch {
         // Make sure interrupts are disabled
         Arch.disable_interrupts();
 
+        exceptions::early_init();
+
         timer::early_init();
     }
 
