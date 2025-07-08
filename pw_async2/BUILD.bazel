@@ -54,7 +54,12 @@ pw_cc_test(
 
 pw_facade(
     name = "dispatcher",
-    srcs = ["dispatcher_base.cc"],
+    srcs = [
+        "context.cc",
+        "dispatcher_base.cc",
+        "task.cc",
+        "waker.cc",
+    ],
     hdrs = [
         "public/pw_async2/context.h",
         "public/pw_async2/dispatcher.h",

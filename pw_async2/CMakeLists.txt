@@ -73,7 +73,10 @@ pw_add_facade(pw_async2.dispatcher STATIC
     pw_assert.check
     pw_async2.config
   SOURCES
+    context.cc
     dispatcher_base.cc
+    task.cc
+    waker.cc
 )
 
 pw_add_test(pw_async2.dispatcher_test

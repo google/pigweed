@@ -86,7 +86,12 @@ pw_facade("dispatcher") {
     "$dir_pw_assert:check",
     dir_pw_log,
   ]
-  sources = [ "dispatcher_base.cc" ]
+  sources = [
+    "context.cc",
+    "dispatcher_base.cc",
+    "task.cc",
+    "waker.cc",
+  ]
 }
 
 pw_source_set("config") {
