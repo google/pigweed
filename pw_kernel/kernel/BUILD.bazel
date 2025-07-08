@@ -43,9 +43,7 @@ rust_library(
         "target.rs",
     ],
     crate_features = ["user_space"] + select({
-        "@pigweed//pw_build/constraints/arm:cortex-m0": ["arch_arm_cortex_m"],
-        "@pigweed//pw_build/constraints/arm:cortex-m3": ["arch_arm_cortex_m"],
-        "@pigweed//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
+        "@platforms//cpu:armv8-m": ["arch_arm_cortex_m"],
         "@platforms//cpu:riscv32": ["arch_riscv"],
         "//conditions:default": [
             "arch_host",
@@ -53,10 +51,12 @@ rust_library(
         ],
     }),
     proc_macro_deps = [
-        "//pw_kernel/macros:riscv_macro",
-        "//pw_kernel/macros:arm_cortex_m_macro",
         "@rust_crates//:paste",
-    ],
+    ] + select({
+        "@platforms//cpu:armv8-m": ["//pw_kernel/macros:arm_cortex_m_macro"],
+        "@platforms//cpu:riscv32": ["//pw_kernel/macros:riscv_macro"],
+        "//conditions:default": [],
+    }),
     tags = ["kernel"],
     deps = [
         "//pw_kernel/config:kernel_config",
@@ -71,9 +71,7 @@ rust_library(
         "//pw_kernel/syscall:syscall_defs",
         "@pigweed//pw_log/rust:pw_log",
     ] + select({
-        "@pigweed//pw_build/constraints/arm:cortex-m0": CORTEX_M_DEPS,
-        "@pigweed//pw_build/constraints/arm:cortex-m3": CORTEX_M_DEPS,
-        "@pigweed//pw_build/constraints/arm:cortex-m33": CORTEX_M_DEPS,
+        "@platforms//cpu:armv8-m": CORTEX_M_DEPS,
         "@platforms//cpu:riscv32": RISCV_DEPS,
         "//conditions:default": [],
     }),
@@ -88,9 +86,7 @@ rust_doc(
     ] + select({
         # Arch feature selection will be removed when arch support moves out of
         # the kernel crate.
-        "@pigweed//pw_build/constraints/arm:cortex-m0": ["--cfg=feature=\"arch_arm_cortex_m\""],
-        "@pigweed//pw_build/constraints/arm:cortex-m3": ["--cfg=feature=\"arch_arm_cortex_m\""],
-        "@pigweed//pw_build/constraints/arm:cortex-m33": ["--cfg=feature=\"arch_arm_cortex_m\""],
+        "@platforms//cpu:armv8-m": ["--cfg=feature=\"arch_arm_cortex_m\""],
         "@platforms//cpu:riscv32": ["--cfg=feature=\"arch_riscv\""],
         "//conditions:default": [
             "--cfg=feature=\"arch_host\"",

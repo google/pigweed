@@ -36,9 +36,7 @@ rust_library(
         "syscall_user/riscv.rs",
     ],
     crate_features = select({
-        "@pigweed//pw_build/constraints/arm:cortex-m0": ["arch_arm_cortex_m"],
-        "@pigweed//pw_build/constraints/arm:cortex-m3": ["arch_arm_cortex_m"],
-        "@pigweed//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
+        "@platforms//cpu:armv8-m": ["arch_arm_cortex_m"],
         "@platforms//cpu:riscv32": ["arch_riscv"],
         "//conditions:default": ["arch_host"],
     }),
