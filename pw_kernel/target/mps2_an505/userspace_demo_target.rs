@@ -17,7 +17,6 @@
 use console_backend as _;
 
 use arch_arm_cortex_m::{Arch, ArchThreadState};
-use kernel::InitKernelState;
 use target_common::{declare_target, TargetInterface};
 mod userspace_demo_codegen;
 
@@ -41,10 +40,10 @@ pub extern "C" fn pw_assert_HandleFailure() -> ! {
     Arch::panic()
 }
 
-static mut INIT_STATE: InitKernelState<ArchThreadState> = InitKernelState::new();
-
 #[cortex_m_rt::entry]
 fn main() -> ! {
+    kernel::static_init_state!(static mut INIT_STATE: InitKernelState<ArchThreadState>);
+
     // SAFETY: `main` is only executed once, so we never generate more than one
     // `&mut` reference to `INIT_STATE`.
     #[allow(static_mut_refs)]

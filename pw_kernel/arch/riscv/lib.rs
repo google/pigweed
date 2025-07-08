@@ -16,8 +16,8 @@
 
 use core::arch::asm;
 
-use kernel::KernelState;
 use kernel::scheduler::SchedulerContext as _;
+use kernel::KernelState;
 
 mod exceptions;
 mod protection;

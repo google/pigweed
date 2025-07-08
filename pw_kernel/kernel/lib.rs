@@ -23,7 +23,6 @@ pub mod sync;
 pub mod syscall;
 mod target;
 
-// Used by the `init_thread!` macro.
 use kernel_config::{KernelConfig, KernelConfigInterface};
 pub use memory::{MemoryRegion, MemoryRegionType};
 use scheduler::thread::{self, ThreadState};
@@ -65,33 +64,77 @@ impl<C: KernelStateContext> KernelState<C> {
     }
 }
 
-struct ThreadStorage<S: ThreadState> {
-    thread: Thread<S>,
-    stack: StackStorage<{ KernelConfig::KERNEL_STACK_SIZE_BYTES }>,
+/// Initializes an [`InitKernelState`] in static storage.
+///
+/// # Examples
+///
+/// Here's an example of using `static_init_state!` on Cortex-M:
+///
+/// ```
+/// struct ArchThreadState;
+///
+/// #[cortex_m_rt::entry]
+/// fn main() -> ! {
+///     Target::console_init();
+///
+///     kernel::static_init_state!(static mut INIT_STATE: InitKernelState<ArchThreadState>);
+///
+///     // SAFETY: `main` is only executed once, so we never generate more than one
+///     // `&mut` reference to `INIT_STATE`.
+///     kernel::Kernel::main(Arch, unsafe { &mut INIT_STATE });
+/// }
+/// ```
+#[macro_export]
+macro_rules! static_init_state {
+    ($vis:vis static mut $name:ident: InitKernelState<$arch:ty>) => {
+        $vis static mut $name: $crate::InitKernelState<$arch> = {
+            use $crate::__private::kernel_config;
+            use kernel_config::KernelConfigInterface as _;
+            use kernel::StackStorageExt as _;
+
+            type Stack = $crate::StackStorage<{ kernel_config::KernelConfig::KERNEL_STACK_SIZE_BYTES }>;
+            static mut BOOTSTRAP_STACK: Stack = Stack::ZEROED;
+            static mut IDLE_STACK: Stack = Stack::ZEROED;
+
+            $crate::InitKernelState {
+                bootstrap_thread: $crate::ThreadStorage {
+                    thread: $crate::Thread::new("bootstrap"),
+                    // SAFETY: We're in a block used to initialize a `static`,
+                    // which is only executed once.
+                    stack: unsafe { &mut BOOTSTRAP_STACK },
+                },
+                idle_thread: $crate::ThreadStorage {
+                    thread: $crate::Thread::new("idle"),
+                    // SAFETY: We're in a block used to initialize a `static`,
+                    // which is only executed once.
+                    stack: unsafe { &mut IDLE_STACK },
+                },
+            }
+        };
+    };
 }
 
-impl<S: ThreadState> ThreadStorage<S> {
-    pub const fn new() -> Self {
-        Self {
-            thread: Thread::new(""),
-            stack: StackStorage::ZEROED,
-        }
-    }
+#[doc(hidden)]
+pub struct ThreadStorage<S: ThreadState> {
+    pub thread: Thread<S>,
+    // We store the stack out of line so that it is treated as a separate
+    // allocation from the containing `ThreadStorage`. The stack itself is
+    // zero-initialized, while the `Thread` is not. If we include the stack in
+    // the same allocation, then the entire allocation must be placed in the
+    // binary itself (in `.data`). By contrast, if it is out of line, then the
+    // fact that the whole stack is zero-initialized means that the linker can
+    // put it in `.bss` and omit its contents from the binary entirely.
+    //
+    // See https://pwrev.dev/303372 (Ie93cfc52215753e1b4482d5fe3058dc53fcfa86a)
+    // for more information.
+    pub stack: &'static mut StackStorage<{ KernelConfig::KERNEL_STACK_SIZE_BYTES }>,
 }
 
 pub struct InitKernelState<S: ThreadState> {
-    bootstrap_thread: ThreadStorage<S>,
-    idle_thread: ThreadStorage<S>,
-}
-
-impl<S: ThreadState> InitKernelState<S> {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            bootstrap_thread: ThreadStorage::new(),
-            idle_thread: ThreadStorage::new(),
-        }
-    }
+    #[doc(hidden)]
+    pub bootstrap_thread: ThreadStorage<S>,
+    #[doc(hidden)]
+    pub idle_thread: ThreadStorage<S>,
 }
 
 pub struct Kernel {}
@@ -119,7 +162,7 @@ impl Kernel {
         let bootstrap_thread = thread::init_thread_in(
             ctx,
             &mut init_state.bootstrap_thread.thread,
-            &mut init_state.bootstrap_thread.stack,
+            init_state.bootstrap_thread.stack,
             "bootstrap",
             bootstrap_thread_entry,
             &mut init_state.idle_thread,
@@ -148,7 +191,7 @@ fn bootstrap_thread_entry<C: KernelStateContext>(
     let idle_thread = thread::init_thread_in(
         ctx,
         &mut idle_thread_storage.thread,
-        &mut idle_thread_storage.stack,
+        idle_thread_storage.stack,
         "idle",
         idle_thread_entry,
         0,
@@ -191,5 +234,5 @@ pub mod __private {
         }};
     }
 
-    pub use foreign_box;
+    pub use {foreign_box, kernel_config};
 }

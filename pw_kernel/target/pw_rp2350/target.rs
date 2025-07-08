@@ -18,12 +18,10 @@ use arch_arm_cortex_m::{Arch, ArchThreadState};
 use hal::fugit::RateExtU32;
 use hal::uart::{DataBits, StopBits, UartConfig};
 use hal::Clock;
-use kernel::InitKernelState;
-use target_common::{declare_target, TargetInterface};
-use {console_backend as _, kernel as _, rp235x_hal as hal};
-
 #[cfg(test)]
 use integration_tests as _;
+use target_common::{declare_target, TargetInterface};
+use {console_backend as _, kernel as _, rp235x_hal as hal};
 
 #[link_section = ".start_block"]
 #[used]
@@ -127,7 +125,7 @@ pub extern "C" fn pw_assert_HandleFailure() -> ! {
 fn main() -> ! {
     Target::console_init();
 
-    static mut INIT_STATE: InitKernelState<ArchThreadState> = InitKernelState::new();
+    kernel::static_init_state!(static mut INIT_STATE: InitKernelState<ArchThreadState>);
 
     // SAFETY: `main` is only executed once, so we never generate more than one
     // `&mut` reference to `INIT_STATE`.

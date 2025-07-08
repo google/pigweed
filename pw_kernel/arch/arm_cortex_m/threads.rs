@@ -25,13 +25,13 @@ use pw_cast::CastInto as _;
 use pw_status::{Error, Result};
 
 use crate::exceptions::{
-    ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking, ExcReturnStack,
-    ExceptionFrame, KernelExceptionFrame, RetPsrVal, exception,
+    exception, ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking,
+    ExcReturnStack, ExceptionFrame, KernelExceptionFrame, RetPsrVal,
 };
 use crate::protection::MemoryConfig;
 use crate::regs::msr::{ControlVal, Spsel};
 use crate::spinlock::BareSpinLock;
-use crate::{Arch, in_interrupt_handler};
+use crate::{in_interrupt_handler, Arch};
 
 const LOG_THREAD_CREATE: bool = false;
 

@@ -21,10 +21,8 @@ mod tests {
 
     #[cfg(feature = "arch_arm_cortex_m")]
     use arch_arm_cortex_m::Arch;
-
     #[cfg(feature = "arch_riscv")]
     use arch_riscv::Arch;
-
     use kernel::sync::spinlock::{BareSpinLock, SpinLock};
     use unittest::test;
 

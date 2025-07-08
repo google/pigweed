@@ -17,7 +17,7 @@
 use arch_riscv::{Arch, ArchThreadState};
 use console_backend as _;
 use kernel::scheduler::SchedulerContext as _;
-use kernel::{self as _, Duration, InitKernelState};
+use kernel::{self as _, Duration};
 
 use target_common::{declare_target, TargetInterface};
 mod userspace_demo_codegen;
@@ -46,7 +46,7 @@ pub extern "C" fn pw_assert_HandleFailure() -> ! {
 
 #[riscv_rt::entry]
 fn main() -> ! {
-    static mut INIT_STATE: InitKernelState<ArchThreadState> = InitKernelState::new();
+    kernel::static_init_state!(static mut INIT_STATE: InitKernelState<ArchThreadState>);
 
     // SAFETY: `main` is only executed once, so we never generate more than one
     // `&mut` reference to `INIT_STATE`.
