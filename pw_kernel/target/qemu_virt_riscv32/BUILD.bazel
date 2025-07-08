@@ -29,7 +29,7 @@ platform(
         "//pw_build/constraints/riscv/extensions:C",
         "@platforms//cpu:riscv32",
         "@platforms//os:none",
-        "@rust_crates//:no_std",
+        "//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict(
         KERNEL_DEVICE_COMMON_FLAGS | {

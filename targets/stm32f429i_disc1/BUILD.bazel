@@ -34,7 +34,7 @@ platform(
         "@platforms//cpu:armv7e-m",
         "@platforms//os:none",
         "//pw_build/constraints/arm:cortex-m4",
-        "@rust_crates//:no_std",
+        "//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict({
         "@pigweed//pw_assert:check_backend": "//pw_assert_basic",

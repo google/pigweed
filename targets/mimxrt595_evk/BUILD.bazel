@@ -30,7 +30,7 @@ platform(
         "//pw_build/constraints/arm:cortex-m33",
         "@platforms//cpu:armv8-m",
         "@platforms//os:none",
-        "@rust_crates//:no_std",
+        "//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict({
         "@mcuxpresso//:user_config": "//targets/mimxrt595_evk:mcuxpresso_sdk_lib_config",

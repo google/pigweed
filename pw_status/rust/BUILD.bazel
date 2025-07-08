@@ -19,7 +19,7 @@ rust_library(
     name = "pw_status",
     srcs = ["pw_status.rs"],
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "//pw_build/constraints/rust:std": ["std"],
         "//conditions:default": [""],
     }),
     visibility = ["//visibility:public"],
@@ -29,7 +29,7 @@ rust_test(
     name = "pw_status_test",
     crate = ":pw_status",
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "//pw_build/constraints/rust:std": ["std"],
         "//conditions:default": [""],
     }),
     # TODO: b/343726867 - support on-device rust tests

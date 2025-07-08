@@ -55,7 +55,7 @@ platform(
         "//pw_build/constraints/chipset:lm3s6965evb",
         "@platforms//cpu:armv7-m",
         "@platforms//os:none",
-        "@rust_crates//:no_std",
+        "//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict({
         "//pw_assert:check_backend": "//pw_assert_basic",

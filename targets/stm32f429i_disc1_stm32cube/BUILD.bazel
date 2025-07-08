@@ -60,7 +60,7 @@ platform(
         "@platforms//cpu:armv7e-m",
         "@platforms//os:none",
         "//pw_build/constraints/arm:cortex-m4",
-        "@rust_crates//:no_std",
+        "//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict(FREERTOS_FLAGS | {
         "@cmsis_core//:cc_defines": ":cc_defines",

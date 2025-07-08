@@ -30,7 +30,7 @@ platform(
     name = "microbit",
     constraint_values = [
         "//pw_build/constraints/board:microbit",
-        "@rust_crates//:no_std",
+        "//pw_build/constraints/rust:no_std",
         "@platforms//os:none",
         # We have no pw_sys_io backend for this platform.
     ],

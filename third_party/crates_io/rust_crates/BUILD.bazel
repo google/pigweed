@@ -14,22 +14,4 @@
 
 load(":aliases.bzl", "make_crate_aliases")
 
-constraint_setting(
-    name = "std_enabled",
-    default_constraint_value = ":std",
-    visibility = ["//visibility:public"],
-)
-
-constraint_value(
-    name = "std",
-    constraint_setting = ":std_enabled",
-    visibility = ["//visibility:public"],
-)
-
-constraint_value(
-    name = "no_std",
-    constraint_setting = ":std_enabled",
-    visibility = ["//visibility:public"],
-)
-
 make_crate_aliases(name = "aliases")

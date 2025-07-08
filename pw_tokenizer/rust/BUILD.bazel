@@ -45,7 +45,7 @@ rust_library(
         "pw_tokenizer_core_test_cases.rs",
     ],
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "//pw_build/constraints/rust:std": ["std"],
         "//conditions:default": [""],
     }),
     visibility = ["//visibility:public"],
@@ -55,7 +55,7 @@ rust_test(
     name = "pw_tokenizer_core_test",
     crate = ":pw_tokenizer_core",
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "//pw_build/constraints/rust:std": ["std"],
         "//conditions:default": [],
     }),
     # TODO: b/343726867 - support on-device rust tests
@@ -86,7 +86,7 @@ rust_library(
         "pw_tokenizer/lib.rs",
     ],
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "//pw_build/constraints/rust:std": ["std"],
         "//conditions:default": [""],
     }),
     proc_macro_deps = [":pw_tokenizer_macro"],
@@ -99,7 +99,7 @@ rust_library(
         "//pw_stream/rust:pw_stream",
         "//pw_varint/rust:pw_varint",
     ] + select({
-        "@rust_crates//:std": [
+        "//pw_build/constraints/rust:std": [
             "//pw_format/rust:pw_format",  # Added for rustdoc linking support.
         ],
         "//conditions:default": [],
@@ -110,7 +110,7 @@ rust_test(
     name = "pw_tokenizer_test",
     crate = ":pw_tokenizer",
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "//pw_build/constraints/rust:std": ["std"],
         "//conditions:default": [""],
     }) + select({
         "@rules_rust//rust/toolchain/channel:nightly": ["nightly"],

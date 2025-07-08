@@ -26,7 +26,7 @@ rust_library(
         "pw_base64/tests/single_char.rs",
     ],
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "//pw_build/constraints/rust:std": ["std"],
         "//conditions:default": [""],
     }),
     deps = [
@@ -39,7 +39,7 @@ rust_test(
     name = "pw_base64_test",
     crate = ":pw_base64",
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "//pw_build/constraints/rust:std": ["std"],
         "//conditions:default": [""],
     }),
     # TODO: b/343726867 - support on-device rust tests

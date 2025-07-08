@@ -46,7 +46,7 @@ platform(
         "@freertos//:disable_task_statics",
         "@platforms//cpu:armv8-m",
         "@platforms//os:none",
-        "@rust_crates//:no_std",
+        "//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict(FREERTOS_FLAGS | {
         "@freertos//:freertos_config": "//targets/mimxrt595_evk_freertos:freertos_config",
