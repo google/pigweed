@@ -4088,7 +4088,7 @@
     },
     "@@rules_rust+//crate_universe:extension.bzl%crate": {
       "general": {
-        "bzlTransitiveDigest": "O1w6BygXDUlxDdVtz9VxVV9WnRemtmX4cQE4lbtS/0Y=",
+        "bzlTransitiveDigest": "zm7u1yr9TMwuuSycOdD0jnYMbyn797HCVX+/jWRqaiE=",
         "usagesDigest": "iEj3gLEk+7Sy04PhIcKiaZv4dbnH1oohYqAmNDzw5fU=",
         "recordedFileInputs": {
           "@@//third_party/crates_io/crates_no_std/Cargo.lock": "dd3f285832e0668eb99724d5f48a95bc074ef272d4a86ba2b6ed672cc2517df2",
@@ -7255,7 +7255,7 @@
     },
     "@@rules_rust+//crate_universe/private:internal_extensions.bzl%cu_nr": {
       "general": {
-        "bzlTransitiveDigest": "j0pmADGqhttuTa83XonOcDGSKrln98RAtuHH7jJFlkw=",
+        "bzlTransitiveDigest": "o8qGKar2ZS3aVlESOcAF+6U2pPtHYw6Igd2iREji4A0=",
         "usagesDigest": "UWnpRlkSFx6zlujUh+aOuBGwtJYbR60HyNKAvijQ99g=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

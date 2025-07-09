@@ -13,10 +13,10 @@
 # the License.
 
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("@rules_rust//rust:defs.bzl", "rust_docs")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:pw_rust_docs.bzl", "pw_rust_docs")
 
-rust_docs(
+pw_rust_docs(
     name = "docs",
 
     # These need to be kept in dependency order for inter-crate linking to

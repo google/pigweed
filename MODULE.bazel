@@ -76,15 +76,6 @@ single_version_override(
     module_name = "rules_rust",
     patch_strip = 1,
     patches = [
-        # Adds prototype functionality for documenting multiple crates in one
-        # HTML output directory.  While the approach in this patch may have
-        # issues scaling to giant mono-repos, it is appropriate for embedded
-        # projects and minimally invasive and should be easy to maintain.  Once
-        # the `rules_rust` community decides on a way to propperly support this,
-        # we will migrate to that solution.
-        # https://github.com/konkers/rules_rust/tree/wip/rustdoc
-        "//pw_rust/bazel_patches:0002-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
-
         # Adds more thumbv6m, thumbv8m, and thumbv8m triples
         # TODO: https://pwbug.dev/392707726 - Upstream below patch
         "//pw_rust/bazel_patches:0003-Add-thumbv6m-and-more-thumbv7m-and-thumbv8m-triples.patch",
