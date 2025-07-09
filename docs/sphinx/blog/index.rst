@@ -5,7 +5,7 @@ Pigweed Blog
 An informal blog where Pigweed teammates, contributors, and users can share
 ideas and projects related to Pigweed.
 
-.. Note: In this repo the file lives at //docs/blog/rss.xml but during
+.. Note: In this repo the file lives at //docs/sphinx/blog/rss.xml but during
 .. the Sphinx build it's copied to https://pigweed.dev/rss.xml (the root
 .. of the website).
 

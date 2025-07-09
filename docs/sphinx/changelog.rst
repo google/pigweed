@@ -2674,7 +2674,7 @@ Bug fixes:
 .. e81cd5e642a0c92264caafb14a2f4931cb14fced
 
 * When a Pigweed module is listed as supporting Rust in
-  ``//docs/module_metadata.json``, a link to that module's ``rustdoc`` API
+  ``//docs/sphinx/module_metadata.json``, a link to that module's ``rustdoc`` API
   reference is now auto-generated in the ``pigweed.dev`` site nav. Commit:
   `Auto-link to Rust API references <https://pwrev.dev/237934>`__. Bug:
   :bug:`328503976`.
@@ -12664,8 +12664,8 @@ Docs
 ====
 The tool that we use to semi-automate these changelog updates has been
 added to the main Pigweed repository. Try out the tool on
-:ref:`docs-contrib-docs-changelog` and see ``//docs/_static/js/changelog.js``
-to view its implementation.
+:ref:`docs-contrib-docs-changelog` and see
+``//docs/sphinx/_static/js/changelog.js`` to view its implementation.
 
 * `Gerrit code coverage documentation
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/182799>`__

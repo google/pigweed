@@ -93,7 +93,7 @@ preview the docs in a web browser:
 
 .. code-block:: console
 
-   $ bazelisk run //docs:docs.serve
+   $ bazelisk run //docs/sphinx:docs.serve
 
 See :ref:`contrib-docs-build` for more docs-related workflows and
 :ref:`docs-contrib-docs` for guidance about authoring docs.

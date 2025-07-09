@@ -74,7 +74,7 @@ pygments_monkeypatch_style('pigweed_code_style', PigweedCodeStyle)
 pygments_monkeypatch_style('pigweed_code_light_style', PigweedCodeLightStyle)
 
 
-# //docs/_extensions must be added to the system path so that Sphinx
+# //docs/sphinx/_extensions must be added to the system path so that Sphinx
 # knows where to find the Sphinx extensions that have been custom-built
 # for pigweed.dev. The path resolution changes depending on whether we're
 # building pigweed.dev with GN or Bazel.
@@ -157,7 +157,7 @@ html_static_path = ['_static']
 html_css_files = [
     "css/pigweed.css",
     # We could potentially merge the Google Fonts stylesheets into a single network
-    # request but we already preconnect with the service in //docs/layout/layout.html
+    # request but we already preconnect with the service in //docs/sphinx/layout/layout.html
     # so the performance impact of keeping these as 3 separate calls should be
     # negligible.
     "https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap",
@@ -169,13 +169,13 @@ html_css_files = [
 
 html_js_files = [
     # Do not list pigweed.js here. This will cause it to get loaded in <head>.
-    # To improve load performance we modified //docs/layout/layout.html
+    # To improve load performance we modified //docs/sphinx/layout/layout.html
     # to load pigweed.js at the end of <body> instead.
     # "js/pigweed.js",
 ]
 
 html_extra_path = [
-    # Note: In this repo the file lives at //docs/blog/rss.xml but during the
+    # Note: In this repo the file lives at //docs/sphinx/blog/rss.xml but during the
     # Sphinx build it's copied to the root of the website, https://pigweed.dev/rss.xml
     'blog/rss.xml',
 ]
@@ -255,7 +255,7 @@ sitemap_url_scheme = '{link}'
 
 mermaid_init_js = '''
 mermaid.initialize({
-  // Mermaid is manually started in //docs/_static/js/pigweed.js.
+  // Mermaid is manually started in //docs/sphinx/_static/js/pigweed.js.
   startOnLoad: false,
   // sequenceDiagram Note text alignment
   noteAlign: "left",
@@ -267,7 +267,7 @@ mermaid.initialize({
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Pigweeddoc'
 
-# Client-side redirects. See //docs/contributing/docs/website.rst.
+# Client-side redirects. See //docs/sphinx/contributing/docs/website.rst.
 #
 # TODO: https://pwbug.dev/430133030 - Tidy up the redirects.
 with open('./redirects.json', 'r') as f:

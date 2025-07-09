@@ -337,7 +337,7 @@ Table of contents depth customization
 -------------------------------------
 Put ``:tocdepth: X`` on the first line of the page, where ``X`` equals how many
 levels of section heading you want to show in the page's table of contents. See
-``//docs/changelog.rst`` for an example.
+``//docs/sphinx/changelog.rst`` for an example.
 
 .. _docs-style-rest-cta:
 

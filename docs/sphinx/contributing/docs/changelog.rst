@@ -37,7 +37,7 @@ Instructions
    This tool grabs all the commits between the start and end dates that you
    specify, organizes them, and then outputs reStructuredText (reST).
 
-#. Copy-paste the reST into ``//docs/changelog.rst``. The new text should go
+#. Copy-paste the reST into ``//docs/sphinx/changelog.rst``. The new text should go
    right below the line that says ``.. _docs-changelog-latest:``.
 
 #. Go to the last bi-weekly update (the one that was at the top before you added
@@ -65,7 +65,7 @@ Instructions
    a sentence that accurately sums up the change. When you find accurate
    summaries like this, you can use that content as your changelog description.
 
-When in doubt about anything, look at ``//docs/changelog.rst`` and follow the
+When in doubt about anything, look at ``//docs/sphinx/changelog.rst`` and follow the
 previous content.
 
 .. _docs-contrib-docs-changelog-tool:

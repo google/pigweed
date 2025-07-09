@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// This file powers the changelog tool in //docs/contributing/changelog.rst.
+// This file powers the changelog tool in //docs/sphinx/contributing/changelog.rst.
 // We use this tool to speed up the generation of bi-weekly changelog
 // updates. It fetches the commits over a user-specified timeframe, derives
 // a little metadata about each commit, organizes the commits, and renders

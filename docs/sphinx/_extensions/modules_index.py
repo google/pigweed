@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Generates the modules index table on //docs/modules.rst."""
+"""Generates the modules index table on //docs/sphinx/modules.rst."""
 
 import json
 import os
@@ -74,11 +74,13 @@ def build_row(module_name: str):
 
 
 def generate_modules_index(_, docname: str, source: list[str]) -> None:
-    """Inserts the metadata table into //docs/modules.rst."""
-    if docname != 'modules':  # Only run this logic on //docs/modules.rst.
+    """Inserts the metadata table into //docs/sphinx/modules.rst."""
+    if (
+        docname != 'modules'
+    ):  # Only run this logic on //docs/sphinx/modules.rst.
         return
     skip = ['docker']  # Items in //PIGWEED_MODULES that should be skipped.
-    # Transform //docs/module_metadata.json into a csv-table reST directive.
+    # Transform //docs/sphinx/module_metadata.json into a csv-table reST directive.
     # https://docutils.sourceforge.io/docs/ref/rst/directives.html#csv-table-1
     content = '\n\n.. csv-table::\n'
     content += '   :header: "Name", "Status", "Description", "Languages"\n\n'
@@ -88,7 +90,7 @@ def generate_modules_index(_, docname: str, source: list[str]) -> None:
         if module in skip:
             continue
         content += build_row(module)
-    # Modify the reST of //docs/modules.rst in-place. The auto-generated table
+    # Modify the reST of //docs/sphinx/modules.rst in-place. The auto-generated table
     # is just appended to the reST source text.
     source[0] += content
 

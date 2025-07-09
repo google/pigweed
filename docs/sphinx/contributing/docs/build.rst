@@ -19,13 +19,13 @@ Quickstart
 
    .. code-block:: console
 
-      $ bazelisk build //docs:docs
+      $ bazelisk build //docs
 
 #. Locally preview the docs:
 
    .. code-block:: console
 
-      $ bazelisk run //docs:docs.serve
+      $ bazelisk run //docs/sphinx:docs.serve
 
 .. _contrib-docs-build-setup:
 
@@ -64,13 +64,13 @@ Add files to the C/C++ API reference auto-generation system (Doxygen)
           ],
       )
 
-#. Update ``doxygen_srcs`` in ``//docs/BUILD.bazel`` to take a
+#. Update ``srcs`` in ``//docs/doxygen/BUILD.bazel`` to take a
    dependency on your new ``filegroup``:
 
    .. code-block:: py
 
       filegroup(
-          name = "doxygen_srcs",
+          name = "srcs",
           srcs = [
               # …
               "//pw_string:doxygen",
@@ -104,7 +104,7 @@ references) could not find the source code for the module that it was
 supposed to document. To fix this:
 
 #. Add your Python target as a dependency to the ``sphinx_build_binary``
-   rule in ``//docs/BUILD.bazel``:
+   rule in ``//docs/sphinx/BUILD.bazel``:
 
    .. code-block:: py
 
@@ -139,7 +139,7 @@ Add reStructuredText files to Sphinx
           visibility = ["//visibility:public"],
       )
 
-#. Update ``docs`` in ``//docs/BUILD.bazel`` to take a dependency on
+#. Update ``docs`` in ``//docs/sphinx/BUILD.bazel`` to take a dependency on
    your new ``sphinx_docs_library``:
 
    .. code-block:: py
@@ -234,7 +234,7 @@ You may need to do some or all of these steps:
 
   * ``filegroup`` targets named ``doxygen``
 
-* Update ``//docs/BUILD.bazel``.
+* Update ``//docs/sphinx/BUILD.bazel``.
 
 * :ref:`redirects <contrib-docs-website-redirects>`.
 
@@ -245,7 +245,7 @@ Build the docs
 --------------
 .. code-block:: console
 
-   $ bazelisk build //docs:docs
+   $ bazelisk build //docs
 
 .. _contrib-docs-build-build-watch:
 
@@ -253,7 +253,7 @@ Watch the docs (automatically rebuild when files change)
 ========================================================
 .. code-block:: console
 
-   $ bazelisk run //:watch build //docs:docs
+   $ bazelisk run //:watch build //docs
 
 .. tip::
 
@@ -267,7 +267,7 @@ Locally preview the docs
 ------------------------
 .. code-block:: console
 
-   $ bazelisk run //docs:docs.serve
+   $ bazelisk run //docs/sphinx:docs.serve
 
 A message like this should get printed to ``stdout``:
 
@@ -295,7 +295,7 @@ copying your files to the correct directory, run this command:
 
 .. code-block:: console
 
-   $ bazelisk build //docs:_docs/_sources
+   $ bazelisk build //docs/sphinx:_docs/_sources
 
 .. _contrib-docs-build-debug:
 
@@ -312,10 +312,10 @@ non-`hermetic`_ environment:
 
 .. code-block:: console
 
-   $ bazelisk run //docs:docs.run
+   $ bazelisk run //docs/sphinx:docs.run
 
 Also consider tweaking these ``extra_opts`` from the ``sphinx_docs`` rule in
-``//docs/BUILD.bazel``:
+``//docs/sphinx/BUILD.bazel``:
 
 * Comment out the ``--silent`` warning to get more verbose logging output.
 * Check `sphinx-build`_ to see what other options you might want to add or remove.
@@ -382,7 +382,7 @@ to other components.
 
 * **Python**: We use Sphinx's `autodoc`_ feature to auto-generate Python API
   reference content. In order for this to work, the Python modules must be
-  listed as dependencies of the ``//docs:docs`` target.
+  listed as dependencies of the ``//docs/sphinx:docs`` target.
 
 * **Sphinx**: Once all the other inputs are ready, we can use `Sphinx`_
   (essentially a `static site generator`_) to build the ``pigweed.dev``

@@ -68,8 +68,8 @@ Create your module's metadata:
       .. pigweed-module::
          :name: pw_*
 
-2. Add metadata for your module in ``//docs/module_metadata.json``.
-   See ``//docs/module_metadata_schema.json`` for the schema
+2. Add metadata for your module in ``//docs/sphinx/module_metadata.json``.
+   See ``//docs/sphinx/module_metadata_schema.json`` for the schema
    definition.
 
    .. code-block:: json

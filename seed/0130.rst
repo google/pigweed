@@ -299,7 +299,7 @@ User interface elements
 I.e. after typing text in the search modal, you do not immediately see
 search results. You have to press :kbd:`Enter` to view the search
 results page. `Change #226172`_ introduces custom logic
-in ``//docs/_static/js/pigweed.js`` and ``//docs/_static/css/pigweed.css``
+in ``//docs/sphinx/_static/js/pigweed.js`` and ``//docs/sphinx/_static/css/pigweed.css``
 to enable an inline search experience. We will attempt to contribute this
 inline search feature to the upstream ``pydata`` repo. The existing custom
 search features at ``//pw_docgen/py/pw_docgen/sphinx/inlinesearch`` will be

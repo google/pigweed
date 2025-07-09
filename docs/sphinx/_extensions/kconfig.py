@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Auto-generate the Kconfig reference in //docs/os/zephyr/kconfig.rst"""
+"""Auto-generate the Kconfig reference in //docs/sphinx/os/zephyr/kconfig.rst"""
 
 
 import re

@@ -24,7 +24,7 @@ window.pw.initSearch = () => {
   if (window.location.pathname.endsWith('/search.html')) {
     return;
   }
-  // The template //docs/layout/page.html ensures that Search is always
+  // The template //docs/sphinx/layout/page.html ensures that Search is always
   // loaded at this point.
   // eslint-disable-next-line no-undef
   if (!Search) {

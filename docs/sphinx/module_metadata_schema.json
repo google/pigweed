@@ -1,5 +1,5 @@
 {
-  "description": "Schema for //docs/module_metadata.json.",
+  "description": "Schema for //docs/sphinx/module_metadata.json.",
   "type": "object",
   "patternProperties": {
     "^pw_.*": {

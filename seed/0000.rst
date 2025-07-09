@@ -5,5 +5,5 @@ SEED index
 ==========
 All pending, active, and resolved SEEDs are listed below.
 
-.. //docs/_extensions/seed_metadata.py generates the SEED index
+.. //docs/sphinx/_extensions/seed_metadata.py generates the SEED index
 .. table that appears on this page.

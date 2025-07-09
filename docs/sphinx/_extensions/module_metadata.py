@@ -137,7 +137,7 @@ def get_languages(module_name: str) -> list[str] | None:
 
     Returns:
         A list of programming languages that the module supports, or ``None``
-        if this has not been defined in ``//docs/module_metadata.json``.
+        if this has not been defined in ``//docs/sphinx/module_metadata.json``.
     """
     if module_name not in metadata:
         return None
@@ -150,7 +150,7 @@ def get_status(module_name: str) -> str:
     """Returns the status of a module.
 
     Preconditions:
-        The status must be defined in ``//docs/module_metadata.json``.
+        The status must be defined in ``//docs/sphinx/module_metadata.json``.
 
     Args:
         module_name: The module to look up.
@@ -173,7 +173,7 @@ def get_tagline(module_name: str) -> str | None:
 
     Returns:
         The module's tagline or ``None`` if no tagline has been defined
-        in ``//docs/module_metadata.json``.
+        in ``//docs/sphinx/module_metadata.json``.
     """
     if module_name not in metadata:
         return None
@@ -190,7 +190,7 @@ def get_code_size(module_name: str) -> str | None:
 
     Returns:
         The code size impact summary as a string or ``None`` if no summary
-        has been defined in ``//docs/module_metadata.json``.
+        has been defined in ``//docs/sphinx/module_metadata.json``.
     """
     if module_name not in metadata:
         return None
