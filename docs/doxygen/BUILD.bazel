@@ -1,0 +1,148 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@bazel_skylib//rules:copy_directory.bzl", "copy_directory")
+load("@doxygen//:doxygen.bzl", "doxygen")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+filegroup(
+    name = "srcs",
+    srcs = [
+        "//pw_alignment:doxygen",
+        "//pw_allocator:doxygen",
+        "//pw_analog:doxygen",
+        "//pw_async:doxygen",
+        "//pw_async2:doxygen",
+        "//pw_async2_basic:doxygen",
+        "//pw_async_basic:doxygen",
+        "//pw_base64:doxygen",
+        "//pw_bloat:doxygen",
+        "//pw_bluetooth:doxygen",
+        "//pw_bluetooth_proxy:doxygen",
+        "//pw_bluetooth_sapphire:doxygen",
+        "//pw_build:doxygen",
+        "//pw_bytes:doxygen",
+        "//pw_channel:doxygen",
+        "//pw_chre:doxygen",
+        "//pw_chrono:doxygen",
+        "//pw_clock_tree:doxygen",
+        "//pw_clock_tree_mcuxpresso:doxygen",
+        "//pw_containers:doxygen",
+        "//pw_crypto:doxygen",
+        "//pw_digital_io:doxygen",
+        "//pw_digital_io_mcuxpresso:doxygen",
+        "//pw_display:doxygen",
+        "//pw_elf:doxygen",
+        "//pw_function:doxygen",
+        "//pw_hdlc:doxygen",
+        "//pw_hex_dump:doxygen",
+        "//pw_i2c:doxygen",
+        "//pw_i2c_linux:doxygen",
+        "//pw_interrupt:doxygen",
+        "//pw_json:doxygen",
+        "//pw_kvs:doxygen",
+        "//pw_log:doxygen",
+        "//pw_log_string:doxygen",
+        "//pw_log_tokenized:doxygen",
+        "//pw_malloc:doxygen",
+        "//pw_multibuf:doxygen",
+        "//pw_numeric:doxygen",
+        "//pw_perf_test:doxygen",
+        "//pw_polyfill:doxygen",
+        "//pw_preprocessor:doxygen",
+        "//pw_protobuf:doxygen",
+        "//pw_random:doxygen",
+        "//pw_rpc:doxygen",
+        "//pw_span:doxygen",
+        "//pw_spi:doxygen",
+        "//pw_status:doxygen",
+        "//pw_stream:doxygen",
+        "//pw_stream_uart_linux:doxygen",
+        "//pw_string:doxygen",
+        "//pw_sync:doxygen",
+        "//pw_sys_io:doxygen",
+        "//pw_system:doxygen",
+        "//pw_thread:doxygen",
+        "//pw_tokenizer:doxygen",
+        "//pw_toolchain:doxygen",
+        "//pw_trace_tokenized:doxygen",
+        "//pw_transfer:doxygen",
+        "//pw_uart:doxygen",
+        "//pw_unit_test:doxygen",
+        "//pw_uuid:doxygen",
+        "//pw_varint:doxygen",
+        "//pw_work_queue:doxygen",
+        "//third_party/freertos:doxygen",
+    ],
+)
+
+doxygen(
+    name = "build",
+    srcs = [
+        ":srcs",
+    ],
+    outs = [
+        "html",
+        "xml",
+    ],
+    doxyfile_template = "Doxyfile",
+    tags = ["manual"],
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+filegroup(
+    name = "_html_1",
+    srcs = [":build"],
+    output_group = "html",
+    tags = ["manual"],
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+copy_directory(
+    name = "_html_2",
+    src = ":_html_1",
+    out = "doxygen",
+    tags = ["manual"],
+)
+
+sphinx_docs_library(
+    name = "html",
+    srcs = [":_html_2"],
+    prefix = "doxygen/",
+    tags = ["manual"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "_xml",
+    srcs = [":build"],
+    output_group = "xml",
+    tags = ["manual"],
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+sphinx_docs_library(
+    name = "xml",
+    srcs = [":_xml"],
+    prefix = "_doxygen/",
+    tags = ["manual"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
+)

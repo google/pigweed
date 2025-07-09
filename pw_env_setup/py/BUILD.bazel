@@ -116,7 +116,7 @@ py_library(
     ],
     imports = ["."],
     # Nobody in the Bazel ecosystem should ever use these parts of pw_env_setup.
-    visibility = ["//docs:__pkg__"],
+    visibility = ["//docs/sphinx:__pkg__"],
     deps = [
         "@pigweed_python_packages//setuptools",  # For import pkg_resources
         "@pigweed_python_packages//six",

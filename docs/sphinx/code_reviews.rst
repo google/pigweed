@@ -26,10 +26,14 @@ Please follow the guidance in `Google's Eng-Practices Small CLs
 
 Complete changes
 ================
+.. todo-check: disable
+
 In summary, CLs must be complete, tested, and include documentation and unit
 tests for new code, bug fixes, and any code changes that merit it. However, to
 enable iterative work and small changes, ``TODO`` comments are acceptable. They
 must include an explanation of the problem and an action to take.
+
+.. todo-check: enable
 
 We will not take over incomplete changes to avoid shifting our focus. We may
 reject changes that do not meet the criteria above.

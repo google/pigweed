@@ -7,6 +7,8 @@ Pigweed
 =======
 *Sustained, robust, and rapid embedded product development for large teams*
 
+Hello, world!
+
 -----------
 Get started
 -----------

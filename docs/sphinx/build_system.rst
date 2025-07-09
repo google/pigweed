@@ -641,6 +641,8 @@ use the following additional tags:
 
    will run all tests *except* for these integration tests.
 
+.. todo-check: disable
+
 *  ``do_not_build``: targets which should not be built in wildcard builds. Any
    use of this tag should be associated with a TODO pointing to a bug. Prefer
    ``do_not_build`` to ``manual`` if the target's build graph is correct, and
@@ -651,12 +653,13 @@ use the following additional tags:
    test fails at runtime. Any use of this tag should be associated with a TODO
    pointing to a bug.
 
+.. todo-check: enable
+
 .. _docs-build_system-bazel_coverage:
 
 Code Coverage
 ^^^^^^^^^^^^^
-TODO(`b/304833225 <https://issues.pigweed.dev/issues/304833225>`_): Fix code
-coverage when using the (default) hermetic toolchains.
+.. TODO: b/304833225 - Fix code coverage when using the (default) hermetic toolchains.
 
 Making use of the code coverage functionality in Bazel is straightforward.
 
