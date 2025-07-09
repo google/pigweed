@@ -23,7 +23,7 @@ config("default_config") {
 }
 
 if (pw_third_party_mcuxpresso_SDK != "") {
-  pw_source_set("pw_uart_mcuxpresso") {
+  pw_source_set("dma_uart") {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_uart_mcuxpresso/dma_uart.h" ]
     public_deps = [
@@ -40,7 +40,24 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     sources = [ "dma_uart.cc" ]
   }
 
-  pw_source_set("pw_uart_mcuxpresso_nonblocking") {
+  pw_source_set("uart_nonblocking") {
+    public_configs = [ ":default_config" ]
+    public = [ "public/pw_uart_mcuxpresso/uart_nonblocking.h" ]
+    public_deps = [
+      "$dir_pw_clock_tree",
+      "$dir_pw_function",
+      "$dir_pw_log",
+      "$dir_pw_uart:uart_non_blocking",
+    ]
+    deps = [
+      "$dir_pw_preprocessor",
+      "$dir_pw_sync:interrupt_spin_lock",
+      pw_third_party_mcuxpresso_SDK,
+    ]
+    sources = [ "uart_nonblocking.cc" ]
+  }
+
+  pw_source_set("dma_uart_nonblocking") {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_uart_mcuxpresso/dma_uart_nonblocking.h" ]
     public_deps = [
@@ -69,7 +86,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
          pw_toolchain_SCOPE.name == "mimxrt595_evk_freertos_speed_optimized")
     sources = [ "dma_uart_example.cc" ]
     deps = [
-      ":pw_uart_mcuxpresso",
+      ":dma_uart",
       "//targets/mimxrt595_evk_freertos:sdk",
     ]
   }
@@ -88,7 +105,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
       dir_pw_status,
     ]
     deps = [
-      ":pw_uart_mcuxpresso_nonblocking",
+      ":dma_uart_nonblocking",
       "//targets/mimxrt595_evk_freertos:sdk",
     ]
   }

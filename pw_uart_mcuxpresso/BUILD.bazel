@@ -27,6 +27,25 @@ log_defines = [
 ]
 
 cc_library(
+    name = "uart_nonblocking",
+    srcs = ["uart_nonblocking.cc"],
+    hdrs = ["public/pw_uart_mcuxpresso/uart_nonblocking.h"],
+    implementation_deps = ["//pw_assert:check"],
+    local_defines = log_defines,
+    strip_include_prefix = "public",
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [
+        "//pw_clock_tree",
+        "//pw_preprocessor",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_uart:uart_non_blocking",
+        "//targets:mcuxpresso_sdk",
+    ],
+)
+
+cc_library(
     name = "dma_uart",
     srcs = ["dma_uart.cc"],
     hdrs = ["public/pw_uart_mcuxpresso/dma_uart.h"],
