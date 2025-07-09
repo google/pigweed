@@ -74,10 +74,12 @@ Status ChannelBase::Send(const Packet& packet) {
   encoding_buffer.Release();
 
   if (!sent.ok()) {
-    PW_LOG_DEBUG("Channel %u failed to send packet with status %u",
+    PW_LOG_ERROR("Channel %u failed to send packet with status %u",
                  static_cast<unsigned>(id()),
                  sent.code());
-
+    // Channel implementers are free to return whichever status makes sense in
+    // their context, but these are always mapped to UNKNOWN so the user-facing
+    // functions (e.g. Finish()) always return a fixed set of statuses.
     return Status::Unknown();
   }
   return OkStatus();
