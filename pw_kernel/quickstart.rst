@@ -233,5 +233,6 @@ Pigweed project's ``.vscode/settings.json`` file.
      "build",
      "--config=$CONFIG",
      "--@rules_rust//:error_format=json",
+     "--experimental_ui_max_stdouterr_bytes=10485760",
      "//pw_kernel/..."
    ],
