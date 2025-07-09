@@ -96,6 +96,8 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   void ResetAdvertisingState();
 
+  void OnCurrentOperationComplete() override;
+
   // |starting_| is set to true if a start is pending.
   // |staged_params_| are the parameters that will be advertised.
   struct StagedParams {
@@ -111,6 +113,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   DeviceAddress local_address_;
   std::optional<AdvertisementId> active_advertisement_id_;
   AdvertisementId::value_t next_advertisement_id_ = 1;
+  std::queue<fit::closure> op_queue_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiser);
 };

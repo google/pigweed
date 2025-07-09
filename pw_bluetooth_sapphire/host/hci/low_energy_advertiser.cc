@@ -373,6 +373,8 @@ void LowEnergyAdvertiser::StopAdvertisingInternal(
           }
           OnCurrentOperationComplete();
         });
+  } else if (result_cb) {
+    result_cb(fit::ok());
   }
 }
 

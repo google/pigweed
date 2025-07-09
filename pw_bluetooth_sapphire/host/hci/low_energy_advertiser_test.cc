@@ -804,9 +804,14 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartAndStop) {
   AdvertisementId adv_id = status->value();
   EXPECT_TRUE(this->GetControllerAdvertisingState().enabled);
 
-  this->advertiser()->StopAdvertising(adv_id);
+  std::optional<hci::Result<>> stop_result;
+  this->advertiser()->StopAdvertising(
+      adv_id, [&stop_result](hci::Result<> result) { stop_result = result; });
+
   this->RunUntilIdle();
   EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
 }
 
 // Tests that an advertisement is configured with the correct parameters.
@@ -853,7 +858,9 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
 
   // Restart advertising with a public address and verify that the configured
   // local address type is correct.
-  this->advertiser()->StopAdvertising(adv_id);
+  std::optional<hci::Result<>> stop_result;
+  this->advertiser()->StopAdvertising(
+      adv_id, [&stop_result](hci::Result<> result) { stop_result = result; });
   AdvertisingOptions new_options(kTestInterval,
                                  kDefaultNoAdvFlags,
                                  /*extended_pdu=*/false,
@@ -866,6 +873,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
                                        nullptr,
                                        this->MakeExpectSuccessCallback());
   this->RunUntilIdle();
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
   EXPECT_TRUE(this->TakeLastStatus());
 
   state = this->GetControllerAdvertisingState();
@@ -909,7 +918,9 @@ TYPED_TEST(LowEnergyAdvertiserTest, PreviousAdvertisingParameters) {
   AdvertisementId adv_id = status->value();
 
   // new advertising data (with fewer fields filled in)
-  this->advertiser()->StopAdvertising(adv_id);
+  std::optional<hci::Result<>> stop_result;
+  this->advertiser()->StopAdvertising(
+      adv_id, [&stop_result](hci::Result<> result) { stop_result = result; });
   AdvertisingData new_ad = this->GetExampleData();
   this->advertiser()->StartAdvertising(kRandomAddress,
                                        new_ad,
@@ -919,6 +930,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, PreviousAdvertisingParameters) {
                                        this->MakeExpectSuccessCallback());
   this->RunUntilIdle();
   EXPECT_TRUE(this->TakeLastStatus());
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
 
   DynamicByteBuffer expected_ad(
       new_ad.CalculateBlockSize(/*include_flags=*/true));
@@ -961,7 +974,9 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin, state->interval_min);
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax, state->interval_max);
 
-  this->advertiser()->StopAdvertising();
+  std::optional<hci::Result<>> stop_result;
+  this->advertiser()->StopAdvertising(
+      [&stop_result](hci::Result<> result) { stop_result = result; });
 
   // Reconfigure with values that are within the range. These should get
   // passed down as is.
@@ -981,6 +996,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
                                        this->MakeExpectSuccessCallback());
   this->RunUntilIdle();
   EXPECT_TRUE(this->TakeLastStatus());
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
 
   state = this->GetControllerAdvertisingState();
   EXPECT_TRUE(state);
@@ -1028,13 +1045,17 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStopping) {
   };
   this->test_device()->set_advertising_state_callback(adv_state_cb);
 
-  this->advertiser()->StopAdvertising(adv_id);
+  std::optional<hci::Result<>> stop_result;
+  this->advertiser()->StopAdvertising(
+      adv_id, [&stop_result](hci::Result<> result) { stop_result = result; });
 
   // Advertising should have been momentarily disabled.
   this->RunUntilIdle();
   EXPECT_TRUE(was_disabled);
   EXPECT_TRUE(enabled);
   EXPECT_TRUE(this->GetControllerAdvertisingState().enabled);
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
 
   this->test_device()->set_advertising_state_callback(nullptr);
 }
@@ -1054,10 +1075,14 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopWhileStarting) {
                                        options,
                                        nullptr,
                                        this->MakeExpectErrorCallback());
-  this->advertiser()->StopAdvertising();
+  std::optional<hci::Result<>> stop_result;
+  this->advertiser()->StopAdvertising(
+      [&stop_result](hci::Result<> result) { stop_result = result; });
 
   this->RunUntilIdle();
   EXPECT_TRUE(this->TakeLastStatus());
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
   EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
 }
 
@@ -1095,14 +1120,22 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingConditions) {
 
   this->RunUntilIdle();
   AdvertisementId bad_id(0x0F);
-  this->advertiser()->StopAdvertising(bad_id);
+  std::optional<hci::Result<>> stop_result;
+  this->advertiser()->StopAdvertising(
+      bad_id, [&stop_result](hci::Result<> result) { stop_result = result; });
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_FALSE(stop_result->is_ok());
   EXPECT_TRUE(this->GetControllerAdvertisingState().enabled);
   EXPECT_TRUE(ContainersEqual(
       this->GetControllerAdvertisingState().advertised_view(), expected_ad));
 
-  this->advertiser()->StopAdvertising(adv_id);
+  stop_result.reset();
+  this->advertiser()->StopAdvertising(
+      adv_id, [&stop_result](hci::Result<> result) { stop_result = result; });
 
   this->RunUntilIdle();
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
   EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
   EXPECT_EQ(0u, this->GetControllerAdvertisingState().advertised_view().size());
   EXPECT_EQ(0u, this->GetControllerAdvertisingState().scan_rsp_view().size());
@@ -1154,11 +1187,15 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
   }
 
   // stop advertising the random address
-  this->advertiser()->StopAdvertising(adv_id);
+  std::optional<hci::Result<>> stop_result;
+  this->advertiser()->StopAdvertising(
+      adv_id, [&stop_result](hci::Result<> result) { stop_result = result; });
   this->RunUntilIdle();
 
   // check that advertiser and controller both report the same advertising
   // state
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
   EXPECT_FALSE(this->advertiser()->IsAdvertising());
   EXPECT_FALSE(this->advertiser()->IsAdvertising(adv_id));
 
