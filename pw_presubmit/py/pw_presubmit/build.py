@@ -25,7 +25,6 @@ import posixpath
 from pathlib import Path
 import re
 import subprocess
-from shutil import which
 import sys
 import tarfile
 from typing import (
@@ -41,6 +40,7 @@ from typing import (
     Set,
 )
 
+from pw_build.build_recipe import gn_args
 import pw_cli.color
 from pw_cli.plural import plural
 from pw_cli.file_filter import FileFilter
@@ -170,83 +170,6 @@ def bazel(
                     outs.write(failure)
 
         raise exc
-
-
-def _gn_value(value) -> str:
-    if isinstance(value, bool):
-        return str(value).lower()
-
-    if (
-        isinstance(value, str)
-        and '"' not in value
-        and not value.startswith("{")
-        and not value.startswith("[")
-    ):
-        return f'"{value}"'
-
-    if isinstance(value, (list, tuple)):
-        return f'[{", ".join(_gn_value(a) for a in value)}]'
-
-    # Fall-back case handles integers as well as strings that already
-    # contain double quotation marks, or look like scopes or lists.
-    return str(value)
-
-
-def gn_args_list(**kwargs) -> list[str]:
-    """Return a list of formatted strings to use as gn args.
-
-    Currently supports bool, int, and str values. In the case of str values,
-    quotation marks will be added automatically, unless the string already
-    contains one or more double quotation marks, or starts with a { or [
-    character, in which case it will be passed through as-is.
-    """
-    transformed_args = []
-    for arg, val in kwargs.items():
-        transformed_args.append(f'{arg}={_gn_value(val)}')
-
-    # Use ccache if available for faster repeat presubmit runs.
-    if which('ccache') and 'pw_command_launcher' not in kwargs:
-        transformed_args.append('pw_command_launcher="ccache"')
-
-    return transformed_args
-
-
-def gn_args(**kwargs) -> str:
-    """Builds a string to use for the --args argument to gn gen.
-
-    Currently supports bool, int, and str values. In the case of str values,
-    quotation marks will be added automatically, unless the string already
-    contains one or more double quotation marks, or starts with a { or [
-    character, in which case it will be passed through as-is.
-    """
-    return '--args=' + ' '.join(gn_args_list(**kwargs))
-
-
-def write_gn_args_file(destination_file: Path, **kwargs) -> str:
-    """Write gn args to a file.
-
-    Currently supports bool, int, and str values. In the case of str values,
-    quotation marks will be added automatically, unless the string already
-    contains one or more double quotation marks, or starts with a { or [
-    character, in which case it will be passed through as-is.
-
-    Returns:
-      The contents of the written file.
-    """
-    contents = '\n'.join(gn_args_list(**kwargs))
-    # Add a trailing linebreak
-    contents += '\n'
-    destination_file.parent.mkdir(exist_ok=True, parents=True)
-
-    if (
-        destination_file.is_file()
-        and destination_file.read_text(encoding='utf-8') == contents
-    ):
-        # File is identical, don't re-write.
-        return contents
-
-    destination_file.write_text(contents, encoding='utf-8')
-    return contents
 
 
 def gn_gen(

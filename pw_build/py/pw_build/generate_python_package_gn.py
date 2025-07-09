@@ -26,7 +26,8 @@ from pathlib import Path
 import sys
 from typing import Iterable, NamedTuple
 
-from pw_presubmit import git_repo
+from pw_cli.git_repo import GitRepo
+from pw_cli.tool_runner import BasicSubprocessRunner
 
 _HEADER = f"""\
 # Copyright {datetime.now().year} The Pigweed Authors
@@ -57,8 +58,13 @@ class PackageFiles(NamedTuple):
 
 
 def _find_package_files(root_dir: Path) -> PackageFiles:
-    files = git_repo.list_files(
-        pathspecs=('*.py', '*.toml', '*.cfg'), repo_path=root_dir
+    repo = GitRepo(
+        root_dir,
+        # Git is never vendored, so just use the BasicSubprocessRunner.
+        BasicSubprocessRunner(),
+    )
+    files = repo.list_files(
+        pathspecs=('*.py', '*.toml', '*.cfg'),
     )
 
     package_files = PackageFiles([], [], [], [])

@@ -45,7 +45,7 @@ Example Build Scripts
 =====================
 Examples of Project Builder based ``pw build`` commands:
 
-- `Upstream Pigweed repo pigweed_upstream_build.py <https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/py/pw_build/pigweed_upstream_build.py>`_
+- `Upstream Pigweed repo main.py <https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/py/pw_build/main.py>`_
 - `Examples repo build_project.py <https://cs.opensource.google/pigweed/examples/+/main:tools/sample_project_tools/build_project.py>`_
 - `Kudzu repo build_project.py <https://pigweed.googlesource.com/pigweed/kudzu/+/refs/heads/main/tools/kudzu_tools/build_project.py>`_
 
@@ -120,11 +120,11 @@ ProjectBuilder
 Upstream ``pw build`` Command-Line Interface Usage
 --------------------------------------------------
 .. argparse::
-   :module: pw_build.pigweed_upstream_build
+   :module: pigweed_upstream_build.main
    :func: _build_argument_parser
    :prog: pw build
 
    This is the command line interface provided by the ``pw build`` command
-   (`pigweed_upstream_build.py
-   <https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/py/pw_build/pigweed_upstream_build.py>`_)
+   (`main.py
+   <https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/py/pigweed_upstream_build/main.py>`_)
    in upstream Pigweed.

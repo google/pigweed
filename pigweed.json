@@ -19,7 +19,7 @@
     "pw_cli": {
       "plugins": {
         "build": {
-          "module": "pw_build.pigweed_upstream_build",
+          "module": "pigweed_upstream_build.main",
           "function": "pigweed_upstream_main"
         },
         "console": {

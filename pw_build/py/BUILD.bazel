@@ -68,7 +68,6 @@ py_library(
     deps = [
         "//pw_cli/py:pw_cli",
         "//pw_config_loader/py:pw_config_loader",
-        "//pw_presubmit/py:pw_presubmit",
     ],
 )
 
@@ -92,6 +91,22 @@ py_library(
     ],
 )
 
+# This is separate to isolate pw_presubmit-related dependencies, which tend to
+# rely on pw_env_setup, which tends to be leaky when used from Bazel.
+py_library(
+    name = "presubmit_runner",
+    srcs = [
+        "pw_build/project_builder_presubmit_runner.py",
+    ],
+    imports = ["."],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":pw_build",
+        "//pw_cli/py:pw_cli",
+        "//pw_presubmit/py:pw_presubmit",
+    ],
+)
+
 py_library(
     name = "pw_project_builder",
     srcs = [
@@ -99,7 +114,6 @@ py_library(
         "pw_build/project_builder_argparse.py",
         "pw_build/project_builder_context.py",
         "pw_build/project_builder_prefs.py",
-        "pw_build/project_builder_presubmit_runner.py",
     ],
     imports = ["."],
     deps = [
@@ -151,9 +165,11 @@ pw_py_binary(
 )
 
 pw_py_binary(
-    name = "pigweed_upstream_build",
-    srcs = ["pw_build/pigweed_upstream_build.py"],
+    name = "pigweed_build",
+    srcs = ["pigweed_upstream_build/main.py"],
+    main = "pigweed_upstream_build/main.py",
     deps = [
+        ":presubmit_runner",
         ":pw_project_builder",
         "//pw_watch/py:pw_watch",
     ],

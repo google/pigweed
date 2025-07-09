@@ -290,7 +290,7 @@ sphinx_build_binary(
     tags = ["manual"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        "//pw_build/py:pigweed_upstream_build",
+        "//pw_build/py:pigweed_build",
         "//pw_build/py:pw_build",
         "//pw_build/py:pw_project_builder",
         "//pw_console/py:pw_console",
