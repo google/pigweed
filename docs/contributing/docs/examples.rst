@@ -129,7 +129,7 @@ Create the code example
    ``_test.cc``, e.g. ``build_string_in_buffer_test.cc``. The first part of
    the filename (``build_string_in_buffer``) should describe the use case.
 
-   .. literalinclude:: ../../../pw_string/examples/build_string_in_buffer_test.cc
+   .. literalinclude:: ../../pw_string/examples/build_string_in_buffer_test.cc
       :language: cpp
       :start-after: // DOCSTAG: [contributing-docs-examples]
       :end-before: // DOCSTAG: [contributing-docs-examples]
@@ -182,7 +182,7 @@ Bazel
 
 #. Create a ``BUILD.bazel`` file in your ``examples`` directory.
 
-   .. literalinclude:: ../../../pw_string/examples/BUILD.bazel
+   .. literalinclude:: ../../pw_string/examples/BUILD.bazel
       :language: starlark
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
@@ -197,7 +197,7 @@ GN
 ~~
 #. Create a ``BUILD.gn`` file in your ``examples`` directory.
 
-   .. literalinclude:: ../../../pw_string/examples/BUILD.gn
+   .. literalinclude:: ../../pw_string/examples/BUILD.gn
       :language: starlark
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
@@ -207,7 +207,7 @@ GN
    unit tests are run as part of the module's default unit test
    suite.
 
-   .. literalinclude:: ../../../pw_string/BUILD.gn
+   .. literalinclude:: ../../pw_string/BUILD.gn
       :language: starlark
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
@@ -221,7 +221,7 @@ CMake
 ~~~~~
 #. Create a ``CMakeLists.txt`` file in your ``examples`` directory.
 
-   .. literalinclude:: ../../../pw_string/examples/CMakeLists.txt
+   .. literalinclude:: ../../pw_string/examples/CMakeLists.txt
       :language: text
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
@@ -233,7 +233,7 @@ Pull the example into a doc
 #. In your module's top-level ``BUILD.bazel`` file (e.g.
    ``//pw_string/BUILD.bazel``), update the ``sphinx_docs_library`` target:
 
-   .. literalinclude:: ../../../pw_string/BUILD.bazel
+   .. literalinclude:: ../../pw_string/BUILD.bazel
       :language: starlark
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
@@ -245,7 +245,7 @@ Pull the example into a doc
 #. Use a ``literalinclude`` directive in your reStructuredText to pull
    the code example into your doc:
 
-   .. literalinclude:: ../../../pw_string/docs.rst
+   .. literalinclude:: ../../pw_string/docs.rst
       :language: rst
       :dedent:
       :start-after: .. DOCSTAG: [contributing-docs-examples]
@@ -273,7 +273,7 @@ Create a file for the code examples
 #. Create an ``examples.cc`` file in the root directory of your module. All of
    your code examples and unit tests will go in this single file.
 
-   .. literalinclude:: ../../../pw_assert/examples.cc
+   .. literalinclude:: ../../pw_assert/examples.cc
       :language: cpp
       :start-after: // DOCSTAG: [contributing-docs-examples]
       :end-before: // DOCSTAG: [contributing-docs-examples]
@@ -292,21 +292,21 @@ Create build targets
 
    Bazel:
 
-   .. literalinclude:: ../../../pw_assert/BUILD.bazel
+   .. literalinclude:: ../../pw_assert/BUILD.bazel
       :language: starlark
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
 
    GN:
 
-   .. literalinclude:: ../../../pw_assert/BUILD.gn
+   .. literalinclude:: ../../pw_assert/BUILD.gn
       :language: py
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
 
    CMake:
 
-   .. literalinclude:: ../../../pw_assert/CMakeLists.txt
+   .. literalinclude:: ../../pw_assert/CMakeLists.txt
       :language: text
       :start-after: # DOCSTAG: [contributing-docs-examples]
       :end-before: # DOCSTAG: [contributing-docs-examples]
@@ -316,7 +316,7 @@ Pull the example into a doc
 #. Use a ``literalinclude`` directive in your reStructuredText to pull
    the code example into your doc:
 
-   .. literalinclude:: ../../../pw_assert/docs.rst
+   .. literalinclude:: ../../pw_assert/docs.rst
       :language: rst
       :dedent:
       :start-after: .. DOCSTAG: [contributing-docs-examples]

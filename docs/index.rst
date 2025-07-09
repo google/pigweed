@@ -185,20 +185,20 @@ Talk to us
    :maxdepth: 1
    :hidden:
 
-   docs/overview
-   docs/get_started/index
-   Tour <docs/showcases/sense/index>
+   overview
+   get_started/index
+   Tour <showcases/sense/index>
    modules
-   Contributing <docs/contributing/index>
-   docs/concepts/index
+   Contributing <contributing/index>
+   concepts/index
    build_system
    targets
    Toolchain <toolchain>
-   docs/size_optimizations
+   size_optimizations
    automated_analysis
-   docs/os/index
+   os/index
    third_party_support
-   docs/showcases/index
-   docs/community/index
+   showcases/index
+   community/index
    What's new <changelog>
-   Blog <docs/blog/index>
+   Blog <blog/index>

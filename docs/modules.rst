@@ -12,7 +12,7 @@ Modules
    :hidden:
 
    self
-   docs/module_structure
+   module_structure
    pw_alignment/docs
    pw_allocator/docs
    pw_analog/docs

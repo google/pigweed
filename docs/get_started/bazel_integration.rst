@@ -14,7 +14,7 @@ Pigweed uses Bazel 8 features like platform-based flags, and so not all of
 Pigweed works with Bazel 7. We strongly recommend mirroring Pigweed's current
 Bazel version pin:
 
-.. literalinclude:: ../../.bazelversion
+.. literalinclude:: ../.bazelversion
    :language: text
 
 .. _docs-bazel-integration-add-pigweed-as-a-dependency:
@@ -117,7 +117,7 @@ improve cache performance, disambiguate Python imports, etc. These flags are
 listed below.  Unfortunately there's no way to automatically import them, see
 :bug:`353750350`.
 
-.. literalinclude:: ../../pw_build/pigweed.bazelrc
+.. literalinclude:: ../pw_build/pigweed.bazelrc
 
 -------------------------------
 Set the recommended Bazel flags
@@ -127,7 +127,7 @@ Bazel's usability. Turn these on, selectively tuning them to your needs.
 Unfortunately there's no way to automatically import them, see
 :bug:`353750350`.
 
-.. literalinclude:: ../../pw_build/pigweed_recommended.bazelrc
+.. literalinclude:: ../pw_build/pigweed_recommended.bazelrc
 
 --------------------------------------------
 Configure backends for facades you depend on

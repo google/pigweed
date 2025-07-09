@@ -8,7 +8,7 @@ Pigweed Blog #5: C++20 coroutines without heap allocation
 Pigweed now provides support for coroutines on embedded
 targets!
 
-.. literalinclude:: ../../pw_async2/examples/coro_blinky_loop.cc
+.. literalinclude:: ../pw_async2/examples/coro_blinky_loop.cc
    :language: cpp
    :linenos:
    :start-after: [pw_async2-examples-coro-blinky-loop]
@@ -86,7 +86,7 @@ Despite not using a native thread stack, C++20 coroutines do need somewhere to
 store the "stack" of paused functions. For example, in our ``Blinky`` function
 from above:
 
-.. literalinclude:: ../../pw_async2/examples/coro_blinky_loop.cc
+.. literalinclude:: ../pw_async2/examples/coro_blinky_loop.cc
    :language: cpp
    :linenos:
    :start-after: [pw_async2-examples-coro-blinky-loop]
@@ -356,7 +356,7 @@ interface does not). :cpp:class:`pw::async2::Coro` solves this by specifying
 the coroutine handle wrapper type (``Coro``) *after* running
 ``operator delete``:
 
-.. literalinclude:: ../../pw_async2/public/pw_async2/coro.h
+.. literalinclude:: ../pw_async2/public/pw_async2/coro.h
    :language: cpp
    :linenos:
    :start-after: [pw_async2-coro-release]
@@ -441,7 +441,7 @@ function, nor does it give us a way to return values from our coroutine function
 :cpp:class:`pw::async2::Coro` solves this by storing a pointer to input
 and output storage inside the ``promise_type`` before invoking ``resume``.
 
-.. literalinclude:: ../../pw_async2/public/pw_async2/coro.h
+.. literalinclude:: ../pw_async2/public/pw_async2/coro.h
    :language: cpp
    :linenos:
    :start-after: [pw_async2-coro-resume]

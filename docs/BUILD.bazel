@@ -48,6 +48,7 @@ sphinx_docs_library(
         "module_metadata_schema.json",
         "modules.rst",
         "python_build.rst",
+        "redirects.json",
         # TODO: b/388905812 - Delete this file.
         "size_report_notice",
         "targets.rst",
@@ -142,8 +143,6 @@ sphinx_docs_library(
         "style/writing.rst",
         "style_guide.rst",
     ],
-    # TODO: https://pwbug.dev/377679855 - Remove this URL prefix.
-    prefix = "docs/",
     target_compatible_with = incompatible_with_mcu(),
 )
 

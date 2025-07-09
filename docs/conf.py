@@ -15,6 +15,7 @@
 
 
 from datetime import date
+import json
 import os
 from pathlib import Path
 import sys
@@ -149,7 +150,7 @@ html_show_sourcelink = False
 html_show_sphinx = False
 
 # These folders are copied to the documentation's HTML output
-html_static_path = ['docs/_static']
+html_static_path = ['_static']
 
 # These paths are either relative to html_static_path
 # or fully qualified paths (eg. https://...)
@@ -176,7 +177,7 @@ html_js_files = [
 html_extra_path = [
     # Note: In this repo the file lives at //docs/blog/rss.xml but during the
     # Sphinx build it's copied to the root of the website, https://pigweed.dev/rss.xml
-    'docs/blog/rss.xml',
+    'blog/rss.xml',
 ]
 if is_bazel_build:
     # In the Bazel build, the fully built rustdoc site is present in the Sphinx
@@ -236,9 +237,9 @@ html_baseurl = 'https://pigweed.dev/'
 html_sidebars = {
     'automated_analysis': [],
     'changelog': [],
-    'docs/size_optimizations': [],
+    'size_optimizations': [],
     'index': [],
-    'docs/overview': [],
+    'overview': [],
     'toolchain': [],
 }
 
@@ -267,72 +268,11 @@ mermaid.initialize({
 htmlhelp_basename = 'Pigweeddoc'
 
 # Client-side redirects. See //docs/contributing/docs/website.rst.
-# Use relative URLs and provide the full path to ensure that the
-# redirects work when developing locally. An example of using the
-# full path is `./example/docs.html`. Using just `./example/`
-# assumes that the redirect will work, which may not be true during
-# local development.
-redirects = {
-    'docs/3p/index': '../index.html',
-    'docs/contributing': './contributing/index.html',
-    'docs/contributing/changelog': './docs/changelog.html',
-    'docs/contributing/module_docs': './docs/modules.html',
-    'docs/get_started/upstream': '../contributing/index.html',
-    'docs/getting_started': './get_started/index.html',
-    'docs/infra/github': '../get_started/github.html',
-    'docs/os_abstraction_layers': './os/index.html',
-    'docs/release_notes/index': '../../changelog.html',
-    'docs/release_notes/2022_jan': '../../changelog.html',
-    'docs/showcases/sense/tutorial/automate': '../automate.html',
-    'docs/showcases/sense/tutorial/bazel_cloud': '../bazel_cloud.html',
-    'docs/showcases/sense/tutorial/build': '../build.html',
-    'docs/showcases/sense/tutorial/code_intelligence': '../code_intelligence.html',
-    'docs/showcases/sense/tutorial/crash_handler': '../crash_handler.html',
-    'docs/showcases/sense/tutorial/device_tests': '../device_tests.html',
-    'docs/showcases/sense/tutorial/explore': '../explore.html',
-    'docs/showcases/sense/tutorial/factory': '../factory.html',
-    'docs/showcases/sense/tutorial/flash': '../flash.html',
-    'docs/showcases/sense/tutorial/host_sim': '../host_sim.html',
-    'docs/showcases/sense/tutorial/host_tests': '../host_tests.html',
-    'docs/showcases/sense/tutorial/index': '../intro.html',
-    'docs/showcases/sense/tutorial/outro': '../outro.html',
-    'docs/showcases/sense/tutorial/production': '../production.html',
-    'docs/showcases/sense/tutorial/rpc': '../rpc.html',
-    'docs/showcases/sense/tutorial/setup': '../setup.html',
-    'docs/showcases/sense/tutorial/web': '../web.html',
-    'live/index': 'https://docs.google.com/document/d/1zcXQoMX6NDSe4cdxzt8afLbDcs8GSmI_Bsy5hTF_RVM/edit',
-    'module_guides': './modules.html',
-    'pw_sys_io_pico/docs': '../pw_sys_io_rp2040/docs.html',
-    'pw_tokenizer/cli': './docs.html',
-    'pw_tokenizer/guides': './docs.html',
-    'pw_toolchain_bazel/docs': 'https://github.com/bazelbuild/rules_cc/blob/main/docs/toolchain_api.md',
-    'seed/0000-index': './0000.html',
-    'seed/0001-the-seed-process': './0001.html',
-    'seed/0002-template': './0002.html',
-    'seed/0101-pigweed.json': './0101.html',
-    'seed/0102-module-docs': './0102.html',
-    'seed/0103-pw_protobuf-past-present-future': './0103.html',
-    'seed/0104-display-support': './0104.html',
-    'seed/0105-pw_tokenizer-pw_log-nested-tokens': './0105.html',
-    'seed/0107-communications': './0107.html',
-    'seed/0108-pw_emu-emulators-frontend': './0108.html',
-    'seed/0109-comms-buffers': './0109.html',
-    'seed/0110-memory-allocation-interfaces': './0110.html',
-    'seed/0111-build-systems': './0111.html',
-    'seed/0112-async-poll': './0112.html',
-    'seed/0113-bazel-cc-toolchain-api': './0113.html',
-    'seed/0114-channels': './0114.html',
-    'seed/0117-pw_i3c': './0117.html',
-    'seed/0119-pw-sensor': './0119.html',
-    'seed/0120-pw-sensor-config': './0120.html',
-    'seed/0122-code-samples': './0122.html',
-    'seed/0124-multisink-size-info': './0124.html',
-    'seed/0128-abstracting-thread-creation': './0128.html',
-    'seed/0130-update-sphinx-theme': './0130.html',
-    'seeds/index': '../seed/0000-index.html',
-    'sense/index': '../docs/showcases/sense/',
-    'tour/index': '../docs/showcases/sense/',
-}
+#
+# TODO: https://pwbug.dev/430133030 - Tidy up the redirects.
+with open('./redirects.json', 'r') as f:
+    redirects_data = json.load(f)
+redirects = redirects_data
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).

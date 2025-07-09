@@ -43,29 +43,28 @@ by `sphinx-reredirects`_.
 
 To create a redirect:
 
-#. Open ``//docs/conf.py``.
+#. Open ``//docs/redirects.json``.
 
 .. _Usage: https://documatt.com/sphinx-reredirects/usage.html
 
-#. Add your redirect to the ``redirects`` dict. See the
-   `Usage`_ section from the ``sphinx-reredirects`` docs.
+#. Create a new key-value pair. The key is the obsolete path that should be
+   redirected. The value is the redirect destination. See `Usage`_.
 
-   * The redirect should be relative to the source path (i.e. the path that
-     needs to get redirected).
+   * The path in the key should not have a filename extension. The path in the
+     value should.
 
-   * The target path (i.e. the destination path that the source path should
-     redirect to) should include the full HTML filename to ensure that the
-     redirects also work during local development. In other words, prefer
-     ``./example/docs.html`` over ``./example/``.
+   * The path in the value should be relative to the path in the key.
 
-For each URL that should be redirected, ``sphinx-reredirects`` auto-generates
-HTML like this:
+   * The path in the value should contain the full HTML filename. E.g.
+     values should be like ``./examples/index.html``, not ``./examples/``.
+
+Example of the redirect that ``sphinx-reredirects`` auto-generates:
 
 .. code-block:: html
 
    <html>
      <head>
-       <meta http-equiv="refresh" content="0; url=pw_sys_io_rp2040/">
+       <meta http-equiv="refresh" content="0; url=pw_sys_io_rp2040/docs.html">
      </head>
    </html>
 
