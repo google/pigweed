@@ -230,7 +230,6 @@ pw_rust_docs = rule(
         str(Label("@rules_rust//rust:toolchain_type")),
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
-    incompatible_use_toolchain_transition = True,
 )
 
 def _zip(ctx, input_dir, output_zip):
