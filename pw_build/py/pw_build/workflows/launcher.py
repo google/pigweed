@@ -23,7 +23,10 @@ import sys
 from typing import NoReturn
 
 from google.protobuf import json_format, message, text_format
+from pw_build import project_builder
 from pw_build.proto import workflows_pb2
+from pw_build.workflows.bazel_driver import BazelBuildDriver
+from pw_build.workflows.manager import WorkflowsManager
 from pw_cli import multitool
 from pw_config_loader import find_config
 
@@ -53,11 +56,37 @@ class _BuiltinPlugin(multitool.MultitoolPlugin):
         return self._callback(plugin_args)
 
 
+class _WorkflowPlugin(multitool.MultitoolPlugin):
+    def __init__(
+        self,
+        fragment: workflows_pb2.Tool | workflows_pb2.TaskGroup,
+        manager: WorkflowsManager,
+    ):
+        self._fragment = fragment
+        self._manager = manager
+
+    def name(self) -> str:
+        return self._fragment.name
+
+    def help(self) -> str:
+        return self._fragment.description
+
+    def run(self, plugin_args: Sequence[str]) -> int:
+        if isinstance(self._fragment, workflows_pb2.Tool):
+            recipes = self._manager.program_tool(self.name(), plugin_args)
+        else:
+            recipes = self._manager.program_group(self.name())
+        return project_builder.run_builds(
+            project_builder.ProjectBuilder(build_recipes=recipes)
+        )
+
+
 class WorkflowsCli(multitool.MultitoolCli):
     """A CLI entry point for launching project-specific workflows."""
 
     def __init__(self, config: workflows_pb2.WorkflowSuite | None = None):
         self.config: workflows_pb2.WorkflowSuite | None = config
+        self._workflows: WorkflowsManager | None = None
 
     @staticmethod
     def _load_proto_json(config: Path) -> workflows_pb2.WorkflowSuite:
@@ -138,21 +167,69 @@ class WorkflowsCli(multitool.MultitoolCli):
             )
         return text_format.MessageToBytes(dump).decode()
 
+    def _launch_analyzer(self, args: Sequence[str]) -> int:
+        if self._workflows is None:
+            raise AssertionError(
+                'Internal error: failed to initialize workflows manager'
+            )
+        return project_builder.run_builds(
+            project_builder.ProjectBuilder(
+                build_recipes=self._workflows.program_tool(
+                    args[0], args[1:], as_analyzer=True
+                )
+            )
+        )
+
+    def _launch_build(self, args: Sequence[str]) -> int:
+        if self._workflows is None:
+            raise AssertionError(
+                'Internal error: failed to initialize workflows manager'
+            )
+        return project_builder.run_builds(
+            project_builder.ProjectBuilder(
+                build_recipes=self._workflows.program_build(args[0]),
+            )
+        )
+
     def _builtin_plugins(self) -> list[multitool.MultitoolPlugin]:
         return [
+            _BuiltinPlugin(
+                name='build',
+                description='Launch one or more builds',
+                callback=self._launch_build,
+            ),
             _BuiltinPlugin(
                 name='describe',
                 description='Describe a build, tool, or group',
                 callback=self._dump_textproto,
+            ),
+            _BuiltinPlugin(
+                name='check',
+                description='Launch a tool in a no-modify mode',
+                callback=self._launch_analyzer,
             ),
         ]
 
     def plugins(self) -> Sequence[multitool.MultitoolPlugin]:
         if not self.config:
             self.config = self._load_config_from()
+        self._workflows = WorkflowsManager(
+            self.config,
+            {
+                "bazel": BazelBuildDriver(),
+            },
+            working_dir=Path.cwd(),
+            base_out_dir=Path.cwd() / 'out',
+        )
 
         all_plugins = []
         all_plugins.extend(self._builtin_plugins())
+        all_plugins.extend(
+            [_WorkflowPlugin(t, self._workflows) for t in self.config.tools]
+        )
+        all_plugins.extend(
+            [_WorkflowPlugin(g, self._workflows) for g in self.config.groups]
+        )
         return all_plugins
 
     def main(self) -> NoReturn:

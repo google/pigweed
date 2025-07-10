@@ -79,6 +79,7 @@ class BazelBuildDriver(BuildDriver):
                 *tool.build_config.args,
                 tool.target,
                 '--',
+                '${FORWARDED_LAUNCH_ARGS}',
             ],
             env=tool.build_config.env,
             run_from=build_driver_pb2.Action.InvocationLocation.INVOKER_CWD,

@@ -125,7 +125,13 @@ class TestBazelBuildDriver(unittest.TestCase):
         self.assertEqual(tool_job.actions[1].executable, 'bazelisk')
         self.assertEqual(
             list(tool_job.actions[1].args),
-            ['run', '--subcommands', '@pigweed//:format', '--'],
+            [
+                'run',
+                '--subcommands',
+                '@pigweed//:format',
+                '--',
+                '${FORWARDED_LAUNCH_ARGS}',
+            ],
         )
         self.assertEqual(tool_job.actions[1].env['BAZ'], 'qux')
 
