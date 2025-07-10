@@ -52,8 +52,8 @@ common --host_per_file_copt=external/.*,.*\.pb\.cc@-w
 #
 # These names are used by Pigweed's IDE integration to surface available views
 # for code intelligence.
+#
+# Warning: This can cause confusing conflicts in C++ compile actions if there's
+# any intermixing of the well-known host platform definitions. More info:
+# https://github.com/bazelbuild/bazel/issues/26228
 common --experimental_platform_in_output_dir=True
-
-# Attempt to unify host platform to resolve conflicting action errors.
-# This explicitly sets the host platform. Pigweed uses @local_config_platform//:host
-common --host_platform=@local_config_platform//:host

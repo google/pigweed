@@ -189,7 +189,7 @@ const SAMPLE_AQUERY_ACTION = {
     },
   ],
   discoversInputs: true,
-  executionPlatform: '@@platforms//host:host',
+  executionPlatform: '@@bazel_tools//tools:host_platform:host',
   platform: 'darwin_arm64-fastbuild',
 };
 

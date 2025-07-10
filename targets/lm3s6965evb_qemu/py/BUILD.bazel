@@ -61,6 +61,6 @@ py_library(
 
 platform_data(
     name = "exec_cfg_unit_test_runner",
-    platform = "@local_config_platform//:host",
+    platform = "@bazel_tools//tools:host_platform",
     target = ":unit_test_runner",
 )

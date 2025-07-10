@@ -111,6 +111,6 @@ pw_py_binary(
 
 platform_data(
     name = "unit_test_client",
-    platform = "@local_config_platform//:host",
+    platform = "@bazel_tools//tools:host_platform",
     target = ":_unit_test_client",
 )

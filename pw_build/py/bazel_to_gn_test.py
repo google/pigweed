@@ -52,8 +52,6 @@ MODULE_BAZEL = '''module(
     version = "0.0.1",
 )
 
-register_execution_platforms("@local_config_platform//:host")
-
 bazel_dep(name = "foo", version = "1.2.3")
 bazel_dep(name = "bar", version = "2025-02-17")
 bazel_dep(name = "baz", version = "20250217.2")

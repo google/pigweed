@@ -242,7 +242,7 @@ platform(
     flags = flags_from_dict({
         "@pigweed//pw_rpc:config_override": "@pigweed//pw_grpc:pw_rpc_config",
     }),
-    parents = ["@local_config_platform//:host"],
+    parents = ["@bazel_tools//tools:host_platform"],
     visibility = ["//visibility:private"],
 )
 

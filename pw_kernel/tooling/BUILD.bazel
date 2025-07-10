@@ -57,13 +57,13 @@ pw_py_binary(
 
 platform_data(
     name = "qemu",
-    platform = "@local_config_platform//:host",
+    platform = "@bazel_tools//tools:host_platform",
     target = ":qemu_runner",
 )
 
 platform_data(
     name = "serial_detokenizer",
-    platform = "@local_config_platform//:host",
+    platform = "@bazel_tools//tools:host_platform",
     target = "//pw_tokenizer/py:serial_detokenizer",
 )
 

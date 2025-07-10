@@ -917,5 +917,6 @@ patterns <docs-bazel-compatibility-recommended>`:
 * **Minimize the amount of boilerplate** that downstream users need to put up
   with.
 * **Support the autodetected host platform.** That is, ensure ``bazel build
-  --platforms=@platforms//host //...`` works. This is necessary internally (for
-  google3) and arguably more convenient for downstream users generally.
+  --platforms=@bazel_tools//tools:host_platform //...`` works. This is necessary
+  internally (for google3) and arguably more convenient for downstream users
+  generally.
