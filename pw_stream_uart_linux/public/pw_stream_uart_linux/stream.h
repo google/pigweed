@@ -16,8 +16,7 @@
 #include <cstdint>
 #include <optional>
 
-#include "pw_result/result.h"
-#include "pw_span/span.h"
+#include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
 namespace pw::stream {
