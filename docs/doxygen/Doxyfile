@@ -68,6 +68,18 @@ GENERATE_XML           = YES
 # https://www.doxygen.nl/manual/config.html#cfg_html_dynamic_menus
 HTML_DYNAMIC_MENUS     = NO
 
+# https://www.doxygen.nl/manual/config.html#cfg_html_footer
+HTML_FOOTER            = docs/doxygen/footer.html
+
+# https://www.doxygen.nl/manual/config.html#cfg_html_header
+HTML_HEADER            = docs/doxygen/header.html
+
+# https://www.doxygen.nl/manual/config.html#cfg_html_stylesheet
+HTML_STYLESHEET        = docs/doxygen/styles.css
+
+# https://www.doxygen.nl/manual/config.html#cfg_layout_file
+LAYOUT_FILE            = docs/doxygen/layout.xml
+
 # https://www.doxygen.nl/manual/config.html#cfg_macro_expansion
 MACRO_EXPANSION        = YES
 

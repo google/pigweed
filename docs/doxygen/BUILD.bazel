@@ -22,6 +22,16 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 filegroup(
+    name = "website",
+    srcs = [
+        "footer.html",
+        "header.html",
+        "layout.xml",
+        "styles.css",
+    ],
+)
+
+filegroup(
     name = "srcs",
     srcs = [
         "//pw_alignment:doxygen",
@@ -96,6 +106,7 @@ doxygen(
     name = "build",
     srcs = [
         ":srcs",
+        ":website",
     ],
     outs = [
         "html",
