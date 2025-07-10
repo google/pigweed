@@ -20,7 +20,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -58,6 +57,7 @@ cc_binary(
         "//pw_log",
         "//pw_preprocessor",
         "//pw_result",
+        "//pw_status",
     ],
 )
 
@@ -70,7 +70,11 @@ pw_cc_test(
     target_compatible_with = [
         "@platforms//os:linux",
     ],
-    deps = [":pw_spi_linux"],
+    deps = [
+        ":pw_spi_linux",
+        "//pw_bytes",
+        "//pw_span",
+    ],
 )
 
 sphinx_docs_library(
