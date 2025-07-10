@@ -26,7 +26,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -122,8 +121,10 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":local_rpc_egress",
+        "//pw_chrono:system_clock",
         "//pw_log",
         "//pw_metric:metric",
+        "//pw_rpc",
     ],
 )
 
@@ -141,14 +142,17 @@ pw_cc_test(
         ":rpc_transport",
         ":service_registry",
         ":test_protos_pwpb_rpc",
+        "//pw_assert:check",
         "//pw_bytes",
         "//pw_chrono:system_clock",
+        "//pw_rpc",
         "//pw_rpc:client_server",
         "//pw_status",
         "//pw_sync:counting_semaphore",
         "//pw_sync:thread_notification",
         "//pw_thread:sleep",
         "//pw_thread:thread",
+        "//pw_thread_stl:options",
     ],
 )
 
@@ -221,8 +225,10 @@ cc_library(
         ":rpc_transport",
         ":simple_framing",
         "//pw_bytes",
+        "//pw_rpc",
         "//pw_rpc:client_server",
         "//pw_status",
+        "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
     ],
 )
@@ -249,10 +255,18 @@ pw_cc_test(
     deps = [
         ":egress_ingress",
         ":egress_ingress_logging_metric_tracker",
+        ":hdlc_framing",
+        ":rpc_transport",
         ":service_registry",
+        ":simple_framing",
         ":test_protos_pwpb_rpc",
+        "//pw_assert:check",
         "//pw_bytes",
+        "//pw_metric:metric",
+        "//pw_rpc",
+        "//pw_rpc:client_server",
         "//pw_status",
+        "//pw_string:string",
         "//pw_sync:thread_notification",
     ],
 )
@@ -272,6 +286,8 @@ cc_library(
         "//pw_status",
         "//pw_stream",
         "//pw_stream:socket_stream",
+        # TODO: https://pwbug.dev/430659831 - Use condition_variable
+        "//pw_sync:condition_variable_facade",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_sync:thread_notification",
@@ -316,11 +332,14 @@ pw_cc_test(
         ":socket_rpc_transport",
         "//pw_bytes",
         "//pw_log",
+        "//pw_span",
         "//pw_status",
+        "//pw_stream:socket_stream",
         "//pw_sync:mutex",
         "//pw_sync:thread_notification",
         "//pw_thread:sleep",
         "//pw_thread:thread",
+        "//pw_thread_stl:options",
     ],
 )
 
@@ -334,8 +353,11 @@ pw_cc_test(
         "//pw_bytes",
         "//pw_log",
         "//pw_status",
+        "//pw_stream",
+        "//pw_sync:mutex",
         "//pw_sync:thread_notification",
         "//pw_thread:thread",
+        "//pw_thread_stl:options",
     ],
 )
 
@@ -354,8 +376,11 @@ pw_cc_test(
         "//pw_log",
         "//pw_rpc:client_server",
         "//pw_rpc:synchronous_client_api",
-        "//pw_string",
+        "//pw_status",
+        "//pw_string:string",
         "//pw_thread:thread",
+        "//pw_thread:thread_core",
+        "//pw_thread_stl:options",
     ],
 )
 

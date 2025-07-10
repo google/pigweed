@@ -19,7 +19,6 @@
 
 #include "pw_bytes/span.h"
 #include "pw_log/log.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_sync/mutex.h"

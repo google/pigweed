@@ -19,7 +19,6 @@
 #include <mutex>
 
 #include "pw_assert/assert.h"
-#include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_rpc_transport/rpc_transport.h"
 #include "pw_status/status.h"

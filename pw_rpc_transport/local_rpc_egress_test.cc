@@ -16,7 +16,6 @@
 
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
-#include "pw_log/log.h"
 #include "pw_rpc/client_server.h"
 #include "pw_rpc/packet_meta.h"
 #include "pw_rpc_transport/internal/test.rpc.pwpb.h"
