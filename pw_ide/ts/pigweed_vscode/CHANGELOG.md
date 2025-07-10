@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.9.5] - 2025-07-07
+
+### Features
+
+ - Revamped code intelligence integration using clangd.
+ - Automatic target recognition for Bazel workflows.
+ - A new python based commands generator (this is experimental) that is more
+   accurate and simpler to maintain moving forward.
+
+### Bug Fixes
+
+ - Fix fish shell support for the commands generator ([b/428243657](https://issuetracker.google.com/428243657))
+
 ## [1.3.3]
 
 - The `pigweed.activateBazeliskInNewTerminals` option has been set to a default
