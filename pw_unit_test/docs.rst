@@ -382,18 +382,18 @@ Skip tests in Bazel
 Use ``target_compatible_with`` in Bazel to skip tests. The following test is
 skipped when :ref:`using upstream GoogleTest <module-pw_unit_test-upstream>`:
 
-.. code-block::
+.. code-block:: python
 
    load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
    pw_cc_test(
        name = "no_upstream_test",
        srcs = ["no_upstream_test.cc"],
-        target_compatible_with = select({
-            "//pw_unit_test:light_setting": [],
-            "//conditions:default": ["@platforms//:incompatible"],
-        }),
-   }
+       target_compatible_with = select({
+           "//pw_unit_test:backend_is_googletest": ["@platforms//:incompatible"],
+           "//conditions:default": [],
+       }),
+   )
 
 .. _module-pw_unit_test-static:
 

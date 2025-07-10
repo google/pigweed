@@ -290,7 +290,7 @@ cc_library(
                              # Only run using the light framework, since gtest allocates objects before
                              # the test fixture initializes the heap.
                              select({
-                                 "//pw_unit_test:light_setting": [],
+                                 "//pw_unit_test:backend_is_light": [],
                                  "//conditions:default": ["@platforms//:incompatible"],
                              }) +
 
