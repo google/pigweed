@@ -15,7 +15,6 @@
 
 import argparse
 import logging
-from pathlib import Path
 import sys
 
 from pw_cli import log as pw_benchmark_cli_log
@@ -46,12 +45,6 @@ def _build_argument_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         '--logfile', help='Pigweed System Benchmark Runner log file.'
-    )
-
-    parser.add_argument(
-        '--config-file',
-        type=Path,
-        help='Path to a pw_rpc benchmark yaml config file.',
     )
 
     return parser
