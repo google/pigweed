@@ -13,16 +13,29 @@
 // the License.
 #![no_std]
 
-pub use kernel_config::{ExceptionMode, KernelConfigInterface, RiscVKernelConfigInterface};
+pub use kernel_config::{
+    ClintTimerConfigInterface, ExceptionMode, KernelConfigInterface, RiscVKernelConfigInterface,
+};
 
 pub struct KernelConfig;
 
 impl KernelConfigInterface for KernelConfig {}
 
 impl RiscVKernelConfigInterface for KernelConfig {
+    type Timer = TimerConfig;
+    const MTIME_HZ: u64 = 10_000_000;
     const PMP_ENTRIES: usize = 16;
     const PMP_CFG_REGISTERS: usize = 4;
     fn get_exception_mode() -> ExceptionMode {
         ExceptionMode::Direct
     }
+}
+
+pub struct TimerConfig;
+
+const TIMER_BASE: usize = 0x200_0000;
+
+impl ClintTimerConfigInterface for TimerConfig {
+    const MTIME_REGISTER: usize = TIMER_BASE + 0xbff8;
+    const MTIMECMP_REGISTER: usize = TIMER_BASE + 0x4000;
 }
