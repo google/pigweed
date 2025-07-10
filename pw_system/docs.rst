@@ -289,8 +289,12 @@ to it from the console, run the following:
 
    $ bazelisk run //pw_system/py:pw_system_console -- -s 127.0.0.1:33000
 
+---------
+Debugging
+---------
+
 Debugging pw_system_console with VSCode
----------------------------------------
+=======================================
 When running a python script through bazel, python is run inside a bazel sandbox,
 which can make re-creating this environment difficult when running the script
 outside of bazel to attach a debugger.
@@ -334,14 +338,19 @@ Next, run the console through bazel, adding the argument(s) ``--debugger-listen`
 Once the console has been started, simply select ``Run -> Start Debugging`` and the VS code debugger
 will automatically attach to the running python console.
 
+---------
+Benchmark
+---------
+
 pw_system.benchmark_runner
 ==========================
 .. automodule:: pw_system.benchmark_runner
   :members:
     Runner
 
+-------------
 API reference
-=============
+-------------
 .. doxygenfunction:: pw::SystemStart(channel::ByteReaderWriter&)
 .. doxygenfunction:: pw::System
 .. doxygenclass:: pw::system::AsyncCore

@@ -33,9 +33,10 @@ To execute the host-side runner, open two (2) terminals:
 
 #. In terminal A:
 
-   #. bazel run ``//pw_system:simulator_system_example``
+   #. ``bazel run //pw_system:simulator_system_example``
 
 #. In terminal B:
+
    #. ``python -m pw_system.benchmark_runner -s default --cli``
 """
 # pylint: enable=anomalous-backslash-in-string

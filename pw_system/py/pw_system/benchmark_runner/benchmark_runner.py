@@ -33,8 +33,8 @@ class Runner:
 
     This class is a convenience class to enable a user to execute the default
     tests provided by ``pw_rpc``'s ``benchmark.py`` file.  Users are generally
-    expected to replace this runner with their own, cusomized version once they
-    verify the default tools work.
+    expected to replace this runner with their own, customized version once
+    they verify the default tools work.
     """
 
     def __enter__(self) -> Any:
@@ -55,8 +55,9 @@ class Runner:
         benchmark_options: BenchmarkOptions = BenchmarkOptions(),
         device: pw_device.Device | None = None,
     ) -> None:
-        """Creates a Runner object for interacting with pw_rpc benchmark.  Must
-           be called in a 'with' context!
+        """Creates a Runner object for interacting with pw_rpc benchmark.
+
+        This must be called in a `with` context!
 
         Args:
             args: An arg list for the CLI arg parser.
