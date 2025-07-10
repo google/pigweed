@@ -178,6 +178,7 @@ cc_library(
         "public/pw_trace_tokenized/trace_buffer_log.h",
     ],
     features = ["-conversion_warnings"],
+    strip_include_prefix = "public",
     deps = [
         ":buffer",
         "//pw_base64",
@@ -289,10 +290,6 @@ pw_cc_test(
         "trace_test.cc",
     ],
     features = ["-conversion_warnings"],
-    includes = [
-        "pw_trace_test",
-        "pw_trace_test/public_overrides",
-    ],
     deps = [
         ":pw_trace_tokenized",
         "//pw_trace",
@@ -346,7 +343,6 @@ cc_library(
     name = "pw_trace_host_trace_time",
     srcs = ["host_trace_time.cc"],
     features = ["-conversion_warnings"],
-    includes = ["example/public"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [":config"],
 )
@@ -355,7 +351,7 @@ cc_library(
     name = "pw_trace_example_to_file",
     hdrs = ["example/public/pw_trace_tokenized/example/trace_to_file.h"],
     features = ["-conversion_warnings"],
-    includes = ["example/public"],
+    strip_include_prefix = "example/public",
     deps = [
         ":pw_trace_tokenized",
         "//pw_trace",
