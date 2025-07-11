@@ -221,11 +221,26 @@ but not the previous, as in a single-linked list. Given that these operations
 would be inefficient and unlikely to be used, they are not implemented, and only
 a queue class is provided.
 
+------------
 Size reports
 ------------
 The tables below illustrate the following scenarios:
 
 .. TODO: b/394341806 - Add size report for InlineVarLenEntryQueue.
+
+* Scenarios related to ``std::deque``, as a baseline:
+
+  * The memory and code size cost incurred by a adding a single ``std::deque``.
+  * The memory and code size cost incurred by adding another ``std::deque``
+    with a different type. As ``std::deque`` is templated on type, this
+    results in additional code being generated.
+
+* Scenarios related to ``DynamicDeque``:
+
+  * The memory and code size cost incurred by a adding a single ``DynamicDeque``.
+  * The memory and code size cost incurred by adding another ``DynamicDeque``
+    with a different type. As ``DynamicDeque`` is templated on type, this
+    results in additional code being generated.
 
 * Scenarios related to ``InlineDeque``:
 
@@ -241,7 +256,7 @@ The tables below illustrate the following scenarios:
     with a different type. As ``InlineQueue`` is templated on type, this results
     in additional code being generated.
 
-* The memory and code size cost incurred by a adding both an ``InlineDeque`` and
+* The memory and code size cost incurred by adding both an ``InlineDeque`` and
   an ``InlineQueue`` of the same type. These types reuse code, so the combined
   sum is less than the sum of its parts.
 

@@ -19,10 +19,15 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "size_report",
-    hdrs = ["public/pw_containers/size_report/size_report.h"],
-    features = ["-conversion_warnings"],
+    hdrs = [
+        "public/pw_containers/size_report/dynamic_deque.h",
+        "public/pw_containers/size_report/size_report.h",
+    ],
     strip_include_prefix = "public",
-    deps = ["//pw_bloat:bloat_this_binary"],
+    deps = [
+        "//pw_allocator:libc_allocator",
+        "//pw_bloat:bloat_this_binary",
+    ],
 )
 
 cc_library(
@@ -148,7 +153,6 @@ cc_library(
 pw_cc_size_binary(
     name = "base",
     srcs = ["base.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":size_report",
         "//pw_bloat:bloat_this_binary",
@@ -175,6 +179,46 @@ pw_cc_size_binary(
     features = ["-conversion_warnings"],
     deps = [
         ":flat_map",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "dynamic_deque_base",
+    srcs = ["dynamic_deque.cc"],
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:dynamic_deque",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "dynamic_deque_alternate_type",
+    srcs = ["dynamic_deque.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:dynamic_deque",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "std_deque_base",
+    srcs = ["std_deque.cc"],
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "std_deque_alternate_type",
+    srcs = ["std_deque.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
+    deps = [
+        ":size_report",
         "//pw_bloat:bloat_this_binary",
     ],
 )

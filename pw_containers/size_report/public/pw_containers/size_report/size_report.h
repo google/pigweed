@@ -18,11 +18,12 @@
 #include <cstdint>
 #include <utility>
 
+#include "pw_allocator/libc_allocator.h"
 #include "pw_bloat/bloat_this_binary.h"
 
 namespace pw::containers::size_report {
 
-static constexpr size_t kNumItems = 10;
+inline constexpr size_t kNumItems = 10;
 
 // A few type aliases for convenience in the size reports.
 using K1 = uint32_t;
@@ -73,12 +74,30 @@ Container& GetContainer(const Args& args) {
 }
 
 /// Measures the size of common functions and data without any containers.
-uint32_t SetBaseline(uint32_t mask) {
+inline uint32_t SetBaseline(uint32_t mask) {
   pw::bloat::BloatThisBinary();
   PW_BLOAT_COND(!GetItems<K1>().empty(), mask);
   PW_BLOAT_COND(!GetItems<K2>().empty(), mask);
   PW_BLOAT_COND(!GetItems<V1>().empty(), mask);
   PW_BLOAT_COND(!GetItems<V2>().empty(), mask);
+
+  volatile size_t size = 123;
+  void* alloc = allocator::GetLibCAllocator().Allocate(allocator::Layout(size));
+  PW_BLOAT_COND(alloc != nullptr, mask);
+  volatile size_t resize = 128;
+  PW_BLOAT_COND(pw::allocator::GetLibCAllocator().Resize(alloc, resize), mask);
+  pw::allocator::GetLibCAllocator().Deallocate(alloc);
+
+  volatile size_t count = 3;
+  alloc = allocator::GetLibCAllocator().Allocate(
+      allocator::Layout::Of<V1[]>(count));
+  PW_BLOAT_COND(alloc != nullptr, mask);
+  pw::allocator::GetLibCAllocator().Deallocate(alloc);
+
+  alloc = allocator::GetLibCAllocator().Allocate(
+      allocator::Layout::Of<V2[]>(count));
+  PW_BLOAT_COND(alloc != nullptr, mask);
+  pw::allocator::GetLibCAllocator().Deallocate(alloc);
   return mask;
 }
 

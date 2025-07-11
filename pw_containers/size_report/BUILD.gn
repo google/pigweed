@@ -22,8 +22,14 @@ config("public_include_path") {
 
 pw_source_set("size_report") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_containers/size_report/size_report.h" ]
-  public_deps = [ "$dir_pw_bloat:bloat_this_binary" ]
+  public = [
+    "public/pw_containers/size_report/dynamic_deque.h",
+    "public/pw_containers/size_report/size_report.h",
+  ]
+  public_deps = [
+    "$dir_pw_allocator:libc_allocator",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
 }
 
 pw_source_set("flat_map") {
@@ -150,6 +156,42 @@ pw_executable("flat_map_alternate_types") {
   ]
   deps = [
     ":flat_map",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("dynamic_deque_base") {
+  sources = [ "dynamic_deque.cc" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:dynamic_deque",
+  ]
+}
+
+pw_executable("dynamic_deque_alternate_type") {
+  sources = [ "dynamic_deque.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:dynamic_deque",
+  ]
+}
+
+pw_executable("std_deque_base") {
+  sources = [ "std_deque.cc" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("std_deque_alternate_type") {
+  sources = [ "std_deque.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
+  deps = [
+    ":size_report",
     "$dir_pw_bloat:bloat_this_binary",
   ]
 }
