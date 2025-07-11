@@ -31,11 +31,15 @@ class WakerQueueBase;
 ///
 /// Saves a ``Waker`` into ``waker_out`` which, when awoken, will cause the
 /// current task to be ``Pend``'d by its dispatcher.
-bool StoreWaker(Context& cx, Waker& waker_out, log::Token wait_reason);
+[[nodiscard]] bool StoreWaker(Context& cx,
+                              Waker& waker_out,
+                              log::Token wait_reason);
 
 // Overload of StoreWaker taking a queue, allowing PW_ASYNC_STORE_WAKER to be
 // used with a WakerQueue as the target.
-bool StoreWaker(Context& cx, WakerQueueBase& queue, log::Token wait_reason);
+[[nodiscard]] bool StoreWaker(Context& cx,
+                              WakerQueueBase& queue,
+                              log::Token wait_reason);
 
 }  // namespace internal
 

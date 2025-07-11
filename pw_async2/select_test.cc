@@ -71,7 +71,7 @@ struct PendableValue {
     if (allow_completion_) {
       return Poll<SomeMoveOnlyValue>(result_);
     }
-    PW_ASYNC_TRY_STORE_WAKER(cx, waker_, "PendableValue is unavailable");
+    PW_ASYNC_STORE_WAKER(cx, waker_, "PendableValue is unavailable");
     return Pending();
   }
 

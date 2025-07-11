@@ -22,7 +22,9 @@ namespace pw::async2::internal {
 
 bool StoreWaker(Context& cx, WakerQueueBase& queue, log::Token wait_reason) {
   Waker waker;
-  CloneWaker(*cx.waker_, waker, wait_reason);
+  if (!CloneWaker(*cx.waker_, waker, wait_reason)) {
+    return false;
+  }
   return queue.Add(std::move(waker));
 }
 

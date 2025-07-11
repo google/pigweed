@@ -54,7 +54,7 @@ struct PendableValue {
     if (allow_completion) {
       return result;
     }
-    PW_ASYNC_TRY_STORE_WAKER(cx, waker, "PendableValue is unavailable");
+    PW_ASYNC_STORE_WAKER(cx, waker, "PendableValue is unavailable");
     return Pending();
   }
 

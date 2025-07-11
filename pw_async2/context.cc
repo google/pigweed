@@ -22,7 +22,7 @@ void Context::ReEnqueue() {
   Waker waker;
   // The new waker will be immediately woken and removed, so its wait reason
   // does not matter.
-  internal::CloneWaker(*waker_, waker);
+  std::ignore = internal::CloneWaker(*waker_, waker);
   std::move(waker).Wake();
 }
 

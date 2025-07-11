@@ -29,9 +29,14 @@ namespace internal {
 
 class WakerQueueBase;
 
-bool CloneWaker(Waker& waker_in,
-                Waker& waker_out,
-                log::Token wait_reason = log::kDefaultToken)
+template <typename Callable>
+[[nodiscard]] constexpr auto InvokeWithNodiscard(Callable&& callable) {
+  return callable();
+}
+
+[[nodiscard]] bool CloneWaker(Waker& waker_in,
+                              Waker& waker_out,
+                              log::Token wait_reason = log::kDefaultToken)
     PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
 
 }  // namespace internal
@@ -121,15 +126,16 @@ bool CloneWaker(Waker& waker_in,
                           wait_reason_string)
 
 // Base implementation of the TRY_{STORE,CLONE}_WAKER macros.
-#define _PW_ASYNC_TRY_GET_WAKER(                                    \
-    func, source, waker_or_queue_out, wait_reason_string)           \
-  [&]() PW_NO_LOCK_SAFETY_ANALYSIS {                                \
-    [[maybe_unused]] constexpr const char*                          \
-        pw_async2_wait_reason_must_be_string = wait_reason_string;  \
-    constexpr ::pw::log::Token pw_async2_wait_reason =              \
-        PW_LOG_TOKEN("pw_async2", wait_reason_string);              \
-    return func(source, waker_or_queue_out, pw_async2_wait_reason); \
-  }()
+#define _PW_ASYNC_TRY_GET_WAKER(                                        \
+    func, source, waker_or_queue_out, wait_reason_string)               \
+  ::pw::async2::internal::InvokeWithNodiscard(                          \
+      [&]() PW_NO_LOCK_SAFETY_ANALYSIS {                                \
+        [[maybe_unused]] constexpr const char*                          \
+            pw_async2_wait_reason_must_be_string = wait_reason_string;  \
+        constexpr ::pw::log::Token pw_async2_wait_reason =              \
+            PW_LOG_TOKEN("pw_async2", wait_reason_string);              \
+        return func(source, waker_or_queue_out, pw_async2_wait_reason); \
+      })
 
 /// An object which can respond to asynchronous events by queueing work to
 /// be done in response, such as placing a ``Task`` on a ``Dispatcher``
