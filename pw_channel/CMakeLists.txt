@@ -210,3 +210,32 @@ pw_add_test(pw_channel.test_packet_channel_test
     pw_channel.test_packet_channel
     pw_result
 )
+
+pw_add_library(pw_channel.packet_proxy STATIC
+  HEADERS
+    public/pw_channel/internal/basic_proxy.h
+    public/pw_channel/packet_proxy.h
+    public/pw_channel/packet_proxy_task.h
+  SOURCES
+    basic_proxy.cc
+  PUBLIC_DEPS
+    pw_allocator
+    pw_allocator.chunk_pool
+    pw_async2.dispatcher
+    pw_async2.poll
+    pw_async2.waker_queue
+    pw_channel.packet_channel
+    pw_containers.inline_async_queue
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_channel.packet_proxy_test
+  SOURCES
+    packet_proxy_test.cc
+  PRIVATE_DEPS
+    pw_allocator.testing
+    pw_async2.pend_func_task
+    pw_channel.packet_proxy
+    pw_channel.test_packet_channel
+)
