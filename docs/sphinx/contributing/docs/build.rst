@@ -25,7 +25,7 @@ Quickstart
 
    .. code-block:: console
 
-      $ bazelisk run //docs/sphinx:docs.serve
+      $ bazelisk run //docs:serve
 
 .. _contrib-docs-build-setup:
 
@@ -267,7 +267,7 @@ Locally preview the docs
 ------------------------
 .. code-block:: console
 
-   $ bazelisk run //docs/sphinx:docs.serve
+   $ bazelisk run //docs:serve
 
 A message like this should get printed to ``stdout``:
 

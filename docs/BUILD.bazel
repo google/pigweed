@@ -16,3 +16,8 @@ alias(
     name = "docs",
     actual = "//docs/sphinx:docs",
 )
+
+alias(
+    name = "serve",
+    actual = "//docs/sphinx:docs.serve",
+)
