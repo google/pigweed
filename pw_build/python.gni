@@ -62,6 +62,11 @@ declare_args() {
   # recommended to turn this off so you're not linting and testing all of your
   # external dependencies.
   pw_build_TEST_TRANSITIVE_PYTHON_DEPS = true
+
+  # If you wish to enable transitive dependencies on a subset of your targets,
+  # use this to filter out unwanted transitive dependencies.
+  # For example: `[ "$dir_pigweed/*" ]`
+  pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES = []
 }
 
 # Python packages provide the following targets as $target_name.$subtarget.
@@ -130,7 +135,10 @@ template("_pw_python_static_analysis_mypy") {
     if (defined(invoker.python_deps)) {
       python_deps = invoker.python_deps
       if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
-        foreach(dep, invoker.python_deps) {
+        filtered_python_deps = filter_labels_exclude(
+                invoker.python_deps,
+                pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)
+        foreach(dep, filtered_python_deps) {
           deps += [ string_replace(dep, "(", ".lint.mypy(") ]
         }
       }
@@ -172,7 +180,10 @@ template("_pw_python_static_analysis_pylint") {
     if (defined(invoker.python_deps)) {
       python_deps = invoker.python_deps
       if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
-        foreach(dep, invoker.python_deps) {
+        filtered_python_deps = filter_labels_exclude(
+                invoker.python_deps,
+                pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)
+        foreach(dep, filtered_python_deps) {
           public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
         }
       }
@@ -794,7 +805,10 @@ template("pw_python_package") {
         deps = _test_install_deps
 
         if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
-          foreach(dep, _python_test_deps) {
+          filtered_python_deps = filter_labels_exclude(
+                  _python_test_deps,
+                  pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)
+          foreach(dep, filtered_python_deps) {
             deps += [ string_replace(dep, "(", ".tests(") ]
           }
         }
