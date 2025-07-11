@@ -319,15 +319,50 @@ cc_library(
 )
 
 cc_library(
-    name = "internal_test_utils",
+    name = "fake_channel_output",
     srcs = ["fake_channel_output.cc"],
     hdrs = [
         "public/pw_rpc/internal/fake_channel_output.h",
+    ],
+    implementation_deps = [
+        "//pw_assert:check",
+        "//pw_log",
+        "//pw_result",
+    ],
+    strip_include_prefix = "public",
+    visibility = [":__subpackages__"],
+    deps = [
+        ":payloads_view",
+        ":pw_rpc",
+        "//pw_bytes",
+        "//pw_containers:vector",
+        "//pw_function",
+        "//pw_sync:lock_annotations",
+    ],
+)
+
+cc_library(
+    name = "payloads_view",
+    hdrs = [
+        "public/pw_rpc/payloads_view.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = [":__subpackages__"],
+    deps = [
+        ":pw_rpc",
+        "//pw_containers:filtered_view",
+        "//pw_containers:vector",
+        "//pw_containers:wrapped_iterator",
+    ],
+)
+
+cc_library(
+    name = "internal_test_utils",
+    hdrs = [
         "public/pw_rpc/internal/method_impl_tester.h",
         "public/pw_rpc/internal/method_info_tester.h",
         "public/pw_rpc/internal/test_method_context.h",
         "public/pw_rpc/internal/test_utils.h",
-        "public/pw_rpc/payloads_view.h",
         "pw_rpc_private/fake_server_reader_writer.h",
         "pw_rpc_private/test_method.h",
     ],
@@ -339,6 +374,7 @@ cc_library(
     tags = ["noclangtidy"],
     visibility = [":__subpackages__"],
     deps = [
+        ":fake_channel_output",
         ":pw_rpc",
         "//pw_assert:assert",
         "//pw_bytes",
