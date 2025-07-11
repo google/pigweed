@@ -1,0 +1,92 @@
+{
+  "configs": [
+    {
+      "name": "bazel_default",
+      "description": "Default bazel build configuration (usually host)",
+      "build_type": "bazel",
+      "args": [],
+      "env": {}
+    }
+  ],
+  "builds": [
+    {
+      "name": "all_host",
+      "use_config": "bazel_default",
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "all_host_cpp20",
+      "build_config": {
+        "name": "bazel_default_cpp20",
+        "description": "Host C++20 build",
+        "build_type": "bazel",
+        "args": [
+          "--//pw_toolchain/cc:cxx_standard=20"
+        ]
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "docs",
+      "use_config": "bazel_default",
+      "targets": [
+        "//docs"
+      ]
+    },
+    {
+      "name": "build_rp2040_tests",
+      "build_config": {
+        "name": "pico_rp2040",
+        "description": "Default Pi Pico build (rp2040)",
+        "build_type": "bazel",
+        "args": [
+          "--config=rp2040"
+        ]
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "build_rp2350_tests",
+      "build_config": {
+        "name": "pico_rp2350",
+        "description": "Default Pi Pico build (rp2350)",
+        "build_type": "bazel",
+        "args": [
+          "--config=rp2350"
+        ]
+      },
+      "targets": [
+        "//..."
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "format",
+      "description": "Find and fix code formatting issues",
+      "use_config": "bazel_default",
+      "analyzer_friendly_args": [
+        "--check"
+      ],
+      "target": "@pigweed//:format"
+    }
+  ],
+  "groups": [
+    {
+      "name": "presubmit",
+      "description": "A series of presubmit checks for validating code changes",
+      "builds": [
+        "all_host"
+      ],
+      "analyzers": [
+        "format"
+      ]
+    }
+  ]
+}
