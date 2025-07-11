@@ -263,7 +263,7 @@ int main() {
 
   zx::result<fidl::ClientEnd<fuchsia_hardware_bluetooth::Vendor>>
       vendor_client_end_result =
-          bthost::CreateVendorHandle(config.device_path());
+          bthost::CreateVendorHandle("/dev/class/bt-hci/default");
   if (!vendor_client_end_result.is_ok()) {
     bt_log(ERROR,
            "bt-host",

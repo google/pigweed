@@ -60,9 +60,9 @@
             default: 6,
         },
         {
-            directory: "dev-bt-hci",
+            directory: "dev-bt-hci-instance",
             rights: [ "r*" ],
-            path: "/dev/class/bt-hci",
+            path: "/dev/class/bt-hci/default",
         },
         {
             protocol: [ "fuchsia.bluetooth.host.Receiver" ],
