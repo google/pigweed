@@ -60,11 +60,12 @@ cc_library(
     hdrs = [
         "public/pw_rpc/pwpb/internal/common.h",
         "public/pw_rpc/pwpb/serde.h",
-        "public/pw_rpc/pwpb/server_reader_writer.h",
     ],
     strip_include_prefix = "public",
     deps = [
         "//pw_assert:assert",
+        "//pw_bytes",
+        "//pw_protobuf",
         "//pw_rpc",
     ],
 )
