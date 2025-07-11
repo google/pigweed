@@ -14,10 +14,9 @@
 #![no_std]
 #![no_main]
 
-use arch_riscv::{Arch, ArchThreadState};
+use arch_riscv::Arch;
 use console_backend as _;
-use kernel::scheduler::SchedulerContext as _;
-use kernel::{self as _, Duration};
+use kernel::{self as _, Arch as _, Duration};
 
 use target_common::{declare_target, TargetInterface};
 mod userspace_demo_codegen;
@@ -40,16 +39,16 @@ declare_target!(Target);
 #[no_mangle]
 #[allow(non_snake_case)]
 pub extern "C" fn pw_assert_HandleFailure() -> ! {
-    use kernel::KernelContext as _;
+    use kernel::Arch as _;
     Arch::panic()
 }
 
 #[riscv_rt::entry]
 fn main() -> ! {
-    kernel::static_init_state!(static mut INIT_STATE: InitKernelState<ArchThreadState>);
+    kernel::static_init_state!(static mut INIT_STATE: InitKernelState<Arch>);
 
     // SAFETY: `main` is only executed once, so we never generate more than one
     // `&mut` reference to `INIT_STATE`.
     #[allow(static_mut_refs)]
-    kernel::Kernel::main(Arch, unsafe { &mut INIT_STATE });
+    kernel::main(Arch, unsafe { &mut INIT_STATE });
 }

@@ -14,9 +14,6 @@
 
 #![no_std]
 
-use core::arch::asm;
-
-use kernel::scheduler::SchedulerContext as _;
 use kernel::KernelState;
 
 mod exceptions;
@@ -36,30 +33,7 @@ pub struct Arch;
 
 kernel::impl_thread_arg_for_default_zst!(Arch);
 
-impl kernel::KernelContext for Arch {
-    fn early_init(self) {
-        // Make sure interrupts are disabled
-        Arch.disable_interrupts();
-
-        exceptions::early_init();
-
-        timer::early_init();
-    }
-
-    fn init(self) {
-        timer::init();
-    }
-
-    fn panic() -> ! {
-        unsafe {
-            asm!("ebreak");
-        }
-        #[allow(clippy::empty_loop)]
-        loop {}
-    }
-}
-
-impl kernel::KernelStateContext for Arch {
+impl kernel::Kernel for Arch {
     fn get_state(self) -> &'static KernelState<Arch> {
         static STATE: KernelState<Arch> = KernelState::new();
         &STATE

@@ -16,11 +16,9 @@ use core::ptr::NonNull;
 
 use foreign_box::ForeignBox;
 use list::{ForeignList, Link};
+use time::Instant;
 
-use crate::scheduler::SchedulerStateContext;
-
-pub type Instant<C> = time::Instant<C>;
-pub type Duration<C> = time::Duration<C>;
+use crate::scheduler::Kernel;
 
 list::define_adapter!(pub TimerCallbackListAdapter<C: time::Clock> => TimerCallback<C>::link);
 
@@ -100,11 +98,8 @@ impl<C: time::Clock> TimerQueue<C> {
 }
 
 #[allow(dead_code)]
-pub fn schedule_timer<C: SchedulerStateContext>(
-    ctx: C,
-    callback: ForeignBox<TimerCallback<C::Clock>>,
-) {
-    let mut timer_queue = ctx.get_timer_queue().lock();
+pub fn schedule_timer<K: Kernel>(kernel: K, callback: ForeignBox<TimerCallback<K::Clock>>) {
+    let mut timer_queue = kernel.get_timer_queue().lock();
     timer_queue.queue.sorted_insert(callback);
 }
 
@@ -112,11 +107,11 @@ pub fn schedule_timer<C: SchedulerStateContext>(
 ///
 /// `timer` must point to a valid [`TimerCallback`] object which is in the
 /// timer queue.
-pub unsafe fn cancel_timer<C: SchedulerStateContext>(
-    ctx: C,
-    timer: NonNull<TimerCallback<C::Clock>>,
-) -> Option<ForeignBox<TimerCallback<C::Clock>>> {
-    let mut timer_queue = ctx.get_timer_queue().lock();
+pub unsafe fn cancel_timer<K: Kernel>(
+    kernel: K,
+    timer: NonNull<TimerCallback<K::Clock>>,
+) -> Option<ForeignBox<TimerCallback<K::Clock>>> {
+    let mut timer_queue = kernel.get_timer_queue().lock();
     unsafe { timer_queue.queue.remove_element(timer) }
 }
 
@@ -124,11 +119,11 @@ pub unsafe fn cancel_timer<C: SchedulerStateContext>(
 ///
 /// `timer` must point to a valid [`TimerCallback`] object which is in the
 /// timer queue.
-pub unsafe fn cancel_and_consume_timer<C: SchedulerStateContext>(
-    ctx: C,
-    timer: NonNull<TimerCallback<C::Clock>>,
+pub unsafe fn cancel_and_consume_timer<K: Kernel>(
+    kernel: K,
+    timer: NonNull<TimerCallback<K::Clock>>,
 ) {
-    if let Some(mut callback) = unsafe { cancel_timer(ctx, timer) } {
+    if let Some(mut callback) = unsafe { cancel_timer(kernel, timer) } {
         if let Some(callback) = callback.callback.take() {
             callback.consume();
         }
@@ -137,8 +132,8 @@ pub unsafe fn cancel_and_consume_timer<C: SchedulerStateContext>(
 }
 
 #[allow(dead_code)]
-pub fn process_queue<C: SchedulerStateContext>(ctx: C, now: Instant<C::Clock>) {
-    let mut timer_queue = ctx.get_timer_queue().lock();
+pub fn process_queue<K: Kernel>(kernel: K, now: Instant<K::Clock>) {
+    let mut timer_queue = kernel.get_timer_queue().lock();
     while let Some(mut callback) = timer_queue.get_next_exipred_callback(now) {
         // Drop the timer queue lock before processing callbacks.  This is
         // Safe to do because the callback is already removed from the queue.
@@ -151,6 +146,6 @@ pub fn process_queue<C: SchedulerStateContext>(ctx: C, now: Instant<C::Clock>) {
         let _ = callback_fn.consume();
 
         // Require timer queue lock.
-        timer_queue = ctx.get_timer_queue().lock();
+        timer_queue = kernel.get_timer_queue().lock();
     }
 }

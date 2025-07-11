@@ -15,29 +15,29 @@
 
 use kernel::scheduler::thread::{self, StackStorage, StackStorageExt as _, Thread};
 use kernel::sync::mutex::Mutex;
-use kernel::{Duration, KernelStateContext};
+use kernel::{Duration, Kernel};
 use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
 
-pub struct DemoState<C: KernelStateContext> {
-    thread: Thread<C::ThreadState>,
+pub struct DemoState<K: Kernel> {
+    thread: Thread<K>,
     stack: StackStorage<{ KernelConfig::KERNEL_STACK_SIZE_BYTES }>,
-    test_counter: Mutex<C, u64>,
+    test_counter: Mutex<K, u64>,
 }
 
-impl<C: KernelStateContext> DemoState<C> {
-    pub const fn new(ctx: C) -> DemoState<C> {
+impl<K: Kernel> DemoState<K> {
+    pub const fn new(kernel: K) -> DemoState<K> {
         DemoState {
             thread: Thread::new(""),
             stack: StackStorage::ZEROED,
-            test_counter: Mutex::new(ctx, 0),
+            test_counter: Mutex::new(kernel, 0),
         }
     }
 }
 
-pub fn main<C: KernelStateContext>(ctx: C, state: &'static mut DemoState<C>) -> ! {
+pub fn main<K: Kernel>(kernel: K, state: &'static mut DemoState<K>) -> ! {
     let thread_b = thread::init_thread_in(
-        ctx,
+        kernel,
         &mut state.thread,
         &mut state.stack,
         "B",
@@ -45,29 +45,29 @@ pub fn main<C: KernelStateContext>(ctx: C, state: &'static mut DemoState<C>) -> 
         &state.test_counter,
     );
 
-    kernel::start_thread(ctx, thread_b);
+    kernel::start_thread(kernel, thread_b);
 
     info!("Thread A re-using bootstrap thread");
-    thread_a(ctx, &state.test_counter);
+    thread_a(kernel, &state.test_counter);
 }
 
-fn test_thread_entry_b<C: KernelStateContext>(ctx: C, test_counter: &Mutex<C, u64>) {
+fn test_thread_entry_b<K: Kernel>(kernel: K, test_counter: &Mutex<K, u64>) {
     info!("Thread B starting");
-    thread_b(ctx, test_counter);
+    thread_b(kernel, test_counter);
 }
 
-fn thread_a<C: KernelStateContext>(ctx: C, test_counter: &Mutex<C, u64>) -> ! {
+fn thread_a<K: Kernel>(kernel: K, test_counter: &Mutex<K, u64>) -> ! {
     loop {
         let mut counter = test_counter.lock();
-        kernel::sleep_until(ctx, ctx.now() + Duration::from_secs(1));
+        kernel::sleep_until(kernel, kernel.now() + Duration::from_secs(1));
         info!("Thread A: incrementing counter");
         *counter = (*counter).saturating_add(1);
     }
 }
 
-fn thread_b<C: KernelStateContext>(ctx: C, test_counter: &Mutex<C, u64>) {
+fn thread_b<K: Kernel>(kernel: K, test_counter: &Mutex<K, u64>) {
     loop {
-        let deadline = ctx.now() + Duration::from_millis(600);
+        let deadline = kernel.now() + Duration::from_millis(600);
         let Ok(counter) = test_counter.lock_until(deadline) else {
             info!("Thread B: timeout");
             continue;
@@ -77,6 +77,6 @@ fn thread_b<C: KernelStateContext>(ctx: C, test_counter: &Mutex<C, u64>) {
         pw_assert::ne!(*counter as u64, 4 as u64);
         drop(counter);
         // Give Thread A a chance to acquire the mutex.
-        kernel::yield_timeslice(ctx);
+        kernel::yield_timeslice(kernel);
     }
 }

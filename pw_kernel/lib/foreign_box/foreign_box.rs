@@ -41,7 +41,7 @@ impl<T: ?Sized> ForeignBox<T> {
     /// The caller guarantees that `ptr` remains valid throughout the lifetime
     /// of the `ForeignBox` object.
     #[must_use]
-    pub unsafe fn new(ptr: NonNull<T>) -> Self {
+    pub const unsafe fn new(ptr: NonNull<T>) -> Self {
         Self {
             inner: ptr,
             consumed: false,

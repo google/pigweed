@@ -16,9 +16,10 @@ use core::ptr::NonNull;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use pw_status::Result;
+use time::Instant;
 
-use crate::scheduler::timer::Instant;
-use crate::scheduler::{SchedulerContext, SchedulerStateContext, WaitQueueLock};
+use crate::scheduler::WaitQueueLock;
+use crate::Kernel;
 
 /// Configuration for the behavior of an [`Event`].
 #[derive(Eq, PartialEq)]
@@ -59,9 +60,9 @@ struct EventState {
 /// [`wait_until`]: Event::wait_until
 /// [`signal`]: EventSignaler::signal
 /// [`unsignal`]: EventSignaler::unsignal
-pub struct Event<C: SchedulerContext> {
+pub struct Event<K: Kernel> {
     config: EventConfig,
-    state: WaitQueueLock<C, EventState>,
+    state: WaitQueueLock<K, EventState>,
     signalers: AtomicUsize,
 }
 
@@ -70,11 +71,11 @@ pub struct Event<C: SchedulerContext> {
 /// [`EventSignaler`] is returned from [`Event::new()`] and is used to signal
 /// the referenced Event.  It can be cloned and the referenced [`Event`] will
 /// panic if it is dropped when any [`EventSignaler`]s still reference it.
-pub struct EventSignaler<C: SchedulerContext> {
-    event: NonNull<Event<C>>,
+pub struct EventSignaler<K: Kernel> {
+    event: NonNull<Event<K>>,
 }
 
-impl<C: SchedulerContext> Clone for EventSignaler<C> {
+impl<K: Kernel> Clone for EventSignaler<K> {
     fn clone(&self) -> Self {
         // Safety: Event will panic if there are outstanding signalers referencing it.
         unsafe {
@@ -87,7 +88,7 @@ impl<C: SchedulerContext> Clone for EventSignaler<C> {
     }
 }
 
-impl<C: SchedulerContext> Drop for EventSignaler<C> {
+impl<K: Kernel> Drop for EventSignaler<K> {
     fn drop(&mut self) {
         // SAFETY: Event will panic if there are outstanding signalers referencing it.
         unsafe {
@@ -100,7 +101,7 @@ impl<C: SchedulerContext> Drop for EventSignaler<C> {
     }
 }
 
-impl<C: SchedulerStateContext> EventSignaler<C> {
+impl<K: Kernel> EventSignaler<K> {
     /// Sets the `Event`'s state to signaled.
     ///
     /// # Interrupt context
@@ -122,19 +123,19 @@ impl<C: SchedulerStateContext> EventSignaler<C> {
     }
 }
 
-unsafe impl<C: SchedulerContext> Sync for Event<C> {}
-unsafe impl<C: SchedulerContext> Send for Event<C> {}
+unsafe impl<K: Kernel> Sync for Event<K> {}
+unsafe impl<K: Kernel> Send for Event<K> {}
 
-impl<C: SchedulerStateContext> Event<C> {
+impl<K: Kernel> Event<K> {
     /// Constructs a new `Event` with the given configuration.
     ///
     /// Returns the new `Event` long with an [`EventSignaler`] which can be
     /// used to signal the event.
     #[must_use]
-    pub const fn new(ctx: C, config: EventConfig) -> (Self, EventSignaler<C>) {
+    pub const fn new(kernel: K, config: EventConfig) -> (Self, EventSignaler<K>) {
         let event = Self {
             config,
-            state: WaitQueueLock::new(ctx, EventState { signaled: false }),
+            state: WaitQueueLock::new(kernel, EventState { signaled: false }),
             signalers: AtomicUsize::new(1),
         };
 
@@ -176,7 +177,7 @@ impl<C: SchedulerStateContext> Event<C> {
     /// # Interrupt context
     ///
     /// This method is *not* safe to call in an interrupt context.
-    pub fn wait_until(&self, deadline: Instant<C::Clock>) -> Result<()> {
+    pub fn wait_until(&self, deadline: Instant<K::Clock>) -> Result<()> {
         let mut state = self.state.lock();
         if !state.signaled {
             let (_state, result) = state.wait_until(deadline);
@@ -211,7 +212,7 @@ impl<C: SchedulerStateContext> Event<C> {
     }
 }
 
-impl<C: SchedulerContext> Drop for Event<C> {
+impl<K: Kernel> Drop for Event<K> {
     fn drop(&mut self) {
         // TODO: rationalize ordering
         let num_signalers = self.signalers.load(Ordering::SeqCst);

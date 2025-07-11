@@ -15,23 +15,25 @@
 use core::arch::asm;
 use core::mem::{self, MaybeUninit};
 
-use cortex_m::peripheral::SCB;
+use cortex_m::peripheral::{SCB, *};
 use kernel::memory::{MemoryConfig as _, MemoryRegionType};
 use kernel::scheduler::thread::Stack;
-use kernel::scheduler::{self, SchedulerContext, SchedulerState, SchedulerStateContext as _};
+use kernel::scheduler::{self, SchedulerState};
 use kernel::sync::spinlock::SpinLockGuard;
+use kernel::{Arch, Kernel};
 use log_if::debug_if;
 use pw_cast::CastInto as _;
+use pw_log::info;
 use pw_status::{Error, Result};
 
 use crate::exceptions::{
     exception, ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking,
     ExcReturnStack, ExceptionFrame, KernelExceptionFrame, RetPsrVal,
 };
+use crate::in_interrupt_handler;
 use crate::protection::MemoryConfig;
 use crate::regs::msr::{ControlVal, Spsel};
 use crate::spinlock::BareSpinLock;
-use crate::{in_interrupt_handler, Arch};
 
 const LOG_THREAD_CREATE: bool = false;
 
@@ -87,17 +89,23 @@ impl ArchThreadState {
     }
 }
 
-impl SchedulerContext for Arch {
+// Demonstration of zero over head register abstraction.
+#[inline(never)]
+fn get_num_mpu_regions(mpu: &mut crate::regs::Mpu) -> u8 {
+    mpu._type.read().dregion()
+}
+
+impl Arch for crate::Arch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = BareSpinLock;
     type Clock = super::timer::Clock;
 
     unsafe fn context_switch<'a>(
         self,
-        mut sched_state: SpinLockGuard<'a, BareSpinLock, SchedulerState<ArchThreadState>>,
+        mut sched_state: SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>>,
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<ArchThreadState>> {
+    ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>> {
         pw_assert::assert!(new_thread_state == sched_state.get_current_arch_thread_state());
         // TODO - konkers: Allow $expr to be tokenized.
 
@@ -126,7 +134,7 @@ impl SchedulerContext for Arch {
 
             // TODO: make sure this always drops interrupts, may need to force a cpsid here.
             drop(sched_state);
-            pw_assert::debug_assert!(Arch.interrupts_enabled());
+            pw_assert::debug_assert!(crate::Arch.interrupts_enabled());
 
             // PendSV should fire and a context switch will happen.
 
@@ -135,7 +143,7 @@ impl SchedulerContext for Arch {
             // The next line of code is only executed in this context after the
             // old thread is context switched back to.
 
-            sched_state = Arch::get_scheduler(Arch).lock();
+            sched_state = crate::Arch::get_scheduler(crate::Arch).lock();
         } else {
             // in interrupt context the pendsv should have already triggered it
             pw_assert::assert!(SCB::is_pendsv_pending());
@@ -170,6 +178,92 @@ impl SchedulerContext for Arch {
 
     fn idle(self) {
         cortex_m::asm::wfi();
+    }
+
+    fn early_init(self) {
+        info!("arch early init");
+        // TODO: set up the cpu here:
+        //  --interrupt vector table--
+        //  irq priority levels
+        //  clear pending interrupts
+        //  FPU initial state
+        //  enable cache (if present)
+        //  enable cycle counter?
+        let p: Peripherals;
+        // TODO: davidroth - use expect wrapper when available.
+        if let Some(val) = Peripherals::take() {
+            p = val;
+        } else {
+            pw_assert::panic!("Could not take peripherals.")
+        }
+        let mut r = crate::regs::Regs::get();
+        let cpuid = p.CPUID.base.read();
+        info!("CPUID 0x{:x}", cpuid as u32);
+        info!("Num MPU Regions: {}", get_num_mpu_regions(&mut r.mpu) as u8);
+
+        unsafe {
+            // Set the VTOR (assumes it exists)
+            extern "C" {
+                fn pw_boot_vector_table_addr();
+            }
+            let vector_table = pw_boot_vector_table_addr as *const ();
+            p.SCB
+                .vtor
+                .write(vector_table.expose_provenance().cast_into());
+
+            // Only the high two bits or the priority are guaranteed to be
+            // implemented.  Values below are chosen accordingly.
+            //
+            // Note: Higher values have lower priority
+            let mut scb = p.SCB;
+
+            // Set SVCall (system calls) to the lowest priority.
+            scb.set_priority(scb::SystemHandler::SVCall, 0b1111_1111);
+
+            // Set PendSV (used by context switching) to just above SVCall so
+            // that system calls can context switch.
+            scb.set_priority(scb::SystemHandler::PendSV, 0b1011_1111);
+
+            // Set IRQs to a priority above SVCall and PendSV so that they
+            // can preempt them.
+            scb.set_priority(scb::SystemHandler::SysTick, 0b0111_1111);
+
+            // TODO: set all of the NVIC external irqs to medium as well
+
+            scb.enable(scb::Exception::MemoryManagement);
+            // TODO: configure BASEPRI, FAULTMASK
+        } // unsafe
+
+        // Set up PMP attr registers so that all PMP configs can reference them.
+        #[cfg(feature = "user_space")]
+        crate::protection::init();
+
+        crate::timer::systick_early_init();
+
+        // TEST: Intentionally trigger a hard fault to make sure the VTOR is working.
+        // use core::arch::asm;
+        // unsafe {
+        //     asm!("bkpt");
+        // }
+
+        // TEST: Intentionally trigger a pendsv
+        // use cortex_m::interrupt;
+        // SCB::set_pendsv();
+        // unsafe {
+        //     interrupt::enable();
+        // }
+    }
+
+    fn init(self) {
+        info!("arch init");
+        crate::timer::systick_init();
+    }
+
+    fn panic() -> ! {
+        unsafe {
+            asm!("bkpt");
+        }
+        loop {}
     }
 }
 
@@ -284,7 +378,7 @@ extern "C" fn trampoline(
         arg2 as usize,
     );
 
-    pw_assert::assert!(Arch.interrupts_enabled());
+    pw_assert::assert!(crate::Arch.interrupts_enabled());
 
     // Call the actual initial function of the thread.
     initial_function(arg0, arg1, arg2);
@@ -292,7 +386,7 @@ extern "C" fn trampoline(
     // Get a pointer to the current thread and call exit.
     // Note: must let the scope of the lock guard close,
     // since exit_thread() does not return.
-    scheduler::exit_thread(Arch);
+    scheduler::exit_thread(crate::Arch);
 
     // Does not reach.
 }
@@ -312,7 +406,7 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     unsafe { asm!("clrex") };
 
     pw_assert::assert!(in_interrupt_handler());
-    pw_assert::assert!(!Arch.interrupts_enabled());
+    pw_assert::assert!(!crate::Arch.interrupts_enabled());
 
     // Save the incoming frame to the current active thread's arch state, that will function
     // as the context switch frame for when it is returned to later. Clear active thread
@@ -332,7 +426,7 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     }
 
     // Return the arch frame for the current thread
-    let mut sched_state = Arch.get_scheduler().lock();
+    let mut sched_state = crate::Arch.get_scheduler().lock();
     let new_thread = unsafe { sched_state.get_current_arch_thread_state() };
     // info!(
     //     "new frame {:08x}: pc {:08x}",

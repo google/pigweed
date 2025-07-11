@@ -15,13 +15,13 @@
 use core::ptr::{with_exposed_provenance, with_exposed_provenance_mut};
 
 use kernel_config::{
-    KernelConfig, KernelConfigInterface, RiscVKernelConfigInterface, ClintTimerConfigInterface,
+    ClintTimerConfigInterface, KernelConfig, KernelConfigInterface, RiscVKernelConfigInterface,
 };
+use pw_log::info;
+use time::Duration;
 
 use crate::spinlock::InterruptGuard;
 use crate::timer::{Clock, TimerInterface};
-use pw_log::info;
-use time::Duration;
 
 pub struct Timer;
 

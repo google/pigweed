@@ -16,9 +16,7 @@
 
 use core::arch::asm;
 
-use cortex_m::peripheral::*;
-use kernel::{KernelState, KernelStateContext};
-use pw_cast::CastInto as _;
+use kernel::{Kernel, KernelState};
 use pw_log::info;
 
 mod exceptions;
@@ -39,101 +37,7 @@ pub struct Arch;
 
 kernel::impl_thread_arg_for_default_zst!(Arch);
 
-// Demonstration of zero over head register abstraction.
-#[inline(never)]
-fn get_num_mpu_regions(mpu: &mut regs::Mpu) -> u8 {
-    mpu._type.read().dregion()
-}
-
-impl kernel::KernelContext for Arch {
-    fn early_init(self) {
-        info!("arch early init");
-        // TODO: set up the cpu here:
-        //  --interrupt vector table--
-        //  irq priority levels
-        //  clear pending interrupts
-        //  FPU initial state
-        //  enable cache (if present)
-        //  enable cycle counter?
-        let p: Peripherals;
-        // TODO: davidroth - use expect wrapper when available.
-        if let Some(val) = Peripherals::take() {
-            p = val;
-        } else {
-            pw_assert::panic!("Could not take peripherals.")
-        }
-        let mut r = regs::Regs::get();
-        let cpuid = p.CPUID.base.read();
-        info!("CPUID 0x{:x}", cpuid as u32);
-        info!("Num MPU Regions: {}", get_num_mpu_regions(&mut r.mpu) as u8);
-
-        unsafe {
-            // Set the VTOR (assumes it exists)
-            extern "C" {
-                fn pw_boot_vector_table_addr();
-            }
-            let vector_table = pw_boot_vector_table_addr as *const ();
-            p.SCB
-                .vtor
-                .write(vector_table.expose_provenance().cast_into());
-
-            // Only the high two bits or the priority are guaranteed to be
-            // implemented.  Values below are chosen accordingly.
-            //
-            // Note: Higher values have lower priority
-            let mut scb = p.SCB;
-
-            // Set SVCall (system calls) to the lowest priority.
-            scb.set_priority(scb::SystemHandler::SVCall, 0b1111_1111);
-
-            // Set PendSV (used by context switching) to just above SVCall so
-            // that system calls can context switch.
-            scb.set_priority(scb::SystemHandler::PendSV, 0b1011_1111);
-
-            // Set IRQs to a priority above SVCall and PendSV so that they
-            // can preempt them.
-            scb.set_priority(scb::SystemHandler::SysTick, 0b0111_1111);
-
-            // TODO: set all of the NVIC external irqs to medium as well
-
-            scb.enable(scb::Exception::MemoryManagement);
-            // TODO: configure BASEPRI, FAULTMASK
-        } // unsafe
-
-        // Set up PMP attr registers so that all PMP configs can reference them.
-        #[cfg(feature = "user_space")]
-        protection::init();
-
-        timer::systick_early_init();
-
-        // TEST: Intentionally trigger a hard fault to make sure the VTOR is working.
-        // use core::arch::asm;
-        // unsafe {
-        //     asm!("bkpt");
-        // }
-
-        // TEST: Intentionally trigger a pendsv
-        // use cortex_m::interrupt;
-        // SCB::set_pendsv();
-        // unsafe {
-        //     interrupt::enable();
-        // }
-    }
-
-    fn init(self) {
-        info!("arch init");
-        timer::systick_init();
-    }
-
-    fn panic() -> ! {
-        unsafe {
-            asm!("bkpt");
-        }
-        loop {}
-    }
-}
-
-impl KernelStateContext for Arch {
+impl Kernel for Arch {
     fn get_state(self) -> &'static KernelState<Arch> {
         static STATE: KernelState<Arch> = KernelState::new();
         &STATE

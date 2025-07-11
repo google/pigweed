@@ -15,32 +15,32 @@
 #![no_std]
 
 use kernel::scheduler::thread::{Stack, ThreadState};
-use kernel::scheduler::{SchedulerContext, SchedulerState};
+use kernel::scheduler::SchedulerState;
 use kernel::sync::spinlock::SpinLockGuard;
-use kernel::{KernelState, KernelStateContext, MemoryRegionType};
+use kernel::{Arch, Kernel, KernelState, MemoryRegionType};
 use pw_log::info;
 use pw_status::Result;
 
 mod spinlock;
 
 #[derive(Copy, Clone, Default)]
-pub struct Arch;
+pub struct HostArch;
 
-kernel::impl_thread_arg_for_default_zst!(Arch);
+kernel::impl_thread_arg_for_default_zst!(HostArch);
 
 pub struct ArchThreadState;
 
-impl SchedulerContext for Arch {
+impl Arch for HostArch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = Clock;
 
     unsafe fn context_switch(
         self,
-        _sched_state: SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<ArchThreadState>>,
+        _sched_state: SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<Self>>,
         _old_thread_state: *mut ArchThreadState,
         _new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<ArchThreadState>> {
+    ) -> SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<Self>> {
         pw_assert::panic!("unimplemented");
     }
 
@@ -58,11 +58,18 @@ impl SchedulerContext for Arch {
     fn interrupts_enabled(self) -> bool {
         todo!("");
     }
+
+    fn early_init(self) {
+        info!("HOST arch early init");
+    }
+    fn init(self) {
+        info!("HOST arch init");
+    }
 }
 
-impl KernelStateContext for Arch {
-    fn get_state(self) -> &'static KernelState<Arch> {
-        static STATE: KernelState<Arch> = KernelState::new();
+impl Kernel for HostArch {
+    fn get_state(self) -> &'static KernelState<HostArch> {
+        static STATE: KernelState<HostArch> = KernelState::new();
         &STATE
     }
 }
@@ -116,14 +123,5 @@ impl kernel::memory::MemoryConfig for MemoryConfig {
         _end_addr: usize,
     ) -> bool {
         false
-    }
-}
-
-impl kernel::KernelContext for Arch {
-    fn early_init(self) {
-        info!("HOST arch early init");
-    }
-    fn init(self) {
-        info!("HOST arch init");
     }
 }

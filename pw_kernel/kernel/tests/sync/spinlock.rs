@@ -26,7 +26,7 @@ mod tests {
     use kernel::sync::spinlock::{BareSpinLock, SpinLock};
     use unittest::test;
 
-    type ConcreteBareSpinLock = <Arch as kernel::scheduler::SchedulerContext>::BareSpinLock;
+    type ConcreteBareSpinLock = <Arch as kernel::Arch>::BareSpinLock;
 
     #[test]
     fn bare_try_lock_returns_correct_value() -> unittest::Result<()> {

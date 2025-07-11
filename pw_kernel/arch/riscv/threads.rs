@@ -12,19 +12,19 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use core::arch::naked_asm;
+use core::arch::{asm, naked_asm};
 use core::mem;
 
 use kernel::scheduler::thread::Stack;
-use kernel::scheduler::{self, SchedulerContext, SchedulerState};
+use kernel::scheduler::{self, SchedulerState};
 use kernel::sync::spinlock::SpinLockGuard;
+use kernel::Arch;
 use log_if::debug_if;
 use pw_status::Result;
 
 use crate::protection::MemoryConfig;
 use crate::regs::{MStatusVal, PrivilegeLevel};
 use crate::spinlock::BareSpinLock;
-use crate::Arch;
 
 const LOG_CONTEXT_SWITCH: bool = false;
 const LOG_THREAD_CREATE: bool = false;
@@ -86,7 +86,7 @@ impl ArchThreadState {
     }
 }
 
-impl SchedulerContext for super::Arch {
+impl Arch for super::Arch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = BareSpinLock;
     type Clock = super::timer::Clock;
@@ -94,10 +94,10 @@ impl SchedulerContext for super::Arch {
     #[inline(never)]
     unsafe fn context_switch<'a>(
         self,
-        sched_state: SpinLockGuard<'a, BareSpinLock, SchedulerState<ArchThreadState>>,
+        sched_state: SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>>,
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<ArchThreadState>> {
+    ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>> {
         debug_if!(
             LOG_CONTEXT_SWITCH,
             "context switch from frame {:#08x} to frame {:#08x}",
@@ -148,6 +148,27 @@ impl SchedulerContext for super::Arch {
 
     fn interrupts_enabled(self) -> bool {
         riscv::register::mstatus::read().mie()
+    }
+
+    fn early_init(self) {
+        // Make sure interrupts are disabled
+        self.disable_interrupts();
+
+        crate::exceptions::early_init();
+
+        crate::timer::early_init();
+    }
+
+    fn init(self) {
+        crate::timer::init();
+    }
+
+    fn panic() -> ! {
+        unsafe {
+            asm!("ebreak");
+        }
+        #[allow(clippy::empty_loop)]
+        loop {}
     }
 }
 
@@ -316,7 +337,7 @@ extern "C" fn trampoline(
     );
 
     // Enable interrupts
-    Arch.enable_interrupts();
+    crate::Arch.enable_interrupts();
 
     // TODO: figure out how to drop the scheduler lock here?
 
@@ -326,7 +347,7 @@ extern "C" fn trampoline(
     // Get a pointer to the current thread and call exit.
     // Note: must let the scope of the lock guard close,
     // since exit_thread() does not return.
-    scheduler::exit_thread(Arch);
+    scheduler::exit_thread(crate::Arch);
 
     // Does not reach.
 }
