@@ -656,7 +656,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
                                recombiner.local_cid(),
                                l2cap_channel_manager_);
           recombiner.EndRecombination(channel);
-        }
+        }  // recombiner.IsActive(). channel with channels_mutex_ released.
 
         // Currently, we require the full L2CAP header: We need the pdu_length
         // field so we know how much data to recombine, and we need the
@@ -726,7 +726,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
           }
         }
         break;
-      }
+      }  // FIRST_FLUSHABLE. channel with channels_mutex_ released.
 
       default: {
         PW_LOG_ERROR(
@@ -741,8 +741,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
     if (is_fragment) {
       // Recombine this fragment
 
-      // Note this conditionally acquires channels_mutex_ which, if nested,
-      // is expected to be acquired after/inside connection_mutex_.
+      // If value, includes channels_mutex_ unique_lock.
       std::optional<LockedL2capChannel> channel = GetLockedChannel(
           direction, handle, local_cid, l2cap_channel_manager_);
 
@@ -774,7 +773,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
       // We will collect the recombination buffer from the channel below
       // (outside the connection mutex).
 
-    }  // is_fragment
+    }  // is_fragment. channel with channels_mutex_ released.
   }  // std::lock_guard lock(connection_mutex_)
 
   // At this point we have recombined a valid L2CAP frame. It may be
@@ -785,9 +784,10 @@ bool AclDataChannel::HandleAclData(Direction direction,
   // But note, our return value only controls the disposition of the current ACL
   // packet.
 
-  // We need channels lock and channel to send to. Also, if recombining, we get
-  // our recombined buf from it and must hold it for as long as
-  // `recombined_mbuf` and `send_l2cap_pdu` are accessed.
+  // If value, includes channels_mutex_ unique_lock.
+  // We need channel for handling PDU and for recombine buffers.
+  // channels_mutex_ must be held as long as `recombined_mbuf` and
+  // `send_l2cap_pdu` are accessed to ensure channel is not destroyed.
   std::optional<LockedL2capChannel> channel =
       GetLockedChannel(direction, handle, local_cid, l2cap_channel_manager_);
 
@@ -878,10 +878,12 @@ bool AclDataChannel::HandleAclData(Direction direction,
     return kHandled;
   }
 
-  // It's possible for a channel handling rx traffic to have queued tx traffic
-  // or events. So release the channel lock, then call
-  // `DrainChannelQueuesIfNewTx` and `DeliverPendingEvents`.
+  // If value, releases unique_lock of channels_mutex_.
   channel.reset();
+
+  //  It's possible for a channel handling rx traffic to have queued tx traffic
+  //  or events. So call `DrainChannelQueuesIfNewTx` and `DeliverPendingEvents`
+  // (outside of channels_mutex_ lock).
   l2cap_channel_manager_.DrainChannelQueuesIfNewTx();
   l2cap_channel_manager_.DeliverPendingEvents();
 

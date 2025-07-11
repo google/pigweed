@@ -362,6 +362,7 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
 pw::Status ProxyHost::SendAdditionalRxCredits(uint16_t connection_handle,
                                               uint16_t local_cid,
                                               uint16_t additional_rx_credits) {
+  // If value, includes unique_lock of channels_mutex_.
   std::optional<LockedL2capChannel> channel =
       l2cap_channel_manager_.FindChannelByLocalCid(connection_handle,
                                                    local_cid);

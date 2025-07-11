@@ -178,7 +178,7 @@ void L2capChannelManager::DrainChannelQueuesIfNewTx() {
         // packets dequeued.
         round_robin_terminus_ = lrd_channel_;
       }
-    }
+    }  // std::lock_guard lock(channels_mutex_);
 
     if (packet) {
       // A packet with a credit was found inside the lock. Send while unlocked

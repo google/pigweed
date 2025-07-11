@@ -88,6 +88,10 @@ L2capChannel::~L2capChannel() {
   // `ProxyHost` dtor, so this check will prevent a crash from trying to access
   // a destructed `L2capChannelManager`.
   if (state_ != State::kClosed) {
+    // Note, DeregisterChannel locks channels_mutex_. This is used to block
+    // channels being destroyed during Tx.
+    // TODO: https://pwbug.dev/402454277 - Update comment after we no longer
+    // use channels_mutex_ to block ChannelProxy dtor.
     l2cap_channel_manager_.DeregisterChannel(*this);
     ClearQueue();
   }
