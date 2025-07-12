@@ -293,7 +293,7 @@ texinfo_documents = [
     ),
 ]
 
-templates_path = ['docs/layout']
+templates_path = ['layout']
 exclude_patterns = ['docs/templates/**']
 
 doxygen_xml_path = (
