@@ -61,3 +61,45 @@ pw_cc_test(
         "//pw_span",
     ],
 )
+
+cc_library(
+    name = "proxy",
+    srcs = [
+        "l2cap_task.cc",
+        "proxy.cc",
+    ],
+    hdrs = [
+        "public/pw_bluetooth_proxy/comms2/direction.h",
+        "public/pw_bluetooth_proxy/comms2/l2cap_task.h",
+        "public/pw_bluetooth_proxy/comms2/proxy.h",
+    ],
+    implementation_deps = [
+        "//pw_assert:check",
+        "//pw_bluetooth:emboss_hci_commands",
+        "//pw_bluetooth:emboss_hci_events",
+        "//pw_log",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":packets",
+        "//pw_allocator:chunk_pool",
+        "//pw_async2:dispatcher",
+        "//pw_channel:packet_channel",
+        "//pw_channel:packet_proxy",
+        "//pw_containers:inline_async_queue",
+        "//pw_containers:vector",
+    ],
+)
+
+pw_cc_test(
+    name = "proxy_test",
+    srcs = ["proxy_test.cc"],
+    deps = [
+        ":proxy",
+        "//pw_allocator:testing",
+        "//pw_async2:pend_func_task",
+        "//pw_bytes",
+        "//pw_channel:packet_channel",
+        "//pw_channel:test_packet_channel",
+    ],
+)

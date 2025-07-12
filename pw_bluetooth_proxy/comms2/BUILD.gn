@@ -52,3 +52,43 @@ pw_test("packets_test") {
     dir_pw_span,
   ]
 }
+
+pw_source_set("proxy") {
+  public_configs = [ ":public_include_path" ]
+  sources = [
+    "l2cap_task.cc",
+    "proxy.cc",
+  ]
+  public = [
+    "public/pw_bluetooth_proxy/comms2/direction.h",
+    "public/pw_bluetooth_proxy/comms2/l2cap_task.h",
+    "public/pw_bluetooth_proxy/comms2/proxy.h",
+  ]
+  deps = [
+    "$dir_pw_assert",
+    "$dir_pw_bluetooth:emboss_hci_commands",
+    "$dir_pw_bluetooth:emboss_hci_events",
+    "$dir_pw_log",
+  ]
+  public_deps = [
+    ":packets",
+    "$dir_pw_allocator:chunk_pool",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_channel:packet_channel",
+    "$dir_pw_channel:packet_proxy",
+    "$dir_pw_containers:inline_async_queue",
+    "$dir_pw_containers:vector",
+  ]
+}
+
+pw_cc_test("proxy_test") {
+  sources = [ "proxy_test.cc" ]
+  deps = [
+    ":proxy",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_channel:packet_channel",
+    "$dir_pw_channel:test_packet_channel",
+    dir_pw_bytes,
+  ]
+}
