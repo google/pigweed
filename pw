@@ -1,0 +1,52 @@
+#!/bin/bash
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This is a light wrapper script to seamlessly run the //:pw tool while
+# forwarding arguments. This is written as a shell script for three reasons:
+#
+# 1. `./pw` is significantly shorter than `bazelisk run --config=foo //:pw`.
+# 2. .bazelrc configs cannot express multiple portions of this wrapper:
+#    a. Startup flags in a --config are ignored.
+#    b. The double-dash separator cannot be correctly expressed in a --config.
+# 3. There's no way to ask Bazel to be verbose on the first clean build, and
+#    as quiet as possible on subsequent runs.
+
+# Print a message that indicates the pw tool might take a few seconds to load.
+if [ -t 1 ]; then
+  printf "Initializing pw tool...\r"
+fi
+# Don't generate compile commands from this action. Note that since we're
+# using bazelisk, `BAZEL_WRAPPER` is NOT respected.
+export BAZELISK_SKIP_WRAPPER=1
+
+declare -r _PW_SCRIPT_DIR=$(realpath $(dirname $0))
+declare -r _PW_WORKFLOWS_OUT_DIR=${_PW_SCRIPT_DIR}/out/workflows_launcher
+declare -r _PW_WORKFLOWS_BIN_PATH=${_PW_WORKFLOWS_OUT_DIR}/bazel-bin/pw_build/py/workflows_launcher
+
+# If the `pw` tool hasn't been built yet, don't silence output since it might
+# take a long time.
+if [ -f "$_PW_WORKFLOWS_BIN_PATH" ]; then
+  declare -r _PW_WORKFLOWS_QUIET=--quiet
+else
+  declare -r _PW_WORKFLOWS_QUIET
+fi
+
+bazelisk \
+  ${_PW_WORKFLOWS_QUIET} \
+  --output_base=${_PW_WORKFLOWS_OUT_DIR} \
+  run \
+  --symlink_prefix=${_PW_WORKFLOWS_OUT_DIR}/bazel- \
+  --show_result=0 \
+  //:pw -- "$@"

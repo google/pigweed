@@ -22,24 +22,20 @@ and discoverable way to execute common development tasks.
 ---------------
 Getting Started
 ---------------
-.. tab-set::
+To see available commands, launch the ``pw`` entry point at the root of
+the Pigweed repository.
 
-   .. tab-item:: Bazel
-      :sync: bazel
+.. code-block:: console
 
-      .. code-block:: console
-
-         bazelisk run //pw_build/py:workflows_launcher
-
-   .. tab-item:: GN (bootstrapped environment)
-      :sync: gn
-
-      .. code-block:: console
-
-         python -m pw_build.workflows.launcher
+   ./pw
 
 The launcher will automatically find and load a ``workflows.json`` file in the
 current directory or any parent directory.
+
+.. note::
+
+   The Workflows tool does not yet offer any GN or CMake build integration.
+   Please use :ref:`module-pw_env_setup` and :ref:`module-pw_presubmit`.
 
 --------
 Commands
@@ -59,21 +55,9 @@ particularly helpful for debugging programmatically-generated configurations.
 
 Example:
 
-.. tab-set::
+.. code-block:: console
 
-   .. tab-item:: Bazel
-      :sync: bazel
-
-      .. code-block:: console
-
-         bazelisk run //pw_build/py:workflows_launcher -- describe format
-
-   .. tab-item:: GN (bootstrapped environment)
-      :sync: gn
-
-      .. code-block:: console
-
-         python -m pw_build.workflows.launcher describe format
+   ./pw describe format
 
 This will print the configuration for the ``format`` tool:
 
@@ -97,21 +81,9 @@ The ``build`` command launches the build for the requested build name.
 
 Example:
 
-.. tab-set::
+.. code-block:: console
 
-   .. tab-item:: Bazel
-      :sync: bazel
-
-      .. code-block:: console
-
-         bazelisk run //pw_build/py:workflows_launcher -- build all_host
-
-   .. tab-item:: GN (bootstrapped environment)
-      :sync: gn
-
-      .. code-block:: console
-
-         python -m pw_build.workflows.launcher build all_host
+   ./pw build all_host
 
 .. note::
 
@@ -131,21 +103,10 @@ Running this command will execute the tool's specified command.
 From the :ref:`example workflows.json <module-pw_build-workflows-launcher-example-configuration>`,
 the following command is created:
 
-.. tab-set::
 
-   .. tab-item:: Bazel
-      :sync: bazel
+.. code-block:: console
 
-      .. code-block:: console
-
-         bazelisk run //pw_build/py:workflows_launcher -- format
-
-   .. tab-item:: GN (bootstrapped environment)
-      :sync: gn
-
-      .. code-block:: console
-
-         python -m pw_build.workflows.launcher format
+   ./pw format
 
 This will launch a ``bazel run`` invocation of Pigweed's code formatter tool.
 
@@ -157,21 +118,10 @@ Running this command will execute all the workflows in the group in sequence.
 From the :ref:`example workflows.json <module-pw_build-workflows-launcher-example-configuration>`,
 the following command is created:
 
-.. tab-set::
+.. code-block:: console
 
-   .. tab-item:: Bazel
-      :sync: bazel
+   ./pw presubmit
 
-      .. code-block:: console
-
-         bazelisk run //pw_build/py:workflows_launcher -- presubmit
-
-   .. tab-item:: GN (bootstrapped environment)
-      :sync: gn
-
-      .. code-block:: console
-
-         python -m pw_build.workflows.launcher presubmit
 
 This will launch a series of builds followed by code health check tooling as
 enumerated by the group named ``presubmit``.
