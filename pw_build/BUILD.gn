@@ -26,6 +26,7 @@ import("target_types.gni")
 pw_proto_library("workflows_proto") {
   sources = [
     "proto/build_driver.proto",
+    "proto/pigweed_build_driver.proto",
     "proto/workflows.proto",
   ]
   prefix = "pw_build"

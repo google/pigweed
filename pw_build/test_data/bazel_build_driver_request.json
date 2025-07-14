@@ -20,7 +20,11 @@
         "build_config": {
           "args": [
             "--config=rp2040"
-          ]
+          ],
+          "driver_options": {
+            "@type": "pw.build.proto.BazelDriverOptions",
+            "no_test": true
+          }
         }
       }
     },

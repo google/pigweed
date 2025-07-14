@@ -29,21 +29,45 @@ How it Works
 This separation of concerns allows the Workflows system to be extended with new
 build systems by creating new drivers, without modifying the core launcher.
 
+-----------------------
+Driver-specific options
+-----------------------
+Build drivers may optionally define a ``proto`` message for driver-specific
+options. These options are specified the ``driver_options`` field of a
+``BuildConfig``. This allows different build types to specify more strongly
+structured configuration that affects build behavior in ways beyond strictly
+adding CLI arguments or setting environment variables.
+
+Because driver options are structured as ``google.protobuf.Any`` messages, the
+configuration loader will either need awareness of all supported message types,
+or a way to dynamically load message definitions as needed. The easiest way to
+introduce a new known message is to simply ``import`` it from any dependency of
+the Workflows launcher.
+
 ------------
 Bazel Driver
 ------------
-The Bazel driver translates ``bazel`` build types to a series of actions. It
-doesn't yet offer any driver-specific configuration options.
+The Bazel driver translates ``bazel`` build types to a series of actions.
 
 When generating actions for a ``Build``, it includes:
 
 #. Canonicalizing Bazel flags. This is done to ensure build targets don't leak
    into the list of build arguments.
 #. Running ``bazelisk build`` with the specified targets and arguments.
-#. Running ``bazelisk test`` with the same targets and arguments.
+#. Running ``bazelisk test`` with the same targets and arguments, unless
+   disabled by the ``no_test`` driver option.
 
 When generating actions for a ``Tool``, it includes:
 
 #. Canonicalizing Bazel flags. This is done to ensure build targets don't leak
    into the list of build arguments.
 #. Running ``bazelisk run`` with the specified target and arguments.
+
+Bazel-specific options
+======================
+See `//pw_build/proto/pigweed_build_driver.proto <https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/proto/pigweed_build_driver.proto>`__
+
+.. literalinclude:: proto/pigweed_build_driver.proto
+   :language: protobuf
+   :start-at: message BazelDriverOptions
+   :end-at: }

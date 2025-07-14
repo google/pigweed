@@ -39,6 +39,12 @@ message BuildConfig {
 
   // Environment variables unique to this build configuration.
   map<string, string> env = 5;
+
+  // Driver-specific options.
+  // This is forwarded to the driver for the respective build_type, and is used
+  // to configure options that are more complex then simply passing additional
+  // flags.
+  google.protobuf.Any driver_options = 6;
 }
 
 // A discrete build.

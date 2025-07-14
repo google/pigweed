@@ -26,7 +26,11 @@ $ bazel run //pw_build/py:bazel_build_driver -- \
 
 import sys
 
-from pw_build.proto import build_driver_pb2, workflows_pb2
+from pw_build.proto import (
+    build_driver_pb2,
+    workflows_pb2,
+    pigweed_build_driver_pb2,
+)
 from pw_build.workflows.build_driver import BuildDriver
 
 
@@ -44,6 +48,10 @@ class BazelBuildDriver(BuildDriver):
         # This is a nop.
         return build_driver_pb2.JobResponse()
 
+    @staticmethod
+    def extra_descriptors():
+        return [pigweed_build_driver_pb2.DESCRIPTOR]
+
     def generate_action_sequence_for_build(
         self, build: workflows_pb2.Build
     ) -> build_driver_pb2.JobResponse:
@@ -57,14 +65,22 @@ class BazelBuildDriver(BuildDriver):
                 run_from=build_driver_pb2.Action.InvocationLocation.INVOKER_CWD,
             )
         )
-        actions.actions.append(
-            build_driver_pb2.Action(
-                executable='bazelisk',
-                args=['test', *build.build_config.args, *build.targets],
-                env=build.build_config.env,
-                run_from=build_driver_pb2.Action.InvocationLocation.INVOKER_CWD,
-            )
+        driver_options = self.unpack_driver_options(
+            pigweed_build_driver_pb2.BazelDriverOptions,
+            build.build_config.driver_options,
         )
+
+        if not driver_options.no_test:
+            actions.actions.append(
+                build_driver_pb2.Action(
+                    executable='bazelisk',
+                    args=['test', *build.build_config.args, *build.targets],
+                    env=build.build_config.env,
+                    run_from=(
+                        build_driver_pb2.Action.InvocationLocation.INVOKER_CWD
+                    ),
+                )
+            )
         return actions
 
     def generate_action_sequence_for_tool(

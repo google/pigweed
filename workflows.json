@@ -45,7 +45,11 @@
         "build_type": "bazel",
         "args": [
           "--config=rp2040"
-        ]
+        ],
+        "driver_options": {
+          "@type": "pw.build.proto.BazelDriverOptions",
+          "no_test": true
+        }
       },
       "targets": [
         "//..."
@@ -59,7 +63,11 @@
         "build_type": "bazel",
         "args": [
           "--config=rp2350"
-        ]
+        ],
+        "driver_options": {
+          "@type": "pw.build.proto.BazelDriverOptions",
+          "no_test": true
+        }
       },
       "targets": [
         "//..."
@@ -82,7 +90,9 @@
       "name": "presubmit",
       "description": "A series of presubmit checks for validating code changes",
       "builds": [
-        "all_host"
+        "all_host",
+        "build_rp2040_tests",
+        "build_rp2350_tests"
       ],
       "analyzers": [
         "format"

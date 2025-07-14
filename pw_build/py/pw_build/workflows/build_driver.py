@@ -14,12 +14,17 @@
 """An interface for defining Workflows build drivers."""
 
 import abc
+from collections.abc import Sequence
 import argparse
 import json
 import sys
+import typing
 
-from google.protobuf import json_format
+from google.protobuf import any_pb2, descriptor_pb2, message
+from google.protobuf import json_format, descriptor, descriptor_pool
 from pw_build.proto import build_driver_pb2
+
+MessageT = typing.TypeVar('MessageT', bound=message.Message)
 
 
 class BuildDriver(abc.ABC):
@@ -30,6 +35,11 @@ class BuildDriver(abc.ABC):
         self, job: build_driver_pb2.JobRequest
     ) -> build_driver_pb2.JobResponse:
         """Generates an action sequence from a single job request."""
+
+    @staticmethod
+    def extra_descriptors() -> Sequence[descriptor.FileDescriptor]:
+        """Extra descriptors that should be used when loading the proto."""
+        return []
 
     def generate_jobs(
         self, build_request: build_driver_pb2.BuildDriverRequest
@@ -45,8 +55,34 @@ class BuildDriver(abc.ABC):
     ) -> build_driver_pb2.BuildDriverResponse:
         json_msg = json.loads(json_msg)
         msg = build_driver_pb2.BuildDriverRequest()
-        json_format.ParseDict(json_msg, msg)
+
+        # Load Any proto message:
+        pool = descriptor_pool.Default()
+        for desc in self.extra_descriptors():
+            extension = descriptor_pb2.FileDescriptorProto()
+            desc.CopyToProto(extension)
+            pool.Add(extension)
+
+        json_format.ParseDict(json_msg, msg, descriptor_pool=pool)
         return self.generate_jobs(msg)
+
+    @staticmethod
+    def unpack_driver_options(
+        msg_type: type[MessageT], any_msg: any_pb2.Any
+    ) -> MessageT:
+        msg = msg_type()
+        if not any_msg.value:
+            return msg
+
+        desc = msg_type.DESCRIPTOR
+        if desc.full_name != any_msg.type_url:
+            raise TypeError(
+                f'Driver options are of wrong type, expected '
+                f'`{desc.full_name}` and got '
+                f'`{any_msg.type_url}`'
+            )
+        msg.ParseFromString(any_msg.value)
+        return msg
 
     @staticmethod
     def _parse_args():

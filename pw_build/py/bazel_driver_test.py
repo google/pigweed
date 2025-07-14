@@ -39,6 +39,28 @@ _BAZEL_BUILD_JOB_REQUEST = """
 }
 """
 
+_BAZEL_BUILD_NO_TEST_JOB_REQUEST = """
+{
+  "jobs": [
+    {
+      "build": {
+        "build_config": {
+          "build_type": "bazel",
+          "args": ["--config=rp2040"],
+          "driver_options": {
+            "@type": "pw.build.proto.BazelDriverOptions",
+            "no_test": true
+          }
+        },
+        "targets": [
+          "//..."
+        ]
+      }
+    }
+  ]
+}
+"""
+
 _BAZEL_TOOL_JOB_REQUEST = """
 {
   "jobs": [
@@ -95,6 +117,39 @@ class TestBazelBuildDriver(unittest.TestCase):
             ['test', '--config=rp2040', '//...'],
         )
         self.assertEqual(build_job.actions[2].env['FOO'], 'bar')
+
+        # Ensure all Bazel commands are run from the invoker's CWD.
+        for action in build_job.actions:
+            self.assertEqual(
+                action.run_from,
+                build_driver_pb2.Action.InvocationLocation.INVOKER_CWD,
+            )
+
+    def test_bazel_build_driver_for_build_with_no_test(self):
+        """Checks that all properties are handled during a build sequence."""
+        driver = BazelBuildDriver()
+        response = driver.generate_jobs_from_json(
+            _BAZEL_BUILD_NO_TEST_JOB_REQUEST
+        )
+        self.assertEqual(len(response.jobs), 1)
+
+        # Verify the build job
+        build_job = response.jobs[0]
+        self.assertEqual(len(build_job.actions), 2)
+
+        # Check canonicalize-flags action for build
+        self.assertEqual(build_job.actions[0].executable, 'bazelisk')
+        self.assertEqual(
+            list(build_job.actions[0].args),
+            ['canonicalize-flags', '--config=rp2040'],
+        )
+
+        # Check build action
+        self.assertEqual(build_job.actions[1].executable, 'bazelisk')
+        self.assertEqual(
+            list(build_job.actions[1].args),
+            ['build', '--config=rp2040', '//...'],
+        )
 
         # Ensure all Bazel commands are run from the invoker's CWD.
         for action in build_job.actions:

@@ -85,9 +85,11 @@ py_library(
         ":pw_build",
         ":pw_project_builder",
         "//pw_build:build_driver_proto_py_pb2",
+        "//pw_build:pigweed_build_driver_py_pb2",
         "//pw_build:workflows_proto_py_pb2",
         "//pw_cli/py:pw_cli",
         "//pw_config_loader/py:pw_config_loader",
+        "@com_google_protobuf//:well_known_types_py_pb2",
     ],
 )
 
@@ -141,8 +143,9 @@ pw_py_binary(
     ],
     main = "pw_build/workflows/bazel_driver.py",
     deps = [
-        ":pw_build",
+        ":workflows",
         "//pw_build:build_driver_proto_py_pb2",
+        "//pw_build:pigweed_build_driver_py_pb2",
         "//pw_build:workflows_proto_py_pb2",
     ],
 )
