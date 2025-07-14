@@ -135,11 +135,13 @@ template("_pw_python_static_analysis_mypy") {
     if (defined(invoker.python_deps)) {
       python_deps = invoker.python_deps
       if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
-        filtered_python_deps = filter_labels_exclude(
-                invoker.python_deps,
-                pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)
-        foreach(dep, filtered_python_deps) {
-          deps += [ string_replace(dep, "(", ".lint.mypy(") ]
+        foreach(dep, python_deps) {
+          # filter_labels_exclude is more apt, but not as backwards compatible
+          if ([] != filter_exclude(
+                  [ get_label_info(dep, "label_no_toolchain") ],
+                  pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)) {
+            deps += [ string_replace(dep, "(", ".lint.mypy(") ]
+          }
         }
       }
     }
@@ -180,11 +182,13 @@ template("_pw_python_static_analysis_pylint") {
     if (defined(invoker.python_deps)) {
       python_deps = invoker.python_deps
       if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
-        filtered_python_deps = filter_labels_exclude(
-                invoker.python_deps,
-                pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)
-        foreach(dep, filtered_python_deps) {
-          public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
+        foreach(dep, python_deps) {
+          # filter_labels_exclude is more apt, but not as backwards compatible
+          if ([] != filter_exclude(
+                  [ get_label_info(dep, "label_no_toolchain") ],
+                  pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)) {
+            public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
+          }
         }
       }
     }
@@ -805,11 +809,13 @@ template("pw_python_package") {
         deps = _test_install_deps
 
         if (pw_build_TEST_TRANSITIVE_PYTHON_DEPS) {
-          filtered_python_deps = filter_labels_exclude(
-                  _python_test_deps,
-                  pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)
-          foreach(dep, filtered_python_deps) {
-            deps += [ string_replace(dep, "(", ".tests(") ]
+          foreach(dep, _python_test_deps) {
+            # filter_labels_exclude is more apt, but not as backwards compatible
+            if ([] != filter_exclude(
+                    [ get_label_info(dep, "label_no_toolchain") ],
+                    pw_build_TEST_TRANSITIVE_PYTHON_DEPS_FILTER_EXCLUDES)) {
+              deps += [ string_replace(dep, "(", ".tests(") ]
+            }
           }
         }
       }
