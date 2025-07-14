@@ -46,38 +46,40 @@ struct EquivalentUintImpl
 template <typename T>
 using EquivalentUint = typename EquivalentUintImpl<T>::type;
 
-template <typename T>
-constexpr std::array<std::byte, sizeof(T)> CopyLittleEndian(T value) {
-  return CopyLittleEndian(static_cast<EquivalentUint<T>>(value));
+template <typename U>
+constexpr void CopyLittleEndian(uint8_t value, U* dest) {
+  dest[0] = static_cast<U>(value);
 }
 
-template <>
-constexpr std::array<std::byte, 1> CopyLittleEndian<uint8_t>(uint8_t value) {
-  return MakeArray(value);
-}
-template <>
-constexpr std::array<std::byte, 2> CopyLittleEndian<uint16_t>(uint16_t value) {
-  return MakeArray(value & 0x00FF, (value & 0xFF00) >> 8);
+template <typename U>
+constexpr void CopyLittleEndian(uint16_t value, U* dest) {
+  dest[0] = static_cast<U>(value & 0x00FF);
+  dest[1] = static_cast<U>((value & 0xFF00) >> 8);
 }
 
-template <>
-constexpr std::array<std::byte, 4> CopyLittleEndian<uint32_t>(uint32_t value) {
-  return MakeArray((value & 0x000000FF) >> 0 * 8,
-                   (value & 0x0000FF00) >> 1 * 8,
-                   (value & 0x00FF0000) >> 2 * 8,
-                   (value & 0xFF000000) >> 3 * 8);
+template <typename U>
+constexpr void CopyLittleEndian(uint32_t value, U* dest) {
+  dest[0] = static_cast<U>((value & 0x000000FF) >> 0 * 8);
+  dest[1] = static_cast<U>((value & 0x0000FF00) >> 1 * 8);
+  dest[2] = static_cast<U>((value & 0x00FF0000) >> 2 * 8);
+  dest[3] = static_cast<U>((value & 0xFF000000) >> 3 * 8);
 }
 
-template <>
-constexpr std::array<std::byte, 8> CopyLittleEndian<uint64_t>(uint64_t value) {
-  return MakeArray((value & 0x00000000000000FF) >> 0 * 8,
-                   (value & 0x000000000000FF00) >> 1 * 8,
-                   (value & 0x0000000000FF0000) >> 2 * 8,
-                   (value & 0x00000000FF000000) >> 3 * 8,
-                   (value & 0x000000FF00000000) >> 4 * 8,
-                   (value & 0x0000FF0000000000) >> 5 * 8,
-                   (value & 0x00FF000000000000) >> 6 * 8,
-                   (value & 0xFF00000000000000) >> 7 * 8);
+template <typename U>
+constexpr void CopyLittleEndian(uint64_t value, U* dest) {
+  dest[0] = static_cast<U>((value & 0x00000000000000FF) >> 0 * 8);
+  dest[1] = static_cast<U>((value & 0x000000000000FF00) >> 1 * 8);
+  dest[2] = static_cast<U>((value & 0x0000000000FF0000) >> 2 * 8);
+  dest[3] = static_cast<U>((value & 0x00000000FF000000) >> 3 * 8);
+  dest[4] = static_cast<U>((value & 0x000000FF00000000) >> 4 * 8);
+  dest[5] = static_cast<U>((value & 0x0000FF0000000000) >> 5 * 8);
+  dest[6] = static_cast<U>((value & 0x00FF000000000000) >> 6 * 8);
+  dest[7] = static_cast<U>((value & 0xFF00000000000000) >> 7 * 8);
+}
+
+template <typename T, typename U>
+constexpr void CopyLittleEndian(T value, U* dest) {
+  CopyLittleEndian(static_cast<EquivalentUint<T>>(value), dest);
 }
 
 template <typename T>
@@ -108,43 +110,60 @@ constexpr T ReverseBytes(T value) {
 
 }  // namespace internal
 
-// Functions for reordering bytes in the provided integral value to match the
-// specified byte order. These functions are similar to the htonl() family of
-// functions.
-//
-// If the value is converted to non-system endianness, it must NOT be used
-// directly, since the value will be meaningless. Such values are only suitable
-// to memcpy'd or sent to a different device.
+/// @defgroup pw_bytes_endian
+/// @{
+
+/// Reorders the bytes in the provided integral value to match the specified
+/// byte order. This is similar to the `htonl()` family of functions.
+///
+/// If the value is converted to non-system endianness, it must NOT be used
+/// directly, since the value will be meaningless. Such values are only suitable
+/// to `memcpy`'d or sent to a different device.
 template <typename T>
 constexpr T ConvertOrder(endian from, endian to, T value) {
   return from == to ? value : internal::ReverseBytes(value);
 }
 
-// Converts a value from native byte order to the specified byte order. Since
-// this function changes the value's endianness, the result should only be used
-// to memcpy the bytes to a buffer or send to a different device.
+/// Converts a value from native byte order to the specified byte order. Since
+/// this function changes the value's endianness, the result should only be used
+/// to `memcpy` the bytes to a buffer or send to a different device.
 template <typename T>
 constexpr T ConvertOrderTo(endian to_endianness, T value) {
   return ConvertOrder(endian::native, to_endianness, value);
 }
 
-// Converts a value from the specified byte order to the native byte order.
+/// Converts a value from the specified byte order to the native byte order.
 template <typename T>
 constexpr T ConvertOrderFrom(endian from_endianness, T value) {
   return ConvertOrder(from_endianness, endian::native, value);
 }
 
-// Copies the value to a std::array with the specified endianness.
-template <typename T>
-constexpr auto CopyInOrder(endian order, T value) {
-  return internal::CopyLittleEndian(ConvertOrderTo(order, value));
+/// Copies the provided value to a buffer with the specified endianness.
+///
+/// @warning The buffer **MUST** be at least `sizeof(T)` bytes large!
+template <typename T, typename U>
+constexpr void CopyInOrder(endian order, T value, U* dest) {
+  static_assert(std::is_same_v<U, std::byte> || std::is_same_v<U, char> ||
+                    std::is_same_v<U, unsigned char> ||
+                    std::is_same_v<U, signed char>,
+                "pw::bytes::CopyInOrder can only copy to a byte type");
+  internal::CopyLittleEndian(ConvertOrderTo(order, value), dest);
 }
 
-// Reads a value from a buffer with the specified endianness.
-//
-// The buffer **MUST** be at least sizeof(T) bytes large! If you are not
-// absolutely certain the input buffer is large enough, use the ReadInOrder
-// overload that returns bool, which checks the buffer size at runtime.
+/// Copies the provided value to a `std::array` with the specified endianness.
+template <typename T>
+constexpr auto CopyInOrder(endian order, T value) {
+  std::array<std::byte, sizeof(T)> bytes{};
+  CopyInOrder(order, value, bytes.data());
+  return bytes;
+}
+
+/// Reads a value from a buffer with the specified endianness.
+///
+/// @warning The buffer **MUST** be at least `sizeof(T)` bytes large! If you are
+/// not absolutely certain the input buffer is large enough, use the
+/// `ReadInOrder` overload that returns a `bool`, which checks the buffer size
+/// at runtime.
 template <typename T>
 T ReadInOrder(endian order, const void* buffer) {
   T value;
@@ -152,14 +171,14 @@ T ReadInOrder(endian order, const void* buffer) {
   return ConvertOrderFrom(order, value);
 }
 
-// Reads up to the smaller of max_bytes_to_read and sizeof(T) bytes from a
-// buffer with the specified endianness.
-//
-// The value is zero-initialized. If max_bytes_to_read is smaller than
-// sizeof(T), the upper bytes of the value are 0.
-//
-// The buffer **MUST** be at least as large as the smaller of max_bytes_to_read
-// and sizeof(T)!
+/// Reads up to the smaller of `max_bytes_to_read` and `sizeof(T)` bytes from a
+/// buffer with the specified endianness.
+///
+/// The value is zero-initialized. If `max_bytes_to_read` is smaller than
+/// `sizeof(T)`, the upper bytes of the value are 0.
+///
+/// @warning The buffer **MUST** be at least as large as the smaller of
+/// `max_bytes_to_read` and `sizeof(T)`!
 template <typename T>
 T ReadInOrder(endian order, const void* buffer, size_t max_bytes_to_read) {
   T value = {};
@@ -167,7 +186,7 @@ T ReadInOrder(endian order, const void* buffer, size_t max_bytes_to_read) {
   return ConvertOrderFrom(order, value);
 }
 
-// ReadInOrder from a static-extent span, with compile-time bounds checking.
+/// Reads a value from a static-extent span, with compile-time bounds checking.
 template <typename T,
           typename B,
           size_t kBufferSize,
@@ -178,20 +197,22 @@ T ReadInOrder(endian order, span<B, kBufferSize> buffer) {
   return ReadInOrder<T>(order, buffer.data());
 }
 
-// ReadInOrder from a std::array, with compile-time bounds checking.
+/// Reads a value from a `std::array`, with compile-time bounds checking.
 template <typename T, typename B, size_t kBufferSize>
 T ReadInOrder(endian order, const std::array<B, kBufferSize>& buffer) {
   return ReadInOrder<T>(order, span(buffer));
 }
 
-// ReadInOrder from a C array, with compile-time bounds checking.
+/// Reads a value from a C array, with compile-time bounds checking.
 template <typename T, typename B, size_t kBufferSize>
 T ReadInOrder(endian order, const B (&buffer)[kBufferSize]) {
   return ReadInOrder<T>(order, span(buffer));
 }
 
-// Reads a value with the specified endianness from the buffer, with bounds
-// checking. Returns true if successful, false if buffer is too small for a T.
+/// Reads a value with the specified endianness from the buffer, with runtime
+/// bounds checking.
+///
+/// @returns @p true if successful, @p false if buffer is too small for a `T`.
 template <typename T>
 [[nodiscard]] bool ReadInOrder(endian order, ConstByteSpan buffer, T& value) {
   if (buffer.size() < sizeof(T)) {
@@ -201,5 +222,7 @@ template <typename T>
   value = ReadInOrder<T>(order, buffer.data());
   return true;
 }
+
+/// @}
 
 }  // namespace pw::bytes

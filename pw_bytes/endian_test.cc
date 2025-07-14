@@ -17,6 +17,7 @@
 #include <array>
 #include <cstddef>
 
+#include "pw_bytes/array.h"
 #include "pw_unit_test/constexpr.h"
 #include "pw_unit_test/framework.h"
 
@@ -191,6 +192,46 @@ PW_CONSTEXPR_TEST(CopyInOrder, 64bitBig, {
   PW_TEST_EXPECT_TRUE(Equal(
       CopyInOrder(endian::big, static_cast<int64_t>(0xAABBCCDD11223344ull)),
       Array<0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44>()));
+});
+
+PW_CONSTEXPR_TEST(CopyInOrderPointer, 8bit_StdByte, {
+  std::byte buffer[1] = {};
+  CopyInOrder(endian::little, uint8_t{0xAB}, buffer);
+  PW_TEST_EXPECT_TRUE(Equal(buffer, Array<0xAB>()));
+});
+
+PW_CONSTEXPR_TEST(CopyInOrderPointer, 16bitLittle_StdByte, {
+  std::byte buffer[2] = {};
+  CopyInOrder(endian::little, uint16_t{0xABCD}, buffer);
+  PW_TEST_EXPECT_TRUE(Equal(buffer, Array<0xCD, 0xAB>()));
+});
+
+PW_CONSTEXPR_TEST(CopyInOrderPointer, 32bitLittle_StdByte, {
+  std::byte buffer[4] = {};
+  CopyInOrder(endian::little, uint32_t{0xAABBCCDD}, buffer);
+  PW_TEST_EXPECT_TRUE(Equal(buffer, Array<0xDD, 0xCC, 0xBB, 0xAA>()));
+});
+
+PW_CONSTEXPR_TEST(CopyInOrderPointer, 32bitBig_UnsignedChar, {
+  unsigned char buffer[4] = {};
+  CopyInOrder(endian::big, uint32_t{0xAABBCCDD}, buffer);
+  PW_TEST_EXPECT_TRUE(
+      Equal(buffer, Array<unsigned char, 0xAA, 0xBB, 0xCC, 0xDD>()));
+});
+
+PW_CONSTEXPR_TEST(CopyInOrderPointer, 64bitLittle_Char, {
+  char buffer[8] = {};
+  CopyInOrder(endian::little, uint64_t{0x0A0B0C0D11223344}, buffer);
+  PW_TEST_EXPECT_TRUE(Equal(
+      buffer, Array<char, 0x44, 0x33, 0x22, 0x11, 0x0D, 0x0C, 0x0B, 0x0A>()));
+});
+
+PW_CONSTEXPR_TEST(CopyInOrderPointer, 64bitBig_SignedChar, {
+  signed char buffer[8] = {};
+  CopyInOrder(endian::big, uint64_t{0x0A0B0C0D11223344}, buffer);
+  PW_TEST_EXPECT_TRUE(Equal(
+      buffer,
+      Array<signed char, 0x0A, 0x0B, 0x0C, 0x0D, 0x11, 0x22, 0x33, 0x44>()));
 });
 
 constexpr const char* kNumber = "\x11\x22\x33\x44\xaa\xbb\xcc\xdd";

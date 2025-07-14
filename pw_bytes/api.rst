@@ -100,20 +100,9 @@ pw_bytes/endian.h
 .. doxygenfile:: pw_bytes/endian.h
    :sections: briefdescription
 
-.. doxygenfunction:: pw::bytes::ConvertOrder
-
-.. doxygenfunction:: pw::bytes::ConvertOrderTo
-
-.. doxygenfunction:: pw::bytes::ConvertOrderFrom
-
-.. doxygenfunction:: pw::bytes::CopyInOrder
-
-.. _//pw_bytes/public/pw_bytes/endian.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_bytes/public/pw_bytes/endian.h
-
-.. note::
-
-   This reference is incomplete. See `//pw_bytes/public/pw_bytes/endian.h`_ to
-   view the full API.
+.. doxygengroup:: pw_bytes_endian
+   :content-only:
+   :members:
 
 -----------------
 pw_bytes/suffix.h
