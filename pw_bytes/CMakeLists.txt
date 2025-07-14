@@ -113,6 +113,7 @@ pw_add_test(pw_bytes.endian_test
     endian_test.cc
   PRIVATE_DEPS
     pw_bytes
+    pw_unit_test.constexpr
   GROUPS
     modules
     pw_bytes

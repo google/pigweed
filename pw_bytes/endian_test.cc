@@ -17,6 +17,7 @@
 #include <array>
 #include <cstddef>
 
+#include "pw_unit_test/constexpr.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::bytes {
@@ -25,66 +26,91 @@ namespace {
 constexpr endian kNonNative =
     (endian::native == endian::little) ? endian::big : endian::little;
 
-// ConvertOrderTo/From
-//
-// ConvertOrderTo and ConvertOrderFrom are implemented identically, but are
-// provided as separate functions to improve readability where they are used.
-//
-// clang-format off
+PW_CONSTEXPR_TEST(ConvertOrder, ToNativeUnsigned, {
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(endian::native, uint8_t{0x12}),
+                    uint8_t{0x12});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(endian::native, uint16_t{0x0011}),
+                    uint16_t{0x0011});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(endian::native, uint32_t{0x33221100}),
+                    uint32_t{0x33221100});
+  PW_TEST_EXPECT_EQ(
+      ConvertOrderTo(endian::native, uint64_t{0x0011223344556677}),
+      uint64_t{0x0011223344556677});
+});
 
-// Native endianess conversions (should do nothing)
+PW_CONSTEXPR_TEST(ConvertOrder, ToNativeSigned, {
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(endian::native, int8_t{0x12}), int8_t{0x12});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(endian::native, int16_t{0x0011}),
+                    int16_t{0x0011});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(endian::native, int32_t{0x33221100}),
+                    int32_t{0x33221100});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(endian::native, int64_t{0x0011223344556677}),
+                    int64_t{0x0011223344556677});
+});
 
-// Convert unsigned to native endianness
-static_assert(ConvertOrderTo(endian::native, uint8_t{0x12}) == uint8_t{0x12});
-static_assert(ConvertOrderTo(endian::native, uint16_t{0x0011}) == uint16_t{0x0011});
-static_assert(ConvertOrderTo(endian::native, uint32_t{0x33221100}) == uint32_t{0x33221100});
-static_assert(ConvertOrderTo(endian::native, uint64_t{0x0011223344556677}) == uint64_t{0x0011223344556677});
+PW_CONSTEXPR_TEST(ConvertOrder, FromNativeUnsigned, {
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(endian::native, uint8_t{0x12}),
+                    uint8_t{0x12});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(endian::native, uint16_t{0x0011}),
+                    uint16_t{0x0011});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(endian::native, uint32_t{0x33221100}),
+                    uint32_t{0x33221100});
+  PW_TEST_EXPECT_EQ(
+      ConvertOrderFrom(endian::native, uint64_t{0x0011223344556677}),
+      uint64_t{0x0011223344556677});
+});
 
-// Convert signed to native endianness
-static_assert(ConvertOrderTo(endian::native, int8_t{0x12}) == int8_t{0x12});
-static_assert(ConvertOrderTo(endian::native, int16_t{0x0011}) == int16_t{0x0011});
-static_assert(ConvertOrderTo(endian::native, int32_t{0x33221100}) == int32_t{0x33221100});
-static_assert(ConvertOrderTo(endian::native, int64_t{0x0011223344556677}) == int64_t{0x0011223344556677});
+PW_CONSTEXPR_TEST(ConvertOrder, FromNativeSigned, {
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(endian::native, int8_t{0x12}),
+                    int8_t{0x12});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(endian::native, int16_t{0x0011}),
+                    int16_t{0x0011});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(endian::native, int32_t{0x33221100}),
+                    int32_t{0x33221100});
+  PW_TEST_EXPECT_EQ(
+      ConvertOrderFrom(endian::native, int64_t{0x0011223344556677}),
+      int64_t{0x0011223344556677});
+});
 
-// Convert unsigned from native endianness
-static_assert(ConvertOrderFrom(endian::native, uint8_t{0x12}) == uint8_t{0x12});
-static_assert(ConvertOrderFrom(endian::native, uint16_t{0x0011}) == uint16_t{0x0011});
-static_assert(ConvertOrderFrom(endian::native, uint32_t{0x33221100}) == uint32_t{0x33221100});
-static_assert(ConvertOrderFrom(endian::native, uint64_t{0x0011223344556677}) == uint64_t{0x0011223344556677});
+PW_CONSTEXPR_TEST(ConvertOrder, ToNonNativeUnsigned, {
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(kNonNative, uint8_t{0x12}), uint8_t{0x12});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(kNonNative, uint16_t{0x0011}),
+                    uint16_t{0x1100});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(kNonNative, uint32_t{0x33221100}),
+                    uint32_t{0x00112233});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(kNonNative, uint64_t{0x0011223344556677}),
+                    uint64_t{0x7766554433221100});
+});
 
-// Convert signed from native endianness
-static_assert(ConvertOrderFrom(endian::native, int8_t{0x12}) == int8_t{0x12});
-static_assert(ConvertOrderFrom(endian::native, int16_t{0x0011}) == int16_t{0x0011});
-static_assert(ConvertOrderFrom(endian::native, int32_t{0x33221100}) == int32_t{0x33221100});
-static_assert(ConvertOrderFrom(endian::native, int64_t{0x0011223344556677}) == int64_t{0x0011223344556677});
+PW_CONSTEXPR_TEST(ConvertOrder, ToNonNativeSigned, {
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(kNonNative, int8_t{0x12}), int8_t{0x12});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(kNonNative, int16_t{0x0011}),
+                    int16_t{0x1100});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(kNonNative, int32_t{0x33221100}),
+                    int32_t{0x00112233});
+  PW_TEST_EXPECT_EQ(ConvertOrderTo(kNonNative, int64_t{0x0011223344556677}),
+                    int64_t{0x7766554433221100});
+});
 
-// Non-native endianess conversions (should reverse byte order)
+PW_CONSTEXPR_TEST(ConvertOrder, FromNonNativeUnsigned, {
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(kNonNative, uint8_t{0x12}), uint8_t{0x12});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(kNonNative, uint16_t{0x0011}),
+                    uint16_t{0x1100});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(kNonNative, uint32_t{0x33221100}),
+                    uint32_t{0x00112233});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(kNonNative, uint64_t{0x0011223344556677}),
+                    uint64_t{0x7766554433221100});
+});
 
-// Convert unsigned to non-native endianness
-static_assert(ConvertOrderTo(kNonNative, uint8_t{0x12}) == uint8_t{0x12});
-static_assert(ConvertOrderTo(kNonNative, uint16_t{0x0011}) == uint16_t{0x1100});
-static_assert(ConvertOrderTo(kNonNative, uint32_t{0x33221100}) == uint32_t{0x00112233});
-static_assert(ConvertOrderTo(kNonNative, uint64_t{0x0011223344556677}) == uint64_t{0x7766554433221100});
-
-// Convert signed to non-native endianness
-static_assert(ConvertOrderTo(kNonNative, int8_t{0x12}) == int8_t{0x12});
-static_assert(ConvertOrderTo(kNonNative, int16_t{0x0011}) == int16_t{0x1100});
-static_assert(ConvertOrderTo(kNonNative, int32_t{0x33221100}) == int32_t{0x00112233});
-static_assert(ConvertOrderTo(kNonNative, int64_t{0x0011223344556677}) == int64_t{0x7766554433221100});
-
-// Convert unsigned from non-native endianness
-static_assert(ConvertOrderFrom(kNonNative, uint8_t{0x12}) == uint8_t{0x12});
-static_assert(ConvertOrderFrom(kNonNative, uint16_t{0x0011}) == uint16_t{0x1100});
-static_assert(ConvertOrderFrom(kNonNative, uint32_t{0x33221100}) == uint32_t{0x00112233});
-static_assert(ConvertOrderFrom(kNonNative, uint64_t{0x0011223344556677}) == uint64_t{0x7766554433221100});
-
-// Convert signed from non-native endianness
-static_assert(ConvertOrderFrom(kNonNative, int8_t{0x12}) == int8_t{0x12});
-static_assert(ConvertOrderFrom(kNonNative, int16_t{0x0011}) == int16_t{0x1100});
-static_assert(ConvertOrderFrom(kNonNative, int32_t{0x33221100}) == int32_t{0x00112233});
-static_assert(ConvertOrderFrom(kNonNative, int64_t{0x0011223344556677}) == int64_t{0x7766554433221100});
-
-// clang-format on
+PW_CONSTEXPR_TEST(ConvertOrder, FromNonNativeSigned, {
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(kNonNative, int8_t{0x12}), int8_t{0x12});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(kNonNative, int16_t{0x0011}),
+                    int16_t{0x1100});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(kNonNative, int32_t{0x33221100}),
+                    int32_t{0x00112233});
+  PW_TEST_EXPECT_EQ(ConvertOrderFrom(kNonNative, int64_t{0x0011223344556677}),
+                    int64_t{0x7766554433221100});
+});
 
 template <typename T, typename U>
 constexpr bool Equal(const T& lhs, const U& rhs) {
@@ -101,63 +127,71 @@ constexpr bool Equal(const T& lhs, const U& rhs) {
   return true;
 }
 
-// CopyInOrder copies a value to a std::array with the specified endianness.
-//
-// clang-format off
+PW_CONSTEXPR_TEST(CopyInOrder, 8bitLittle, {
+  PW_TEST_EXPECT_TRUE(Equal(CopyInOrder(endian::little, '?'), Array<'?'>()));
+  PW_TEST_EXPECT_TRUE(
+      Equal(CopyInOrder(endian::little, uint8_t{0x10}), Array<0x10>()));
+  PW_TEST_EXPECT_TRUE(Equal(
+      CopyInOrder(endian::little, static_cast<int8_t>(0x10)), Array<0x10>()));
+});
 
-// 8-bit little
-static_assert(Equal(CopyInOrder(endian::little, '?'),
-                    Array<'?'>()));
-static_assert(Equal(CopyInOrder(endian::little, uint8_t{0x10}),
-                    Array<0x10>()));
-static_assert(Equal(CopyInOrder(endian::little, static_cast<int8_t>(0x10)),
-                    Array<0x10>()));
+PW_CONSTEXPR_TEST(CopyInOrder, 8bitBig, {
+  PW_TEST_EXPECT_TRUE(Equal(CopyInOrder(endian::big, '?'), Array<'?'>()));
+  PW_TEST_EXPECT_TRUE(Equal(
+      CopyInOrder(endian::big, static_cast<uint8_t>(0x10)), Array<0x10>()));
+  PW_TEST_EXPECT_TRUE(Equal(CopyInOrder(endian::big, static_cast<int8_t>(0x10)),
+                            Array<0x10>()));
+});
 
-// 8-bit big
-static_assert(Equal(CopyInOrder(endian::big, '?'),
-                    Array<'?'>()));
-static_assert(Equal(CopyInOrder(endian::big, static_cast<uint8_t>(0x10)),
-                    Array<0x10>()));
-static_assert(Equal(CopyInOrder(endian::big, static_cast<int8_t>(0x10)),
-                    Array<0x10>()));
+PW_CONSTEXPR_TEST(CopyInOrder, 16bitLittle, {
+  PW_TEST_EXPECT_TRUE(Equal(CopyInOrder(endian::little, uint16_t{0xAB12}),
+                            Array<0x12, 0xAB>()));
+  PW_TEST_EXPECT_TRUE(
+      Equal(CopyInOrder(endian::little, static_cast<int16_t>(0xAB12)),
+            Array<0x12, 0xAB>()));
+});
 
-// 16-bit little
-static_assert(Equal(CopyInOrder(endian::little, uint16_t{0xAB12}),
-                    Array<0x12, 0xAB>()));
-static_assert(Equal(CopyInOrder(endian::little, static_cast<int16_t>(0xAB12)),
-                    Array<0x12, 0xAB>()));
+PW_CONSTEXPR_TEST(CopyInOrder, 16bitBig, {
+  PW_TEST_EXPECT_TRUE(
+      Equal(CopyInOrder(endian::big, uint16_t{0xAB12}), Array<0xAB, 0x12>()));
+  PW_TEST_EXPECT_TRUE(
+      Equal(CopyInOrder(endian::big, static_cast<int16_t>(0xAB12)),
+            Array<0xAB, 0x12>()));
+});
 
-// 16-bit big
-static_assert(Equal(CopyInOrder(endian::big, uint16_t{0xAB12}),
-                    Array<0xAB, 0x12>()));
-static_assert(Equal(CopyInOrder(endian::big, static_cast<int16_t>(0xAB12)),
-                    Array<0xAB, 0x12>()));
+PW_CONSTEXPR_TEST(CopyInOrder, 32bitLittle, {
+  PW_TEST_EXPECT_TRUE(Equal(CopyInOrder(endian::little, uint32_t{0xAABBCCDD}),
+                            Array<0xDD, 0xCC, 0xBB, 0xAA>()));
+  PW_TEST_EXPECT_TRUE(
+      Equal(CopyInOrder(endian::little, static_cast<int32_t>(0xAABBCCDD)),
+            Array<0xDD, 0xCC, 0xBB, 0xAA>()));
+});
 
-// 32-bit little
-static_assert(Equal(CopyInOrder(endian::little, uint32_t{0xAABBCCDD}),
-                    Array<0xDD, 0xCC, 0xBB, 0xAA>()));
-static_assert(Equal(CopyInOrder(endian::little, static_cast<int32_t>(0xAABBCCDD)),
-                    Array<0xDD, 0xCC, 0xBB, 0xAA>()));
+PW_CONSTEXPR_TEST(CopyInOrder, 32bitBig, {
+  PW_TEST_EXPECT_TRUE(Equal(CopyInOrder(endian::big, uint32_t{0xAABBCCDD}),
+                            Array<0xAA, 0xBB, 0xCC, 0xDD>()));
+  PW_TEST_EXPECT_TRUE(
+      Equal(CopyInOrder(endian::big, static_cast<int32_t>(0xAABBCCDD)),
+            Array<0xAA, 0xBB, 0xCC, 0xDD>()));
+});
 
-// 32-bit big
-static_assert(Equal(CopyInOrder(endian::big, uint32_t{0xAABBCCDD}),
-                    Array<0xAA, 0xBB, 0xCC, 0xDD>()));
-static_assert(Equal(CopyInOrder(endian::big, static_cast<int32_t>(0xAABBCCDD)),
-                    Array<0xAA, 0xBB, 0xCC, 0xDD>()));
+PW_CONSTEXPR_TEST(CopyInOrder, 64bitLittle, {
+  PW_TEST_EXPECT_TRUE(
+      Equal(CopyInOrder(endian::little, uint64_t{0xAABBCCDD11223344}),
+            Array<0x44, 0x33, 0x22, 0x11, 0xDD, 0xCC, 0xBB, 0xAA>()));
+  PW_TEST_EXPECT_TRUE(Equal(
+      CopyInOrder(endian::little, static_cast<int64_t>(0xAABBCCDD11223344ull)),
+      Array<0x44, 0x33, 0x22, 0x11, 0xDD, 0xCC, 0xBB, 0xAA>()));
+});
 
-// 64-bit little
-static_assert(Equal(CopyInOrder(endian::little, uint64_t{0xAABBCCDD11223344}),
-                    Array<0x44, 0x33, 0x22, 0x11, 0xDD, 0xCC, 0xBB, 0xAA>()));
-static_assert(Equal(CopyInOrder(endian::little, static_cast<int64_t>(0xAABBCCDD11223344ull)),
-                    Array<0x44, 0x33, 0x22, 0x11, 0xDD, 0xCC, 0xBB, 0xAA>()));
-
-// 64-bit big
-static_assert(Equal(CopyInOrder(endian::big, uint64_t{0xAABBCCDD11223344}),
-                    Array<0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44>()));
-static_assert(Equal(CopyInOrder(endian::big, static_cast<int64_t>(0xAABBCCDD11223344ull)),
-                    Array<0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44>()));
-
-// clang-format on
+PW_CONSTEXPR_TEST(CopyInOrder, 64bitBig, {
+  PW_TEST_EXPECT_TRUE(
+      Equal(CopyInOrder(endian::big, uint64_t{0xAABBCCDD11223344}),
+            Array<0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44>()));
+  PW_TEST_EXPECT_TRUE(Equal(
+      CopyInOrder(endian::big, static_cast<int64_t>(0xAABBCCDD11223344ull)),
+      Array<0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44>()));
+});
 
 constexpr const char* kNumber = "\x11\x22\x33\x44\xaa\xbb\xcc\xdd";
 

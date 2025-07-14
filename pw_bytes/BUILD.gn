@@ -109,7 +109,10 @@ pw_test("byte_builder_test") {
 }
 
 pw_test("endian_test") {
-  deps = [ ":pw_bytes" ]
+  deps = [
+    ":pw_bytes",
+    "$dir_pw_unit_test:constexpr",
+  ]
   sources = [ "endian_test.cc" ]
 }
 

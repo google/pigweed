@@ -113,7 +113,10 @@ pw_cc_test(
 pw_cc_test(
     name = "endian_test",
     srcs = ["endian_test.cc"],
-    deps = [":pw_bytes"],
+    deps = [
+        ":pw_bytes",
+        "//pw_unit_test:constexpr",
+    ],
 )
 
 pw_cc_test(
