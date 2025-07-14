@@ -26,18 +26,30 @@ cc_library(
         "binary_semaphore.cc",
     ],
     hdrs = [
-        "public/pw_sync_stl/binary_semaphore_inline.h",
-        "public/pw_sync_stl/binary_semaphore_native.h",
         "public_overrides/pw_sync_backend/binary_semaphore_inline.h",
         "public_overrides/pw_sync_backend/binary_semaphore_native.h",
     ],
     implementation_deps = ["//pw_assert:check"],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":binary_semaphore_private",
+        "//pw_chrono:system_clock",
+        "//pw_sync:binary_semaphore.facade",
+    ],
+)
+
+cc_library(
+    name = "binary_semaphore_private",
+    hdrs = [
+        "public/pw_sync_stl/binary_semaphore_inline.h",
+        "public/pw_sync_stl/binary_semaphore_native.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_sync:binary_semaphore.facade",
@@ -50,18 +62,30 @@ cc_library(
         "counting_semaphore.cc",
     ],
     hdrs = [
-        "public/pw_sync_stl/counting_semaphore_inline.h",
-        "public/pw_sync_stl/counting_semaphore_native.h",
         "public_overrides/pw_sync_backend/counting_semaphore_inline.h",
         "public_overrides/pw_sync_backend/counting_semaphore_native.h",
     ],
     implementation_deps = ["//pw_assert:check"],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":counting_semaphore_private",
+        "//pw_chrono:system_clock",
+        "//pw_sync:counting_semaphore.facade",
+    ],
+)
+
+cc_library(
+    name = "counting_semaphore_private",
+    hdrs = [
+        "public/pw_sync_stl/counting_semaphore_inline.h",
+        "public/pw_sync_stl/counting_semaphore_native.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_sync:counting_semaphore.facade",
@@ -72,33 +96,54 @@ cc_library(
     name = "mutex",
     srcs = ["mutex.cc"],
     hdrs = [
-        "public/pw_sync_stl/mutex_inline.h",
-        "public/pw_sync_stl/mutex_native.h",
         "public_overrides/pw_sync_backend/mutex_inline.h",
         "public_overrides/pw_sync_backend/mutex_native.h",
     ],
     implementation_deps = ["//pw_assert:check"],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":mutex_private",
+        "//pw_sync:mutex.facade",
+    ],
+)
+
+cc_library(
+    name = "mutex_private",
+    hdrs = [
+        "public/pw_sync_stl/mutex_inline.h",
+        "public/pw_sync_stl/mutex_native.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = ["//pw_sync:mutex.facade"],
 )
 
 cc_library(
     name = "timed_mutex",
     hdrs = [
-        "public/pw_sync_stl/timed_mutex_inline.h",
         "public_overrides/pw_sync_backend/timed_mutex_inline.h",
     ],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":timed_mutex_private",
+    ],
+)
+
+cc_library(
+    name = "timed_mutex_private",
+    hdrs = [
+        "public/pw_sync_stl/timed_mutex_inline.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_sync:timed_mutex.facade",
@@ -108,17 +153,27 @@ cc_library(
 cc_library(
     name = "recursive_mutex",
     hdrs = [
-        "public/pw_sync_stl/recursive_mutex_inline.h",
-        "public/pw_sync_stl/recursive_mutex_native.h",
         "public_overrides/pw_sync_backend/recursive_mutex_inline.h",
         "public_overrides/pw_sync_backend/recursive_mutex_native.h",
     ],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":recursive_mutex_private",
+    ],
+)
+
+cc_library(
+    name = "recursive_mutex_private",
+    hdrs = [
+        "public/pw_sync_stl/recursive_mutex_inline.h",
+        "public/pw_sync_stl/recursive_mutex_native.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_assert:assert",
         "//pw_sync:recursive_mutex.facade",
@@ -128,17 +183,27 @@ cc_library(
 cc_library(
     name = "interrupt_spin_lock",
     hdrs = [
-        "public/pw_sync_stl/interrupt_spin_lock_inline.h",
-        "public/pw_sync_stl/interrupt_spin_lock_native.h",
         "public_overrides/pw_sync_backend/interrupt_spin_lock_inline.h",
         "public_overrides/pw_sync_backend/interrupt_spin_lock_native.h",
     ],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":interrupt_spin_lock_private",
+    ],
+)
+
+cc_library(
+    name = "interrupt_spin_lock_private",
+    hdrs = [
+        "public/pw_sync_stl/interrupt_spin_lock_inline.h",
+        "public/pw_sync_stl/interrupt_spin_lock_native.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_sync:interrupt_spin_lock.facade",
         "//pw_sync:yield_core",
@@ -148,17 +213,27 @@ cc_library(
 cc_library(
     name = "condition_variable",
     hdrs = [
-        "public/pw_sync_stl/condition_variable_inline.h",
-        "public/pw_sync_stl/condition_variable_native.h",
         "public_overrides/pw_sync_backend/condition_variable_inline.h",
         "public_overrides/pw_sync_backend/condition_variable_native.h",
     ],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":condition_variable_private",
+    ],
+)
+
+cc_library(
+    name = "condition_variable_private",
+    hdrs = [
+        "public/pw_sync_stl/condition_variable_inline.h",
+        "public/pw_sync_stl/condition_variable_native.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_sync:condition_variable_facade",
     ],
