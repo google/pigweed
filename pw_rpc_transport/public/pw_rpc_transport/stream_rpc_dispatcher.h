@@ -17,27 +17,28 @@
 #include <atomic>
 #include <cstddef>
 
-#include "pw_metric/metric.h"
 #include "pw_rpc_transport/egress_ingress.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
-#include "pw_thread/thread.h"
 #include "pw_thread/thread_core.h"
 
 namespace pw::rpc {
+
+class StreamRpcDispatcherTracker {
+ public:
+  virtual ~StreamRpcDispatcherTracker() = default;
+  virtual void ReadError([[maybe_unused]] Status status) {}
+  virtual void EgressError([[maybe_unused]] Status status) {}
+};
 
 template <size_t kReadSize>
 class StreamRpcDispatcher : public pw::thread::ThreadCore {
  public:
   StreamRpcDispatcher(pw::stream::Reader& reader,
-                      pw::rpc::RpcIngressHandler& ingress_handler)
-      : reader_(reader), ingress_handler_(ingress_handler) {}
+                      pw::rpc::RpcIngressHandler& ingress_handler,
+                      StreamRpcDispatcherTracker* tracker = nullptr)
+      : reader_(reader), ingress_handler_(ingress_handler), tracker_(tracker) {}
   ~StreamRpcDispatcher() override { Stop(); }
-
-  const metric::Group& metrics() const { return metrics_; }
-
-  uint32_t num_read_errors() const { return read_errors_.value(); }
-  uint32_t num_egress_errors() const { return egress_errors_.value(); }
 
   // Once stopped, will no longer process data.
   void Stop() {
@@ -53,13 +54,17 @@ class StreamRpcDispatcher : public pw::thread::ThreadCore {
     while (!stopped_) {
       auto read = reader_.Read(read_buffer_);
       if (!read.ok()) {
-        read_errors_.Increment();
+        if (tracker_) {
+          tracker_->ReadError(read.status());
+        }
         continue;
       }
 
       if (const auto status = ingress_handler_.ProcessIncomingData(*read);
           !status.ok()) {
-        egress_errors_.Increment();
+        if (tracker_) {
+          tracker_->EgressError(status);
+        }
         continue;
       }
     }
@@ -70,9 +75,7 @@ class StreamRpcDispatcher : public pw::thread::ThreadCore {
   pw::stream::Reader& reader_;
   pw::rpc::RpcIngressHandler& ingress_handler_;
   std::atomic<bool> stopped_ = false;
-  PW_METRIC_GROUP(metrics_, "pw_rpc_stream_rpc_dispatcher");
-  PW_METRIC(metrics_, read_errors_, "read_errors", 0u);
-  PW_METRIC(metrics_, egress_errors_, "egress_errors", 0u);
+  StreamRpcDispatcherTracker* tracker_ = nullptr;
 };
 
 }  // namespace pw::rpc

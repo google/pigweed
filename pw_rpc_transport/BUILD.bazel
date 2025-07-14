@@ -316,10 +316,21 @@ cc_library(
     tags = ["noclangtidy"],
     deps = [
         ":egress_ingress",
-        "//pw_metric:metric",
         "//pw_status",
         "//pw_stream",
         "//pw_thread:thread_core",
+    ],
+)
+
+cc_library(
+    name = "stream_rpc_dispatcher_logging_metric_tracker",
+    srcs = ["stream_rpc_dispatcher_logging_metric_tracker.cc"],
+    hdrs = ["public/pw_rpc_transport/stream_rpc_dispatcher_logging_metric_tracker.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":stream_rpc_dispatcher",
+        "//pw_log",
+        "//pw_metric:metric",
     ],
 )
 
@@ -350,6 +361,7 @@ pw_cc_test(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":stream_rpc_dispatcher",
+        ":stream_rpc_dispatcher_logging_metric_tracker",
         "//pw_bytes",
         "//pw_log",
         "//pw_status",

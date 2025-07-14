@@ -19,6 +19,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_log/log.h"
+#include "pw_rpc_transport/stream_rpc_dispatcher_logging_metric_tracker.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_sync/mutex.h"
@@ -40,6 +41,7 @@ class TestIngress : public RpcIngressHandler {
   Status ProcessIncomingData(ConstByteSpan buffer) override {
     if (num_bytes_expected_ > 0) {
       std::copy(buffer.begin(), buffer.end(), std::back_inserter(received_));
+
       num_bytes_expected_ -= std::min(num_bytes_expected_, buffer.size());
     }
     if (num_bytes_expected_ == 0) {
@@ -118,9 +120,12 @@ TEST(StreamRpcDispatcherTest, RecvOk) {
   constexpr std::array<std::byte, kWriteSize> kWriteBuffer = {};
 
   TestIngress test_ingress(kWriteSize);
+  StreamRpcDispatcherLoggingMetricTracker tracker;
   TestStream test_stream;
 
-  auto dispatcher = StreamRpcDispatcher<kWriteSize>(test_stream, test_ingress);
+  auto dispatcher =
+      StreamRpcDispatcher<kWriteSize>(test_stream, test_ingress, &tracker);
+
   auto dispatcher_thread = Thread(thread::stl::Options(), dispatcher);
 
   test_stream.QueueData(kWriteBuffer);
@@ -133,7 +138,7 @@ TEST(StreamRpcDispatcherTest, RecvOk) {
 
   auto received = test_ingress.received();
   EXPECT_EQ(received.size(), kWriteSize);
-  EXPECT_EQ(dispatcher.num_read_errors(), 0U);
+  EXPECT_EQ(tracker.read_errors(), 0U);
 }
 
 }  // namespace

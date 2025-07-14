@@ -264,12 +264,23 @@ pw_source_set("stream_rpc_dispatcher") {
   public = [ "public/pw_rpc_transport/stream_rpc_dispatcher.h" ]
   public_deps = [
     ":egress_ingress",
-    "$dir_pw_metric",
     "$dir_pw_status",
     "$dir_pw_stream:pw_stream",
     "$dir_pw_thread:thread",
     "$dir_pw_thread:thread_core",
   ]
+}
+
+pw_source_set("stream_rpc_dispatcher_logging_metric_tracker") {
+  public = [
+    "public/pw_rpc_transport/stream_rpc_dispatcher_logging_metric_tracker.h",
+  ]
+  sources = [ "stream_rpc_dispatcher_logging_metric_tracker.cc" ]
+  public_deps = [
+    ":stream_rpc_dispatcher",
+    "$dir_pw_metric",
+  ]
+  deps = [ "$dir_pw_log" ]
 }
 
 pw_test("socket_rpc_transport_test") {
@@ -293,6 +304,7 @@ pw_test("stream_rpc_dispatcher_test") {
   enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   deps = [
     ":stream_rpc_dispatcher",
+    ":stream_rpc_dispatcher_logging_metric_tracker",
     "$dir_pw_bytes",
     "$dir_pw_log",
     "$dir_pw_status",
