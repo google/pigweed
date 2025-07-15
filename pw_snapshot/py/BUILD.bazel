@@ -87,7 +87,6 @@ pw_py_test(
 py_binary(
     name = "generate_example_snapshot",
     srcs = ["generate_example_snapshot.py"],
-    imports = ["."],
     deps = [
         ":pw_snapshot",
         "//pw_snapshot:snapshot_proto_py_pb2",
