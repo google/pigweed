@@ -78,6 +78,7 @@ def _parse_args():
         '-o',
         type=argparse.FileType('w'),
         help='File to output serialized snapshot to.',
+        default='-',
     )
 
     return parser.parse_args()
