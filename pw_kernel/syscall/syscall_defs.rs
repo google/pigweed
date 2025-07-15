@@ -57,7 +57,7 @@
 //! A channel is a unidirectional connection between two asymmetric peers: an
 //! initiator and a handler.  A channel allows the initiator peer to send a
 //! buffer of data to the handler peer and wait for it's response.  A channel
-//! can have a maximum of one transaction pending at a time and are designed to
+//! can have a maximum of one transaction pending at a time and is designed to
 //! not require intermediate kernel buffers.
 //!
 //! Both a synchronous and asynchronous API is offered to the initiator
@@ -67,7 +67,7 @@
 //! The flow of a transaction is as follows:
 //! - The initiator starts the transaction by providing send and receive
 //!   buffers to one of the two transact system calls ([`channel_transact()`] or
-//!   [`channel_async_transact()`]) This has the additional side effect of
+//!   [`channel_async_transact()`]). This has the additional side effect of
 //!   clearing [`SIGNAL_READABLE`] and [`SIGNAL_WRITABLE`] on the initiator.
 //! - The handler's [`SIGNAL_READABLE`] will become asserted.
 //! - The handler can now read the message in multiple calls to
@@ -82,7 +82,7 @@
 //!   [`SIGNAL_WRITABLE`] on the handler and raise [`SIGNAL_READABLE`] on
 //!   the initiator.
 //!
-//! The handler's only ways of communicating with the initiator is by
+//! The handler's only ways of communicating with the initiator are by
 //! - responding to an initiated transaction
 //! - raising [`SIGNAL_USER`] on the initiator by calling
 //!   [`object_raise_peer_user_signal()`]
@@ -103,14 +103,14 @@
 //! - [`SIGNAL_WRITABLE`] indicates there is a pending transaction.  Cleared when
 //!   the handler calls [`channel_respond()`].
 //! - [`SIGNAL_ERROR`] indicates a pending transaction error.  No error states
-//!   are defined at them moment.  In the future an error may be raised when
+//!   are defined at the moment.  In the future an error may be raised when
 //!   the remote peer closes.
 //! - [`SIGNAL_USER`] indicates the initiator calls [`object_raise_peer_user_signal()`].
 //!   Cleared when the initiator is waited on.
 //!
 //! ### Wait Group
 //! Wait groups provide a mechanism for waiting on multiple handles at once.
-//! Handles can be added and removed from from a wait group with [`wait_group_add()`]
+//! Handles can be added to and removed from a wait group with [`wait_group_add()`]
 //! and [`wait_group_remove()`].  In addition to a set of signals to wait on,
 //! an arbitrary `user_data` is provided to [`wait_group_add()`].  This value
 //! is returned by [`object_wait()`], unmodified by the kernel, when the wait group is
