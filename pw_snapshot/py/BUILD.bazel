@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("//pw_build:python.bzl", "pw_py_test")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -84,7 +84,7 @@ pw_py_test(
     ],
 )
 
-py_binary(
+pw_py_binary(
     name = "generate_example_snapshot",
     srcs = ["generate_example_snapshot.py"],
     deps = [

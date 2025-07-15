@@ -12,10 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_build:python.bzl", "pw_py_binary")
 
 package(features = ["-layering_check"])
 
@@ -46,7 +46,7 @@ sphinx_docs_library(
     visibility = ["//visibility:public"],
 )
 
-py_binary(
+pw_py_binary(
     name = "example_script",
     srcs = ["example_script.py"],
     deps = [

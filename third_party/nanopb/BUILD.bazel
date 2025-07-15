@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:python.bzl", "pw_py_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,7 +26,7 @@ sphinx_docs_library(
     target_compatible_with = incompatible_with_mcu(),
 )
 
-py_binary(
+pw_py_binary(
     name = "generate_nanopb_proto",
     srcs = ["generate_nanopb_proto.py"],
     deps = ["//pw_build/py:pw_build"],
