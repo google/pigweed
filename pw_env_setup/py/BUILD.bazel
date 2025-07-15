@@ -68,16 +68,23 @@ py_library(
         "pw_env_setup/cipd_setup/__init__.py",
         "pw_env_setup/cipd_setup/update.py",
         "pw_env_setup/cipd_setup/wrapper.py",
+        "pw_env_setup/colors.py",
         "pw_env_setup/config_file.py",
+        "pw_env_setup/entry_points/__init__.py",
+        "pw_env_setup/entry_points/arm_gdb.py",
+        "pw_env_setup/env_setup.py",
         "pw_env_setup/environment.py",
         "pw_env_setup/github_visitor.py",
         "pw_env_setup/gni_visitor.py",
         "pw_env_setup/json_visitor.py",
+        "pw_env_setup/npm_action.py",
         "pw_env_setup/python_packages.py",
         "pw_env_setup/shell_visitor.py",
+        "pw_env_setup/spinner.py",
         "pw_env_setup/virtualenv_setup/__init__.py",
         "pw_env_setup/virtualenv_setup/__main__.py",
         "pw_env_setup/virtualenv_setup/install.py",
+        "pw_env_setup/windows_env_start.py",
     ],
     data = [
         "pw_env_setup/cipd_setup/.cipd_version",
@@ -155,4 +162,11 @@ pw_py_test(
     deps = [
         ":pw_env_setup_private",
     ],
+)
+
+pw_py_test(
+    name = "python_packages_test",
+    srcs = ["python_packages_test.py"],
+    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
+    deps = [":pw_env_setup_private"],
 )

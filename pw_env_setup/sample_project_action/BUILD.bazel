@@ -13,40 +13,12 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
-load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
 py_library(
-    name = "pw_module",
-    srcs = [
-        "pw_module/__init__.py",
-        "pw_module/__main__.py",
-        "pw_module/check.py",
-        "pw_module/create.py",
-        "pw_module/seed.py",
-        "pw_module/templates/__init__.py",
-        "pw_module/templates/helpers/__init__.py",
-    ],
-    imports = ["."],
-    deps = ["//pw_cli/py:pw_cli"],
-)
-
-pw_py_test(
-    name = "seed_test",
-    size = "small",
-    srcs = [
-        "seed_test.py",
-    ],
-    deps = [
-        ":pw_module",
-    ],
-)
-
-pw_py_test(
-    name = "check_test",
-    srcs = ["check_test.py"],
-    deps = [":pw_module"],
+    name = "sample_project_action",
+    srcs = ["__init__.py"],
 )

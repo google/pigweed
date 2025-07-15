@@ -27,6 +27,7 @@ py_library(
         "pw_hdlc/encode.py",
         "pw_hdlc/protocol.py",
         "pw_hdlc/rpc.py",
+        "pw_hdlc/rpc_console.py",
     ],
     imports = ["."],
     deps = [

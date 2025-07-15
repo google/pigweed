@@ -94,6 +94,8 @@ py_library(
         "pw_rpc/__init__.py",
         "pw_rpc/client.py",
         "pw_rpc/client_utils.py",
+        "pw_rpc/lossy_channel.py",
+        "pw_rpc/testing.py",
         ":pw_rpc_common_sources",
     ],
     imports = ["."],
@@ -280,4 +282,21 @@ sphinx_docs_library(
         "docs.rst",
     ],
     target_compatible_with = incompatible_with_mcu(),
+)
+
+pw_py_test(
+    name = "python_client_cpp_server_test",
+    srcs = ["tests/python_client_cpp_server_test.py"],
+    args = [
+        "--port=3304",  # From pw_rpc/internal/integration_test_ports.gni
+        "--test-server-command",
+        "$(rootpath //pw_rpc:test_rpc_server)",
+    ],
+    data = ["//pw_rpc:test_rpc_server"],
+    tags = ["manual"],
+    deps = [
+        ":pw_rpc",
+        ":pw_rpc_benchmark",
+        "//pw_hdlc/py:pw_hdlc",
+    ],
 )

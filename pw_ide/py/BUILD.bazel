@@ -124,3 +124,12 @@ pw_py_test(
         ":pw_ide",
     ],
 )
+
+pw_py_test(
+    name = "activate_tests",
+    srcs = [
+        "activate_tests.py",
+        "test_cases.py",
+    ],
+    deps = [":pw_ide"],
+)

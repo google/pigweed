@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,18 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:defs.bzl", "py_binary")
 
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])
-
-py_library(
-    name = "pw_trace_tokenized",
-    srcs = [
-        "pw_trace_tokenized/__init__.py",
-        "pw_trace_tokenized/get_trace.py",
-        "pw_trace_tokenized/trace_tokenized.py",
-    ],
-    imports = ["."],
+py_binary(
+    name = "generate_apply_macros",
+    srcs = ["generate_apply_macros.py"],
+    visibility = ["//visibility:public"],
 )

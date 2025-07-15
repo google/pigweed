@@ -17,6 +17,9 @@ load("//pw_build:python.bzl", "pw_py_binary")
 # Python utilities for code generation.
 pw_py_binary(
     name = "generate_freertos_tsktcb",
-    srcs = ["pw_thread_freertos/generate_freertos_tsktcb.py"],
+    srcs = [
+        "pw_thread_freertos/__init__.py",
+        "pw_thread_freertos/generate_freertos_tsktcb.py",
+    ],
     visibility = ["//pw_thread_freertos:__subpackages__"],
 )

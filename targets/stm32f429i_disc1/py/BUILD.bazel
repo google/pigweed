@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,40 +13,18 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
-load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])
-
 py_library(
-    name = "pw_module",
+    name = "stm32f429i_disc1_utils",
     srcs = [
-        "pw_module/__init__.py",
-        "pw_module/__main__.py",
-        "pw_module/check.py",
-        "pw_module/create.py",
-        "pw_module/seed.py",
-        "pw_module/templates/__init__.py",
-        "pw_module/templates/helpers/__init__.py",
+        "stm32f429i_disc1_utils/__init__.py",
+        "stm32f429i_disc1_utils/stm32f429i_detector.py",
+        "stm32f429i_disc1_utils/unit_test_client.py",
+        "stm32f429i_disc1_utils/unit_test_runner.py",
+        "stm32f429i_disc1_utils/unit_test_server.py",
     ],
+    data = ["stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"],
     imports = ["."],
-    deps = ["//pw_cli/py:pw_cli"],
-)
-
-pw_py_test(
-    name = "seed_test",
-    size = "small",
-    srcs = [
-        "seed_test.py",
-    ],
-    deps = [
-        ":pw_module",
-    ],
-)
-
-pw_py_test(
-    name = "check_test",
-    srcs = ["check_test.py"],
-    deps = [":pw_module"],
 )

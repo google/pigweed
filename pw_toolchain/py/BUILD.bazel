@@ -17,36 +17,22 @@ load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])
-
 py_library(
-    name = "pw_module",
+    name = "pw_toolchain",
     srcs = [
-        "pw_module/__init__.py",
-        "pw_module/__main__.py",
-        "pw_module/check.py",
-        "pw_module/create.py",
-        "pw_module/seed.py",
-        "pw_module/templates/__init__.py",
-        "pw_module/templates/helpers/__init__.py",
+        "pw_toolchain/__init__.py",
+        "pw_toolchain/bad_toolchain.py",
+        "pw_toolchain/clang_apply_replacements.py",
+        "pw_toolchain/clang_arm_toolchain.py",
+        "pw_toolchain/clang_tidy.py",
+        "pw_toolchain/copy_with_metadata.py",
     ],
     imports = ["."],
     deps = ["//pw_cli/py:pw_cli"],
 )
 
 pw_py_test(
-    name = "seed_test",
-    size = "small",
-    srcs = [
-        "seed_test.py",
-    ],
-    deps = [
-        ":pw_module",
-    ],
-)
-
-pw_py_test(
-    name = "check_test",
-    srcs = ["check_test.py"],
-    deps = [":pw_module"],
+    name = "clang_tidy_test",
+    srcs = ["clang_tidy_test.py"],
+    deps = [":pw_toolchain"],
 )

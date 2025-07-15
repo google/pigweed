@@ -13,10 +13,17 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+py_library(
+    name = "pw_containers",
+    srcs = ["pw_containers/__init__.py"],
+    imports = ["."],
+)
 
 py_library(
     name = "inline_var_len_entry_queue",
@@ -25,4 +32,10 @@ py_library(
     ],
     imports = ["."],
     deps = [],
+)
+
+pw_py_test(
+    name = "inline_var_len_entry_queue_test",
+    srcs = ["inline_var_len_entry_queue_test.py"],
+    deps = [":inline_var_len_entry_queue"],
 )

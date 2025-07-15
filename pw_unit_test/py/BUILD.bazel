@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -30,4 +31,27 @@ py_library(
         "//pw_rpc/py:pw_rpc",
         "//pw_unit_test:unit_test_py_pb2",
     ],
+)
+
+pw_py_test(
+    name = "rpc_service_test",
+    srcs = ["rpc_service_test.py"],
+    args = [
+        "--port=3305",  # From pw_rpc/internal/integration_test_ports.gni
+        "--test-server-command",
+        "$(rootpath //pw_unit_test:test_rpc_server)",
+    ],
+    data = ["//pw_unit_test:test_rpc_server"],
+    tags = ["do_not_run_test"],  # TODO: b/431912506 - Passes locally, not in CI
+    deps = [
+        ":pw_unit_test",
+        "//pw_hdlc/py:pw_hdlc",
+    ],
+)
+
+pw_py_test(
+    name = "test_group_metadata_test",
+    srcs = ["test_group_metadata_test.py"],
+    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
+    deps = [":pw_unit_test"],
 )

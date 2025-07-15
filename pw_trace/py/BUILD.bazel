@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -23,4 +24,10 @@ py_library(
         "pw_trace/trace.py",
     ],
     imports = ["."],
+)
+
+pw_py_test(
+    name = "trace_test",
+    srcs = ["trace_test.py"],
+    deps = [":pw_trace"],
 )

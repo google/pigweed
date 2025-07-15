@@ -73,16 +73,17 @@ pw_py_test(
 )
 
 # TODO(tonymd) Find out how to make protoc available in the bazel sandbox.
-# pw_py_test(
-#     name = "python_protos_test",
-#     size = "small",
-#     srcs = [
-#         "python_protos_test.py",
-#     ],
-#     deps = [
-#         ":pw_protobuf_compiler",
-#     ],
-#     data = [
-#         "@com_google_protobuf//:protoc",
-#     ]
-# )
+pw_py_test(
+    name = "python_protos_test",
+    size = "small",
+    srcs = [
+        "python_protos_test.py",
+    ],
+    data = [
+        "@com_google_protobuf//:protoc",
+    ],
+    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
+    deps = [
+        ":pw_protobuf_compiler",
+    ],
+)
