@@ -35,6 +35,7 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 # asked to be ignored.
 
 _DEFAULT_BAZEL_EXTENSIONS = (
+    '.py',
     '.rst',
     *format_code.C_FORMAT.extensions,
 )
