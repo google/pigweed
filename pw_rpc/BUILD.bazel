@@ -35,7 +35,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -73,6 +72,7 @@ cc_library(
     name = "benchmark",
     srcs = ["benchmark.cc"],
     hdrs = ["public/pw_rpc/benchmark.h"],
+    implementation_deps = [":pw_rpc"],
     strip_include_prefix = "public",
     deps = [
         ":benchmark_pwpb",
@@ -86,9 +86,7 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
-        ":internal_test_utils",
         "//pw_rpc:pw_rpc_test_raw_rpc",
-        "//pw_rpc/raw:client_testing",
         "//pw_rpc/raw:test_method_context",
     ],
 )
@@ -216,6 +214,7 @@ cc_library(
         "//pw_log",
         "//pw_polyfill",
         "//pw_preprocessor",
+        "//pw_protobuf",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -263,6 +262,7 @@ cc_library(
         ":pw_rpc",
         "//pw_assert:assert",
         "//pw_chrono:system_clock",
+        "//pw_status",
         "//pw_sync:timed_thread_notification",
     ],
 )
@@ -273,9 +273,11 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":client_server",
-        ":internal_test_utils",
-        "//pw_bytes",
-        "//pw_result",
+        ":fake_channel_output",
+        ":pw_rpc",
+        "//pw_function",
+        "//pw_span",
+        "//pw_status",
     ],
 )
 
@@ -284,11 +286,13 @@ cc_library(
     hdrs = ["public/pw_rpc/internal/client_server_testing_threaded.h"],
     strip_include_prefix = "public",
     deps = [
+        ":client_server",
         ":client_server_testing",
-        "//pw_bytes",
-        "//pw_result",
+        ":pw_rpc",
+        "//pw_function",
+        "//pw_span",
+        "//pw_status",
         "//pw_sync:binary_semaphore",
-        "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_thread:thread",
     ],
@@ -299,7 +303,7 @@ cc_library(
     hdrs = ["public/pw_rpc/test_helpers.h"],
     strip_include_prefix = "public",
     deps = [
-        ":internal_test_utils",
+        ":fake_channel_output",
         ":pw_rpc",
         "//pw_assert:assert",
         "//pw_chrono:system_clock",
@@ -366,7 +370,6 @@ cc_library(
         "pw_rpc_private/fake_server_reader_writer.h",
         "pw_rpc_private/test_method.h",
     ],
-    implementation_deps = ["//pw_assert:check"],
     includes = [
         ".",
         "public",
@@ -378,12 +381,10 @@ cc_library(
         ":pw_rpc",
         "//pw_assert:assert",
         "//pw_bytes",
-        "//pw_containers:filtered_view",
-        "//pw_containers:vector",
-        "//pw_containers:wrapped_iterator",
         "//pw_rpc/raw:fake_channel_output",
+        "//pw_rpc/raw:server_api",
         "//pw_span",
-        "//pw_sync:mutex",
+        "//pw_status",
     ],
 )
 
@@ -398,16 +399,21 @@ cc_library(
         "public/pw_rpc/integration_testing.h",
     ],
     features = ["-conversion_warnings"],
+    implementation_deps = [
+        "//pw_log",
+        "//pw_unit_test:logging",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":pw_rpc",
+        "//pw_function",
         "//pw_hdlc",
         "//pw_hdlc:default_addresses",
         "//pw_hdlc:rpc_channel_output",
-        "//pw_log",
+        "//pw_span",
+        "//pw_status",
         "//pw_stream:socket_stream",
         "//pw_unit_test",
-        "//pw_unit_test:logging",
     ],
 )
 
@@ -426,6 +432,7 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
+        "//pw_status",
     ],
 )
 
@@ -434,12 +441,12 @@ pw_cc_test(
     srcs = ["callback_test.cc"],
     features = ["-conversion_warnings"],
     deps = [
-        ":pw_rpc",
         ":pw_rpc_test_raw_rpc",
         "//pw_rpc/raw:client_testing",
         "//pw_sync:binary_semaphore",
         "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:sleep",
+        "//pw_thread:thread",
         "//pw_thread:yield",
         "//pw_thread_stl:non_portable_test_thread_options",
     ],
@@ -449,8 +456,8 @@ pw_cc_test(
     name = "channel_list_test",
     srcs = ["channel_list_test.cc"],
     deps = [
-        ":internal_test_utils",
         ":pw_rpc",
+        "//pw_status",
     ],
 )
 
@@ -485,7 +492,9 @@ pw_cc_test(
     ],
     deps = [
         ":pw_rpc",
+        "//pw_bytes",
         "//pw_fuzzer:fuzztest",
+        "//pw_protobuf",
     ],
 )
 
@@ -511,6 +520,8 @@ pw_cc_test(
     deps = [
         ":client_server",
         ":internal_test_utils",
+        ":pw_rpc",
+        "//pw_rpc/raw:fake_channel_output",
         "//pw_rpc/raw:server_api",
     ],
 )
@@ -534,17 +545,17 @@ pw_cc_test(
         "service_test.cc",
     ],
     features = ["-conversion_warnings"],
-    deps = [
-        ":internal_test_utils",
-        ":pw_rpc",
-    ],
+    deps = [":pw_rpc"],
 )
 
 pw_cc_test(
     name = "fake_channel_output_test",
     srcs = ["fake_channel_output_test.cc"],
     features = ["-conversion_warnings"],
-    deps = [":internal_test_utils"],
+    deps = [
+        ":fake_channel_output",
+        ":pw_rpc",
+    ],
 )
 
 pw_cc_test(
@@ -555,11 +566,13 @@ pw_cc_test(
         "-ctad_warnings",
     ],
     deps = [
+        ":echo_pwpb",
+        ":echo_pwpb_rpc",
         ":test_helpers",
+        "//pw_chrono:system_clock",
         "//pw_containers:vector",
         "//pw_result",
         "//pw_rpc/pwpb:client_testing",
-        "//pw_rpc/pwpb:echo_service",
         "//pw_rpc/pwpb:server_api",
         "//pw_status",
         "//pw_sync:interrupt_spin_lock",

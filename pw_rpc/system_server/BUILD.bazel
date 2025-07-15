@@ -25,11 +25,7 @@ cc_library(
     name = "facade",
     hdrs = ["public/pw_rpc_system_server/rpc_server.h"],
     strip_include_prefix = "public",
-    deps = [
-        "//pw_rpc",
-        "//pw_span",
-        "//pw_status",
-    ],
+    deps = ["//pw_rpc"],
 )
 
 cc_library(
@@ -44,9 +40,6 @@ cc_library(
         ":backend",
         ":facade",
         "//pw_rpc",
-        "//pw_span",
-        "//pw_status",
-        "//pw_stream",
     ],
 )
 

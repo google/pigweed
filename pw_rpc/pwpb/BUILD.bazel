@@ -40,7 +40,12 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":common",
+        "//pw_bytes",
+        "//pw_function",
+        "//pw_rpc",
         "//pw_rpc/raw:server_api",
+        "//pw_span",
+        "//pw_status",
     ],
 )
 
@@ -52,6 +57,9 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":common",
+        "//pw_bytes",
+        "//pw_function",
+        "//pw_rpc",
     ],
 )
 
@@ -67,6 +75,9 @@ cc_library(
         "//pw_bytes",
         "//pw_protobuf",
         "//pw_rpc",
+        "//pw_span",
+        "//pw_status",
+        "//pw_stream",
     ],
 )
 
@@ -80,6 +91,10 @@ cc_library(
     deps = [
         ":common",
         ":server_api",
+        "//pw_containers:wrapped_iterator",
+        "//pw_preprocessor",
+        "//pw_rpc",
+        "//pw_rpc:fake_channel_output",
         "//pw_rpc:internal_test_utils",
         "//pw_span",
     ],
@@ -93,6 +108,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":test_method_context",
+        "//pw_bytes",
         "//pw_rpc",
         "//pw_rpc/raw:client_testing",
     ],
@@ -119,6 +135,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":test_method_context",
+        "//pw_rpc:client_server_testing",
         "//pw_rpc:client_server_testing_threaded",
     ],
 )
@@ -126,7 +143,11 @@ cc_library(
 cc_library(
     name = "internal_test_utils",
     hdrs = ["pw_rpc_pwpb_private/internal_test_utils.h"],
-    deps = ["//pw_rpc:internal_test_utils"],
+    deps = [
+        "//pw_span",
+        "//pw_status",
+        "//pw_stream",
+    ],
 )
 
 cc_library(
@@ -160,7 +181,7 @@ pw_cc_test(
     deps = [
         ":client_api",
         ":internal_test_utils",
-        "//pw_rpc",
+        "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",
     ],
 )
@@ -185,7 +206,6 @@ pw_cc_test(
     ],
     features = ["-conversion_warnings"],
     deps = [
-        ":client_api",
         ":client_server_testing",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
         "//pw_sync:mutex",
@@ -200,11 +220,11 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":client_api",
         ":client_server_testing_threaded",
+        "//pw_function",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
+        "//pw_status",
         "//pw_sync:binary_semaphore",
-        "//pw_sync:mutex",
         "//pw_thread:non_portable_test_thread_options",
         "//pw_thread_stl:non_portable_test_thread_options",
     ],
@@ -220,6 +240,7 @@ pw_cc_test(
         ":internal_test_utils",
         ":test_method_context",
         "//pw_preprocessor",
+        "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
     ],
@@ -230,10 +251,8 @@ pw_cc_test(
     srcs = ["fake_channel_output_test.cc"],
     features = ["-conversion_warnings"],
     deps = [
-        ":common",
-        ":server_api",
         ":test_method_context",
-        "//pw_rpc:internal_test_utils",
+        "//pw_rpc",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
     ],
 )
@@ -260,6 +279,7 @@ pw_cc_test(
         "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
+        "//pw_status",
     ],
 )
 
@@ -281,6 +301,7 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":server_api",
+        "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",
     ],
@@ -301,7 +322,6 @@ pw_cc_test(
     srcs = ["server_reader_writer_test.cc"],
     features = ["-conversion_warnings"],
     deps = [
-        ":server_api",
         ":test_method_context",
         "//pw_rpc",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
@@ -315,6 +335,8 @@ pw_cc_test(
     deps = [
         ":common",
         "//pw_rpc:pw_rpc_test_pwpb",
+        "//pw_span",
+        "//pw_status",
     ],
 )
 
@@ -345,9 +367,13 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         ":test_method_context",
+        "//pw_chrono:system_clock",
+        "//pw_rpc",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
         "//pw_rpc:synchronous_client_api",
         "//pw_rpc_transport:test_loopback_service_registry",
+        "//pw_status",
+        "//pw_thread:thread",
         "//pw_work_queue",
         "//pw_work_queue:stl_test_thread",
         "//pw_work_queue:test_thread_header",

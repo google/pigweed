@@ -60,7 +60,7 @@ cc_library(
     hdrs = ["public/pw_rpc/raw/fake_channel_output.h"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
-    deps = [":server_api"],
+    deps = ["//pw_rpc:fake_channel_output"],
 )
 
 cc_library(
@@ -82,12 +82,14 @@ cc_library(
     name = "client_testing",
     srcs = ["client_testing.cc"],
     hdrs = ["public/pw_rpc/raw/client_testing.h"],
-    implementation_deps = ["//pw_assert:check"],
+    implementation_deps = [
+        "//pw_assert:check",
+        "//pw_log",
+    ],
     strip_include_prefix = "public",
     deps = [
-        ":test_method_context",
+        ":fake_channel_output",
         "//pw_bytes",
-        "//pw_log",
         "//pw_rpc",
     ],
 )
@@ -101,7 +103,7 @@ pw_cc_test(
     deps = [
         ":client_api",
         ":client_testing",
-        "//pw_rpc:internal_test_utils",
+        "//pw_rpc",
     ],
 )
 
@@ -112,7 +114,10 @@ pw_cc_test(
     deps = [
         ":client_api",
         ":client_testing",
+        "//pw_bytes",
+        "//pw_rpc",
         "//pw_rpc:pw_rpc_test_raw_rpc",
+        "//pw_status",
     ],
 )
 
@@ -123,12 +128,10 @@ pw_cc_test(
     ],
     features = ["-conversion_warnings"],
     deps = [
-        ":client_api",
         ":client_testing",
-        ":server_api",
         ":test_method_context",
         "//pw_protobuf",
-        "//pw_rpc:internal_test_utils",
+        "//pw_rpc",
         "//pw_rpc:pw_rpc_test_pwpb",
         "//pw_rpc:pw_rpc_test_raw_rpc",
     ],
@@ -142,8 +145,10 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         ":server_api",
+        "//pw_bytes",
         "//pw_containers:algorithm",
         "//pw_protobuf",
+        "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",
     ],
@@ -156,6 +161,7 @@ pw_cc_test(
     ],
     features = ["-conversion_warnings"],
     deps = [
+        "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_raw_rpc",
     ],
@@ -169,7 +175,9 @@ pw_cc_test(
     features = ["-conversion_warnings"],
     deps = [
         ":server_api",
+        "//pw_bytes",
         "//pw_protobuf",
+        "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",
     ],
@@ -180,10 +188,13 @@ pw_cc_test(
     srcs = ["server_reader_writer_test.cc"],
     features = ["-conversion_warnings"],
     deps = [
-        ":test_method_context",
-        "//pw_rpc:internal_test_utils",
+        ":fake_channel_output",
+        ":server_api",
+        "//pw_bytes",
+        "//pw_rpc",
         "//pw_rpc:pw_rpc_test_pwpb",
         "//pw_rpc:pw_rpc_test_raw_rpc",
+        "//pw_status",
     ],
 )
 
@@ -214,10 +225,14 @@ pw_cc_test(
     srcs = ["synchronous_call_test.cc"],
     features = ["-conversion_warnings"],
     deps = [
-        ":test_method_context",
+        ":fake_channel_output",
         "//pw_assert:check",
+        "//pw_chrono:system_clock",
+        "//pw_rpc",
         "//pw_rpc:pw_rpc_test_raw_rpc",
         "//pw_rpc:synchronous_client_api",
+        "//pw_status",
+        "//pw_thread:thread",
         "//pw_work_queue",
         "//pw_work_queue:stl_test_thread",
         "//pw_work_queue:test_thread_header",
