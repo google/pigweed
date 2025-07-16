@@ -359,6 +359,9 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
       pw_thread_zephyr.thread
   )
 endif()
+pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_SYSTEM_TARGET_HOOKS
+  pw_system.zephyr_target_hooks
+)
 
 add_executable(pw_system.system_example EXCLUDE_FROM_ALL
   example_user_app_init.cc
