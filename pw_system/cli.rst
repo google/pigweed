@@ -8,7 +8,7 @@ These are the standard pw_system console command line arguments.
 .. argparse::
    :module: pw_system.console
    :func: get_parser
-   :prog: pw system console
+   :prog: pw console
    :nodefaultconst:
    :nodescription:
    :noepilog:
