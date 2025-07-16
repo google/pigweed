@@ -104,6 +104,15 @@ pw_source_set("metadata") {
   public = [ "public/pw_log_tokenized/metadata.h" ]
 }
 
+pw_source_set("fields") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_log_tokenized/fields.h" ]
+  public_deps = [
+    ":config",
+    dir_pw_status,
+  ]
+}
+
 pw_source_set("config") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
@@ -151,9 +160,18 @@ pw_source_set("base64_over_hdlc") {
 
 pw_test_group("tests") {
   tests = [
+    ":fields_test",
     ":log_tokenized_test",
     ":metadata_test",
     ":tokenized_args_test",
+  ]
+}
+
+pw_test("fields_test") {
+  sources = [ "fields_test.cc" ]
+  deps = [
+    ":fields",
+    "$dir_pw_unit_test:constexpr",
   ]
 }
 

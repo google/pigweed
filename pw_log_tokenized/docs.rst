@@ -163,6 +163,14 @@ The binary tokenized message may be encoded in the :ref:`prefixed Base64 format
 
 .. doxygenfunction:: PrefixedBase64Encode(span<const std::byte>)
 
+Parsing metadata fields
+-----------------------
+The metadata fields packed into the format string can be parsed with the
+`pw::log_tokenized::ParseFields` function. This function takes a string and a
+callback that is called for each key-value pair.
+
+.. doxygenfunction:: pw::log_tokenized::ParseFields
+
 Build targets
 -------------
 The GN build for ``pw_log_tokenized`` has two targets: ``pw_log_tokenized`` and

@@ -78,6 +78,16 @@ pw_add_library(pw_log_tokenized.metadata INTERFACE
     pw_log_tokenized.config
 )
 
+pw_add_library(pw_log_tokenized.fields INTERFACE
+  HEADERS
+    public/pw_log_tokenized/fields.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log_tokenized.config
+    pw_status
+)
+
 pw_add_facade(pw_log_tokenized.handler INTERFACE
   BACKEND
     pw_log_tokenized.handler_BACKEND
@@ -131,6 +141,17 @@ pw_add_test(pw_log_tokenized.metadata_test
     metadata_test.cc
   PRIVATE_DEPS
     pw_log_tokenized.metadata
+  GROUPS
+    modules
+    pw_log_tokenized
+)
+
+pw_add_test(pw_log_tokenized.fields_test
+  SOURCES
+    fields_test.cc
+  PRIVATE_DEPS
+    pw_log_tokenized.fields
+    pw_unit_test.constexpr
   GROUPS
     modules
     pw_log_tokenized

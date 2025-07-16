@@ -33,11 +33,16 @@
   PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
 #endif  // PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES
 
+#define PW_LOG_TOKENIZED_FIELD_PREFIX "■"
+#define PW_LOG_TOKENIZED_KEY_VALUE_SEPARATOR "♦"
+
 // This macro takes the PW_LOG format string and optionally transforms it. By
 // default, pw_log_tokenized specifies three fields as key-value pairs.
 #ifndef PW_LOG_TOKENIZED_FORMAT_STRING
 
-#define _PW_LOG_TOKENIZED_FIELD(name, contents) "■" name "♦" contents
+#define _PW_LOG_TOKENIZED_FIELD(name, contents)                           \
+  PW_LOG_TOKENIZED_FIELD_PREFIX name PW_LOG_TOKENIZED_KEY_VALUE_SEPARATOR \
+      contents
 
 /// This macro takes the `pw_log` module name and format string to produce a new
 /// string that will be tokenized. Any information can be packed into this
