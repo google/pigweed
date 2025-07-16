@@ -37,7 +37,7 @@ void H4Packet::Assign(MultiBuf&& buffer) {
            "Buffer does not contain a valid H4 packet");
 
   while (buffer.NumLayers() > H4Packet::kLayer) {
-    std::ignore = buffer.PopLayer();
+    buffer.PopLayer();
   }
 
   multibuf().PushBack(std::move(buffer));

@@ -57,7 +57,7 @@ bool GenericMultiBuf::TryReserveForInsert(const_iterator pos,
     return true;
   }
   while (depth_ > depth) {
-    std::ignore = PopLayer();
+    PopLayer();
   }
   return false;
 }
@@ -294,9 +294,8 @@ ConstByteSpan GenericMultiBuf::Get(ByteSpan copy, size_t offset) const {
 
 void GenericMultiBuf::Clear() {
   while (depth_ > 2) {
-    if (!PopLayer()) {
-      UnsealTopLayer();
-    }
+    UnsealTopLayer();
+    PopLayer();
   }
   // Free any owned chunks.
   Deallocator* deallocator = has_deallocator() ? GetDeallocator() : nullptr;
@@ -396,11 +395,11 @@ bool GenericMultiBuf::ResizeTopLayer(size_t offset, size_t length) {
   return true;
 }
 
-bool GenericMultiBuf::PopLayer() {
+void GenericMultiBuf::PopLayer() {
   PW_CHECK_UINT_GT(depth_, 2u);
-  if (IsTopLayerSealed()) {
-    return false;
-  }
+  PW_CHECK(!IsTopLayerSealed(),
+           "MultiBuf::PopLayer() was called on a sealed layer; call "
+           "UnsealTopLayer first");
   size_t num_fragments = NumFragments();
 
   // Given entries with layers A, B, and C, to remove layer C:
@@ -435,7 +434,6 @@ bool GenericMultiBuf::PopLayer() {
   if (observer_ != nullptr) {
     observer_->Notify(MultiBufObserver::Event::kLayerRemoved, num_fragments);
   }
-  return true;
 }
 
 // Implementation methods

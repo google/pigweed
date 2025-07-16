@@ -1080,6 +1080,14 @@ class BasicMultiBuf {
     return generic().UnsealTopLayer();
   }
 
+  /// Returns whether the "sealed" flag is set in the top layer.
+  [[nodiscard]] bool IsTopLayerSealed() {
+    static_assert(
+        is_layerable(),
+        "`IsTopLayerSealed` may only be called on layerable MultiBufs");
+    return generic().IsTopLayerSealed();
+  }
+
   /// Resizes the current top layer.
   ///
   /// The range given by `offset` and `length` MUST fall within this MultiBuf.
@@ -1105,12 +1113,11 @@ class BasicMultiBuf {
   ///
   /// It is an error to call this method when `NumLayers()` < 2.
   ///
-  /// Returns false and leaves the object unmodified if the top layer is sealed;
-  /// otherwise returns true.
-  [[nodiscard]] bool PopLayer() {
+  /// Crashes if the top layer is sealed.
+  void PopLayer() {
     static_assert(is_layerable(),
                   "`PopLayer` may only be called on layerable MultiBufs");
-    return generic().PopLayer();
+    generic().PopLayer();
   }
 
  protected:
@@ -1337,7 +1344,7 @@ class GenericMultiBuf final
                                     size_t length = dynamic_extent);
 
   /// @copydoc BasicMultiBuf<>::PopLayer
-  [[nodiscard]] bool PopLayer();
+  void PopLayer();
 
   // Implementation methods.
   //

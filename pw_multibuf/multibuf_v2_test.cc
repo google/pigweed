@@ -2100,7 +2100,8 @@ TEST_F(MultiBufTest, TryReserveForInsertAddsNoLayersOnAllocationFailure) {
   // Add, exhaust, and pop to ensure we can add one but not all layers.
   EXPECT_TRUE(mbi1->AddLayer(0));
   allocator_.Exhaust();
-  EXPECT_TRUE(mbi1->PopLayer());
+  EXPECT_FALSE(mbi1->IsTopLayerSealed());
+  mbi1->PopLayer();
 
   EXPECT_EQ(mbi1->NumLayers(), 1u);
   EXPECT_EQ(mbi2->NumLayers(), 3u);
@@ -2123,7 +2124,7 @@ TEST_F(MultiBufTest, RemoveFromLayeredIsRelativeToTopLayer) {
   ASSERT_EQ(result.status(), pw::OkStatus());
   EXPECT_EQ(mbi->size(), 2 * kN);
 
-  EXPECT_TRUE(mbi->PopLayer());
+  mbi->PopLayer();
   EXPECT_EQ(&(*(mbi->begin())), data);
   EXPECT_EQ(&(*(mbi->begin() + 2 * kN)), data + 3 * kN);
 }
@@ -2143,7 +2144,7 @@ TEST_F(MultiBufTest, DiscardFromLayeredIsRelativeToTopLayer) {
   EXPECT_EQ(*result, mbi->begin() + kN);
   EXPECT_EQ(mbi->size(), 2 * kN);
 
-  EXPECT_TRUE(mbi->PopLayer());
+  mbi->PopLayer();
   EXPECT_EQ(&(*(mbi->begin())), data);
   EXPECT_EQ(&(*(mbi->begin() + 2 * kN)), data + 3 * kN);
 }
@@ -2281,7 +2282,7 @@ TEST_F(MultiBufTest, AddLayerCreatesNewFragment) {
   EXPECT_EQ(mbi->NumFragments(), 3u);
   EXPECT_TRUE(mbi->AddLayer(0));
   EXPECT_EQ(mbi->NumFragments(), 1u);
-  EXPECT_TRUE(mbi->PopLayer());
+  mbi->PopLayer();
   EXPECT_EQ(mbi->NumFragments(), 3u);
 }
 
@@ -2392,12 +2393,12 @@ TEST_F(MultiBufTest, PopLayerSucceedsWithLayers) {
   EXPECT_EQ(mbi->NumLayers(), 3u);
   EXPECT_EQ(mbi->size(), 32u);
 
-  EXPECT_TRUE(mbi->PopLayer());
+  mbi->PopLayer();
   EXPECT_EQ(mbi->NumFragments(), 3u);
   EXPECT_EQ(mbi->NumLayers(), 2u);
   EXPECT_EQ(mbi->size(), 48u);
 
-  EXPECT_TRUE(mbi->PopLayer());
+  mbi->PopLayer();
   EXPECT_EQ(mbi->NumFragments(), 4u);
   EXPECT_EQ(mbi->NumLayers(), 1u);
   EXPECT_EQ(mbi->size(), 64u);
@@ -2405,9 +2406,7 @@ TEST_F(MultiBufTest, PopLayerSucceedsWithLayers) {
 
 #if PW_NC_TEST(CannotCallPopLayerWhenUnlayered)
 PW_NC_EXPECT("`PopLayer` may only be called on layerable MultiBufs");
-[[maybe_unused]] bool ShouldAssert(const FlatMultiBuf& mb) {
-  return mb.PopLayer();
-}
+void ShouldAssert(const FlatMultiBuf& mb) { mb.PopLayer(); }
 #endif  // PW_NC_TEST
 
 TEST_F(MultiBufTest, PopLayerFailsWhenSealed) {
@@ -2415,8 +2414,8 @@ TEST_F(MultiBufTest, PopLayerFailsWhenSealed) {
   AddLayers(*mbi);
   mbi->SealTopLayer();
   EXPECT_EQ(mbi->NumLayers(), 3u);
-  EXPECT_FALSE(mbi->PopLayer());
-  EXPECT_EQ(mbi->NumLayers(), 3u);
+  EXPECT_TRUE(mbi->IsTopLayerSealed());
+  EXPECT_DEATH_IF_SUPPORTED(mbi->PopLayer(), ".*");
 }
 
 TEST_F(MultiBufTest, PopLayerSucceedsAfterUnseal) {
@@ -2424,10 +2423,10 @@ TEST_F(MultiBufTest, PopLayerSucceedsAfterUnseal) {
   AddLayers(*mbi);
   mbi->SealTopLayer();
   EXPECT_EQ(mbi->NumLayers(), 3u);
-  EXPECT_FALSE(mbi->PopLayer());
-  EXPECT_EQ(mbi->NumLayers(), 3u);
+  EXPECT_TRUE(mbi->IsTopLayerSealed());
+  EXPECT_DEATH_IF_SUPPORTED(mbi->PopLayer(), ".*");
   mbi->UnsealTopLayer();
-  EXPECT_TRUE(mbi->PopLayer());
+  mbi->PopLayer();
   EXPECT_EQ(mbi->NumLayers(), 2u);
 }
 
@@ -2705,7 +2704,7 @@ TEST_F(MultiBufTest, PopLayerNotifiesObserver) {
   TrackedMultiBuf::Instance mb(allocator_);
   AddLayers(*mb);
   mb->set_observer(&observer);
-  EXPECT_TRUE(mb->PopLayer());
+  mb->PopLayer();
   ASSERT_TRUE(observer.event.has_value());
   EXPECT_EQ(observer.event.value(), Event::kLayerRemoved);
   EXPECT_EQ(observer.value, 2u);
