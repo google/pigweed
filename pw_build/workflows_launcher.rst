@@ -19,15 +19,42 @@ and discoverable way to execute common development tasks.
 
 .. _module-pw_build-workflows-launcher-getting-started:
 
----------------
-Getting Started
----------------
+-----------
+Get Started
+-----------
+
+New project setup
+=================
+
+#. Add a ``native_binary`` entry point to your root ``BUILD.bazel`` file:
+
+   .. code-block:: python
+
+      load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+
+      native_binary(
+          name = "pw",
+          src = "@pigweed//pw_build/py:workflows_launcher",
+      )
+
+#. Add a ``workflows.json`` file to the root of your project.
+
+   .. code-block:: console
+
+      $ echo {} >> workflows.json
+
+#. Copy or symlink the helper ``pw`` entry point to the root of your project.
+
+Now you're ready to start exploring the Workflows tool.
+
+General usage (in Pigweed)
+==========================
 To see available commands, launch the ``pw`` entry point at the root of
 the Pigweed repository.
 
 .. code-block:: console
 
-   ./pw
+   $ ./pw
 
 The launcher will automatically find and load a ``workflows.json`` file in the
 current directory or any parent directory.
@@ -57,7 +84,7 @@ Example:
 
 .. code-block:: console
 
-   ./pw describe format
+   $ ./pw describe format
 
 This will print the configuration for the ``format`` tool:
 
@@ -83,7 +110,7 @@ Example:
 
 .. code-block:: console
 
-   ./pw build all_host
+   $ ./pw build all_host
 
 .. note::
 
@@ -106,7 +133,7 @@ the following command is created:
 
 .. code-block:: console
 
-   ./pw format
+   $ ./pw format
 
 This will launch a ``bazel run`` invocation of Pigweed's code formatter tool.
 
@@ -120,7 +147,7 @@ the following command is created:
 
 .. code-block:: console
 
-   ./pw presubmit
+   $ ./pw presubmit
 
 
 This will launch a series of builds followed by code health check tooling as

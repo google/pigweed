@@ -33,7 +33,7 @@ export BAZELISK_SKIP_WRAPPER=1
 
 declare -r _PW_SCRIPT_DIR=$(realpath $(dirname $0))
 declare -r _PW_WORKFLOWS_OUT_DIR=${_PW_SCRIPT_DIR}/out/workflows_launcher
-declare -r _PW_WORKFLOWS_BIN_PATH=${_PW_WORKFLOWS_OUT_DIR}/bazel-bin/pw_build/py/workflows_launcher
+declare -r _PW_WORKFLOWS_BIN_PATH=${_PW_WORKFLOWS_OUT_DIR}/bazel-bin/pw.exe
 
 # If the `pw` tool hasn't been built yet, don't silence output since it might
 # take a long time.
