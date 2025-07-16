@@ -14,6 +14,10 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+if(NOT CONFIG_ZEPHYR_PIGWEED_MODULE)
+  return()
+endif()
+
 pw_add_library(pw_chrono_zephyr.system_clock INTERFACE
   HEADERS
     public/pw_chrono_zephyr/system_clock_constants.h
@@ -28,6 +32,28 @@ pw_add_library(pw_chrono_zephyr.system_clock INTERFACE
     pw_function
     pw_chrono.epoch
     pw_chrono.system_clock.facade
+    zephyr_interface
 )
+if(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK)
+  zephyr_link_libraries(pw_chrono_zephyr.system_clock)
+endif()
 
-pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK pw_chrono_zephyr.system_clock)
+pw_add_library(pw_chrono_zephyr.system_timer STATIC
+  HEADERS
+    public/pw_chrono_zephyr/system_clock_constants.h
+    public/pw_chrono_zephyr/system_timer_inline.h
+    public/pw_chrono_zephyr/system_timer_native.h
+    public_overrides/pw_chrono_backend/system_timer_inline.h
+    public_overrides/pw_chrono_backend/system_timer_native.h
+  SOURCES
+    system_timer.cc
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    pw_chrono.system_timer.facade
+    zephyr_interface
+)
+if(CONFIG_PIGWEED_CHRONO_SYSTEM_TIMER)
+  zephyr_link_libraries(pw_chrono_zephyr.system_timer)
+endif()

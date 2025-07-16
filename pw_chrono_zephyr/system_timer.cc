@@ -14,8 +14,8 @@
 
 #include "pw_chrono/system_timer.h"
 
-#include <kernel.h>
-#include <sys/mutex.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/mutex.h>
 
 #include <algorithm>
 
@@ -55,7 +55,7 @@ void HandleTimerWork(k_work* item) {
   sys_mutex_unlock(&native_type->mutex);
 }
 
-SystemTimer::SystemTimer(ExpiryCallback callback)
+SystemTimer::SystemTimer(ExpiryCallback&& callback)
     : native_type_{.work_wrapper =
                        {
                            .work = {},
@@ -70,7 +70,7 @@ SystemTimer::SystemTimer(ExpiryCallback callback)
 }
 
 SystemTimer::~SystemTimer() {
-  k_work_cancel_sync(&native_type_.work_wrapper.work, &work_sync);
+  k_work_cancel_delayable_sync(&native_type_.work_wrapper.work, &work_sync);
 }
 
 void SystemTimer::InvokeAt(SystemClock::time_point timestamp) {

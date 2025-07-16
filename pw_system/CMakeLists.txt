@@ -349,14 +349,16 @@ pw_add_library(pw_system.freertos_target_hooks STATIC
   # currently do not have CMake support.
 )
 
-pw_add_library(pw_system.zephyr_target_hooks STATIC
-  SOURCES
-    zephyr_target_hooks.cc
-  PRIVATE_DEPS
-    pw_system.target_hooks.facade
-    pw_thread.thread
-    pw_thread_zephyr.thread
-)
+if(CONFIG_ZEPHYR_PIGWEED_MODULE)
+  pw_add_library(pw_system.zephyr_target_hooks STATIC
+    SOURCES
+      zephyr_target_hooks.cc
+    PRIVATE_DEPS
+      pw_system.target_hooks.facade
+      pw_thread.thread
+      pw_thread_zephyr.thread
+  )
+endif()
 
 add_executable(pw_system.system_example EXCLUDE_FROM_ALL
   example_user_app_init.cc

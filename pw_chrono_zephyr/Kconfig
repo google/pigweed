@@ -19,6 +19,11 @@ config PIGWEED_CHRONO_SYSTEM_CLOCK
     select PIGWEED_PREPROCESSOR
     select PIGWEED_FUNCTION
     help
-      See :ref:`module-pw_checksum` for module details.
+      See :ref:`module-pw_chrono` for module details.
+
+config PIGWEED_CHRONO_SYSTEM_TIMER
+    bool "Link pw_chrono.system_timer library"
+    help
+      See :ref:`module-pw_chrono` for module details.
 
 endmenu
