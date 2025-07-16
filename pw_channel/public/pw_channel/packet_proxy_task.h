@@ -28,7 +28,7 @@ namespace internal {
 
 class BasicPacketProxyTask : public async2::Task {
  public:
-  ~BasicPacketProxyTask() override { DisconnectFromProxy(); }
+  ~BasicPacketProxyTask() override { PW_ASSERT(proxy_ == nullptr); }
 
  protected:
   BasicPacketProxyTask()
@@ -41,7 +41,10 @@ class BasicPacketProxyTask : public async2::Task {
     return proxy().PendCompleted(context);
   }
 
-  void DisconnectFromProxy() { proxy().DisconnectTask(); }
+  void DisconnectFromProxy() {
+    proxy().DisconnectTask();
+    proxy_ = nullptr;
+  }
 
   internal::BasicProxy& proxy() const { return *proxy_; }
 

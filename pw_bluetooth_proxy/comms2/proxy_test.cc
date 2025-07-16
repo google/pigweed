@@ -94,6 +94,11 @@ TEST_F(ProxyTest, Passthrough) {
   ASSERT_EQ(controller_channel_.written_packets().size(), 1u);
   EXPECT_EQ(GetOpCode(controller_channel_.written_packets().front()),
             OpCode::REMOTE_NAME_REQUEST);
+
+  pw::async2::PendFuncTask reset(
+      [this](pw::async2::Context& context) { return proxy_.Reset(context); });
+  dispatcher_.Post(reset);
+  EXPECT_EQ(dispatcher_.RunUntilStalled(), pw::async2::Ready());
 }
 
 TEST_F(ProxyTest, ResetCommand) {
