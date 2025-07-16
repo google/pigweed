@@ -387,7 +387,8 @@ void GenericMultiBuf::UnsealTopLayer() {
 
 bool GenericMultiBuf::ResizeTopLayer(size_t offset, size_t length) {
   PW_CHECK_UINT_GT(depth_, 2u);
-  CheckRange(offset, length, size());
+  Entry& current = deque_[depth_ - 1];
+  CheckRange(offset, length, current.view.offset + size());
   if (IsTopLayerSealed()) {
     return false;
   }

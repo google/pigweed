@@ -1088,6 +1088,21 @@ class BasicMultiBuf {
     return generic().IsTopLayerSealed();
   }
 
+  /// Shortens the length of the current top layer.
+  ///
+  /// `length` MUST be less than or equal to the MultiBuf's current size.
+  /// It is an error to call this method when `NumLayers()` < 2.
+  ///
+  /// Crashes if the top layer is sealed.
+  ///
+  /// @param[in]  length  New length of the top layer.
+  void TruncateTopLayer(size_t length) {
+    static_assert(
+        is_layerable(),
+        "`TruncateTopLayer` may only be called on layerable MultiBufs");
+    generic().TruncateTopLayer(length);
+  }
+
   /// Resizes the current top layer.
   ///
   /// The range given by `offset` and `length` MUST fall within this MultiBuf.
@@ -1338,6 +1353,16 @@ class GenericMultiBuf final
 
   /// @copydoc BasicMultiBuf<>::UnsealTopLayer
   void UnsealTopLayer();
+
+  /// @copydoc BasicMultiBuf<>::TruncateTopLayer
+  void TruncateTopLayer(size_t length) {
+    PW_ASSERT(length <= size());
+    PW_ASSERT(!IsTopLayerSealed());
+    if (length < size()) {
+      // TODO: b/432038569 - Reconsider the `ResizeTopLayer` API.
+      std::ignore = ResizeTopLayer(GetOffset(0), length);
+    }
+  }
 
   /// @copydoc BasicMultiBuf<>::ResizeTopLayer
   [[nodiscard]] bool ResizeTopLayer(size_t offset,

@@ -20,6 +20,7 @@
 #include "pw_allocator/chunk_pool.h"
 #include "pw_allocator/testing.h"
 #include "pw_assert/check.h"
+#include "pw_bytes/array.h"
 #include "pw_bytes/span.h"
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_result/result.h"
@@ -2382,7 +2383,42 @@ PW_NC_EXPECT("`UnsealTopLayer` may only be called on layerable MultiBufs");
 [[maybe_unused]] void ShouldAssert(const FlatMultiBuf& mb) {
   mb.UnsealTopLayer();
 }
+
+#elif PW_NC_TEST(CannotCallTruncateTopLayerWhenUnlayered)
+PW_NC_EXPECT("`TruncateTopLayer` may only be called on layerable MultiBufs");
+[[maybe_unused]] void ShouldAssert(const FlatMultiBuf& mb) {
+  mb.TruncateTopLayer(6);
+}
 #endif  // PW_NC_TEST
+
+TEST_F(MultiBufTest, TruncateTopLayerSucceedsWithZeroLength) {
+  ConstMultiBuf::Instance mbi(allocator_);
+  AddLayers(*mbi);
+  EXPECT_EQ(mbi->size(), 32u);
+  mbi->TruncateTopLayer(0);
+  EXPECT_EQ(mbi->size(), 0u);
+}
+
+TEST_F(MultiBufTest, TruncateTopLayerSucceedsWithNonzeroLength) {
+  ConstMultiBuf::Instance mbi(allocator_);
+  AddLayers(*mbi);
+  EXPECT_EQ(mbi->size(), 32u);
+  mbi->TruncateTopLayer(6);
+  constexpr auto expected =  // Keeps existing start offset 0 + 2 + 4 = 6.
+      pw::bytes::Array<0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b>();
+  EXPECT_TRUE(
+      std::equal(mbi->begin(), mbi->end(), expected.begin(), expected.end()));
+}
+
+TEST_F(MultiBufTest, TruncateTopLayerSucceedsWithCurrentMultiBufLength) {
+  ConstMultiBuf::Instance mbi1(allocator_);
+  ConstMultiBuf::Instance mbi2(allocator_);
+  AddLayers(*mbi1);
+  AddLayers(*mbi2);
+  mbi1->TruncateTopLayer(mbi1->size());
+  EXPECT_TRUE(
+      std::equal(mbi1->begin(), mbi1->end(), mbi2->begin(), mbi2->end()));
+}
 
 TEST_F(MultiBufTest, PopLayerSucceedsWithLayers) {
   ConstMultiBuf::Instance mbi(allocator_);
