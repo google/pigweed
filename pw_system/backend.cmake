@@ -25,4 +25,7 @@ pw_add_backend_variable(pw_system.device_handler_BACKEND
   DEFAULT_BACKEND
     pw_system.unknown_device_handler
 )
-pw_add_backend_variable(pw_system.io_BACKEND)
+pw_add_backend_variable(pw_system.io_BACKEND
+  DEFAULT_BACKEND
+    pw_system.sys_io_target_io
+)
