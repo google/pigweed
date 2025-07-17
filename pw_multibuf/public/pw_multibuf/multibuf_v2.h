@@ -263,40 +263,60 @@ class BasicMultiBuf {
 
   BasicMultiBuf(BasicMultiBuf&&) = delete;
 
-  template <Property... kOtherProperties>
-  BasicMultiBuf(BasicMultiBuf<kOtherProperties...>&&) = delete;
-
   BasicMultiBuf& operator=(BasicMultiBuf&&) = delete;
-
-  template <Property... kOtherProperties>
-  BasicMultiBuf& operator=(BasicMultiBuf<kOtherProperties...>&&) = delete;
 
   // Conversions
 
   template <typename OtherMultiBuf>
-  OtherMultiBuf& as() {
+  OtherMultiBuf& as() & {
     multibuf_impl::AssertIsConvertible<BasicMultiBuf, OtherMultiBuf>();
     return generic().template as<OtherMultiBuf>();
   }
 
   template <typename OtherMultiBuf>
-  const OtherMultiBuf& as() const {
+  const OtherMultiBuf& as() const& {
     multibuf_impl::AssertIsConvertible<BasicMultiBuf, OtherMultiBuf>();
     return generic().template as<OtherMultiBuf>();
   }
 
+  template <typename OtherMultiBuf>
+  OtherMultiBuf&& as() && {
+    multibuf_impl::AssertIsConvertible<BasicMultiBuf, OtherMultiBuf>();
+    return std::move(generic().template as<OtherMultiBuf>());
+  }
+
+  template <typename OtherMultiBuf>
+  const OtherMultiBuf&& as() const&& {
+    multibuf_impl::AssertIsConvertible<BasicMultiBuf, OtherMultiBuf>();
+    return std::move(generic().template as<OtherMultiBuf>());
+  }
+
   template <typename OtherMultiBuf,
             typename = multibuf_impl::EnableIfConvertible<BasicMultiBuf,
                                                           OtherMultiBuf>>
-  operator OtherMultiBuf&() {
+  operator OtherMultiBuf&() & {
     return as<OtherMultiBuf>();
   }
 
   template <typename OtherMultiBuf,
             typename = multibuf_impl::EnableIfConvertible<BasicMultiBuf,
                                                           OtherMultiBuf>>
-  operator const OtherMultiBuf&() const {
+  operator const OtherMultiBuf&() const& {
     return as<OtherMultiBuf>();
+  }
+
+  template <typename OtherMultiBuf,
+            typename = multibuf_impl::EnableIfConvertible<BasicMultiBuf,
+                                                          OtherMultiBuf>>
+  operator OtherMultiBuf&&() && {
+    return std::move(as<OtherMultiBuf>());
+  }
+
+  template <typename OtherMultiBuf,
+            typename = multibuf_impl::EnableIfConvertible<BasicMultiBuf,
+                                                          OtherMultiBuf>>
+  operator const OtherMultiBuf&&() const&& {
+    return std::move(as<OtherMultiBuf>());
   }
 
   // Accessors
@@ -1640,14 +1660,24 @@ class Instance {
 
   constexpr Instance& operator=(MultiBufType&& mb) { base_ = std::move(mb); }
 
-  MultiBufType& operator*() { return base_.as<MultiBufType>(); }
-  const MultiBufType& operator*() const { return base_.as<MultiBufType>(); }
-
   MultiBufType* operator->() { return &base_.as<MultiBufType>(); }
   const MultiBufType* operator->() const { return &base_.as<MultiBufType>(); }
 
-  operator MultiBufType&() { return base_.as<MultiBufType>(); }
-  operator const MultiBufType&() const { return base_.as<MultiBufType>(); }
+  MultiBufType& operator*() & { return base_.as<MultiBufType>(); }
+  const MultiBufType& operator*() const& { return base_.as<MultiBufType>(); }
+
+  MultiBufType&& operator*() && { return std::move(base_.as<MultiBufType>()); }
+  const MultiBufType&& operator*() const&& {
+    return std::move(base_.as<MultiBufType>());
+  }
+
+  operator MultiBufType&() & { return base_.as<MultiBufType>(); }
+  operator const MultiBufType&() const& { return base_.as<MultiBufType>(); }
+
+  operator MultiBufType&&() && { return std::move(base_.as<MultiBufType>()); }
+  operator const MultiBufType&&() const&& {
+    return std::move(base_.as<MultiBufType>());
+  }
 
  private:
   GenericMultiBuf base_;

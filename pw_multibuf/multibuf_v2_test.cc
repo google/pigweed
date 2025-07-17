@@ -517,6 +517,38 @@ TEST_F(MultiBufTest, InstancesAreMovable) {
   EXPECT_EQ(metrics1.allocated_bytes.value(), 0u);
 }
 
+void ConsumesConstMultiBuf(ConstMultiBuf&& cmb) {
+  ConstMultiBuf::Instance cmbi(std::move(cmb));
+  static_cast<void>(cmbi);
+}
+
+TEST_F(MultiBufTest, MultiBufInstanceRvalueConversion) {
+  ConstMultiBuf::Instance cmbi(allocator_);
+  ConsumesConstMultiBuf(std::move(cmbi));
+}
+
+TEST_F(MultiBufTest, MultiBufInstanceRvalueDereference) {
+  ConstMultiBuf::Instance cmbi(allocator_);
+  ConsumesConstMultiBuf(*std::move(cmbi));
+}
+
+TEST_F(MultiBufTest, MultiBufInstanceRvalueDereferenceAndConvert) {
+  MultiBuf::Instance mbi(allocator_);
+  ConsumesConstMultiBuf(*std::move(mbi));
+}
+
+TEST_F(MultiBufTest, MultiBufRvalueConvert) {
+  MultiBuf::Instance mbi(allocator_);
+  MultiBuf& mb = mbi;
+  ConsumesConstMultiBuf(std::move(mb));
+}
+
+TEST_F(MultiBufTest, MultiBufRvalueAs) {
+  MultiBuf::Instance mbi(allocator_);
+  MultiBuf& mb = mbi;
+  ConsumesConstMultiBuf(std::move(mb).as<ConstMultiBuf>());
+}
+
 #if PW_NC_TEST(CopyConstructSameProperties)
 PW_NC_EXPECT_CLANG("call to deleted constructor");
 PW_NC_EXPECT_GCC("use of deleted function");
