@@ -138,6 +138,43 @@ class WorkflowsManager:
             return self._working_dir
         return build_dir
 
+    def _postprocess_job_response(
+        self,
+        job_response: build_driver_pb2.JobResponse,
+        build_dir: Path,
+        forwarded_args: Sequence[str],
+    ) -> None:
+        """Updates the incoming JobResponse to expand all variables."""
+        for action in job_response.actions:
+            working_dir = self._action_working_dir(
+                action.run_from,
+                build_dir,
+            )
+            # TODO: https://pwbug.dev/428715231 - Define these elsewhere
+            # in a way that makes documentation generation of this list
+            # scalable/maintainable.
+            substitutions: dict[str, str | list[str]] = {
+                'FORWARDED_LAUNCH_ARGS': list(forwarded_args),
+                'BUILD_ROOT': str(
+                    os.path.relpath(build_dir.resolve(), working_dir.resolve())
+                ),
+                'PROJECT_ROOT': str(
+                    os.path.relpath(
+                        self._project_root.resolve(),
+                        working_dir.resolve(),
+                    )
+                ),
+                'INVOKER_DIR': str(
+                    os.path.relpath(
+                        self._working_dir.resolve(),
+                        working_dir.resolve(),
+                    )
+                ),
+            }
+            expanded_args = expand_action(action, substitutions)
+            action.ClearField('args')
+            action.args.extend(expanded_args)
+
     def _create_build_recipes(
         self,
         fragments: list[Fragment],
@@ -190,35 +227,16 @@ class WorkflowsManager:
                     self._fragments_by_name[fragment.name]
                 )
                 steps = []
+                self._postprocess_job_response(
+                    job_response=job_response,
+                    build_dir=build_dir,
+                    forwarded_args=forwarded_args,
+                )
                 for action in job_response.actions:
                     working_dir = self._action_working_dir(
                         action.run_from,
                         build_dir,
                     )
-
-                    # TODO: https://pwbug.dev/428715231 - Define these elsewhere
-                    # in a way that makes documentation generation of this list
-                    # scalable/maintainable.
-                    substitutions: dict[str, str | list[str]] = {
-                        'FORWARDED_LAUNCH_ARGS': list(forwarded_args),
-                        'BUILD_ROOT': str(
-                            os.path.relpath(
-                                build_dir.resolve(), working_dir.resolve()
-                            )
-                        ),
-                        'PROJECT_ROOT': str(
-                            os.path.relpath(
-                                self._project_root.resolve(),
-                                working_dir.resolve(),
-                            )
-                        ),
-                        'INVOKER_DIR': str(
-                            os.path.relpath(
-                                self._working_dir.resolve(),
-                                working_dir.resolve(),
-                            )
-                        ),
-                    }
                     targets = (
                         [fragment.target]
                         if hasattr(fragment, 'target')
@@ -226,8 +244,10 @@ class WorkflowsManager:
                     )
                     steps.append(
                         BuildCommand(
-                            command=[action.executable]
-                            + expand_action(action, substitutions),
+                            command=[
+                                action.executable,
+                                *action.args,
+                            ],
                             working_dir=working_dir,
                             targets=targets,
                         )
