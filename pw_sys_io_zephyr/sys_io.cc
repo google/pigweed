@@ -73,9 +73,9 @@ Status WriteByte(std::byte b) {
     printk("%c", static_cast<char>(b));
     return OkStatus();
   }
-  return console_putchar(static_cast<char>(b)) < 0
-             ? Status::FailedPrecondition()
-             : OkStatus();
+  uint8_t data = static_cast<uint8_t>(b);
+  return console_write(nullptr, &data, 1) < 0 ? Status::FailedPrecondition()
+                                              : OkStatus();
 }
 
 StatusWithSize WriteLine(std::string_view s) {
