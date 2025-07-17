@@ -277,7 +277,7 @@ class HelpWindow(ConditionalContainer):
         rstdoc_text = (
             importlib.resources.files(f'{_PW_CONSOLE_MODULE}.docs')
             .joinpath('user_guide.rst')
-            .read_text()
+            .read_text(encoding='utf-8')
         )
 
         max_line_length = 0
