@@ -81,6 +81,15 @@
 #define PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID PW_SYSTEM_LOGGING_CHANNEL_ID
 #endif  // PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID
 
+// PW_SYSTEM_EXTRA_LOGGING_MAX_BUNDLE_PER_TRICKLE
+// Defines the maximum number of log entries allowed in a single trickle.
+// This is necessary because the extra logging channel may have size
+// constraints.
+#ifndef PW_SYSTEM_EXTRA_LOGGING_MAX_BUNDLE_PER_TRICKLE
+#define PW_SYSTEM_EXTRA_LOGGING_MAX_BUNDLE_PER_TRICKLE \
+  std::numeric_limits<size_t>::max()
+#endif  // PW_SYSTEM_EXTRA_LOGGING_MAX_BUNDLE_PER_TRICKLE
+
 // PW_SYSTEM_ENABLE_TRACE_SERVICE specifies if the trace RPC service is enabled.
 //
 // Defaults to 1.

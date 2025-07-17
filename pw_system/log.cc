@@ -62,7 +62,9 @@ std::array<RpcLogDrain, drain_count> drains{{
     RpcLogDrain(kExtraLoggingRpcChannelId,
                 log_decode_buffer_extra,
                 drains_mutex,
-                RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
+                RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors,
+                nullptr,
+                PW_SYSTEM_EXTRA_LOGGING_MAX_BUNDLE_PER_TRICKLE),
 #endif
 }};
 
