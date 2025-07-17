@@ -3212,7 +3212,7 @@ def forward_declare(
         max_size = prop.max_size()
         if max_size:
             output.write_line(
-                f'static constexpr size_t {prop.max_size_constant_name()} '
+                f'inline constexpr size_t {prop.max_size_constant_name()} '
                 f'= {max_size};'
             )
 

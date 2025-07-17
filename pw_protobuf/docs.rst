@@ -1056,8 +1056,8 @@ that can hold the set of values encoded by it, following these rules.
   .. code-block:: c++
 
      namespace Register {
-       static constexpr size_t kCashInMaxSize = 32;
-       static constexpr size_t kCashOutMaxSize = 64;
+       inline constexpr size_t kCashInMaxSize = 32;
+       inline constexpr size_t kCashOutMaxSize = 64;
      }
 
      struct Register::Message {
@@ -1086,8 +1086,8 @@ that can hold the set of values encoded by it, following these rules.
   .. code-block:: c++
 
      namespace Product {
-       static constexpr size_t kSkuMaxSize = 8;
-       static constexpr size_t kSerialNumberMaxSize = 64;
+       inline constexpr size_t kSkuMaxSize = 8;
+       inline constexpr size_t kSerialNumberMaxSize = 64;
      }
 
      struct Product::Message {
@@ -1115,7 +1115,7 @@ that can hold the set of values encoded by it, following these rules.
   .. code-block:: c++
 
      namespace Employee {
-       static constexpr size_t kNameMaxSize = 128;
+       inline constexpr size_t kNameMaxSize = 128;
      }
 
      struct Employee::Message {
