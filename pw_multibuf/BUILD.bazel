@@ -458,7 +458,9 @@ filegroup(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "code_size.rst",
         "docs.rst",
+        "//pw_multibuf/size_report:multibuf_size_report",
     ],
     prefix = "pw_multibuf/",
     target_compatible_with = incompatible_with_mcu(),

@@ -151,3 +151,8 @@ API Reference
 
 .. doxygenclass:: pw::MultiBufObserver
    :members:
+
+.. toctree::
+   :hidden:
+
+   code_size

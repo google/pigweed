@@ -1,0 +1,82 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("transfer") {
+  public = [
+    "public/pw_multibuf/size_report/common.h",
+    "public/pw_multibuf/size_report/handler.h",
+    "public/pw_multibuf/size_report/receiver.h",
+    "public/pw_multibuf/size_report/sender.h",
+    "public/pw_multibuf/size_report/transfer.h",
+  ]
+  public_configs = [ ":public_include_path" ]
+  sources = [
+    "receiver.cc",
+    "sender.cc",
+  ]
+  public_deps = [
+    "$dir_pw_assert:assert",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_bytes",
+    "$dir_pw_checksum",
+    "$dir_pw_containers:inline_async_queue",
+    "$dir_pw_multibuf/examples:protocol",
+  ]
+}
+
+pw_executable("transfer_v0") {
+  sources = [ "transfer_v0.cc" ]
+  deps = [
+    ":transfer",
+    "$dir_pw_allocator:bump_allocator",
+    "$dir_pw_assert:assert",
+    "$dir_pw_multibuf/examples:protocol",
+  ]
+}
+
+pw_executable("transfer_v1") {
+  sources = [ "transfer_v1.cc" ]
+  configs = [ "$dir_pw_multibuf:v1_config" ]
+  deps = [
+    ":transfer",
+    "$dir_pw_allocator:bump_allocator",
+    "$dir_pw_assert:assert",
+    "$dir_pw_multibuf:multibuf_v1",
+    "$dir_pw_multibuf:simple_allocator",
+    "$dir_pw_multibuf/examples:protocol",
+  ]
+}
+
+pw_executable("transfer_v2") {
+  sources = [ "transfer_v2.cc" ]
+  configs = [ "$dir_pw_multibuf:v2_config" ]
+  deps = [
+    ":transfer",
+    "$dir_pw_allocator:async_pool",
+    "$dir_pw_allocator:bump_allocator",
+    "$dir_pw_allocator:chunk_pool",
+    "$dir_pw_assert:assert",
+    "$dir_pw_multibuf:multibuf_v2",
+    "$dir_pw_multibuf/examples:protocol",
+  ]
+}

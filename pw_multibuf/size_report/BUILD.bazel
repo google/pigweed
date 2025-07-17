@@ -1,0 +1,117 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+cc_library(
+    name = "transfer",
+    srcs = [
+        "receiver.cc",
+        "sender.cc",
+    ],
+    hdrs = [
+        "public/pw_multibuf/size_report/common.h",
+        "public/pw_multibuf/size_report/handler.h",
+        "public/pw_multibuf/size_report/receiver.h",
+        "public/pw_multibuf/size_report/sender.h",
+        "public/pw_multibuf/size_report/transfer.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_assert:assert",
+        "//pw_async2:dispatcher",
+        "//pw_bytes",
+        "//pw_checksum",
+        "//pw_containers:inline_async_queue",
+        "//pw_multibuf/examples:protocol",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "transfer_v0",
+    srcs = ["transfer_v0.cc"],
+    deps = [
+        ":transfer",
+        "//pw_allocator:bump_allocator",
+        "//pw_assert:assert",
+        "//pw_multibuf/examples:protocol",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "transfer_v1",
+    srcs = ["transfer_v1.cc"],
+    defines = ["PW_MULTIBUF_VERSION=1"],
+    deps = [
+        ":transfer",
+        "//pw_allocator:bump_allocator",
+        "//pw_assert:assert",
+        "//pw_multibuf:allocator",
+        "//pw_multibuf:multibuf_v1",
+        "//pw_multibuf:simple_allocator",
+        "//pw_multibuf/examples:protocol",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "transfer_v2",
+    srcs = ["transfer_v2.cc"],
+    defines = ["PW_MULTIBUF_VERSION=2"],
+    deps = [
+        ":transfer",
+        "//pw_allocator:async_pool",
+        "//pw_allocator:bump_allocator",
+        "//pw_allocator:chunk_pool",
+        "//pw_assert:assert",
+        "//pw_multibuf:multibuf_v2",
+        "//pw_multibuf/examples:protocol",
+    ],
+)
+
+pw_size_diff(
+    name = "v1_vs_v0",
+    base = ":transfer_v0",
+    label = "Cost of using MultiBuf v1 vs. a fake implementation",
+    target = ":transfer_v1",
+)
+
+pw_size_diff(
+    name = "v2_vs_v0",
+    base = ":transfer_v0",
+    label = "Cost of using MultiBuf v2 vs. a fake implementation",
+    target = ":transfer_v2",
+)
+
+pw_size_diff(
+    name = "v2_vs_v1",
+    base = ":transfer_v1",
+    label = "Cost of using MultiBuf v2 vs. v1",
+    target = ":transfer_v2",
+)
+
+pw_size_table(
+    name = "multibuf_size_report",
+    reports = [
+        ":v1_vs_v0",
+        ":v2_vs_v0",
+        ":v2_vs_v1",
+    ],
+)
