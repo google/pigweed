@@ -35,6 +35,11 @@ proto_library(
     ],
 )
 
+py_proto_library(
+    name = "tuf_py_pb2",
+    deps = [":tuf_proto"],
+)
+
 proto_library(
     name = "update_bundle_proto",
     srcs = [

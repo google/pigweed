@@ -34,60 +34,58 @@ py_library(
         "pw_software_update/verify.py",
     ],
     imports = ["."],
+    deps = [
+        "//pw_software_update:tuf_py_pb2",
+        "//pw_software_update:update_bundle_py_pb2",
+        "@pigweed_python_packages//cryptography",
+        "@pigweed_python_packages//google_cloud_storage",
+    ],
 )
 
 pw_py_test(
     name = "cli_test",
     srcs = ["cli_test.py"],
-    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
     deps = [":pw_software_update"],
 )
 
 pw_py_test(
     name = "dev_sign_test",
     srcs = ["dev_sign_test.py"],
-    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
     deps = [":pw_software_update"],
 )
 
 pw_py_test(
     name = "keys_test",
     srcs = ["keys_test.py"],
-    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
     deps = [":pw_software_update"],
 )
 
 pw_py_test(
     name = "metadata_test",
     srcs = ["metadata_test.py"],
-    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
     deps = [":pw_software_update"],
 )
 
 pw_py_test(
     name = "remote_sign_test",
     srcs = ["remote_sign_test.py"],
-    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
     deps = [":pw_software_update"],
 )
 
 pw_py_test(
     name = "root_metadata_test",
     srcs = ["root_metadata_test.py"],
-    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
     deps = [":pw_software_update"],
 )
 
 pw_py_test(
     name = "update_bundle_test",
     srcs = ["update_bundle_test.py"],
-    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
     deps = [":pw_software_update"],
 )
 
 pw_py_test(
     name = "verify_test",
     srcs = ["verify_test.py"],
-    tags = ["manual"],  # TODO: b/431912506 - Fix this test in Bazel.
     deps = [":pw_software_update"],
 )

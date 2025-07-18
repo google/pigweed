@@ -17,6 +17,9 @@ import argparse
 import subprocess
 import sys
 
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization
+
 from pw_software_update import dev_sign, keys, metadata, root_metadata
 from pw_software_update.update_bundle_pb2 import Manifest, UpdateBundle
 from pw_software_update.tuf_pb2 import (
@@ -25,9 +28,6 @@ from pw_software_update.tuf_pb2 import (
     TargetsMetadata,
     SignedTargetsMetadata,
 )
-
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import serialization
 
 HEADER = """// Copyright 2021 The Pigweed Authors
 //
