@@ -15,9 +15,11 @@
 alias(
     name = "docs",
     actual = "//docs/sphinx:docs",
+    tags = ["manual"],
 )
 
 alias(
     name = "serve",
     actual = "//docs/sphinx:docs.serve",
+    tags = ["manual"],
 )
