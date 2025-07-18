@@ -382,4 +382,28 @@ PW_CONSTEXPR_TEST(ThreadPriority, NextLowerClamped, {
                     ThreadPriority::Medium().NextLower());
 });
 
+PW_CONSTEXPR_TEST(ThreadPriority, LargeUnsigned, {
+  using P = Priority<uint64_t, 0, 100, 50>;
+  PW_TEST_EXPECT_TRUE(P::IsSupported());
+  PW_TEST_EXPECT_EQ(P::Lowest().native(), 0u);
+  PW_TEST_EXPECT_EQ(P::Highest().native(), 100u);
+  PW_TEST_EXPECT_GT(P::Highest(), P::Lowest());
+  PW_TEST_EXPECT_EQ(P::Highest().NextLowerClamped(), P::Highest().NextLower());
+  PW_TEST_EXPECT_EQ(P::Highest().NextHigherClamped(), P::Highest());
+  PW_TEST_EXPECT_EQ(P::Lowest().NextLowerClamped(), P::Lowest());
+  PW_TEST_EXPECT_EQ(P::FromNative(42u).native(), 42u);
+});
+
+PW_CONSTEXPR_TEST(ThreadPriority, LargeSigned, {
+  using P = Priority<int64_t, -50, 50, 0>;
+  PW_TEST_EXPECT_TRUE(P::IsSupported());
+  PW_TEST_EXPECT_EQ(P::Lowest().native(), -50);
+  PW_TEST_EXPECT_EQ(P::Highest().native(), 50);
+  PW_TEST_EXPECT_GT(P::Highest(), P::Lowest());
+  PW_TEST_EXPECT_EQ(P::Highest().NextLowerClamped(), P::Highest().NextLower());
+  PW_TEST_EXPECT_EQ(P::Highest().NextHigherClamped(), P::Highest());
+  PW_TEST_EXPECT_EQ(P::Lowest().NextLowerClamped(), P::Lowest());
+  PW_TEST_EXPECT_EQ(P::FromNative(42).native(), 42);
+});
+
 }  // namespace

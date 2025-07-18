@@ -30,16 +30,16 @@ inline constexpr size_t kNamedPriorities = 9;
 
 // Produces a table that distributes priorities between 0 and the highest value.
 // These values are used as offsets when mapping from the native priority type.
-PW_CONSTEVAL std::array<uint32_t, kNamedPriorities> PriorityOffsets(
-    uint32_t highest) {
-  std::array<uint32_t, kNamedPriorities> offsets{};
+template <typename T>
+PW_CONSTEVAL std::array<T, kNamedPriorities> PriorityOffsets(T highest) {
+  std::array<T, kNamedPriorities> offsets{};
 
   for (unsigned i = 0; i < kNamedPriorities; ++i) {
     // Divide the offsets into 8 tiers. The highest value is its own tier.
     uint64_t priority_value = IntegerDivisionRoundNearest<uint64_t>(
         static_cast<uint64_t>(highest) * i, kNamedPriorities - 1);
-    // The calculated value never exceeds the max uint32_t.
-    offsets[i] = static_cast<uint32_t>(priority_value);
+    // The calculated value never exceeds the max.
+    offsets[i] = static_cast<T>(priority_value);
   }
   return offsets;
 }
@@ -50,7 +50,9 @@ PW_CONSTEVAL std::array<uint32_t, kNamedPriorities> PriorityOffsets(
 template <typename T, T kLowest, T kHighest, bool = kLowest <= kHighest>
 class AbstractLevel {
  public:
-  static constexpr uint32_t Range() { return kHighest - kLowest; }
+  using U = std::make_unsigned_t<T>;
+
+  static constexpr U Range() { return kHighest - kLowest; }
 
   constexpr AbstractLevel() : n_{} {}
   explicit constexpr AbstractLevel(T value) : n_{value} {}
@@ -63,11 +65,11 @@ class AbstractLevel {
   constexpr bool operator>(AbstractLevel rhs) const { return n_ > rhs.n_; }
   constexpr bool operator>=(AbstractLevel rhs) const { return n_ >= rhs.n_; }
 
-  constexpr AbstractLevel operator+(uint32_t amount) const {
-    return AbstractLevel(static_cast<T>(static_cast<uint32_t>(n_) + amount));
+  constexpr AbstractLevel operator+(U amount) const {
+    return AbstractLevel(static_cast<T>(static_cast<U>(n_) + amount));
   }
-  constexpr AbstractLevel operator-(uint32_t amount) const {
-    return AbstractLevel(static_cast<T>(static_cast<uint32_t>(n_) - amount));
+  constexpr AbstractLevel operator-(U amount) const {
+    return AbstractLevel(static_cast<T>(static_cast<U>(n_) - amount));
   }
 
  private:
@@ -78,7 +80,9 @@ class AbstractLevel {
 template <typename T, T kLowest, T kHighest>
 struct AbstractLevel<T, kLowest, kHighest, false> {
  public:
-  static constexpr uint32_t Range() { return kLowest - kHighest; }
+  using U = std::make_unsigned_t<T>;
+
+  static constexpr U Range() { return kLowest - kHighest; }
 
   constexpr AbstractLevel() : n_{} {}
   explicit constexpr AbstractLevel(T value) : n_{value} {}
@@ -91,11 +95,11 @@ struct AbstractLevel<T, kLowest, kHighest, false> {
   constexpr bool operator>(AbstractLevel rhs) const { return n_ < rhs.n_; }
   constexpr bool operator>=(AbstractLevel rhs) const { return n_ <= rhs.n_; }
 
-  constexpr AbstractLevel operator+(uint32_t amount) const {
-    return AbstractLevel(static_cast<T>(static_cast<uint32_t>(n_) - amount));
+  constexpr AbstractLevel operator+(U amount) const {
+    return AbstractLevel(static_cast<T>(static_cast<U>(n_) - amount));
   }
-  constexpr AbstractLevel operator-(uint32_t amount) const {
-    return AbstractLevel(static_cast<T>(static_cast<uint32_t>(n_) + amount));
+  constexpr AbstractLevel operator-(U amount) const {
+    return AbstractLevel(static_cast<T>(static_cast<U>(n_) + amount));
   }
 
  private:
@@ -222,8 +226,8 @@ class Priority {
  private:
   static_assert(std::is_integral_v<native_type> || std::is_enum_v<native_type>,
                 "The native priority type must be an integer or enum");
-  static_assert(sizeof(native_type) <= sizeof(uint32_t),
-                "The native priority type cannot be larger than 32 bits");
+  static_assert(sizeof(native_type) <= sizeof(uint64_t),
+                "The native priority type cannot be larger than 64 bits");
 
   using NativeInt = typename UnderlyingInteger<native_type>::type;
   using Level = AbstractLevel<NativeInt,
