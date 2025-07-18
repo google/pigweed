@@ -548,15 +548,14 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         build_recipes: List of build recipes.
         jobs: The number of jobs bazel, make, and ninja should use by passing
             ``-j`` to each.
+        banners: Print the project banner at the start of each build.
         keep_going: If True keep going flags are passed to bazel and ninja with
             the ``-k`` option.
-        banners: Print the project banner at the start of each build.
-        allow_progress_bars: If False progress bar output will be disabled.
-        log_build_steps: If True all build step lines will be logged to the
-            screen and logfiles. Default: False.
-        colors: Print ANSI colors to stdout and logfiles
-        log_level: Optional log_level, defaults to logging.INFO.
-        root_logfile: Optional root logfile.
+        abort_callback: A callback that is called if a build is aborted.
+        execute_command: The underlying command to use to execute build steps.
+        charset: A ProjectBuilderCharset that controls visual elements of the
+            terminal output.
+        colors: Forcibly enables/disables ANSI colors in stdout and logfiles.
         separate_build_file_logging: If True separate logfiles will be created
             per build recipe. The location of each file depends on if a
             ``root_logfile`` is provided. If a root logfile is used each build
@@ -566,8 +565,15 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         send_recipe_logs_to_root: If True will send all build recipie output to
             the root logger. This only makes sense to use if the builds are run
             in serial.
+        root_logger: The logging.Logger that will be parent to all build recipe
+            logging.
+        root_logfile: Optional root logfile.
+        log_level: Optional log_level, defaults to logging.INFO.
+        allow_progress_bars: If False progress bar output will be disabled.
         use_verbatim_error_log_formatting: Use a blank log format when printing
             errors from sub builds to the root logger.
+        log_build_steps: If True all build step lines will be logged to the
+            screen and logfiles. Default: False.
         source_path: Path to the root of the source files. Defaults to the
             current working directory. If running under bazel this will be set
             to the $BUILD_WORKSPACE_DIRECTORY environment variable. Otherwise
@@ -921,8 +927,10 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
     def print_pass_fail_banner(
         self,
         cancelled: bool = False,
-        logger: logging.Logger = _LOG,
+        logger: logging.Logger | None = None,
     ) -> None:
+        if logger is None:
+            logger = self.root_logger
         # Check conditions where banners should not be shown:
         # Banner flag disabled.
         if not self.banners:
@@ -930,7 +938,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         # If restarting or interrupted.
         if BUILDER_CONTEXT.interrupted():
             if BUILDER_CONTEXT.ctrl_c_pressed:
-                _LOG.info(
+                logger.info(
                     self.color.yellow('Exited due to keyboard interrupt.')
                 )
             return
@@ -949,9 +957,11 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
     def print_build_summary(
         self,
         cancelled: bool = False,
-        logger: logging.Logger = _LOG,
+        logger: logging.Logger | None = None,
     ) -> None:
         """Print build status summary table."""
+        if logger is None:
+            logger = self.root_logger
 
         build_descriptions = []
         build_status = []
@@ -997,11 +1007,11 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
 
         result = False
 
-        log_build_recipe_start(index_message, self, cfg)
+        log_build_recipe_start(index_message, self, cfg, self.root_logger)
 
         result = self.run_build(cfg, env, index_message=index_message)
 
-        log_build_recipe_finish(index_message, self, cfg)
+        log_build_recipe_finish(index_message, self, cfg, self.root_logger)
 
         return result
 
