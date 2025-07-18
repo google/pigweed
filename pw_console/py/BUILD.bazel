@@ -29,6 +29,7 @@ py_library(
     srcs = ["pw_console/pyserial_wrapper.py"],
     deps = [
         ":event_count_history",
+        "@pigweed_python_packages//pyserial",
     ],
 )
 
