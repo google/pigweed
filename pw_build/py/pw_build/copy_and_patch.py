@@ -23,8 +23,12 @@ import os
 import sys
 import shutil
 import tempfile
+import warnings
 
-import patch  # type: ignore
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", SyntaxWarning)
+
+    import patch  # type: ignore
 
 logging.basicConfig(stream=sys.stdout, level=logging.WARN)
 _LOG = logging.getLogger(__name__)
