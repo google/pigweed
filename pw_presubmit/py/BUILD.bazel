@@ -66,6 +66,7 @@ py_library(
         "pw_presubmit/source_in_build.py",
         "pw_presubmit/todo_check.py",
         "pw_presubmit/tools.py",
+        "pw_presubmit/upstream_checks.py",
     ],
     imports = ["."],
     deps = [
