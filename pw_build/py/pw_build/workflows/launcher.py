@@ -31,6 +31,7 @@ from pw_cli import multitool
 from pw_config_loader import find_config
 
 _LOG = logging.getLogger(__name__)
+_PROJECT_BUILDER_LOGGER = logging.getLogger(f'{_LOG.name}.project_builder')
 
 _WORKFLOWS_FILE = 'workflows.json'
 
@@ -76,8 +77,16 @@ class _WorkflowPlugin(multitool.MultitoolPlugin):
             recipes = self._manager.program_tool(self.name(), plugin_args)
         else:
             recipes = self._manager.program_group(self.name())
+
+        # Don't forward project builder output to stdout when launching a
+        # tool, it pollutes tool output.
+        _PROJECT_BUILDER_LOGGER.propagate = False
         return project_builder.run_builds(
-            project_builder.ProjectBuilder(build_recipes=recipes)
+            project_builder.ProjectBuilder(
+                build_recipes=recipes,
+                execute_command=project_builder.execute_command_pure,
+                root_logger=_PROJECT_BUILDER_LOGGER,
+            ),
         )
 
 
@@ -172,12 +181,17 @@ class WorkflowsCli(multitool.MultitoolCli):
             raise AssertionError(
                 'Internal error: failed to initialize workflows manager'
             )
+
+        # Don't forward project builder output to stdout when launching a
+        # tool, it pollutes tool output.
+        _PROJECT_BUILDER_LOGGER.propagate = False
         return project_builder.run_builds(
             project_builder.ProjectBuilder(
                 build_recipes=self._workflows.program_tool(
                     args[0], args[1:], as_analyzer=True
-                )
-            )
+                ),
+                execute_command=project_builder.execute_command_pure,
+            ),
         )
 
     def _launch_build(self, args: Sequence[str]) -> int:
@@ -185,9 +199,11 @@ class WorkflowsCli(multitool.MultitoolCli):
             raise AssertionError(
                 'Internal error: failed to initialize workflows manager'
             )
+        _PROJECT_BUILDER_LOGGER.propagate = False
         return project_builder.run_builds(
             project_builder.ProjectBuilder(
                 build_recipes=self._workflows.program_build(args[0]),
+                root_logger=_PROJECT_BUILDER_LOGGER,
             )
         )
 

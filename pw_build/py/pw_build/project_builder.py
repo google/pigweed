@@ -233,7 +233,7 @@ def check_ansi_codes(s: str) -> list[str] | None:
     return active_codes
 
 
-def execute_command_no_logging(
+def execute_command_pure(
     command: list,
     env: dict,
     recipe: BuildRecipe,
@@ -243,7 +243,7 @@ def execute_command_no_logging(
     line_processed_callback: Callable[[BuildRecipe], None] | None = None,
     # pylint: enable=unused-argument
 ) -> bool:
-    print()
+    """Executes a command without any additional output whatsoever."""
     proc = subprocess.Popen(command, env=env, cwd=working_dir, errors='replace')
     BUILDER_CONTEXT.register_process(recipe, proc)
     returncode = None
@@ -256,10 +256,31 @@ def execute_command_no_logging(
                 pass
         returncode = proc.poll()
         time.sleep(0.05)
-    print()
     recipe.status.return_code = returncode
 
     return proc.returncode == 0
+
+
+def execute_command_no_logging(
+    command: list,
+    env: dict,
+    recipe: BuildRecipe,
+    working_dir: Path | None = None,
+    logger: logging.Logger = _LOG,
+    line_processed_callback: Callable[[BuildRecipe], None] | None = None,
+) -> bool:
+    """Executes a command without any logging, but padded for legibility."""
+    print()
+    retval = execute_command_pure(
+        command=command,
+        env=env,
+        recipe=recipe,
+        working_dir=working_dir,
+        logger=logger,
+        line_processed_callback=line_processed_callback,
+    )
+    print()
+    return retval
 
 
 def execute_command_with_logging(
@@ -600,7 +621,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             bool,
         ] = execute_command_no_logging,
         charset: ProjectBuilderCharset = ASCII_CHARSET,
-        colors: bool = True,
+        colors: bool = pw_cli.color.is_enabled(),
         separate_build_file_logging: bool = False,
         send_recipe_logs_to_root: bool = False,
         root_logger: logging.Logger = _LOG,

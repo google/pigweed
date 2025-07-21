@@ -182,6 +182,7 @@ class TestBazelBuildDriver(unittest.TestCase):
             list(tool_job.actions[1].args),
             [
                 'run',
+                '--ui_event_filters=FATAL,ERROR,PROGRESS',
                 '--subcommands',
                 '@pigweed//:format',
                 '--',

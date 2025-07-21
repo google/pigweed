@@ -92,6 +92,7 @@ class BazelBuildDriver(BuildDriver):
             executable='bazelisk',
             args=[
                 'run',
+                '--ui_event_filters=FATAL,ERROR,PROGRESS',
                 *tool.build_config.args,
                 tool.target,
                 '--',
