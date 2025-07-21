@@ -95,16 +95,7 @@ def run(install: bool, exclude: list[Pattern[str]], **presubmit_args) -> int:
     if install:
         install_git_hook(
             'pre-push',
-            [
-                'bazelisk',
-                'run',
-                '//pw_presubmit/py:local_presubmit',
-                '--',
-                '--base',
-                'origin/main..HEAD',
-                '--program',
-                'quick',
-            ],
+            ['./pw', 'presubmit'],
         )
         return 0
 

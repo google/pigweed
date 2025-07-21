@@ -59,6 +59,11 @@ alias(
     actual = "//pw_presubmit/py:format",
 )
 
+alias(
+    name = "presubmit",
+    actual = "//pw_presubmit/py:local_presubmit",
+)
+
 # Symlink to clangd, for user convenience.
 copy_file(
     name = "copy_clangd",
