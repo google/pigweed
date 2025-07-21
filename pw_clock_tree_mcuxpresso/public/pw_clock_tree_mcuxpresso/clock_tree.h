@@ -185,8 +185,6 @@ class ClockMcuxpressoFrg final : public DependentElement<ElementType> {
   /// Disable FRG configuration.
   Status DoDisable() final {
     clock_frg_clk_config_t disable_config = config_;
-    static_assert(sizeof(disable_config.sfg_clock_src) ==
-                  sizeof(kCLOCK_FrgNone));
     disable_config.sfg_clock_src =
         static_cast<decltype(disable_config.sfg_clock_src)>(kCLOCK_FrgNone);
     CLOCK_SetFRGClock(&disable_config);
@@ -351,6 +349,98 @@ class ClockMcuxpressoAudioPll : public DependentElement<ElementType> {
   const audio_pll_src_t bypass_source_ = kCLOCK_AudioPllNone;
 };
 
+/// Class template implementing the sys pll clock element.
+///
+/// The Sys PLL can either operate in the enabled mode where the PLL
+/// and the phase fractional divider are enabled, or it can operate in
+/// bypass mode, where both PLL and phase fractional divider are
+/// clock gated.
+/// When the Sys PLL clock tree gets disabled, both PLL and phase fractional
+/// divider will be clock gated.
+///
+/// Template argument `ElementType` can be of class `ElementBlocking` or
+/// `ElementNonBlockingCannotFail`.
+template <typename ElementType>
+class ClockMcuxpressoSysPll : public DependentElement<ElementType> {
+ public:
+  /// Constructor specifying the configuration for the enabled Sys PLL.
+  constexpr ClockMcuxpressoSysPll(ElementType& source,
+                                  const clock_sys_pll_config_t& config,
+                                  uint8_t sys_pfd0_divider,
+                                  uint8_t sys_pfd1_divider,
+                                  uint8_t sys_pfd2_divider,
+                                  uint8_t sys_pfd3_divider)
+      : DependentElement<ElementType>(source),
+        config_(&config),
+        sys_pfd0_divider_(sys_pfd0_divider),
+        sys_pfd1_divider_(sys_pfd1_divider),
+        sys_pfd2_divider_(sys_pfd2_divider),
+        sys_pfd3_divider_(sys_pfd3_divider) {}
+
+  /// Constructor to place the Sys PLL into bypass mode.
+  constexpr ClockMcuxpressoSysPll(ElementType& source,
+                                  sys_pll_src_t bypass_source)
+      : DependentElement<ElementType>(source), bypass_source_(bypass_source) {}
+
+ private:
+  /// Configures and enables the audio PLL if `config_` is set, otherwise places
+  /// the sys PLL in bypass mode.
+  Status DoEnable() override {
+    // If `config_` is specified, the PLL should be enabled and the phase
+    // fractional divider PFD0 needs to get configured, otherwise the PLL
+    // operates in bypass mode.
+    if (config_ != nullptr) {
+      // Configure Sys PLL clock source.
+      CLOCK_InitSysPll(config_);
+
+      if (sys_pfd0_divider_ != 0) {
+        CLOCK_InitSysPfd(kCLOCK_Pfd0, sys_pfd0_divider_);
+      }
+      if (sys_pfd1_divider_ != 0) {
+        CLOCK_InitSysPfd(kCLOCK_Pfd1, sys_pfd1_divider_);
+      }
+      if (sys_pfd2_divider_ != 0) {
+        CLOCK_InitSysPfd(kCLOCK_Pfd2, sys_pfd2_divider_);
+      }
+      if (sys_pfd3_divider_ != 0) {
+        CLOCK_InitSysPfd(kCLOCK_Pfd3, sys_pfd3_divider_);
+      }
+    } else {
+      // PLL operates in bypass mode.
+      CLKCTL0->SYSPLL0CLKSEL = bypass_source_;
+      CLKCTL0->SYSPLL0CTL0 |= CLKCTL0_SYSPLL0CTL0_BYPASS_MASK;
+    }
+    return OkStatus();
+  }
+
+  /// Disables the Sys PLL logic.
+  Status DoDisable() override {
+    if (config_ != nullptr) {
+      // Clock gate all the phase fractional divider PFD.
+      CLOCK_DeinitSysPfd(kCLOCK_Pfd0);
+      CLOCK_DeinitSysPfd(kCLOCK_Pfd1);
+      CLOCK_DeinitSysPfd(kCLOCK_Pfd2);
+      CLOCK_DeinitSysPfd(kCLOCK_Pfd3);
+    }
+
+    // Power down Sys PLL
+    CLOCK_DeinitSysPll();
+    return OkStatus();
+  }
+
+  /// Optional Sys PLL configuration.
+  const clock_sys_pll_config_t* config_ = nullptr;
+
+  /// Optional Sys kCLOCK_Pfd clock divider value.
+  const uint8_t sys_pfd0_divider_ = 0;
+  const uint8_t sys_pfd1_divider_ = 0;
+  const uint8_t sys_pfd2_divider_ = 0;
+  const uint8_t sys_pfd3_divider_ = 0;
+
+  /// Optional Sys PLL bypass clock source.
+  const sys_pll_src_t bypass_source_ = kCLOCK_SysPllNone;
+};
+
 /// Alias for a blocking audio PLL clock tree element.
 using ClockMcuxpressoAudioPllBlocking =
     ClockMcuxpressoAudioPll<ElementBlocking>;
@@ -359,6 +449,14 @@ using ClockMcuxpressoAudioPllBlocking =
 /// cannot fail.
 using ClockMcuxpressoAudioPllNonBlocking =
     ClockMcuxpressoAudioPll<ElementNonBlockingCannotFail>;
+
+/// Alias for a blocking sys PLL clock tree element.
+using ClockMcuxpressoSysPllBlocking = ClockMcuxpressoSysPll<ElementBlocking>;
+
+/// Alias for a non-blocking sys PLL clock tree element where updates
+/// cannot fail.
+using ClockMcuxpressoSysPllNonBlocking =
+    ClockMcuxpressoSysPll<ElementNonBlockingCannotFail>;
 
 /// Class template implementing the Rtc clock tree element.
 ///

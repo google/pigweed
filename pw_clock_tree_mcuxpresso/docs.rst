@@ -21,6 +21,7 @@ that can be directly instantiated:
 * Clock Source Selector
 * Clock Divider
 * Audio PLL
+* System PLL
 * RTC
 * ClockIp
 
@@ -314,6 +315,12 @@ ClockMcuxpressoDivider
 ClockMcuxpressoAudioPll
 -----------------------
 .. doxygenclass:: pw::clock_tree::ClockMcuxpressoAudioPll
+   :members:
+
+---------------------
+ClockMcuxpressoSysPll
+---------------------
+.. doxygenclass:: pw::clock_tree::ClockMcuxpressoSysPll
    :members:
 
 ------------------

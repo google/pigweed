@@ -128,6 +128,23 @@ PW_CONSTINIT pw::clock_tree::ClockMcuxpressoAudioPllNonBlocking
 
 // DOCSTAG: [pw_clock_tree_mcuxpresso-examples-ClockTreeElemDefs-AudioPllBypass]
 
+// DOCSTAG: [pw_clock_tree_mcuxpresso-examples-ClockTreeElemDefs-SysPll]
+
+// SysPLL configuration with ClkIn pin as clock source
+const clock_sys_pll_config_t kSysPllConfig = {
+    .sys_pll_src = kCLOCK_SysPllXtalIn, /* OSC clock */
+    .numerator = 0, /* Numerator of the SYSPLL0 fractional loop divider is 0 */
+    .denominator =
+        1, /* Denominator of the SYSPLL0 fractional loop divider is 1 */
+    .sys_pll_mult = kCLOCK_SysPllMult20 /* Divide by 20 */
+};
+
+// Define Sys PLL sourced by ClkIn pin clock source
+PW_CONSTINIT pw::clock_tree::ClockMcuxpressoSysPllNonBlocking sys_pll(
+    clk_in, kSysPllConfig, 18, 0, 0, 0);
+
+// DOCSTAG: [pw_clock_tree_mcuxpresso-examples-ClockTreeElemDefs-SysPll]
+
 PW_CONSTINIT pw::clock_tree::ClockMcuxpressoRtcNonBlocking rtc(
     clock_source_no_op);
 
@@ -173,6 +190,19 @@ TEST(ClockTreeMcuxpresso, AudioPll) {
   // Release audio PLL to save power.
   clock_tree.Release(audio_pll);
   // DOCSTAG:[pw_clock_tree_mcuxpresso-examples-Use-AudioPll]
+}
+
+TEST(ClockTreeMcuxpresso, SysPll) {
+  // DOCSTAG:[pw_clock_tree_mcuxpresso-examples-Use-SysPll]
+
+  // Enable sys PLL.
+  clock_tree.Acquire(sys_pll);
+
+  // Do something while sys PLL is enabled.
+
+  // Release audio PLL to save power.
+  clock_tree.Release(sys_pll);
+  // DOCSTAG:[pw_clock_tree_mcuxpresso-examples-Use-sysPll]
 }
 
 TEST(ClockTreeMcuxpresso, AudioPllBypass) {
