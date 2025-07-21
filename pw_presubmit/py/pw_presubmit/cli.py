@@ -279,7 +279,12 @@ def run(  # pylint: disable=too-many-arguments
     )
 
     if not package_root:
-        package_root = Path(os.environ['PW_PACKAGE_ROOT'])
+        # Use PW_PACKAGE_ROOT by default. Fall back to package_root's second
+        # default (.presubmit/packages) if not in a bootsrapped environment.
+        # TODO: b/433258471 - Remove bootstrap assumptions from pw_presubmit.
+        package_root = Path(
+            os.environ.get('PW_PACKAGE_ROOT', root / '.presubmit' / 'packages')
+        )
 
     _LOG.debug('Using environment at %s', output_directory)
 

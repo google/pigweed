@@ -60,6 +60,10 @@ class FormatOptions:
 
     @staticmethod
     def load(env: dict[str, str] | None = None) -> FormatOptions:
+        if 'BUILD_WORKING_DIRECTORY' in os.environ:
+            _LOG.debug('Running from Bazel; using default FormatOptions')
+            return FormatOptions()
+
         config = pw_env_setup.config_file.load(env=env)
         fmt = config.get('pw', {}).get('pw_presubmit', {}).get('format', {})
         return FormatOptions(
@@ -467,7 +471,6 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
             by calling ctx.fail().
         dry_run: Whether to actually execute commands or just log them.
         use_remote_cache: Whether to tell the build system to use RBE.
-        pw_root: The path to the Pigweed repository.
     """
 
     root: Path
@@ -487,7 +490,11 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     _failed: bool = False
     dry_run: bool = False
     use_remote_cache: bool = False
-    pw_root: Path = pw_cli.env.pigweed_environment().PW_ROOT
+
+    @property
+    def pw_root(self) -> Path:
+        # TODO: b/433258471 - Remove bootstrap assumptions from pw_presubmit.
+        return pw_cli.env.pigweed_environment().PW_ROOT
 
     @property
     def failed(self) -> bool:
@@ -513,8 +520,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def create_for_testing(**kwargs):
-        parsed_env = pw_cli.env.pigweed_environment()
-        root = parsed_env.PW_PROJECT_ROOT
+        root = Path.cwd()
         presubmit_root = root / 'out' / 'presubmit'
         presubmit_kwargs = {
             'root': root,

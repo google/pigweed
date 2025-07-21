@@ -146,6 +146,13 @@ pw_py_binary(
     ],
 )
 
+pw_py_binary(
+    name = "local_presubmit",
+    srcs = ["pw_presubmit/pigweed_local_presubmit.py"],
+    main = "pw_presubmit/pigweed_local_presubmit.py",
+    deps = [":pw_presubmit"],
+)
+
 pw_py_test(
     name = "bazel_parser_test",
     srcs = ["bazel_parser_test.py"],
