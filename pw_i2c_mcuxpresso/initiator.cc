@@ -11,6 +11,9 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+#define PW_LOG_MODULE_NAME "I2C"
+
 #include "pw_i2c_mcuxpresso/initiator.h"
 
 #include <mutex>
