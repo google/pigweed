@@ -14,6 +14,8 @@
 
 #include "pw_multibuf/simple_allocator.h"
 
+#include <vector>
+
 #include "gtest/gtest.h"
 #include "pw_allocator/null_allocator.h"
 #include "pw_allocator/testing.h"

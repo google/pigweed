@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <array>
+#include <vector>
 
 #include "pw_bytes/span.h"
 #include "pw_status/status.h"

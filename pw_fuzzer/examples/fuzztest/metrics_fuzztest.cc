@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <string_view>
+#include <vector>
 
 #include "metrics.h"
 #include "pw_fuzzer/fuzztest.h"
