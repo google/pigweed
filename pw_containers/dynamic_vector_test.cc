@@ -224,6 +224,191 @@ TEST_F(DynamicVectorTest, EmplaceBackMethods) {
   EXPECT_EQ(vec.size(), 2u);
 }
 
+TEST_F(DynamicVectorTest, Emplace) {
+  pw::DynamicVector<std::pair<int, char>> vec(allocator_);
+  vec.assign({std::make_pair(1, 'a'), std::make_pair(3, 'c')});
+
+  auto it = vec.emplace(vec.begin() + 1, 2, 'b');
+  EXPECT_EQ(it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 3u);
+  EXPECT_EQ(vec[0], std::make_pair(1, 'a'));
+  EXPECT_EQ(vec[1], std::make_pair(2, 'b'));
+  EXPECT_EQ(vec[2], std::make_pair(3, 'c'));
+}
+
+TEST_F(DynamicVectorTest, TryEmplace) {
+  pw::DynamicVector<std::pair<int, char>> vec(allocator_);
+  vec.assign({std::make_pair(1, 'a'), std::make_pair(3, 'c')});
+
+  auto it = vec.try_emplace(vec.begin() + 1, 2, 'b');
+  ASSERT_TRUE(it.has_value());
+  EXPECT_EQ(*it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 3u);
+  EXPECT_EQ(vec[1], std::make_pair(2, 'b'));
+
+  vec.shrink_to_fit();
+  ASSERT_EQ(vec.size(), vec.capacity());
+
+  allocator_.DisableAll();
+  it = vec.try_emplace(vec.begin(), 0, 'z');
+  EXPECT_FALSE(it.has_value());
+  EXPECT_EQ(vec.size(), 3u);
+}
+
+TEST_F(DynamicVectorTest, InsertLValue) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 3});
+  const Counter two(2);
+
+  auto it = vec.insert(vec.begin() + 1, two);
+  EXPECT_EQ(it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 3u);
+  EXPECT_EQ(vec[0], 1);
+  EXPECT_EQ(vec[1], 2);
+  EXPECT_EQ(vec[2], 3);
+}
+
+TEST_F(DynamicVectorTest, InsertRValue) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 3});
+
+  auto it = vec.insert(vec.begin() + 1, Counter(2));
+  EXPECT_EQ(it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 3u);
+  EXPECT_EQ(vec[0], 1);
+  EXPECT_EQ(vec[1], 2);
+  EXPECT_EQ(vec[2], 3);
+}
+
+TEST_F(DynamicVectorTest, TryInsert) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 3});
+
+  auto it = vec.try_insert(vec.begin() + 1, 2);
+  ASSERT_TRUE(it.has_value());
+  EXPECT_EQ(*it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 3u);
+  EXPECT_EQ(vec[1], 2);
+
+  vec.shrink_to_fit();
+  ASSERT_EQ(vec.size(), vec.capacity());
+
+  allocator_.DisableAll();
+  it = vec.try_insert(vec.begin(), 0);
+  EXPECT_FALSE(it.has_value());
+  EXPECT_EQ(vec.size(), 3u);
+}
+
+TEST_F(DynamicVectorTest, InsertMultiple) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 5});
+
+  auto it = vec.insert(vec.begin() + 1, 3u, 2);
+  EXPECT_EQ(it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 5u);
+  EXPECT_EQ(vec[0], 1);
+  EXPECT_EQ(vec[1], 2);
+  EXPECT_EQ(vec[2], 2);
+  EXPECT_EQ(vec[3], 2);
+  EXPECT_EQ(vec[4], 5);
+}
+
+TEST_F(DynamicVectorTest, TryInsertMultiple) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 5});
+
+  auto it = vec.try_insert(vec.begin() + 1, 3u, 2);
+  ASSERT_TRUE(it.has_value());
+  EXPECT_EQ(*it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 5u);
+  EXPECT_EQ(vec[2], 2);
+
+  vec.shrink_to_fit();
+  ASSERT_EQ(vec.size(), vec.capacity());
+
+  allocator_.DisableAll();
+  it = vec.try_insert(vec.begin(), 2u, 0);
+  EXPECT_FALSE(it.has_value());
+  EXPECT_EQ(vec.size(), 5u);
+}
+
+TEST_F(DynamicVectorTest, InsertMultipleZero) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 2});
+
+  auto it = vec.insert(vec.begin() + 1, 0u, 99);
+  EXPECT_EQ(it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 2u);
+}
+
+TEST_F(DynamicVectorTest, InsertIteratorRange) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 5});
+  const std::array<Counter, 3> to_insert = {2, 3, 4};
+
+  auto it = vec.insert(vec.begin() + 1, to_insert.begin(), to_insert.end());
+  EXPECT_EQ(it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 5u);
+  EXPECT_EQ(vec[0], 1);
+  EXPECT_EQ(vec[1], 2);
+  EXPECT_EQ(vec[2], 3);
+  EXPECT_EQ(vec[3], 4);
+  EXPECT_EQ(vec[4], 5);
+}
+
+TEST_F(DynamicVectorTest, TryInsertIteratorRange) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 5});
+  const std::array<Counter, 3> to_insert = {2, 3, 4};
+
+  auto it = vec.try_insert(vec.begin() + 1, to_insert.begin(), to_insert.end());
+  ASSERT_TRUE(it.has_value());
+  EXPECT_EQ(*it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 5u);
+  EXPECT_EQ(vec[2], 3);
+
+  vec.shrink_to_fit();
+  ASSERT_EQ(vec.size(), vec.capacity());
+
+  allocator_.DisableAll();
+  it = vec.try_insert(vec.begin(), to_insert.begin(), to_insert.end());
+  EXPECT_FALSE(it.has_value());
+  EXPECT_EQ(vec.size(), 5u);
+}
+
+TEST_F(DynamicVectorTest, InsertInitializerList) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 5});
+
+  auto it = vec.insert(vec.begin() + 1, {2, 3, 4});
+  EXPECT_EQ(it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 5u);
+  EXPECT_EQ(vec[0], 1);
+  EXPECT_EQ(vec[1], 2);
+  EXPECT_EQ(vec[2], 3);
+  EXPECT_EQ(vec[3], 4);
+  EXPECT_EQ(vec[4], 5);
+}
+
+TEST_F(DynamicVectorTest, TryInsertInitializerList) {
+  pw::DynamicVector<Counter> vec(allocator_);
+  vec.assign({1, 5});
+
+  auto it = vec.try_insert(vec.begin() + 1, {2, 3, 4});
+  ASSERT_TRUE(it.has_value());
+  EXPECT_EQ(*it, vec.begin() + 1);
+  EXPECT_EQ(vec.size(), 5u);
+  EXPECT_EQ(vec[2], 3);
+
+  vec.shrink_to_fit();
+  ASSERT_EQ(vec.size(), vec.capacity());
+
+  allocator_.DisableAll();
+  it = vec.try_insert(vec.begin(), {9, 9, 9});
+  EXPECT_FALSE(it.has_value());
+  EXPECT_EQ(vec.size(), 5u);
+}
+
 TEST_F(DynamicVectorTest, Erase) {
   pw::DynamicVector<Counter> vec(allocator_);
   vec.assign({1, 2, 3, 4, 5});

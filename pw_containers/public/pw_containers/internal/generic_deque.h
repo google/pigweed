@@ -544,6 +544,18 @@ class GenericDeque : public GenericDequeBase<CountAndCapacityType> {
 
   [[nodiscard]] bool try_resize(size_type new_size, const value_type& value);
 
+  template <typename... Args>
+  [[nodiscard]] std::optional<iterator> try_emplace_shift_right(
+      const_iterator pos, Args&&... args);
+
+  [[nodiscard]] std::optional<iterator> try_insert_shift_right(
+      const_iterator pos, size_type count, const value_type& value);
+
+  template <typename ForwardIt,
+            typename = containers::internal::EnableIfForwardIterator<ForwardIt>>
+  [[nodiscard]] std::optional<iterator> try_insert_shift_right(
+      const_iterator pos, ForwardIt first, ForwardIt last);
+
  private:
   constexpr Derived& derived() { return static_cast<Derived&>(*this); }
   constexpr const Derived& derived() const {
@@ -901,6 +913,64 @@ GenericDeque<Derived, ValueType, CountAndCapacityType>::try_insert(
   if (!ShiftForInsert(pos.pos_, count)) {
     return std::nullopt;
   }
+  std::uninitialized_move(first, last, it);
+  return it;
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+template <typename... Args>
+std::optional<
+    typename GenericDeque<Derived, ValueType, CountAndCapacityType>::iterator>
+GenericDeque<Derived, ValueType, CountAndCapacityType>::try_emplace_shift_right(
+    const_iterator pos, Args&&... args) {
+  if (!CheckCapacityAdd(1)) {
+    return std::nullopt;
+  }
+  ShiftRight(pos.pos_, 1);
+  iterator it(derived(), pos.pos_);
+  new (std::addressof(*it)) value_type(std::forward<Args>(args)...);
+  return it;
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+std::optional<
+    typename GenericDeque<Derived, ValueType, CountAndCapacityType>::iterator>
+GenericDeque<Derived, ValueType, CountAndCapacityType>::try_insert_shift_right(
+    const_iterator pos, size_type count, const value_type& value) {
+  if (count == 0) {
+    return iterator(derived(), pos.pos_);
+  }
+  if (!CheckCapacityAdd(count)) {
+    return std::nullopt;
+  }
+
+  ShiftRight(pos.pos_, count);
+  iterator it(derived(), pos.pos_);
+  std::uninitialized_fill_n(it, count, value);
+  return it;
+}
+
+template <typename Derived, typename ValueType, typename CountAndCapacityType>
+template <typename ForwardIt, typename>
+std::optional<
+    typename GenericDeque<Derived, ValueType, CountAndCapacityType>::iterator>
+GenericDeque<Derived, ValueType, CountAndCapacityType>::try_insert_shift_right(
+    const_iterator pos, ForwardIt first, ForwardIt last) {
+  static_assert(std::is_convertible_v<
+                typename std::iterator_traits<ForwardIt>::iterator_category,
+                std::forward_iterator_tag>);
+  const auto distance = std::distance(first, last);
+  PW_DASSERT(distance >= 0);
+  const size_type count = static_cast<size_type>(distance);
+
+  const iterator it(derived(), pos.pos_);
+  if (count == 0) {
+    return it;
+  }
+  if (!CheckCapacityAdd(count)) {
+    return std::nullopt;
+  }
+  ShiftRight(pos.pos_, count);
   std::uninitialized_move(first, last, it);
   return it;
 }
