@@ -44,7 +44,8 @@ Autosniff::Autosniff(SniffModeParams params,
     : params_(params),
       autosniff_timeout_(*dispatcher, idle_timeout),
       cmd_channel_(channel),
-      handle_(handle) {
+      handle_(handle),
+      weak_self_(this) {
   bt_log(INFO, "autosniff", "Initializing autosniff timer");
   autosniff_timeout_.set_function(
       [this](pw::async::Context /*ctx*/, pw::Status status) {
@@ -66,6 +67,30 @@ Autosniff::Autosniff(SniffModeParams params,
 void Autosniff::MarkPacketRx() { ResetTimeout(); }
 void Autosniff::MarkPacketTx() { ResetTimeout(); }
 
+auto Autosniff::ChangeModesCallback(Autosniff::WeakPtr self_ptr,
+                                    AclConnectionMode new_mode) {
+  return [self = std::move(self_ptr), new_mode](auto,
+                                                const hci::EventPacket& event) {
+    if (!self.is_alive()) {
+      return;
+    }
+    if (bt_is_error(event.ToResult(),
+                    DEBUG,
+                    "autosniff",
+                    "Failed to enter mode (%s): (handle %#x)",
+                    AclModeString(new_mode),
+                    self->handle_)) {
+      self->mode_transition_ = false;
+    } else {
+      bt_log(DEBUG,
+             "autosniff",
+             "%s Mode accepted by controller: (handle %#x)",
+             AclModeString(new_mode),
+             self->handle_);
+    }
+  };
+}
+
 void Autosniff::ResetTimeout() {
   autosniff_timeout_.ResetTimeout();
   if (connection_mode_ == AclConnectionMode::ACTIVE || mode_transition_) {
@@ -85,17 +110,7 @@ void Autosniff::ResetTimeout() {
   mode_transition_ = true;
   cmd_channel_->SendCommand(
       std::move(exit_sniff_mode_cmd),
-      [handle = handle_](auto, const hci::EventPacket& event) {
-        if (!bt_is_error(event.ToResult(),
-                         WARN,
-                         "autosniff",
-                         "Exit Sniff Mode FAILED")) {
-          bt_log(DEBUG,
-                 "autosniff",
-                 "Exit Sniff Mode accepted by controller (handle %#x)",
-                 handle);
-        }
-      });
+      ChangeModesCallback(GetWeakPtr(), AclConnectionMode::ACTIVE));
 }
 
 hci::CommandChannel::EventCallbackResult Autosniff::OnModeChange(
@@ -164,15 +179,7 @@ RecurringDisposition Autosniff::OnTimeout() {
   mode_transition_ = true;
   cmd_channel_->SendCommand(
       std::move(sniff_mode_cmd),
-      [handle = handle_](auto, const hci::EventPacket& event) {
-        if (!bt_is_error(
-                event.ToResult(), WARN, "autosniff", "Sniff Mode FAILED")) {
-          bt_log(DEBUG,
-                 "autosniff",
-                 "Sniff Mode accepted by controller: (handle %#x)",
-                 handle);
-        }
-      });
+      ChangeModesCallback(GetWeakPtr(), AclConnectionMode::SNIFF));
 
   // Note, we don't disarm here, we disarm once we come back here and know for a
   // fact we are in sniff mode as the HCI command may have failed.

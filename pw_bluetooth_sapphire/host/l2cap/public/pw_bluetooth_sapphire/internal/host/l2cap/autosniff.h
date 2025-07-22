@@ -55,6 +55,15 @@ class Autosniff {
   hci::CommandChannel::EventCallbackResult OnModeChange(
       const hci::EventPacket& event);
 
+  using WeakPtr = WeakSelf<Autosniff>::WeakPtr;
+  WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
+
+  WeakSelf<Autosniff> weak_self_;
+
+  static auto ChangeModesCallback(
+      Autosniff::WeakPtr self,
+      pw::bluetooth::emboss::AclConnectionMode new_mode);
+
  public:
   inline pw::bluetooth::emboss::AclConnectionMode CurrentMode() const {
     return connection_mode_;
