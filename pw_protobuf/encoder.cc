@@ -21,6 +21,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_bytes/span.h"
+#include "pw_function/scope_guard.h"
 #include "pw_protobuf/internal/codegen.h"
 #include "pw_protobuf/serialized_size.h"
 #include "pw_protobuf/stream_decoder.h"
@@ -28,7 +29,9 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
+#include "pw_stream/limited_stream.h"
 #include "pw_stream/memory_stream.h"
+#include "pw_stream/null_stream.h"
 #include "pw_stream/stream.h"
 #include "pw_string/string.h"
 #include "pw_varint/varint.h"
@@ -37,16 +40,61 @@ namespace pw::protobuf {
 
 using internal::VarintType;
 
-StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number,
-                                              bool write_when_empty) {
+Status StreamEncoder::DoWriteNestedMessage(
+    uint32_t field_number,
+    AnyMessageWriter const& write_message,
+    bool write_when_empty) {
   PW_CHECK(!nested_encoder_open());
+  PW_TRY(status_);
 
-  nested_field_number_ = field_number;
   if (!ValidFieldNumber(field_number)) {
-    status_.Update(Status::InvalidArgument());
-    return StreamEncoder(*this, ByteSpan(), false);
+    status_ = Status::InvalidArgument();
+    PW_TRY(status_);
   }
 
+  // Lock.
+  nested_field_number_ = field_number;
+  ScopeGuard unlock([this] { nested_field_number_ = 0; });
+
+  ByteSpan scratch = GetNestedScratchBuffer(field_number);
+
+  // First pass: we simply count the number of bytes encoded by the fields in
+  // the submessage.
+  stream::CountingNullStream count_stream;
+  StreamEncoder count_encoder(count_stream, scratch);
+
+  status_ = write_message(count_encoder);
+  PW_TRY(status_);
+
+  // Now we know the exact size of the submessage.
+  const size_t num_bytes = count_stream.bytes_written();
+
+  if (num_bytes > 0 || write_when_empty) {
+    // With the field size known, we can write the header.
+    status_ = WriteLengthDelimitedKeyAndLengthPrefix(
+        field_number, num_bytes, writer_);
+    PW_TRY(status_);
+
+    // Ensure the caller cannot write more bytes in the second pass than they
+    // did in the first.
+    stream::LimitedStreamWriter write_stream(writer_, num_bytes);
+    StreamEncoder write_encoder(write_stream, scratch);
+
+    // Second pass: Actually write the fields to the stream.
+    status_ = write_message(write_encoder);
+    PW_TRY(status_);
+
+    // Verify that they wrote the same number of bytes as the first pass.
+    if (write_stream.bytes_written() != num_bytes) {
+      status_ = Status::OutOfRange();
+      PW_TRY(status_);
+    }
+  }
+
+  return OkStatus();
+}
+
+ByteSpan StreamEncoder::GetNestedScratchBuffer(uint32_t field_number) {
   // Pass the unused space of the scratch buffer to the nested encoder to use
   // as their scratch buffer.
   size_t key_size =
@@ -69,6 +117,20 @@ StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number,
   } else {
     nested_buffer = ByteSpan();
   }
+  return nested_buffer;
+}
+
+StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number,
+                                              bool write_when_empty) {
+  PW_CHECK(!nested_encoder_open());
+
+  nested_field_number_ = field_number;
+  if (!ValidFieldNumber(field_number)) {
+    status_.Update(Status::InvalidArgument());
+    return StreamEncoder(*this, ByteSpan(), false);
+  }
+
+  ByteSpan nested_buffer = GetNestedScratchBuffer(field_number);
   return StreamEncoder(*this, nested_buffer, write_when_empty);
 }
 

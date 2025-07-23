@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstring>
 #include <string_view>
+#include <type_traits>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/bit.h"
@@ -178,6 +179,49 @@ class StreamEncoder {
         field_number, /*write_when_empty=*/
         empty_encoder_behavior == EmptyEncoderBehavior::kWriteFieldNumber);
   }
+
+  // Invokes a given callback with an encoder to write a nested message field.
+  //
+  // This performs a multi-pass encoding and invokes the callback twice:
+  // Once to compute the total size of the nested message; and again to
+  // actually write the encoded data to the stream (after the nested message
+  // field prefix has been written).
+  //
+  // Args:
+  //   field_number: The field number of the submessage to be written.
+  //   write_message: A callable which is responsible for writing the
+  //     submessage fields using the encoder passed to it.
+  //
+  //     It must have the following signature: Status(StreamEncoder& encoder)
+  //
+  //     It will be invoked twice and MUST perform the exact same set of writes
+  //     on both invocations.
+  //
+  //   empty_encoder_behavior: (Optional) Indicates the action to take when
+  //     nothing is written to the nested message encoder.
+  //
+  // Returns:
+  // OK - The nested message was successfully written.
+  // OUT_OF_RANGE - The callback wrote fewer bytes on the second pass than on
+  //   the first.
+  // RESOURCE_EXHAUSTED - The callback wrote more bytes on the second pass than
+  //   on the first.
+  // Any other error from the underlying stream.
+  //
+  // Precondition: Encoder has no active child encoder.
+  //
+  // The type of the callable argument is intentionally templated (rather than
+  // using pw::Function) to allow for arbitrarily large objects (e.g. lambdas
+  // with any number of captures) to be passed. Internally, the method
+  // type-erases the callable to eliminate code bloat due to template
+  // instantations. This works because the encoder does not need to access the
+  // callable after encoding has finished and the method returns.
+  // TODO: b/432525176 - Drop this template when we have pw::FunctionRef.
+  template <typename WriteFunc>
+  Status WriteNestedMessage(uint32_t field_number,
+                            WriteFunc write_message,
+                            EmptyEncoderBehavior empty_encoder_behavior =
+                                EmptyEncoderBehavior::kWriteFieldNumber);
 
   // Returns the current encoder's status.
   //
@@ -681,6 +725,8 @@ class StreamEncoder {
   // encoder destructor.
   void CloseNestedMessage(StreamEncoder& nested);
 
+  ByteSpan GetNestedScratchBuffer(uint32_t field_number);
+
   // Implementation for encoding all varint field types.
   Status WriteVarintField(uint32_t field_number, uint64_t value);
 
@@ -773,6 +819,14 @@ class StreamEncoder {
     return WriteLengthDelimitedField(field_number, as_bytes(span(container)));
   }
 
+  class AnyMessageWriter;
+
+  // Non-templated method which handles WriteNestedMessage calls.
+  // TODO: b/432525176 - Drop this indirection when we have pw::FunctionRef.
+  Status DoWriteNestedMessage(uint32_t field_number,
+                              AnyMessageWriter const& write_message,
+                              bool write_when_empty);
+
   // Checks if a write is invalid or will cause the encoder to enter an error
   // state, and preemptively sets this encoder's status to that error to block
   // the write. Only the first error encountered is tracked.
@@ -821,6 +875,46 @@ class StreamEncoder {
   // All proto encode operations are directly written to this writer.
   stream::Writer& writer_;
 };
+
+// AnyMessageWriter is essentially a non-owning delegate. It exists to allow
+// any callable to be passed to WriteNestedMessage without being constrained
+// by the capture limitations of pw::Function. It works by type-erasing the
+// write_message callable, hiding it behind a void*.
+// TODO: b/432525176 - Drop this indirection when we have pw::FunctionRef.
+class StreamEncoder::AnyMessageWriter {
+ public:
+  template <typename WriteFunc>
+  AnyMessageWriter(WriteFunc* write_message)
+      : trampoline_(&Trampoline<WriteFunc>), target_(write_message) {}
+
+  Status operator()(StreamEncoder& encoder) const {
+    return trampoline_(target_, encoder);
+  }
+
+ private:
+  using TrampolineSignature = Status(void* context, StreamEncoder& encoder);
+  TrampolineSignature* trampoline_;
+  void* target_;
+
+  template <typename WriteFunc>
+  static Status Trampoline(void* erased_func, StreamEncoder& encoder) {
+    return std::invoke(*static_cast<WriteFunc*>(erased_func), encoder);
+  }
+};
+
+template <typename WriteFunc>
+Status StreamEncoder::WriteNestedMessage(
+    uint32_t field_number,
+    WriteFunc write_message,
+    EmptyEncoderBehavior empty_encoder_behavior) {
+  static_assert(std::is_invocable_r_v<Status, WriteFunc, StreamEncoder&>,
+                "Callable parameter must have signature compatible with "
+                "Status(StreamEncoder&)");
+  return DoWriteNestedMessage(field_number,
+                              AnyMessageWriter(&write_message),
+                              /*write_when_empty=*/empty_encoder_behavior ==
+                                  EmptyEncoderBehavior::kWriteFieldNumber);
+}
 
 // A protobuf encoder that writes directly to a provided buffer.
 //

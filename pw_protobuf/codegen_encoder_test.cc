@@ -12,6 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#undef PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION
+#define PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION 0
+
 #include "pw_bytes/array.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_protobuf/wire_format.h"
@@ -104,12 +107,11 @@ TEST(Codegen, Codegen) {
     ASSERT_EQ(OkStatus(),
               proto.WritePigweedProtobufBin(Pigweed::Protobuf::Binary::ZERO));
 
-    {
-      Pigweed::Protobuf::Compiler::StreamEncoder meta = proto.GetMetaEncoder();
-      ASSERT_EQ(OkStatus(), meta.WriteFileName("/etc/passwd"));
-      ASSERT_EQ(OkStatus(),
-                meta.WriteStatus(Pigweed::Protobuf::Compiler::Status::FUBAR));
-    }
+    PW_TEST_ASSERT_OK(proto.WriteMetaMessage([](auto& meta) {
+      PW_TRY(meta.WriteFileName("/etc/passwd"));
+      PW_TRY(meta.WriteStatus(Pigweed::Protobuf::Compiler::Status::FUBAR));
+      return OkStatus();
+    }));
 
     {
       Pigweed::StreamEncoder nested_pigweed = proto.GetPigweedEncoder();
@@ -128,12 +130,16 @@ TEST(Codegen, Codegen) {
           ASSERT_EQ(OkStatus(), attributes.WriteValue("5.3.1"));
         }
 
-        {
-          KeyValuePair::StreamEncoder attributes =
-              device_info.GetAttributesEncoder();
-          ASSERT_EQ(OkStatus(), attributes.WriteKey("chip"));
-          ASSERT_EQ(OkStatus(), attributes.WriteValue("left-soc"));
-        }
+        // Exercise flexible capture
+        std::string_view key = "chip";
+        std::string_view value = "left-soc";
+
+        PW_TEST_ASSERT_OK(
+            device_info.WriteAttributesMessage([&](auto& attributes) {
+              PW_TRY(attributes.WriteKey(key));
+              PW_TRY(attributes.WriteValue(value));
+              return OkStatus();
+            }));
 
         ASSERT_EQ(OkStatus(),
                   device_info.WriteStatus(DeviceInfo::DeviceStatus::PANIC));

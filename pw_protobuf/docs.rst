@@ -1515,8 +1515,7 @@ calling ``Write()`` on a nested encoder.
 
 Nested submessages
 ==================
-Code generated ``GetFieldEncoder`` methods are provided that return a correctly
-typed ``StreamEncoder`` or ``MemoryEncoder`` for the message.
+The examples in this section use the following protobuf definition:
 
 .. code-block:: protobuf
 
@@ -1524,19 +1523,45 @@ typed ``StreamEncoder`` or ``MemoryEncoder`` for the message.
      Animal pet = 1;
    }
 
-Note that the accessor method is named for the field, while the returned encoder
-is named for the message type.
+There are two methods for encoding nested submessages:
 
-.. cpp:function:: Animal::StreamEncoder Owner::StreamEncoder::GetPetEncoder()
+1. :ref:`pw_protobuf-encoding-nested_submessages-nested_encoder` -- This is
+   the original method of writing submessages. It performs encoding in a
+   single pass and requires an appropriately sized scratch buffer.
+
+2. :ref:`pw_protobuf-encoding-nested_submessages-multipass_encoder` -- This
+   method performs encoding in two passes to avoid the need for a scratch
+   buffer.
+
+
+.. _pw_protobuf-encoding-nested_submessages-nested_encoder:
+
+Nested encoder
+--------------
+Code-generated ``GetFieldEncoder`` methods are provided that return a
+correctly-typed ``StreamEncoder`` or ``MemoryEncoder`` for the message.
+The accessor method is named for the field, while the returned encoder
+is named for the message type. For example:
+
+.. code-block:: c++
+
+   Owner::StreamEncoder owner(writer, temp_buffer);
+
+   {
+     Animal::StreamEncoder pet = owner.GetPetEncoder();
+     pet.WriteName("Rufus");
+     pet.WriteAge(8);
+     // submessage is closed when the nested encoder is destroyed.
+   }
 
 A lower-level API method returns an untyped encoder, which only provides the
 lower-level API methods. This can be cast to a typed encoder if needed.
 
 .. cpp:function:: pw::protobuf::StreamEncoder pw::protobuf::StreamEncoder::GetNestedEncoder(uint32_t field_number, EmptyEncoderBehavior empty_encoder_behavior = EmptyEncoderBehavior::kWriteFieldNumber)
 
-(The optional `empty_encoder_behavior` parameter allows the user to disable
-writing the tag number for the nested encoder, if no data was written to
-that nested decoder.)
+(The optional ``empty_encoder_behavior`` parameter allows the user to disable
+writing the tag number for the nested encoder, if no data was written to that
+nested decoder.)
 
 .. warning::
    When a nested submessage is created, any use of the parent encoder that
@@ -1544,7 +1569,12 @@ that nested decoder.)
    encoder, destroy the submessage encoder first.
 
 Buffering
----------
+^^^^^^^^^
+
+.. note::
+   This section applies only to the original "Nested encoder" method of
+   encoding submessages.
+
 Writing proto messages with nested submessages requires buffering due to
 limitations of the proto format. Every proto submessage must know the size of
 the submessage before its final serialization can begin. A streaming encoder can
@@ -1613,6 +1643,67 @@ yourself, your destination buffer might need additional space.
    ``Status::ResourceExhausted()``. Always check the results of ``Write`` calls
    or the encoder status to ensure success, as otherwise the encoded data will
    be invalid.
+
+.. _pw_protobuf-encoding-nested_submessages-multipass_encoder:
+
+Two-pass encoder
+----------------
+The two-pass encoder method accepts a lambda (or other callable) which is
+passed a typed encoder for writing the submessage fields:
+
+.. code-block:: c++
+
+   Owner::StreamEncoder owner(writer, {});  // No scratch buffer needed.
+   owner.WritePetMessage([](Animal::StreamEncoder& pet) {
+     // This lambda is invoked twice, so it must
+     // write the same fields each invocation.
+     pet.WriteName("Rufus");
+     pet.WriteAge(8);
+   });
+
+.. tip::
+   * You can use ``auto``  in the lambda parameter to avoid referencing the
+     potentially verbose submessage encoder type.
+
+   * The callable argument is defined in such a way that normal
+     ``pw::Function`` limitations are bypassed, so you are free to capture as
+     many values in the lambda as needed to write the submessage.
+
+   .. code-block:: c++
+
+      std::string_view name = "Rufus";
+      uint32_t age = 8;
+
+      Owner::StreamEncoder owner(writer, {});
+      // Using by-ref capture default [&] and auto& stream ref.
+      owner.WritePetMessage([&](auto& pet) {
+        pet.WriteName(name);
+        pet.WriteAge(age);
+      });
+
+The two-pass encoder works as follows to avoid the need for a scratch buffer:
+
+1. The callable is invoked once with an encoder that only counts the number of
+   encoded bytes in the entire submessage. No data is actually written to the
+   underlying stream during this pass.
+
+2. The submessage tag (field number and size) are written to the underlying
+   stream.
+
+3. The callable is invoked again with a different encoder that actually writes
+   the encoded data to the underlying stream.
+
+.. warning::
+
+   The callable must write the exact same fields, with the exact same values,
+   in the same order, on both invocations.
+
+   If the data being written might change during writing, the caller is
+   expected to capture a snapshot of the data prior to encoding, or implement
+   some type of explicit synchronization (e.g. mutex/semaphore/etc).
+
+   Failure to do so may silently corrupt the output data and/or produce an
+   error result.
 
 Scalar Fields
 =============
