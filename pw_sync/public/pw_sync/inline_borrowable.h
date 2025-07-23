@@ -32,7 +32,7 @@ namespace pw::sync {
 ///
 template <typename GuardedType,
           typename Lock = pw::sync::VirtualMutex,
-          typename LockInterface = pw::sync::VirtualBasicLockable>
+          typename LockInterface = Lock>
 class InlineBorrowable : private internal::BorrowableStorage<GuardedType, Lock>,
                          public Borrowable<GuardedType, LockInterface> {
   using Storage = internal::BorrowableStorage<GuardedType, Lock>;
