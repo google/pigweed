@@ -41,6 +41,7 @@ PROTO_CC_EXTENSION = '.pwpb.cc'
 
 PROTOBUF_NAMESPACE = '::pw::protobuf'
 _INTERNAL_NAMESPACE = '::pw::protobuf::internal'
+_STREAM_ENCODER = f'{PROTOBUF_NAMESPACE}::StreamEncoder'
 
 
 @dataclass
@@ -266,6 +267,11 @@ class ProtoMethod(ProtoMember):
 
     def param_string(self) -> str:
         return ', '.join([f'{type} {name}' for type, name in self.params()])
+
+    def _encoder_type(self, from_root: bool = False) -> str:
+        return '{}::StreamEncoder'.format(
+            self._relative_type_namespace(from_root)
+        )
 
 
 class WriteMethod(ProtoMethod):
@@ -717,16 +723,14 @@ class SubMessageEncoderMethod(ProtoMethod):
         return 'Get{}Encoder'.format(self._field.name())
 
     def return_type(self, from_root: bool = False) -> str:
-        return '{}::StreamEncoder'.format(
-            self._relative_type_namespace(from_root)
-        )
+        return self._encoder_type(from_root)
 
     def params(self) -> list[tuple[str, str]]:
         return []
 
     def body(self) -> list[str]:
-        line = 'return {}::StreamEncoder({}::GetNestedEncoder({}));'.format(
-            self._relative_type_namespace(), self._base_class, self.field_cast()
+        line = 'return {}({}::GetNestedEncoder({}));'.format(
+            self._encoder_type(), self._base_class, self.field_cast()
         )
         return [line]
 
@@ -2964,7 +2968,7 @@ def generate_class_for_message(
             output.write_line(
                 f'operator {stream_type}&() '
                 f' {{ return static_cast<{stream_type}&>('
-                f'*static_cast<{PROTOBUF_NAMESPACE}::StreamEncoder*>(this));}}'
+                f'*static_cast<{_STREAM_ENCODER}*>(this));}}'
             )
 
         # Add a typed Field() member to StreamDecoder
