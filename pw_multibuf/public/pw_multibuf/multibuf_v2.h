@@ -1658,7 +1658,10 @@ class Instance {
   constexpr Instance(MultiBufType&& mb)
       : base_(std::move(static_cast<GenericMultiBuf&>(mb))) {}
 
-  constexpr Instance& operator=(MultiBufType&& mb) { base_ = std::move(mb); }
+  constexpr Instance& operator=(MultiBufType&& mb) {
+    base_ = std::move(static_cast<GenericMultiBuf&>(mb));
+    return *this;
+  }
 
   MultiBufType* operator->() { return &base_.as<MultiBufType>(); }
   const MultiBufType* operator->() const { return &base_.as<MultiBufType>(); }

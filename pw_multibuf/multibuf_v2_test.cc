@@ -537,16 +537,28 @@ TEST_F(MultiBufTest, MultiBufInstanceRvalueDereferenceAndConvert) {
   ConsumesConstMultiBuf(*std::move(mbi));
 }
 
-TEST_F(MultiBufTest, MultiBufRvalueConvert) {
+TEST_F(MultiBufTest, MultiBufInstanceRvalueConvert) {
   MultiBuf::Instance mbi(allocator_);
   MultiBuf& mb = mbi;
   ConsumesConstMultiBuf(std::move(mb));
 }
 
-TEST_F(MultiBufTest, MultiBufRvalueAs) {
+TEST_F(MultiBufTest, MultiBufInstanceRvalueAs) {
   MultiBuf::Instance mbi(allocator_);
   MultiBuf& mb = mbi;
   ConsumesConstMultiBuf(std::move(mb).as<ConstMultiBuf>());
+}
+
+TEST_F(MultiBufTest, MultiBufInstanceMoveAssignment) {
+  MultiBuf::Instance mbi1(allocator_);
+  auto chunk = allocator_.MakeUnique<std::byte[]>(kN);
+  mbi1->PushBack(std::move(chunk));
+  EXPECT_EQ(mbi1->size(), kN);
+  MultiBuf& mb1 = mbi1;
+
+  MultiBuf::Instance mb2(allocator_);
+  mb2 = std::move(mb1);
+  EXPECT_EQ(mb2->size(), kN);
 }
 
 #if PW_NC_TEST(CopyConstructSameProperties)
