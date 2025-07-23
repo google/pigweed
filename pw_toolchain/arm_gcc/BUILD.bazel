@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
@@ -98,13 +99,29 @@ cc_args(
     ],
 )
 
+# Controls whether or not -ffreestanding is enabled.
+# Generally, we avoid build flags for singular compiler arguments, but this
+# flag has potentially significant ramifications, so we want to have a dedicated
+# flag to track the removal of `-ffreestanding` from our toolchains.
+bool_flag(
+    name = "freestanding",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "enable_freestanding",
+    flag_values = {":freestanding": "True"},
+)
+
 cc_args(
     name = "cortex_common",
     actions = [
         "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    args = [
-        "-ffreestanding",
+    args = select({
+        ":enable_freestanding": ["-ffreestanding"],
+        "//conditions:default": [],
+    }) + [
         "-specs=nano.specs",
         "-specs=nosys.specs",
     ],

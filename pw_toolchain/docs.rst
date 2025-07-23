@@ -78,6 +78,21 @@ using ``pw_toolchain/arm_gcc:newlib_os_interface_stubs``.
 
 .. _module-pw_toolchain-cpp-globals:
 
+Freestanding support
+====================
+While Pigweed largely works with ``-ffreestanding``, Pigweed has observed
+issues where ``newlib-nano`` loses ``PRIx64`` and the other 64-bit
+``PRI*`` macros due to ``gcc``'s ``stdint-gcc.h`` being pulled in rather than
+newlib-nano's ``stdint.h`` (see https://pwbug.dev/382484307).
+
+Additionally, ``-ffreestanding`` isn't often correctly supported well, and most
+embedded toolchains and libc implementations have been designed around the
+assumption that ``-ffreestanding`` is not set. This partial support can cause
+confusing errors/behaviors that wouldn't be encountered under normal conditions.
+
+For these reasons, Pigweed recommends most projects **do not** use
+``-ffreestanding``.
+
 Global variables: constant initialization and binary size
 =========================================================
 Global variables---variables with static storage duration---are initialized
