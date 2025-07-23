@@ -173,6 +173,9 @@ Implementations
 
     Returns the number of bytes provided to previous ``Write()`` calls.
 
+.. doxygenclass:: pw::stream::LimitedStreamWriter
+   :members:
+
 .. cpp:class:: StdFileWriter : public SeekableWriter
 
   ``StdFileWriter`` wraps an ``std::ofstream`` with the :cpp:class:`Writer`

@@ -93,6 +93,15 @@ pw_source_set("interval_reader") {
   sources = [ "interval_reader.cc" ]
 }
 
+pw_source_set("limited_stream") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":pw_stream",
+    dir_pw_status,
+  ]
+  public = [ "public/pw_stream/limited_stream.h" ]
+}
+
 pw_source_set("mpsc_stream") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
@@ -130,6 +139,16 @@ pw_test_group("tests") {
       tests += [ ":socket_stream_test" ]
     }
   }
+}
+
+pw_test("limited_stream_test") {
+  sources = [ "limited_stream_test.cc" ]
+  deps = [
+    ":limited_stream",
+    ":pw_stream",
+    dir_pw_bytes,
+    dir_pw_status,
+  ]
 }
 
 pw_test("memory_stream_test") {

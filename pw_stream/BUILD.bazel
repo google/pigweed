@@ -106,6 +106,16 @@ cc_library(
 )
 
 cc_library(
+    name = "limited_stream",
+    hdrs = ["public/pw_stream/limited_stream.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":pw_stream",
+        "//pw_status",
+    ],
+)
+
+cc_library(
     name = "mpsc_stream",
     srcs = ["mpsc_stream.cc"],
     hdrs = ["public/pw_stream/mpsc_stream.h"],
@@ -121,6 +131,17 @@ cc_library(
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_sync:timed_thread_notification",
+    ],
+)
+
+pw_cc_test(
+    name = "limited_stream_test",
+    srcs = ["limited_stream_test.cc"],
+    deps = [
+        ":limited_stream",
+        ":pw_stream",
+        "//pw_bytes",
+        "//pw_status",
     ],
 )
 
@@ -221,6 +242,7 @@ pw_cc_test(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_stream/limited_stream.h",
         "public/pw_stream/stream.h",
     ],
 )
