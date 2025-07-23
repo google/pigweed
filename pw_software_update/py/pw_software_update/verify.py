@@ -321,8 +321,8 @@ def verify_bundle(incoming: UpdateBundle, trusted: UpdateBundle) -> None:
     # information is used later to perform or skip targets metadata version
     # rollback check.
     targets_key_rotated = False
-    incoming_root = incoming.root_metadata
-    if incoming_root:
+    if incoming.HasField("root_metadata"):
+        incoming_root = incoming.root_metadata
         log_progress('Verifying incoming root metadata')
         targets_key_rotated = verify_root_metadata(
             incoming=incoming_root, trusted=trusted_root
