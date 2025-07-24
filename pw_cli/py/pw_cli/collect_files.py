@@ -165,6 +165,7 @@ def collect_files_in_current_repo(
                 exclude_paths(
                     exclude_patterns,
                     current_repo.list_files(modified_since_git_ref, pathspecs),
+                    current_repo.root(),
                 )
             )
             | set(files)
