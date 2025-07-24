@@ -121,12 +121,21 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
 
   # Version 0.96
   let version_0_96_size = version_0_95_size+1
-  $next [+1]         Capability                le_address_generation_offloading_support
-    -- Deprecated in Google feature spec v0.98 and higher
+  if version_supported.major_number != 0 || version_supported.minor_number != 99:
+    version_0_95_size [+1] Capability            le_address_generation_offloading_support
+        -- Deprecated in Google feature spec v0.98 and higher
+
+  # Version 0.99
+  # Seen in some firmwares.
+  # Missing le_address_generation_offloading_support and bluetooth_quality_report_support.
+  let version_0_99_size = version_0_95_size+4
+  if version_supported.major_number == 0 && version_supported.minor_number == 99:
+    version_0_95_size [+4]  bits:
+      0     [+5]       AudioCodecSupportMask     v99_a2dp_source_offload_capability_mask
 
   # Version 0.98
   let version_0_98_size = version_0_96_size+5
-  $next [+4]  bits:
+  version_0_96_size [+4]  bits:
     0     [+5]       AudioCodecSupportMask     a2dp_source_offload_capability_mask
 
   $next [+1]         Capability                bluetooth_quality_report_support
