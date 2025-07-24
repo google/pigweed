@@ -26,6 +26,9 @@ from pw_presubmit.format.private.cli import FormattingSuite
 from pw_presubmit.format.owners import OwnersFormatter
 from pw_presubmit.format.python import BlackFormatter
 from pw_presubmit.format.rust import RustfmtFormatter
+from pw_presubmit.format.cmake import CmakeFormatter
+from pw_presubmit.format.css import CssFormatter
+from pw_presubmit.format.markdown import MarkdownFormatter
 
 
 try:
@@ -81,11 +84,32 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             bazel_import_path='llvm_toolchain.clang_format',
         ),
         FormatterSetup(
+            formatter=CmakeFormatter(
+                tool_runner=runfiles,
+            ),
+            binary=None,
+            bazel_import_path=None,
+        ),
+        FormatterSetup(
+            formatter=CssFormatter(
+                tool_runner=runfiles,
+            ),
+            binary=None,
+            bazel_import_path=None,
+        ),
+        FormatterSetup(
             formatter=GnFormatter(
                 tool_runner=runfiles,
             ),
             binary='gn',
             bazel_import_path='pw_presubmit.py.gn_runfiles',
+        ),
+        FormatterSetup(
+            formatter=MarkdownFormatter(
+                tool_runner=runfiles,
+            ),
+            binary=None,
+            bazel_import_path=None,
         ),
         FormatterSetup(
             formatter=OwnersFormatter(

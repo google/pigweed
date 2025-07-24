@@ -64,10 +64,13 @@ from pw_presubmit.format.bazel import (
     BuildifierFormatter,
     DEFAULT_BAZEL_FILE_PATTERNS,
 )
+from pw_presubmit.format.cmake import DEFAULT_CMAKE_FILE_PATTERNS
 from pw_presubmit.format.core import FormattedDiff, FormatFixStatus
+from pw_presubmit.format.css import DEFAULT_CSS_FILE_PATTERNS
 from pw_presubmit.format import cpp
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter, DEFAULT_GN_FILE_PATTERNS
+from pw_presubmit.format.markdown import DEFAULT_MARKDOWN_FILE_PATTERNS
 from pw_presubmit.format.owners import (
     OwnersFormatter,
     DEFAULT_OWNERS_FILE_PATTERNS,
@@ -80,6 +83,7 @@ from pw_presubmit.format.python import (
     BlackFormatter,
     DEFAULT_PYTHON_FILE_PATTERNS,
 )
+from pw_presubmit.format.whitespace import TrailingSpaceFormatter
 from pw_presubmit.rst_format import reformat_rst
 from pw_presubmit.tools import (
     log_run,
@@ -390,28 +394,6 @@ def fix_py_format(ctx: _Context) -> dict[Path, str]:
     raise ValueError(ctx.format_options.python_formatter)
 
 
-_TRAILING_SPACE = re.compile(rb'[ \t]+$', flags=re.MULTILINE)
-
-
-def _check_trailing_space(paths: Iterable[Path], fix: bool) -> dict[Path, str]:
-    """Checks for and optionally removes trailing whitespace."""
-    errors = {}
-
-    for path in paths:
-        with path.open('rb') as fd:
-            contents = fd.read()
-
-        corrected = _TRAILING_SPACE.sub(b'', contents)
-        if corrected != contents:
-            errors[path] = _diff(path, contents, corrected)
-
-            if fix:
-                with path.open('wb') as fd:
-                    fd.write(corrected)
-
-    return errors
-
-
 def _format_json(contents: bytes) -> bytes:
     return json.dumps(json.loads(contents), indent=2).encode() + b'\n'
 
@@ -454,12 +436,19 @@ def fix_json_format(ctx: _Context) -> dict[Path, str]:
 
 
 def check_trailing_space(ctx: _Context) -> dict[Path, str]:
-    return _check_trailing_space(ctx.paths, fix=False)
+    formatter = TrailingSpaceFormatter(
+        file_patterns=FileFilter(), tool_runner=PresubmitToolRunner()
+    )
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(ctx.paths, ctx.dry_run)
+    )
 
 
 def fix_trailing_space(ctx: _Context) -> dict[Path, str]:
-    _check_trailing_space(ctx.paths, fix=True)
-    return {}
+    formatter = TrailingSpaceFormatter(
+        file_patterns=FileFilter(), tool_runner=PresubmitToolRunner()
+    )
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def rst_format_check(ctx: _Context) -> dict[Path, str]:
@@ -538,7 +527,7 @@ TYPESCRIPT_FORMAT: CodeFormat = CodeFormat(
 # TODO: b/308948504 - Add real code formatting support for CSS
 CSS_FORMAT: CodeFormat = CodeFormat(
     'css',
-    FileFilter(endswith=['.css']),
+    DEFAULT_CSS_FILE_PATTERNS,
     check_trailing_space,
     fix_trailing_space,
 )
@@ -575,7 +564,7 @@ COPYBARA_FORMAT: CodeFormat = CodeFormat(
 # TODO: b/234881054 - Add real code formatting support for CMake
 CMAKE_FORMAT: CodeFormat = CodeFormat(
     'CMake',
-    FileFilter(endswith=['.cmake'], name=['^CMakeLists.txt$']),
+    DEFAULT_CMAKE_FILE_PATTERNS,
     check_trailing_space,
     fix_trailing_space,
 )
@@ -589,7 +578,7 @@ RST_FORMAT: CodeFormat = CodeFormat(
 
 MARKDOWN_FORMAT: CodeFormat = CodeFormat(
     'Markdown',
-    FileFilter(endswith=['.md']),
+    DEFAULT_MARKDOWN_FILE_PATTERNS,
     check_trailing_space,
     fix_trailing_space,
 )
