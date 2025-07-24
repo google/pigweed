@@ -25,6 +25,7 @@ from pw_presubmit.format.gn import GnFormatter
 from pw_presubmit.format.private.cli import FormattingSuite
 from pw_presubmit.format.owners import OwnersFormatter
 from pw_presubmit.format.python import BlackFormatter
+from pw_presubmit.format.rust import RustfmtFormatter
 
 
 try:
@@ -92,6 +93,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             ),
             binary=None,
             bazel_import_path=None,
+        ),
+        FormatterSetup(
+            formatter=RustfmtFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='rustfmt',
+            bazel_import_path='pw_presubmit.py.rustfmt_runfiles',
         ),
     ]
     enabled_formatters = [

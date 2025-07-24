@@ -94,6 +94,7 @@ py_library(
         "pw_presubmit/format/private/cli.py",
         "pw_presubmit/format/private/cli_support.py",
         "pw_presubmit/format/python.py",
+        "pw_presubmit/format/rust.py",
     ],
     imports = ["."],
     visibility = ["//visibility:private"],
@@ -135,6 +136,7 @@ pw_py_importable_runfile(
     name = "rustfmt_runfiles",
     src = "@rules_rust//tools/upstream_wrapper:rustfmt",
     executable = True,
+    tags = ["manual"],
     target_compatible_with = select({
         "@platforms//os:none": ["@platforms//:incompatible"],
         "//conditions:default": [],
@@ -154,11 +156,26 @@ config_setting(
     },
 )
 
+bool_flag(
+    name = "enable_rust_formatter",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "rust_formatter_is_disabled",
+    flag_values = {
+        ":enable_rust_formatter": "false",
+    },
+)
+
 write_file(
     name = "disabled_formatters",
     out = "pigweed_format/disabled_formatters.txt",
     content = select({
         ":gn_formatter_is_disabled": ["gn"],
+        "//conditions:default": [],
+    }) + select({
+        ":rust_formatter_is_disabled": ["rustfmt"],
         "//conditions:default": [],
     }),
     visibility = ["//visibility:private"],
@@ -181,6 +198,9 @@ pw_py_binary(
     ] + select({
         ":gn_formatter_is_disabled": [],
         "//conditions:default": [":gn_runfiles"],
+    }) + select({
+        ":rust_formatter_is_disabled": [],
+        "//conditions:default": [":rustfmt_runfiles"],
     }),
 )
 
