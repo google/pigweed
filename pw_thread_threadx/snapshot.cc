@@ -122,6 +122,7 @@ Status SnapshotThread(const TX_THREAD& thread,
                       ProcessThreadStackCallback& thread_stack_callback) {
   PW_LOG_DEBUG("Capturing thread info for %s", thread.tx_thread_name);
   encoder.WriteName(as_bytes(span(std::string_view(thread.tx_thread_name))));
+  encoder.WriteId(reinterpret_cast<uintptr_t>(&thread));
 
   CaptureThreadState(thread, encoder);
 

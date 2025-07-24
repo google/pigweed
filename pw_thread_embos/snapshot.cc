@@ -118,6 +118,7 @@ Status SnapshotThread(const OS_TASK& thread,
 #else
   PW_LOG_DEBUG("Capturing thread info for thread at 0x%08x", &thread);
 #endif  // OS_TRACKNAME
+  encoder.WriteId(reinterpret_cast<uintptr_t>(&thread));
 
   CaptureThreadState(thread, encoder);
 

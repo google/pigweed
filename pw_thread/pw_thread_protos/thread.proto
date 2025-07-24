@@ -101,6 +101,15 @@ message Thread {
   // (stack_estimate_max_addr-stack_start_pointer) /
   // (stack_end_pointer-stack_start_pointer) * 100%
   optional uint64 stack_pointer_est_peak = 11;
+
+  // A unique, numeric identifier for this thread.
+  //
+  // For most thread backends, this will match the value returned by
+  // Thread::get_id().native(), though it is not required or guaranteed.
+  //
+  // This value should be used to refer to this thread in a context that
+  // requires numeric thread IDs, e.g. in a coredump for use with GDB or LLDB.
+  optional uint64 id = 12;
 }
 
 // This message overlays the pw.snapshot.Snapshot proto. It's valid to encode

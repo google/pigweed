@@ -168,6 +168,40 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
         self.assertEqual(analyzer.active_thread(), None)
         self.assertEqual(str(ThreadSnapshotAnalyzer(snapshot)), expected)
 
+    def test_one_thread_with_id(self):
+        """Ensures threads with names and IDs are printed correctly."""
+        snapshot = thread_pb2.SnapshotThreadInfo()
+
+        temp_thread = thread_pb2.Thread()
+        temp_thread.name = 'Alice'.encode()
+        temp_thread.id = 0x12345
+        temp_thread.state = thread_pb2.ThreadState.Enum.READY
+        temp_thread.stack_start_pointer = 0x2001AC00
+        temp_thread.stack_end_pointer = 0x2001AA00
+        temp_thread.stack_pointer = 0x2001AB0C
+        temp_thread.stack_pointer_est_peak = 0x2001AA00
+        snapshot.threads.append(temp_thread)
+
+        # pylint: disable=line-too-long
+        expected = '\n'.join(
+            (
+                'Thread State',
+                '  1 thread running.',
+                '',
+                'Thread (READY): Alice (0x12345)',
+                'Est CPU usage: unknown',
+                'Stack info',
+                '  Current usage:   0x2001ac00 - 0x2001ab0c (244 bytes, 47.66%)',
+                '  Est peak usage:  512 bytes, 100.00%',
+                '  Stack limits:    0x2001ac00 - 0x2001aa00 (512 bytes)',
+                '',
+            )
+        )
+        # pylint: enable=line-too-long
+        analyzer = ThreadSnapshotAnalyzer(snapshot)
+        self.assertEqual(analyzer.active_thread(), None)
+        self.assertEqual(str(ThreadSnapshotAnalyzer(snapshot)), expected)
+
     def test_two_threads(self):
         """Ensures multiple threads are printed correctly."""
         snapshot = thread_pb2.SnapshotThreadInfo()

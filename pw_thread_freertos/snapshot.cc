@@ -129,6 +129,7 @@ Status SnapshotThread(
 
   PW_LOG_DEBUG("Capturing thread info for %s", tcb.pcTaskName);
   PW_TRY(encoder.WriteName(as_bytes(span(std::string_view(tcb.pcTaskName)))));
+  PW_TRY(encoder.WriteId(reinterpret_cast<uintptr_t>(thread)));
 
   CaptureThreadState(thread_state, encoder);
 

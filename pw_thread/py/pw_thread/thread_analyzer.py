@@ -284,6 +284,8 @@ class ThreadSnapshotAnalyzer:
                 f'({THREAD_STATE_TO_STRING[thread.state]}): '
                 f'{thread_name}'
             )
+            if thread.id:
+                thread_headline += f' ({thread.id:#x})'
             if self.active_thread() == thread:
                 thread_headline += ' <-- [ACTIVE]'
             output.append(thread_headline)
