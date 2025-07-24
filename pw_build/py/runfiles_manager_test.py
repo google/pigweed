@@ -67,18 +67,18 @@ class TestRunfilesManager(unittest.TestCase):
             'b', '${PW_ROOT}/pw_build/test_data/test_runfile.txt'
         )
 
-        with self.assertRaisesRegex(ValueError, 'Either register in'):
+        with self.assertRaisesRegex(AssertionError, 'Either register in'):
             self.r.get('b')
 
     def test_bootstrap_missing(self):
         self.r.add_bazel_file('b', 'pw_build.test_runfile')
 
-        with self.assertRaisesRegex(ValueError, 'Either register in'):
+        with self.assertRaisesRegex(AssertionError, 'Either register in'):
             self.r.get('b')
 
     def test_both_missing(self):
         with self.assertRaisesRegex(
-            ValueError,
+            FileNotFoundError,
             'is not a registered tool or runfile resource',
         ):
             self.r.get('a')
@@ -94,7 +94,7 @@ if _IS_GN:
 
         def test_forgot_bazel(self):
             with self.assertRaisesRegex(
-                ValueError,
+                AssertionError,
                 '`a` was registered for bootstrap environments, but not for '
                 r'Bazel environments\. Either register in Bazel',
             ):
@@ -106,7 +106,7 @@ if _IS_GN:
 
         def test_not_a_file(self):
             with self.assertRaisesRegex(
-                ValueError,
+                FileNotFoundError,
                 r'Runfile `a=[^`]+` does not exist',
             ):
                 self.r.add_bootstrapped_tool(
@@ -124,7 +124,7 @@ if _IS_GN:
 
         def test_unknown_env_var(self):
             with self.assertRaisesRegex(
-                ValueError,
+                AssertionError,
                 'Failed to expand the following environment variables for '
                 r'runfile entry `a=\${PW_ROOT}/\${_PW_VAR_D9EC8687538}/'
                 r'\${_PW_VAR_DEF6F3B0CA7}`: _PW_VAR_D9EC8687538, '
@@ -139,7 +139,7 @@ if _IS_GN:
             self.r.add_bazel_file('a', 'pw_build.test_runfile', exclusive=True)
 
             with self.assertRaisesRegex(
-                ValueError,
+                AssertionError,
                 'was marked as `exclusive=True` to Bazel environments, '
                 'but was used in a bootstrap environment',
             ):
@@ -155,7 +155,7 @@ else:
 
         def test_forgot_bootstrap(self):
             with self.assertRaisesRegex(
-                ValueError,
+                AssertionError,
                 '`a` was registered for Bazel environments, but not for '
                 r'bootstrap environments\. Either register in bootstrap',
             ):
@@ -164,7 +164,7 @@ else:
 
         def test_bad_import_path(self):
             with self.assertRaisesRegex(
-                ValueError,
+                ImportError,
                 'Did you forget to add a dependency',
             ):
                 self.r.add_bazel_tool('a', 'no.ahha.lol')
@@ -177,7 +177,7 @@ else:
             )
 
             with self.assertRaisesRegex(
-                ValueError,
+                AssertionError,
                 'was marked as `exclusive=True` to bootstrap environments, '
                 'but was used in a Bazel environment',
             ):

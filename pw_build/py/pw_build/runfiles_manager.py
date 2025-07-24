@@ -157,12 +157,12 @@ class RunfilesManager(ToolRunner):
             return
         try:
             module = importlib.import_module(import_path)
-        except ImportError:
-            raise ValueError(
+        except ImportError as err:
+            raise ImportError(
                 f'Failed to load runfiles import `{key}={import_path}`. Did '
                 'you forget to add a dependency on the appropriate '
                 'pw_py_importable_runfile?'
-            )
+            ) from err
         file_path = self._r.Rlocation(*module.RLOCATION)
         self._check_path(file_path, key)
         self._runfiles[key] = Path(file_path)
@@ -184,7 +184,9 @@ class RunfilesManager(ToolRunner):
         if from_shell_path:
             actual_path = shutil.which(path)
             if actual_path is None:
-                raise ValueError(f'Tool `{key}={path}` not found on PATH')
+                raise FileNotFoundError(
+                    f'Tool `{key}={path}` not found on PATH'
+                )
             path = actual_path
         unknown_vars: List[str] = []
         known_vars: dict[str, str] = {}
@@ -204,7 +206,7 @@ class RunfilesManager(ToolRunner):
                     )
                 known_vars[fmt_var] = os.environ[fmt_var]
         if unknown_vars:
-            raise ValueError(
+            raise AssertionError(
                 'Failed to expand the following environment variables for '
                 f'runfile entry `{key}={path}`: {", ".join(unknown_vars)}'
             )
@@ -232,7 +234,7 @@ class RunfilesManager(ToolRunner):
     @staticmethod
     def _check_path(path: str, key: str):
         if not Path(path).is_file():
-            raise ValueError(f'Runfile `{key}={path}` does not exist')
+            raise FileNotFoundError(f'Runfile `{key}={path}` does not exist')
 
     def get(self, key: str) -> Path:
         """Retrieves the ``Path`` to the resource at the requested key."""
@@ -245,18 +247,18 @@ class RunfilesManager(ToolRunner):
             if len(not_known_by) == 1:
                 which = not_known_by[0]
                 other = lambda e: 'Bazel' if e == 'bootstrap' else 'bootstrap'
-                raise ValueError(
+                raise AssertionError(
                     f'`{key}` was registered for {other(which)} environments, '
                     f'but not for {which} environments. Either register in '
                     f'{which} or mark as `exclusive=True`'
                 )
-            raise ValueError(
+            raise FileNotFoundError(
                 f'`{key}` is not a registered tool or runfile resource'
             )
         if not key in self._runfiles:
             this_environment_kind = 'bootstrap' if _IS_BOOTSTRAP else 'Bazel'
             other_environment_kind = 'Bazel' if _IS_BOOTSTRAP else 'bootstrap'
-            raise ValueError(
+            raise AssertionError(
                 f'`{key}` was marked as `exclusive=True` to '
                 f'{other_environment_kind} environments, but was used '
                 f'in a {this_environment_kind} environment'
@@ -276,7 +278,7 @@ class RunfilesManager(ToolRunner):
     ) -> subprocess.CompletedProcess:
         tool_path = self.get(tool)
         if tool not in self._tools:
-            raise ValueError(
+            raise AssertionError(
                 f'`{tool}` was registered as a file rather than a runnable '
                 'tool. Register it with add_bazel_tool() and/or '
                 'add_bootstrapped_tool() to make it runnable.'
