@@ -99,14 +99,16 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
 
   ThreadCallback thread_capture_cb(
       [&ctx](TaskHandle_t thread, eTaskState thread_state) -> bool {
-        proto::pwpb::Thread::StreamEncoder thread_encoder =
-            ctx.encoder->GetThreadsEncoder();
-        ctx.thread_capture_status.Update(
-            SnapshotThread(thread,
-                           thread_state,
-                           ctx.running_thread_stack_pointer,
-                           thread_encoder,
-                           *ctx.stack_dumper));
+        auto status = ctx.encoder->WriteThreadsMessage(
+            [&ctx, thread, thread_state](auto& thread_encoder) {
+              return SnapshotThread(thread,
+                                    thread_state,
+                                    ctx.running_thread_stack_pointer,
+                                    thread_encoder,
+                                    *ctx.stack_dumper);
+            });
+        ctx.thread_capture_status.Update(status);
+
         return true;  // Iterate through all threads.
       });
   if (const Status status = ForEachThread(thread_capture_cb);
