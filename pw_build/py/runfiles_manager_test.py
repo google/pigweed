@@ -62,6 +62,14 @@ class TestRunfilesManager(unittest.TestCase):
         self.assertTrue(c.is_file())
         self.assertEqual(c.read_text(), "OK\n")
 
+    def test_contains(self):
+        self.r.add_bazel_file('b', 'pw_build.test_runfile')
+        self.r.add_bootstrapped_file(
+            'b', '${PW_ROOT}/pw_build/test_data/test_runfile.txt'
+        )
+        self.assertTrue('b' in self.r)
+        self.assertFalse('nonexistent' in self.r)
+
     def test_bazel_missing(self):
         self.r.add_bootstrapped_file(
             'b', '${PW_ROOT}/pw_build/test_data/test_runfile.txt'

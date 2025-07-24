@@ -273,6 +273,13 @@ class RunfilesManager(ToolRunner):
     def __getitem__(self, key):
         return self.get(key)
 
+    def __contains__(self, key: str) -> bool:
+        try:
+            self.get(key)
+        except FileNotFoundError:
+            return False
+        return True
+
     def _run_tool(
         self, tool: str, args, **kwargs
     ) -> subprocess.CompletedProcess:
