@@ -13,9 +13,11 @@
 # the License.
 """A CLI utility that checks and fixes formatting for source files."""
 
+from dataclasses import dataclass
 import sys
 
 from pw_build.runfiles_manager import RunfilesManager
+from pw_presubmit.format.core import FileFormatter
 from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.private.cli import FormattingSuite
@@ -34,42 +36,60 @@ except ImportError:
     _FORMAT_FIX_COMMAND = 'python -m pigweed_format'
 
 
+@dataclass
+class FormatterSetup:
+    formatter: FileFormatter
+    binary: None | str
+    bazel_import_path: None | str
+
+
 def _pigweed_formatting_suite() -> FormattingSuite:
     runfiles = RunfilesManager()
-    # GN
-    runfiles.add_bootstrapped_tool(
-        'clang-format', 'clang-format', from_shell_path=True
-    )
-    runfiles.add_bootstrapped_tool('black', 'black', from_shell_path=True)
-    runfiles.add_bootstrapped_tool(
-        'buildifier', 'buildifier', from_shell_path=True
-    )
 
-    # Bazel
-    runfiles.add_bazel_tool('clang-format', 'llvm_toolchain.clang_format')
-    runfiles.add_bazel_tool('black', 'pw_presubmit.py.black_runfiles')
-    runfiles.add_bazel_tool('buildifier', 'pw_presubmit.py.buildifier_runfiles')
-
-    # This list can be broken out and library-ified as the default set of
-    # formatters once config file loading is smarter (i.e. loads from the
-    # path of the file that is being formatted rather than as a runfile
-    # dependency).
-    pigweed_formatters = [
-        BlackFormatter(
-            tool_runner=runfiles,
+    all_formatters = [
+        FormatterSetup(
+            formatter=BlackFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='black',
+            bazel_import_path='pw_presubmit.py.black_runfiles',
         ),
-        BuildifierFormatter(
-            tool_runner=runfiles,
+        FormatterSetup(
+            formatter=BuildifierFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='buildifier',
+            bazel_import_path='pw_presubmit.py.buildifier_runfiles',
         ),
-        ClangFormatFormatter(
-            tool_runner=runfiles,
+        FormatterSetup(
+            formatter=ClangFormatFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='clang-format',
+            bazel_import_path='llvm_toolchain.clang_format',
         ),
-        OwnersFormatter(
-            tool_runner=runfiles,
+        FormatterSetup(
+            formatter=OwnersFormatter(
+                tool_runner=runfiles,
+            ),
+            binary=None,
+            bazel_import_path=None,
         ),
     ]
+
+    # Setup runfiles.
+    for formatter in all_formatters:
+        if formatter.binary is not None:
+            runfiles.add_bootstrapped_tool(
+                formatter.binary, formatter.binary, from_shell_path=True
+            )
+            if formatter.bazel_import_path is not None:
+                runfiles.add_bazel_tool(
+                    formatter.binary, formatter.bazel_import_path
+                )
+
     return FormattingSuite(
-        pigweed_formatters,
+        [fmt.formatter for fmt in all_formatters],
         formatter_fix_command=_FORMAT_FIX_COMMAND,
     )
 
