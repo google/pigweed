@@ -15,6 +15,10 @@
 and any apps.
 """
 
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
+load("//pw_build:binary_tools.bzl", "run_action_on_executable")
+
 def _target_transition_impl(_, attr):
     flags = {
         "//command_line_option:platforms": str(attr.platform),
@@ -32,14 +36,22 @@ _target_transition = transition(
     ],
 )
 
+SystemImageInfo = provider(
+    "Metadata about a system image",
+    fields = {
+        "bin": "[File] Path to the bin file",
+        "elf": "[File] Path to the compiled elf file",
+    },
+)
+
 def _system_image_impl(ctx):
-    output = ctx.actions.declare_file(ctx.attr.name)
+    output_elf = ctx.actions.declare_file(ctx.attr.name + ".elf")
 
     args = [
         "--kernel",
         ctx.file.kernel.path,
         "--output",
-        output.path,
+        output_elf.path,
     ]
     for f in ctx.files.apps:
         args.append("--app")
@@ -47,12 +59,33 @@ def _system_image_impl(ctx):
 
     ctx.actions.run(
         inputs = ctx.files.kernel + ctx.files.apps,
-        outputs = [output],
+        outputs = [output_elf],
         executable = ctx.executable._system_assembler,
         mnemonic = "SystemImageAssembler",
         arguments = args,
     )
-    return [DefaultInfo(executable = output)]
+
+    output_bin = ctx.actions.declare_file(ctx.attr.name + ".bin")
+    run_action_on_executable(
+        ctx = ctx,
+        # TODO: https://github.com/bazelbuild/rules_cc/issues/292 - Add a helper
+        # to rules cc to make it possible to get this from ctx.attr._objcopy.
+        action_name = ACTION_NAMES.objcopy_embed_data,
+        action_args = "{args} {input} {output}".format(
+            args = "-Obinary",
+            input = output_elf.path,
+            output = output_bin.path,
+        ),
+        inputs = [output_elf],
+        output = output_bin,
+        additional_outputs = [],
+        output_executable = True,
+    )
+
+    return [
+        DefaultInfo(executable = output_elf, files = depset([output_elf, output_bin])),
+        SystemImageInfo(bin = output_bin, elf = output_elf),
+    ]
 
 system_image = rule(
     implementation = _system_image_impl,
@@ -82,5 +115,7 @@ system_image = rule(
             default = "//pw_kernel/tooling:system_assembler",
         ),
     },
+    toolchains = use_cpp_toolchain(),
+    fragments = ["cpp"],
     doc = "Assemble a system image combining apps and kernel",
 )
