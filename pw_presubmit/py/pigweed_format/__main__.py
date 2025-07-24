@@ -14,12 +14,14 @@
 """A CLI utility that checks and fixes formatting for source files."""
 
 from dataclasses import dataclass
+import importlib.resources
 import sys
 
 from pw_build.runfiles_manager import RunfilesManager
 from pw_presubmit.format.core import FileFormatter
 from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.cpp import ClangFormatFormatter
+from pw_presubmit.format.gn import GnFormatter
 from pw_presubmit.format.private.cli import FormattingSuite
 from pw_presubmit.format.owners import OwnersFormatter
 from pw_presubmit.format.python import BlackFormatter
@@ -36,6 +38,10 @@ except ImportError:
     _FORMAT_FIX_COMMAND = 'python -m pigweed_format'
 
 
+_PACKAGE_DATA_DIR = importlib.resources.files('pigweed_format')
+_DISABLED_FORMATTERS = _PACKAGE_DATA_DIR / 'disabled_formatters.txt'
+
+
 @dataclass
 class FormatterSetup:
     formatter: FileFormatter
@@ -44,6 +50,11 @@ class FormatterSetup:
 
 
 def _pigweed_formatting_suite() -> FormattingSuite:
+    if _DISABLED_FORMATTERS.is_file():
+        disabled_formatters = set(_DISABLED_FORMATTERS.read_text().splitlines())
+    else:
+        disabled_formatters = set()
+
     runfiles = RunfilesManager()
 
     all_formatters = [
@@ -69,6 +80,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             bazel_import_path='llvm_toolchain.clang_format',
         ),
         FormatterSetup(
+            formatter=GnFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='gn',
+            bazel_import_path='pw_presubmit.py.gn_runfiles',
+        ),
+        FormatterSetup(
             formatter=OwnersFormatter(
                 tool_runner=runfiles,
             ),
@@ -76,9 +94,12 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             bazel_import_path=None,
         ),
     ]
+    enabled_formatters = [
+        fmt for fmt in all_formatters if fmt.binary not in disabled_formatters
+    ]
 
     # Setup runfiles.
-    for formatter in all_formatters:
+    for formatter in enabled_formatters:
         if formatter.binary is not None:
             runfiles.add_bootstrapped_tool(
                 formatter.binary, formatter.binary, from_shell_path=True
@@ -89,7 +110,7 @@ def _pigweed_formatting_suite() -> FormattingSuite:
                 )
 
     return FormattingSuite(
-        [fmt.formatter for fmt in all_formatters],
+        [fmt.formatter for fmt in enabled_formatters],
         formatter_fix_command=_FORMAT_FIX_COMMAND,
     )
 

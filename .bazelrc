@@ -20,6 +20,9 @@ import %workspace%/pw_build/pigweed_recommended.bazelrc
 # TODO: https://pwbug.dev/258836641 - Only until bzlmod migration is done.
 common --enable_workspace
 
+# Enable all desired formatters.
+common --//pw_presubmit/py:enable_gn_formatter=True
+
 # Default build_tag_filters and test_tag_filters
 # ==============================================
 # Skip building any targets tagged do_not_build.

@@ -6,6 +6,112 @@ Code formatting
 .. pigweed-module-subpage::
    :name: pw_presubmit
 
+The ``pw format`` command provides a unified experience for checking and fixing
+code formatting for a variety of languages used in Pigweed. It automatically
+detects which formatters to apply based on file extensions and names.
+
+--------
+Features
+--------
+* **Check vs. fix**: Run in check-only mode with ``--check`` to find errors
+  without modifying files.
+* **Targeted formatting**: Format specific files or directories by passing them
+  as arguments.
+* **Only format modified files**: By default, only formats the files that have
+  been modified in the last change (or since the upstream tracking branch, if
+  set). Use ``--full`` to format all files in a repo.
+* **Automatic configuration**: Discovers and uses project-specific formatter
+  configurations like ``.clang-format``, ``.black.toml``, and ``rustfmt.toml``.
+* **Parallel execution**: Speed up formatting with the ``-j`` or ``--jobs``
+  flag to run on multiple files in parallel.
+* **Unified experience**: Regardless of what files you format, you'll always
+  have a consistent CLI experience.
+
+Language support:
+
+.. list-table::
+
+   * - **File type**
+     - **Enabled by default**
+     - **Optional**
+   * - Bazel build files
+     - ✅
+     - ❌
+   * - C/C++
+     - ✅
+     - ❌
+   * - GN build files
+     - ❌
+     - ✅
+   * - OWNERS files
+     - ✅
+     - ❌
+   * - Python (using ``black``)
+     - ✅
+     - ❌
+
+-----------
+Get started
+-----------
+The formatter is usually invoked via the ``pw`` entry point at the root of your
+project.
+
+Usage examples
+==============
+
+.. code-block:: console
+
+   # Fix formatting for all files.
+   $ ./pw format
+
+   # Check formatting for all files in the repository without making
+   # modifications.
+   $ ./pw format --check
+
+   # Format all files tracked by Git.
+   $ ./pw format --all
+
+   # Format specific files or directories.
+   $ ./pw format pw_foo/ public/pw_foo/foo.h
+
+Project setup
+=============
+Pigweed's default formatter is designed to work out-of-the-box for most Bazel
+projects. You can try it with no additional setup setups with the following
+command:
+
+.. code-block:: console
+
+   $ bazel run @pigweed//pw_presubmit/py:format
+
+Add a shortcut
+--------------
+To make running the formatter easier, add the ``format`` to a Workflow
+shortcut. See the Workflows
+:ref:`module-pw_build-workflows-launcher-getting-started` guide for more
+info.
+
+Enable additional formatters
+----------------------------
+Some formatters that may not be interesting to most projects are disabled by
+default, and may be enabled by adding flags to your project's ``.bazelrc``
+file:
+
+.. code-block::
+
+   # Enable GN build file formatting.
+   common --@pigweed//pw_presubmit/py:enable_gn_formatter=True
+
+.. note::
+
+   Enabling additional formatters will cause more tooling to be downloaded.
+
+.. _module-pw_presubmit-format-api:
+
+-------------
+API reference
+-------------
+
 .. admonition:: Note
    :class: warning
 
@@ -15,12 +121,6 @@ Code formatting
    module. Not all formatters are migrated, and the library API is unstable.
    After some of the core pieces land, this library will be moved to
    ``pw_code_format``.
-
-.. _module-pw_presubmit-format-api:
-
--------------
-API reference
--------------
 
 Core
 ====

@@ -12,7 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_python//python:defs.bzl", "py_library")
 load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_console_script_binary")
 load("//pw_build:pw_py_importable_runfile.bzl", "pw_py_importable_runfile")
@@ -122,6 +124,14 @@ pw_py_importable_runfile(
 )
 
 pw_py_importable_runfile(
+    name = "gn_runfiles",
+    src = "@gn",
+    executable = True,
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+pw_py_importable_runfile(
     name = "rustfmt_runfiles",
     src = "@rules_rust//tools/upstream_wrapper:rustfmt",
     executable = True,
@@ -132,9 +142,34 @@ pw_py_importable_runfile(
     visibility = ["//visibility:private"],
 )
 
+bool_flag(
+    name = "enable_gn_formatter",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "gn_formatter_is_disabled",
+    flag_values = {
+        ":enable_gn_formatter": "false",
+    },
+)
+
+write_file(
+    name = "disabled_formatters",
+    out = "pigweed_format/disabled_formatters.txt",
+    content = select({
+        ":gn_formatter_is_disabled": ["gn"],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:private"],
+)
+
 pw_py_binary(
     name = "format",
     srcs = ["pigweed_format/__main__.py"],
+    data = [
+        ":disabled_formatters",
+    ],
     main = "pigweed_format/__main__.py",
     deps = [
         ":black_runfiles",
@@ -143,7 +178,10 @@ pw_py_binary(
         "//pw_build/py:pw_build",
         "@llvm_toolchain//:py_clang_format",
         "@rules_python//python/runfiles",
-    ],
+    ] + select({
+        ":gn_formatter_is_disabled": [],
+        "//conditions:default": [":gn_runfiles"],
+    }),
 )
 
 pw_py_binary(
