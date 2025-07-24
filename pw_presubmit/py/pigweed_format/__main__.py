@@ -22,8 +22,10 @@ from pw_presubmit.format.core import FileFormatter
 from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter
+from pw_presubmit.format.java import JavaFormatter
 from pw_presubmit.format.private.cli import FormattingSuite
 from pw_presubmit.format.owners import OwnersFormatter
+from pw_presubmit.format.protobuf import ProtobufFormatter
 from pw_presubmit.format.python import BlackFormatter
 from pw_presubmit.format.rust import RustfmtFormatter
 from pw_presubmit.format.cmake import CmakeFormatter
@@ -105,6 +107,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             bazel_import_path='pw_presubmit.py.gn_runfiles',
         ),
         FormatterSetup(
+            formatter=JavaFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='clang-format',
+            bazel_import_path='llvm_toolchain.clang_format',
+        ),
+        FormatterSetup(
             formatter=MarkdownFormatter(
                 tool_runner=runfiles,
             ),
@@ -117,6 +126,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             ),
             binary=None,
             bazel_import_path=None,
+        ),
+        FormatterSetup(
+            formatter=ProtobufFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='clang-format',
+            bazel_import_path='llvm_toolchain.clang_format',
         ),
         FormatterSetup(
             formatter=RustfmtFormatter(
@@ -133,6 +149,8 @@ def _pigweed_formatting_suite() -> FormattingSuite:
     # Setup runfiles.
     for formatter in enabled_formatters:
         if formatter.binary is not None:
+            if formatter.binary in runfiles:
+                continue
             runfiles.add_bootstrapped_tool(
                 formatter.binary, formatter.binary, from_shell_path=True
             )

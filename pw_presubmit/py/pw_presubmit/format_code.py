@@ -70,6 +70,7 @@ from pw_presubmit.format.css import DEFAULT_CSS_FILE_PATTERNS
 from pw_presubmit.format import cpp
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter, DEFAULT_GN_FILE_PATTERNS
+from pw_presubmit.format.java import DEFAULT_JAVA_FILE_PATTERNS
 from pw_presubmit.format.markdown import DEFAULT_MARKDOWN_FILE_PATTERNS
 from pw_presubmit.format.owners import (
     OwnersFormatter,
@@ -79,6 +80,7 @@ from pw_presubmit.format.private.cli_support import (
     summarize_findings,
     findings_to_formatted_diffs,
 )
+from pw_presubmit.format.protobuf import DEFAULT_PROTOBUF_FILE_PATTERNS
 from pw_presubmit.format.python import (
     BlackFormatter,
     DEFAULT_PYTHON_FILE_PATTERNS,
@@ -498,14 +500,14 @@ C_FORMAT = CodeFormat(
 
 PROTO_FORMAT: CodeFormat = CodeFormat(
     'Protocol buffer',
-    FileFilter(endswith=['.proto']),
+    DEFAULT_PROTOBUF_FILE_PATTERNS,
     clang_format_check,
     clang_format_fix,
 )
 
 JAVA_FORMAT: CodeFormat = CodeFormat(
     'Java',
-    FileFilter(endswith=['.java']),
+    DEFAULT_JAVA_FILE_PATTERNS,
     clang_format_check,
     clang_format_fix,
 )
