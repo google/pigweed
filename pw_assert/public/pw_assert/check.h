@@ -58,6 +58,22 @@
 //   PW_CHECK_UINT_EQ(a, b, msg, ...)  Asserts a == b
 //   PW_CHECK_UINT_NE(a, b, msg, ...)  Asserts a != b
 //
+//   Binary comparison asserts for 'int64_t' type:
+//   PW_CHECK_INT64_LE(a, b, msg, ...)  Asserts a <= b
+//   PW_CHECK_INT64_LT(a, b, msg, ...)  Asserts a <  b
+//   PW_CHECK_INT64_GE(a, b, msg, ...)  Asserts a >= b
+//   PW_CHECK_INT64_GT(a, b, msg, ...)  Asserts a >  b
+//   PW_CHECK_INT64_EQ(a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_INT64_NE(a, b, msg, ...)  Asserts a != b
+//
+//   Binary comparison asserts for 'uint64_t' type:
+//   PW_CHECK_UINT64_LE(a, b, msg, ...)  Asserts a <= b
+//   PW_CHECK_UINT64_LT(a, b, msg, ...)  Asserts a <  b
+//   PW_CHECK_UINT64_GE(a, b, msg, ...)  Asserts a >= b
+//   PW_CHECK_UINT64_GT(a, b, msg, ...)  Asserts a >  b
+//   PW_CHECK_UINT64_EQ(a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_UINT64_NE(a, b, msg, ...)  Asserts a != b
+//
 //   Binary comparison asserts for 'void*' type ("%p" in format strings):
 //   PW_CHECK_PTR_LE(a, b, msg, ...)  Asserts a <= b
 //   PW_CHECK_PTR_LT(a, b, msg, ...)  Asserts a <  b

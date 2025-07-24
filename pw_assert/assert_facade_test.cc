@@ -160,6 +160,23 @@ TEST_F(AssertFailTest, UintLessThanMessageArguments) {
   EXPECT_MESSAGE("Check failed: 5 (=5) < 2 (=2). msg: 6");
 }
 
+#if defined(PW_CHECK_UINT64_LT)
+TEST_F(AssertFailTest, Uint64LessThanNoMessageNoArguments) {
+  uint64_t a = 5;
+  uint64_t b = 2;
+  PW_CHECK_UINT64_LT(a, b);
+  EXPECT_MESSAGE("Check failed: a (=5) < b (=2). ");
+}
+#endif  // defined(PW_CHECK_UINT64_LT)
+
+#if defined(PW_CHECK_INT64_LT)
+TEST_F(AssertFailTest, Int64LessThanNoMessageNoArguments) {
+  int64_t a = -2;
+  int64_t b = -5;
+  PW_CHECK_INT64_LT(a, b);
+  EXPECT_MESSAGE("Check failed: a (=-2) < b (=-5). ");
+}
+#endif  // defined(PW_CHECK_INT64_LT)
 // Test comparison boundaries.
 
 // UINT <

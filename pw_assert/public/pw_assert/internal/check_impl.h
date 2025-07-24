@@ -14,6 +14,7 @@
 #pragma once
 
 #ifdef __cplusplus
+#include <cinttypes>
 #include <type_traits>
 #else
 #include <stddef.h>
@@ -94,6 +95,46 @@
 #define PW_DCHECK_UINT_GT(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT_GT(__VA_ARGS__)
 #define PW_DCHECK_UINT_EQ(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT_EQ(__VA_ARGS__)
 #define PW_DCHECK_UINT_NE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT_NE(__VA_ARGS__)
+
+// Checks for int64_t: LE, LT, GE, GT, EQ.
+#if defined(PRId64)
+#define PW_CHECK_INT64_LE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, int64_t, "%" PRId64, __VA_ARGS__)
+#define PW_CHECK_INT64_LT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, < , argb, int64_t, "%" PRId64, __VA_ARGS__)
+#define PW_CHECK_INT64_GE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, >=, argb, int64_t, "%" PRId64, __VA_ARGS__)
+#define PW_CHECK_INT64_GT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, > , argb, int64_t, "%" PRId64, __VA_ARGS__)
+#define PW_CHECK_INT64_EQ(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, int64_t, "%" PRId64, __VA_ARGS__)
+#define PW_CHECK_INT64_NE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, int64_t, "%" PRId64, __VA_ARGS__)
+#endif // defined(PRId64)
+
+// Debug checks for int64_t: LE, LT, GE, GT, EQ.
+#if defined(PRId64)
+#define PW_DCHECK_INT64_LE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_INT64_LE(__VA_ARGS__)
+#define PW_DCHECK_INT64_LT(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_INT64_LT(__VA_ARGS__)
+#define PW_DCHECK_INT64_GE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_INT64_GE(__VA_ARGS__)
+#define PW_DCHECK_INT64_GT(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_INT64_GT(__VA_ARGS__)
+#define PW_DCHECK_INT64_EQ(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_INT64_EQ(__VA_ARGS__)
+#define PW_DCHECK_INT64_NE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_INT64_NE(__VA_ARGS__)
+#endif // defined(PRId64)
+
+// Checks for uint64_t: LE, LT, GE, GT, EQ.
+#if defined(PRIu64)
+#define PW_CHECK_UINT64_LE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, uint64_t, "%" PRIu64, __VA_ARGS__)
+#define PW_CHECK_UINT64_LT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, < , argb, uint64_t, "%" PRIu64, __VA_ARGS__)
+#define PW_CHECK_UINT64_GE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, >=, argb, uint64_t, "%" PRIu64, __VA_ARGS__)
+#define PW_CHECK_UINT64_GT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, > , argb, uint64_t, "%" PRIu64, __VA_ARGS__)
+#define PW_CHECK_UINT64_EQ(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, uint64_t, "%" PRIu64, __VA_ARGS__)
+#define PW_CHECK_UINT64_NE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, uint64_t, "%" PRIu64, __VA_ARGS__)
+#endif // defined(PRIu64)
+
+// Debug checks for uint64_t: LE, LT, GE, GT, EQ.
+#if defined(PRIu64)
+#define PW_DCHECK_UINT64_LE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT64_LE(__VA_ARGS__)
+#define PW_DCHECK_UINT64_LT(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT64_LT(__VA_ARGS__)
+#define PW_DCHECK_UINT64_GE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT64_GE(__VA_ARGS__)
+#define PW_DCHECK_UINT64_GT(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT64_GT(__VA_ARGS__)
+#define PW_DCHECK_UINT64_EQ(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT64_EQ(__VA_ARGS__)
+#define PW_DCHECK_UINT64_NE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT64_NE(__VA_ARGS__)
+#endif // defined(PRIu64)
 
 // Checks for pointer: LE, LT, GE, GT, EQ, NE.
 #define PW_CHECK_PTR_LE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, const void*, "%p", __VA_ARGS__)
