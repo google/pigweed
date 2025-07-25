@@ -39,6 +39,10 @@ bool AndroidVendorCapabilities::SupportsVersion(uint8_t major,
   return false;
 }
 
+bool AndroidVendorCapabilities::IsVersion(uint8_t major, uint8_t minor) const {
+  return version_major_ == major && version_minor_ == minor;
+}
+
 AndroidVendorCapabilities AndroidVendorCapabilities::New(
     const android_emb::LEGetVendorCapabilitiesCommandCompleteEventView& e) {
   AndroidVendorCapabilities c;
@@ -98,18 +102,22 @@ AndroidVendorCapabilities AndroidVendorCapabilities::New(
     c.supports_debug_logging_ = AsBool(e.debug_logging_supported().Read());
   }
 
-  // Version 0.96
-  if (c.SupportsVersion(0, 96)) {
+  // Version 0.96 and beyond supports this, but version 0.99 it is absent.
+  if (c.SupportsVersion(0, 96) && !c.IsVersion(0, 99)) {
     c.supports_offloading_le_address_generation_ =
         AsBool(e.le_address_generation_offloading_support().Read());
   }
 
   // Version 0.98
-  if (c.SupportsVersion(0, 98)) {
+  if (c.SupportsVersion(0, 98) && !c.IsVersion(0, 99)) {
     c.a2dp_source_offload_capability_mask_ =
         e.a2dp_source_offload_capability_mask().BackingStorage().ReadUInt();
     c.supports_bluetooth_quality_report_ =
         AsBool(e.bluetooth_quality_report_support().Read());
+  } else if (c.IsVersion(0, 99)) {
+    c.a2dp_source_offload_capability_mask_ =
+        e.v99_a2dp_source_offload_capability_mask().BackingStorage().ReadUInt();
+    // 0.99 doesn't have the Supports Bluetooth Quality Report
   }
 
   // Version 1.03

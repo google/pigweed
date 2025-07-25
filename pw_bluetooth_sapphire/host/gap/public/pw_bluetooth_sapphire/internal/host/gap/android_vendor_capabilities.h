@@ -110,6 +110,10 @@ class AndroidVendorCapabilities final {
   // given version's major and minor.
   bool SupportsVersion(uint8_t major, uint8_t minor) const;
 
+  // Determines if the currently configured version is exactly equal to the
+  // given version's major and minor.
+  bool IsVersion(uint8_t major, uint8_t minor) const;
+
   uint8_t max_simultaneous_advertisement_ = 0;
   bool supports_offloaded_rpa_ = false;
   uint16_t scan_results_storage_bytes_ = 0;
