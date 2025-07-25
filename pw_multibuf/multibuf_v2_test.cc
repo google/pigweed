@@ -49,15 +49,18 @@ constexpr size_t kN = 32;
 class MultiBufTest : public ::testing::Test {
  protected:
   MultiBufTest() {
-    for (size_t i = 0; i < unowned_chunk_.size(); ++i) {
-      unowned_chunk_[i] = static_cast<std::byte>(i);
-    }
+    Fill(unowned_chunk_);
     owned_chunk_ = allocator_.MakeUnique<std::byte[]>(kN);
     PW_CHECK_NOTNULL(owned_chunk_.get());
-    for (size_t i = 0; i < kN; ++i) {
-      owned_chunk_[i] = static_cast<std::byte>(i);
-    }
     owned_bytes_ = pw::ByteSpan(owned_chunk_.get(), owned_chunk_.size());
+    Fill(owned_bytes_);
+  }
+
+  /// Helper to fill a span with an ascending sequence of values.
+  uint8_t Fill(pw::ByteSpan bytes, uint8_t value = 0) {
+    auto counter = [&value]() { return static_cast<std::byte>(value++); };
+    std::generate(bytes.begin(), bytes.end(), counter);
+    return value;
   }
 
   /// Helper to make a MultiBuf with non-contiguous buffers.
@@ -90,10 +93,7 @@ class MultiBufTest : public ::testing::Test {
   void AddLayers(ConstMultiBuf& mb) {
     MultiBuf::Instance fragment(allocator_);
     auto chunk = allocator_.MakeUnique<std::byte[]>(16);
-    uint8_t i = 0;
-    for (uint8_t j = 0; j < chunk.size(); ++j) {
-      chunk.get()[j] = std::byte(i++);
-    }
+    uint8_t i = Fill(pw::ByteSpan(chunk.get(), chunk.size()));
     fragment->PushBack(std::move(chunk));
     PW_CHECK(fragment->AddLayer(2, 12));
     PW_CHECK(fragment->AddLayer(2, 8));
@@ -101,9 +101,7 @@ class MultiBufTest : public ::testing::Test {
 
     fragment = MultiBuf::Instance(allocator_);
     chunk = allocator_.MakeUnique<std::byte[]>(16);
-    for (uint8_t j = 0; j < chunk.size(); ++j) {
-      chunk.get()[j] = std::byte(i++);
-    }
+    i = Fill(pw::ByteSpan(chunk.get(), chunk.size()), i);
     fragment->PushBack(std::move(chunk));
     PW_CHECK(fragment->AddLayer(0, 8));
     PW_CHECK(fragment->AddLayer(0, 0));
@@ -111,14 +109,10 @@ class MultiBufTest : public ::testing::Test {
 
     fragment = MultiBuf::Instance(allocator_);
     chunk = allocator_.MakeUnique<std::byte[]>(16);
-    for (uint8_t j = 0; j < chunk.size(); ++j) {
-      chunk.get()[j] = std::byte(i++);
-    }
+    i = Fill(pw::ByteSpan(chunk.get(), chunk.size()), i);
     fragment->PushBack(std::move(chunk));
     chunk = allocator_.MakeUnique<std::byte[]>(16);
-    for (uint8_t j = 0; j < chunk.size(); ++j) {
-      chunk.get()[j] = std::byte(i++);
-    }
+    Fill(pw::ByteSpan(chunk.get(), chunk.size()), i);
     fragment->PushBack(std::move(chunk));
     PW_CHECK(fragment->AddLayer(4));
     PW_CHECK(fragment->AddLayer(4));
@@ -1067,9 +1061,7 @@ TEST_F(MultiBufTest, InsertSharedPtrIntoEmptyMultiBuf) {
 TEST_F(MultiBufTest, InsertSharedPtrIntoNonEmptyMultiBufAtBoundary) {
   ConstMultiBuf::Instance mb(allocator_);
   auto shared = allocator_.MakeShared<std::byte[]>(2 * kN);
-  for (size_t i = 0; i < 2 * kN; ++i) {
-    shared.get()[i] = std::byte(i);
-  }
+  Fill(pw::ByteSpan(shared.get(), shared.size()));
   mb->PushBack(shared, kN, kN);
   mb->Insert(mb->end(), shared, 0, kN);
   EXPECT_EQ(mb->size(), 2 * kN);
@@ -1088,9 +1080,7 @@ TEST_F(MultiBufTest, InsertSharedPtrIntoNonEmptyMultiBufAtBoundary) {
 TEST_F(MultiBufTest, InsertSharedPtrIntoNonEmptyMultiBufMidChunk) {
   ConstMultiBuf::Instance mb(allocator_);
   auto shared = allocator_.MakeShared<std::byte[]>(2 * kN);
-  for (size_t i = 0; i < 2 * kN; ++i) {
-    shared.get()[i] = std::byte(i);
-  }
+  Fill(pw::ByteSpan(shared.get(), shared.size()));
   mb->PushBack(shared, 0, kN);
   mb->Insert(mb->begin() + kN / 2, shared, kN, kN);
   EXPECT_EQ(mb->size(), 2 * kN);
