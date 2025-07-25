@@ -12,55 +12,52 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_thread/attrs.h"
+#include "pw_thread/priority.h"
 #include "pw_thread/thread.h"
-#include "pw_thread_zephyr/config.h"
+#include "pw_thread_zephyr/context.h"
 #include "pw_thread_zephyr/options.h"
+#include "pw_thread_zephyr/priority.h"
 
 namespace pw::system {
 
-using namespace pw::thread::zephyr::config;
-
 // Low to high priorities.
-enum class ThreadPriority : int {
-  kWorkQueue = kDefaultPriority,
-  // TODO(amontanez): These should ideally be at different priority levels, but
-  // there's synchronization issues when they are.
-  kLog = kWorkQueue,
-  kRpc = kWorkQueue,
-  kNumPriorities,
-};
+constexpr const auto kWorkQueuePriority = pw::ThreadPriority();
+
+// TODO(amontanez): These should ideally be at different priority levels, but
+// there's synchronization issues when they are.
+constexpr const auto kLogPriority = kWorkQueuePriority;
+constexpr const auto kRpcPriority = kWorkQueuePriority;
 
 static constexpr size_t kLogThreadStackWords =
     CONFIG_PIGWEED_SYSTEM_TARGET_HOOKS_LOG_STACK_SIZE;
-static thread::zephyr::StaticContextWithStack<kLogThreadStackWords>
+static thread::backend::NativeContextWithStack<kLogThreadStackWords>
     log_thread_context;
 const thread::Options& LogThreadOptions() {
-  static constexpr auto options =
-      pw::thread::zephyr::Options(log_thread_context)
-          .set_priority(static_cast<int>(ThreadPriority::kLog));
+  static auto options = pw::thread::backend::GetNativeOptions(
+      log_thread_context, ThreadAttrs().set_priority(kLogPriority));
   return options;
 }
 
 static constexpr size_t kRpcThreadStackWords =
     CONFIG_PIGWEED_SYSTEM_TARGET_HOOKS_RPC_STACK_SIZE;
-static thread::zephyr::StaticContextWithStack<kRpcThreadStackWords>
+static thread::backend::NativeContextWithStack<kRpcThreadStackWords>
     rpc_thread_context;
 const thread::Options& RpcThreadOptions() {
-  static constexpr auto options =
-      pw::thread::zephyr::Options(rpc_thread_context)
-          .set_priority(static_cast<int>(ThreadPriority::kRpc));
+  static auto options = pw::thread::backend::GetNativeOptions(
+      rpc_thread_context, ThreadAttrs().set_priority(kRpcPriority));
   return options;
 }
 
 static constexpr size_t kWorkQueueThreadStackWords =
     CONFIG_PIGWEED_SYSTEM_TARGET_HOOKS_WORK_QUEUE_STACK_SIZE;
-static thread::zephyr::StaticContextWithStack<kWorkQueueThreadStackWords>
+static thread::backend::NativeContextWithStack<kWorkQueueThreadStackWords>
     work_queue_thread_context;
 
 const thread::Options& WorkQueueThreadOptions() {
-  static constexpr auto options =
-      pw::thread::zephyr::Options(work_queue_thread_context)
-          .set_priority(static_cast<int>(ThreadPriority::kWorkQueue));
+  static auto options = pw::thread::backend::GetNativeOptions(
+      work_queue_thread_context,
+      ThreadAttrs().set_priority(kWorkQueuePriority));
   return options;
 }
 
