@@ -49,9 +49,10 @@ FileManager::FileManager()
           kTraceFilename,
           kTraceTransferHandlerId,
           file::FlatFileSystemService::Entry::FilePermissions::READ,
-          GetTraceData())
+          GetTraceData()),
 #endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
-{
+      transfer_handlers_{},
+      file_system_entries_{} {
   // Every handler & filesystem element must be added to the collections, using
   // the associated handler ID as the index.
 #if PW_SYSTEM_ENABLE_CRASH_HANDLER
