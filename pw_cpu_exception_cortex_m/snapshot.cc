@@ -76,12 +76,10 @@ Status CaptureMainStack(
 Status SnapshotCpuState(
     const pw_cpu_exception_State& cpu_state,
     pwpb::SnapshotCpuStateOverlay::StreamEncoder& snapshot_encoder) {
-  {
-    pwpb::ArmV7mCpuState::StreamEncoder cpu_state_encoder =
-        snapshot_encoder.GetArmv7mCpuStateEncoder();
-    DumpCpuStateProto(cpu_state_encoder, cpu_state).IgnoreError();
-  }
-  return snapshot_encoder.status();
+  return snapshot_encoder.WriteArmv7mCpuStateMessage(
+      [&cpu_state](auto& cpu_state_encoder) {
+        return DumpCpuStateProto(cpu_state_encoder, cpu_state);
+      });
 }
 
 Status SnapshotMainStackThread(
