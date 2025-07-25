@@ -467,7 +467,7 @@ class CompileCommandsGeneratorTest(unittest.TestCase):
         cdb_filename = 'compile_commands.json'
         full_cdb_dir_path = self.cwd / cdb_file_dir_name
         platform_dir_path = full_cdb_dir_path / platform_name
-        platform_dir_path.mkdir(parents=True)
+        platform_dir_path.mkdir(parents=True, exist_ok=True)
         existing_cdb_file_path = platform_dir_path / cdb_filename
         existing_content = '[{"file": "old.c", "command": "gcc old.c"}]'
         existing_cdb_file_path.write_text(existing_content)
