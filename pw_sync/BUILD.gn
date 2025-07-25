@@ -257,6 +257,16 @@ pw_source_set("threaded_testing") {
   ]
 }
 
+pw_source_set("timed_threaded_testing") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/internal/timed_threaded_testing.h" ]
+  public_deps = [
+    ":threaded_testing",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_thread:sleep",
+  ]
+}
+
 pw_source_set("lock_testing") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/lock_testing.h" ]
@@ -415,10 +425,13 @@ pw_test("thread_notification_facade_test") {
 }
 
 pw_test("timed_thread_notification_facade_test") {
-  enable_if = pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != ""
+  enable_if = pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != "" &&
+              pw_thread_THREAD_BACKEND != "" &&
+              pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
   sources = [ "timed_thread_notification_facade_test.cc" ]
   deps = [
     ":timed_thread_notification",
+    ":timed_threaded_testing",
     pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND,
   ]
 }

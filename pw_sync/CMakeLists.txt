@@ -247,6 +247,17 @@ pw_add_library(pw_sync.threaded_testing INTERFACE
     pw_unit_test
 )
 
+pw_add_library(pw_sync.timed_threaded_testing INTERFACE
+  HEADERS
+    public/pw_sync/internal/timed_threaded_testing.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_sync.threaded_testing
+    pw_chrono.system_clock
+    pw_thread.sleep
+)
+
 pw_add_library(pw_sync.lock_testing STATIC
   HEADERS
     public/pw_sync/lock_testing.h
@@ -407,6 +418,7 @@ if(NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL "")
       timed_thread_notification_facade_test.cc
     PRIVATE_DEPS
       pw_sync.timed_thread_notification
+      pw_sync.timed_threaded_testing
     GROUPS
       modules
       pw_sync

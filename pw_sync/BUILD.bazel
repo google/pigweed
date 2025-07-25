@@ -410,6 +410,18 @@ cc_library(
 )
 
 cc_library(
+    name = "timed_threaded_testing",
+    testonly = True,
+    hdrs = ["public/pw_sync/internal/timed_threaded_testing.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":threaded_testing",
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+    ],
+)
+
+cc_library(
     name = "lock_testing",
     srcs = ["lock_testing.cc"],
     hdrs = ["public/pw_sync/lock_testing.h"],
@@ -575,6 +587,7 @@ pw_cc_test(
     ],
     deps = [
         ":timed_thread_notification",
+        ":timed_threaded_testing",
         "//pw_chrono:system_clock",
     ],
 )
