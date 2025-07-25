@@ -39,7 +39,7 @@ bool GenericMultiBuf::TryReserveChunks(size_type num_chunks) {
     return true;
   }
   size_type num_entries = num_chunks - current_chunks;
-  PW_CHECK_MUL(num_entries, depth_, &num_entries);
+  PW_CHECK(CheckedMul(num_entries, depth_, num_entries));
   return TryReserveEntries(num_entries);
 }
 
@@ -545,9 +545,9 @@ bool GenericMultiBuf::TryReserveEntries(const_iterator pos,
 
 bool GenericMultiBuf::TryReserveEntries(size_type num_entries, bool split) {
   if (split) {
-    PW_CHECK_ADD(num_entries, depth_, &num_entries);
+    PW_CHECK(CheckedAdd(num_entries, depth_, num_entries));
   }
-  PW_CHECK_ADD(num_entries, deque_.size(), &num_entries);
+  PW_CHECK(CheckedAdd(num_entries, deque_.size(), num_entries));
   return deque_.try_reserve_exact(num_entries);
 }
 
@@ -555,7 +555,7 @@ GenericMultiBuf::size_type GenericMultiBuf::InsertEntries(
     const_iterator pos, size_type num_entries) {
   auto [index, offset] = GetIndexAndOffset(pos);
   if (offset != 0) {
-    PW_CHECK_ADD(num_entries, depth_, &num_entries);
+    PW_CHECK(CheckedAdd(num_entries, depth_, num_entries));
   }
   Entry entry;
   entry.data = nullptr;

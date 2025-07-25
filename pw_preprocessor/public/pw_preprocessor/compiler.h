@@ -277,8 +277,6 @@
 ///
 /// It's recommended to use @cpp_func{pw::CheckedAdd} or
 /// @cpp_func{pw::CheckedIncrement} instead.
-///
-/// See also `PW_CHECK_ADD`.
 #define PW_ADD_OVERFLOW(a, b, out) __builtin_add_overflow(a, b, out)
 
 /// `PW_SUB_OVERFLOW` subtracts an integer from another while checking for
@@ -289,8 +287,6 @@
 ///
 /// It's recommended to use @cpp_func{pw::CheckedSub} or
 /// @cpp_func{pw::CheckedDecrement} instead.
-///
-/// See also `PW_CHECK_SUB`.
 #define PW_SUB_OVERFLOW(a, b, out) __builtin_sub_overflow(a, b, out)
 
 /// `PW_MUL_OVERFLOW` multiplies two integers while checking for overflow.
@@ -299,8 +295,6 @@
 /// stores the result in `out` and returns false.
 ///
 /// It's recommended to use @cpp_func{pw::CheckedMul} instead.
-///
-/// See also `PW_CHECK_MUL`.
 #define PW_MUL_OVERFLOW(a, b, out) __builtin_mul_overflow(a, b, out)
 
 /// Evaluates to 1 if `__VA_OPT__` is supported, regardless of the C or C++
