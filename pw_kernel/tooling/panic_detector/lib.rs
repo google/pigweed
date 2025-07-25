@@ -14,17 +14,21 @@
 
 // TODO: refactor this file and crate::riscv to separate generic elf code from
 // riscv specific code.
+#![allow(clippy::print_stdout)]
+
 use core::fmt::Debug;
 use std::collections::HashSet;
 use std::path::Path;
 
 use anyhow::{anyhow, Context};
-use object::elf;
 use object::read::elf::{ElfFile32, FileHeader};
+use object::{elf, LittleEndian};
 
-use crate::find_symbol_address;
 use crate::riscv::call_graph::{list_functions, FuncRepo, Function};
 use crate::riscv::{DecodedInstr, ElfMem, InstrA, Reg};
+
+pub mod riscv;
+
 /// Check to see if the elf-file at `elf_path` contains any calls to the
 /// `panic_is_possible`` symbol, and if so, try to find the line numbers where
 /// these potential panics originate from.
@@ -418,4 +422,17 @@ struct Solution {
     // The address of branch/jump instructions between where the solution was
     // found and the address provided to solve().
     branch_trace: Vec<u32>,
+}
+
+fn find_symbol_address(
+    t: &object::read::elf::SymbolTable<object::elf::FileHeader32<LittleEndian>>,
+    name: &str,
+) -> anyhow::Result<u64> {
+    const E: object::LittleEndian = object::LittleEndian;
+    for sym in t.symbols() {
+        if t.symbol_name(E, sym)? == name.as_bytes() {
+            return Ok(sym.st_value.get(E).into());
+        }
+    }
+    Err(anyhow!("Unable to find symbol {name:?}"))
 }

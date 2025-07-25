@@ -16,12 +16,7 @@
 
 use std::path::PathBuf;
 
-use anyhow::anyhow;
 use clap::Parser;
-use object::LittleEndian;
-
-mod check_panics;
-mod riscv;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -31,21 +26,8 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    match crate::check_panics::check_panic(&args.image) {
+    match panic_detector::check_panic(&args.image) {
         Ok(()) => std::process::exit(0),
         Err(..) => std::process::exit(1),
     }
-}
-
-fn find_symbol_address(
-    t: &object::read::elf::SymbolTable<object::elf::FileHeader32<LittleEndian>>,
-    name: &str,
-) -> anyhow::Result<u64> {
-    const E: object::LittleEndian = object::LittleEndian;
-    for sym in t.symbols() {
-        if t.symbol_name(E, sym)? == name.as_bytes() {
-            return Ok(sym.st_value.get(E).into());
-        }
-    }
-    Err(anyhow!("Unable to find symbol {name:?}"))
 }

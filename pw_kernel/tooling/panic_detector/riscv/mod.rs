@@ -30,19 +30,23 @@ pub struct InstrA {
     pub instr: Instr,
 }
 impl InstrA {
+    #[must_use]
     pub fn new(addr: u32, instr: Instr) -> Self {
         Self { addr, instr }
     }
     /// Returns true if this instruction is a 16-bit compressed instruction.
+    #[must_use]
     pub fn is_compressed(&self) -> bool {
         self.instr.is_compressed()
     }
     /// Decodes the instruction
+    #[must_use]
     pub fn decode(&self) -> DecodedInstr {
         self.instr.decode()
     }
     /// If the instruction contains a relative address, this function will
     /// return the absolute address (relative to self.addr).
+    #[must_use]
     pub fn absolute_imm(&self) -> u32 {
         match self.instr.decode().ty() {
             InstrType::R(_) => self.addr,
@@ -81,6 +85,7 @@ pub struct Instr(u32);
 impl Instr {
     /// Decodes the instruction
     #[inline(always)]
+    #[must_use]
     pub fn decode(self) -> DecodedInstr {
         if self.is_compressed() {
             // The instr is stored in the lower 16-bits.
@@ -187,6 +192,7 @@ impl Instr {
         DecodedInstr::Unknown(self.0)
     }
     /// Returns true if this instruction is a 16-bit compressed instruction.
+    #[must_use]
     pub fn is_compressed(self) -> bool {
         (self.0 & OP_MASK_32) != OP_MASK_32
     }
@@ -380,6 +386,7 @@ pub enum InstrType {
     Unknown(u32),
 }
 impl InstrType {
+    #[must_use]
     pub fn rd(&self) -> Option<Reg> {
         match self {
             Self::R(i) => Some(i.rd()),
@@ -485,6 +492,7 @@ pub enum DecodedInstr {
     Ebreak,
 }
 impl DecodedInstr {
+    #[must_use]
     pub fn ty(&self) -> InstrType {
         #![allow(clippy::unusual_byte_groupings)]
         match self {
@@ -572,6 +580,7 @@ impl DecodedInstr {
             Self::Unknown(i) => InstrType::Unknown(*i),
         }
     }
+    #[must_use]
     pub fn mnemonic(&self) -> &'static str {
         match self {
             Self::Lui(_) => "lui",
@@ -691,6 +700,7 @@ pub struct Instr32R {
     pub funct10_upper: u32,
 }
 impl Instr32R {
+    #[must_use]
     pub fn funct10(&self) -> u32 {
         (self.funct10_upper() << 3) | self.funct10_lower()
     }
@@ -718,6 +728,7 @@ pub struct Instr32I {
     pub uimm: u32,
 }
 impl Instr32I {
+    #[must_use]
     pub fn imm(&self) -> i32 {
         sign_extend_i32(self.uimm(), 11)
     }
@@ -750,6 +761,7 @@ pub struct Instr32IS {
     funct7: u32,
 }
 impl Instr32IS {
+    #[must_use]
     pub const fn funct10(&self) -> u32 {
         (self.funct7() << 3) | self.funct3()
     }
@@ -757,6 +769,7 @@ impl Instr32IS {
         self.set_funct3(val & 0x7);
         self.set_funct7(val >> 3)
     }
+    #[must_use]
     pub fn imm(&self) -> i32 {
         sign_extend_i32(self.uimm(), 4)
     }
@@ -780,6 +793,7 @@ pub struct Instr32IB {
     funct12: u32,
 }
 impl Instr32IB {
+    #[must_use]
     pub const fn funct15(&self) -> u32 {
         (self.funct12() << 3) | self.funct3()
     }
@@ -809,6 +823,7 @@ pub struct Instr32S {
     pub imm5: u32,
 }
 impl Instr32S {
+    #[must_use]
     pub const fn uimm(&self) -> u32 {
         (self.imm5() << 5) | self.imm0()
     }
@@ -816,6 +831,7 @@ impl Instr32S {
         self.set_imm0(val & 0x1f);
         self.set_imm5(val >> 5)
     }
+    #[must_use]
     pub fn imm(&self) -> i32 {
         sign_extend_i32(self.uimm(), 11)
     }
@@ -916,12 +932,14 @@ pub struct Instr32U {
     pub imm12: u32,
 }
 impl Instr32U {
+    #[must_use]
     pub fn uimm(&self) -> u32 {
         self.imm12() << 12
     }
     pub fn set_uimm(&mut self, val: u32) {
         self.set_imm12(val >> 12);
     }
+    #[must_use]
     pub fn imm(&self) -> i32 {
         self.uimm().cast_signed()
     }
@@ -1054,6 +1072,7 @@ impl Reg {
     const fn into_bits(self) -> u8 {
         self as u8
     }
+    #[must_use]
     pub const fn abi_mnemonic(self) -> &'static str {
         match self {
             Self::X0 => "x0",

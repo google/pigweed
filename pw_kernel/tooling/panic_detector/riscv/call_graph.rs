@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#![allow(clippy::print_stdout)]
 
 use core::ops::Bound;
 use std::collections::{btree_map, hash_map, BTreeMap, HashMap};
@@ -31,6 +32,7 @@ pub enum Binding {
     Global = 3,
 }
 impl Binding {
+    #[must_use]
     pub fn from_st_bind(st_bind: u8) -> Self {
         match st_bind {
             STB_GLOBAL => Self::Global,
@@ -143,15 +145,18 @@ impl<'a> FuncRepo<'a> {
             jumpers,
         })
     }
+    #[must_use]
     pub fn get_jumpers(&self, dest_addr: u32) -> &[u32] {
         self.jumpers
             .get(&dest_addr)
             .map(|v| v.as_slice())
             .unwrap_or(&[])
     }
+    #[must_use]
     pub fn get_func_by_symbol(&self, name: &str) -> Option<&Function<'_>> {
         self.by_symbol.get(name).map(|v| &**v)
     }
+    #[must_use]
     pub fn instructions_at_addr(&self, addr: u32) -> Option<(&Function<'_>, InstrIterator<'_>)> {
         let (_, func) = self
             .by_addr
@@ -171,9 +176,11 @@ pub struct Function<'a> {
     pub body: Snippet<'a>,
 }
 impl Function<'_> {
+    #[must_use]
     pub fn start_addr(&self) -> u32 {
         self.body.addr
     }
+    #[must_use]
     pub fn end_addr(&self) -> u32 {
         self.body
             .addr
@@ -187,9 +194,11 @@ pub struct Snippet<'a> {
 }
 impl<'a> Snippet<'a> {
     #[allow(dead_code)]
+    #[must_use]
     pub fn data(&self) -> &'a [u8] {
         self.data
     }
+    #[must_use]
     pub fn instructions(&'a self) -> InstrIterator<'a> {
         InstrIterator {
             data: self.data,
@@ -198,6 +207,7 @@ impl<'a> Snippet<'a> {
             instr_sizes: &self.instr_sizes,
         }
     }
+    #[must_use]
     pub fn instructions_at_addr(&'a self, addr: u32) -> Option<InstrIterator<'a>> {
         if addr % 2 != 0 || addr < self.addr {
             return None;
@@ -270,6 +280,7 @@ pub struct InstrSizes {
     bits: BitVec,
 }
 impl InstrSizes {
+    #[must_use]
     pub fn new(mut data: &[u8]) -> Self {
         let mut bits = BitVec::new();
         bits.push(true);
@@ -296,6 +307,7 @@ impl InstrSizes {
         }
         Self { bits }
     }
+    #[must_use]
     pub fn prev_instr_size(&self, offset: usize) -> Option<InstrSize> {
         match self.bits.get(offset / 2) {
             Some(true) => Some(InstrSize::_4),

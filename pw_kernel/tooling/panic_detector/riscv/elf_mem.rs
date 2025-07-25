@@ -43,6 +43,7 @@ impl<'a> ElfMem<'a> {
     /// Return a slice of len `len` containing the program data at virtual
     /// address `addr`, or None if the elf file does not contain data for that
     /// address.
+    #[must_use]
     pub fn get(&self, addr: u32, len: u32) -> Option<&'a [u8]> {
         // Find the chunk that starts before or at addr.
         let (chunk_addr, chunk_data) = self

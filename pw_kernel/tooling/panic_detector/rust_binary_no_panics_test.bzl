@@ -60,7 +60,7 @@ _rust_binary_no_panics_test = rule(
         "_panic_detector": attr.label(
             executable = True,
             cfg = "exec",
-            default = "//pw_kernel/tooling/panic_detector:panic_detector",
+            default = "//pw_kernel/tooling/panic_detector:panic_detector_tool",
         ),
     },
     doc = "Check whether the rust binary contains any panics.",
