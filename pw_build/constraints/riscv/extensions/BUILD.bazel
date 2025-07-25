@@ -37,3 +37,7 @@ boolean_constraint_value(
 boolean_constraint_value(
     name = "M",
 )
+
+boolean_constraint_value(
+    name = "Smepmp",
+)

@@ -31,10 +31,16 @@ rust_library(
     ] + select({
         "timer_clint": ["timer/clint.rs"],
         "timer_mtime": ["timer/mtime.rs"],
+    }) + select({
+        "//pw_build/constraints/riscv/extensions:Smepmp": ["regs/epmp.rs"],
+        "//conditions:default": [],
     }),
     crate_features = ["user_space"] + select({
         "timer_clint": ["timer_clint"],
         "timer_mtime": ["timer_mtime"],
+    }) + select({
+        "//pw_build/constraints/riscv/extensions:Smepmp": ["epmp"],
+        "//conditions:default": [],
     }),
     proc_macro_deps = [
         "//pw_kernel/macros:riscv_macro",

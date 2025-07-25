@@ -14,6 +14,8 @@
 
 use regs::*;
 
+#[cfg(feature = "epmp")]
+pub mod epmp;
 pub mod pmp;
 
 #[allow(unused_macros)]
@@ -32,6 +34,7 @@ macro_rules! ro_csr_reg {
     };
 }
 
+#[macro_export]
 macro_rules! rw_csr_reg {
     ($name:ident, $val_type:ident, $reg_name:ident, $doc:literal) => {
         #[doc=$doc]
