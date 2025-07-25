@@ -89,8 +89,4 @@ TEST_F(TypedPoolTest, MakeUnique) {
   }
 }
 
-TEST_F(TypedPoolTest, MakeUniqueArrayBounded) {}
-
-TEST_F(TypedPoolTest, MakeUniqueArrayUnbounded) {}
-
 }  // namespace
