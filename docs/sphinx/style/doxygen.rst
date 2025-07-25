@@ -183,8 +183,8 @@ The direction annotation is required.
       /// @param src The memory area to copy from.
       /// @param n The number of bytes to copy.
 
-   ``<direction>`` must be specified and the value must be either ``in`` or
-   ``out``.
+   ``<direction>`` must be specified and the value must be one of ``in``,
+   ``out``, or ``in,out``.
 
 .. _docs-style-doxygen-pre:
 
