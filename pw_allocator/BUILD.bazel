@@ -503,14 +503,7 @@ cc_library(
 cc_library(
     name = "block_allocator_testing",
     testonly = True,
-    srcs = ["block_allocator_testing.cc"],
     hdrs = ["public/pw_allocator/block_allocator_testing.h"],
-    implementation_deps = [
-        "//pw_assert:check",
-        "//pw_bytes:alignment",
-        "//pw_status",
-        "//third_party/fuchsia:stdcompat",
-    ],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
@@ -521,7 +514,10 @@ cc_library(
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/block:testing",
         "//pw_assert:assert",
+        "//pw_bytes:alignment",
+        "//pw_status",
         "//pw_unit_test",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 

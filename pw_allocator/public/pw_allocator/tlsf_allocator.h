@@ -85,12 +85,14 @@ template <typename BlockType = TlsfBlock<uint32_t>,
 class TlsfAllocator : public BlockAllocator<BlockType> {
  private:
   using Base = BlockAllocator<BlockType>;
-  using BucketType = FastSortedBucket<BlockType>;
 
   static constexpr size_t kNumBucketsPerShelf = 16;
   static constexpr size_t kBucketBits =
       internal::CountRZero(kNumBucketsPerShelf);
-  using Shelf = std::array<BucketType, kNumBucketsPerShelf>;
+
+  using SmallBucket = ForwardSortedBucket<BlockType>;
+  using LargeBucket = FastSortedBucket<BlockType>;
+  using Shelf = std::array<LargeBucket, kNumBucketsPerShelf>;
 
   static_assert(kMinSize >= kNumBucketsPerShelf,
                 "kMinSize must be at least 16.");
@@ -142,7 +144,7 @@ class TlsfAllocator : public BlockAllocator<BlockType> {
   uint32_t shelf_bitmap_ = 0;
   std::array<uint16_t, kNumShelves> bucket_bitmaps_;
   std::array<Shelf, kNumShelves> shelves_;
-  ForwardSortedBucket<BlockType> small_bucket_;
+  SmallBucket small_bucket_;
 };
 
 // Template method implementations.
@@ -152,7 +154,7 @@ constexpr TlsfAllocator<BlockType, kMinSize, kNumShelves>::TlsfAllocator() {
   size_t size = kMinSize;
   size_t step = kMinSize / kNumBucketsPerShelf;
   for (Shelf& shelf : shelves_) {
-    for (BucketType& bucket : shelf) {
+    for (LargeBucket& bucket : shelf) {
       size += step;
       bucket.set_max_inner_size(size - 1);
     }
@@ -160,7 +162,7 @@ constexpr TlsfAllocator<BlockType, kMinSize, kNumShelves>::TlsfAllocator() {
   }
 
   // The largest bucket is unbounded.
-  BucketType& largest = shelves_[kNumShelves - 1][kNumBucketsPerShelf - 1];
+  LargeBucket& largest = shelves_[kNumShelves - 1][kNumBucketsPerShelf - 1];
   largest.set_max_inner_size(std::numeric_limits<size_t>::max());
 
   bucket_bitmaps_.fill(0);
@@ -181,8 +183,7 @@ TlsfAllocator<BlockType, kMinSize, kNumShelves>::ChooseBlock(Layout layout) {
   for (TlsfIndices indices = MapToIndices(layout.size());
        FindNextAvailable(indices);
        indices.bucket++) {
-    FastSortedBucket<BlockType>& bucket =
-        shelves_[indices.shelf][indices.bucket];
+    LargeBucket& bucket = shelves_[indices.shelf][indices.bucket];
     BlockType* block = bucket.RemoveCompatible(layout);
     if (block != nullptr) {
       UpdateBitmaps(indices, bucket.empty());
@@ -197,13 +198,12 @@ TlsfAllocator<BlockType, kMinSize, kNumShelves>::ChooseBlock(Layout layout) {
 template <typename BlockType, size_t kMinSize, size_t kNumShelves>
 void TlsfAllocator<BlockType, kMinSize, kNumShelves>::ReserveBlock(
     BlockType& block) {
-  if (block.InnerSize() <= sizeof(SortedItem)) {
+  if (block.InnerSize() < sizeof(typename LargeBucket::ItemType)) {
     std::ignore = small_bucket_.Remove(block);
     return;
   }
   TlsfIndices indices = MapToIndices(block.InnerSize());
-  FastSortedBucket<BlockType>& large_bucket =
-      shelves_[indices.shelf][indices.bucket];
+  LargeBucket& large_bucket = shelves_[indices.shelf][indices.bucket];
   if (large_bucket.Remove(block)) {
     UpdateBitmaps(indices, large_bucket.empty());
   }
@@ -212,13 +212,12 @@ void TlsfAllocator<BlockType, kMinSize, kNumShelves>::ReserveBlock(
 template <typename BlockType, size_t kMinSize, size_t kNumShelves>
 void TlsfAllocator<BlockType, kMinSize, kNumShelves>::RecycleBlock(
     BlockType& block) {
-  if (block.InnerSize() <= sizeof(SortedItem)) {
+  if (block.InnerSize() < sizeof(typename LargeBucket::ItemType)) {
     std::ignore = small_bucket_.Add(block);
     return;
   }
   TlsfIndices indices = MapToIndices(block.InnerSize());
-  FastSortedBucket<BlockType>& large_bucket =
-      shelves_[indices.shelf][indices.bucket];
+  LargeBucket& large_bucket = shelves_[indices.shelf][indices.bucket];
   std::ignore = large_bucket.Add(block);
   UpdateBitmaps(indices, false);
 }

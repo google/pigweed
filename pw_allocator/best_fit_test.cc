@@ -72,7 +72,6 @@ TEST_F(BestFitAllocatorTest, AllocatesBestCompatible) {
       {kLargerOuterSize, Preallocation::kFree},
       {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
-
   void* ptr1 = allocator.Allocate(Layout(kSmallInnerSize, 1));
   EXPECT_LT(Fetch(1), ptr1);
   EXPECT_LT(ptr1, Fetch(3));

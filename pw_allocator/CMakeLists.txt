@@ -494,7 +494,7 @@ pw_add_library(pw_allocator.testing INTERFACE
     pw_unit_test
 )
 
-pw_add_library(pw_allocator.block_allocator_testing STATIC
+pw_add_library(pw_allocator.block_allocator_testing INTERFACE
   HEADERS
     public/pw_allocator/block_allocator_testing.h
   PUBLIC_INCLUDES
@@ -508,14 +508,10 @@ pw_add_library(pw_allocator.block_allocator_testing STATIC
     pw_allocator.fuzzing
     pw_allocator.test_harness
     pw_assert.assert
-    pw_unit_test
-  PRIVATE_DEPS
-    pw_assert.check
     pw_bytes.alignment
     pw_status
     pw_third_party.fuchsia.stdcompat
-  SOURCES
-    block_allocator_testing.cc
+    pw_unit_test
 )
 
 pw_add_library(pw_allocator.counter STATIC

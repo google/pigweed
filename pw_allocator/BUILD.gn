@@ -470,17 +470,13 @@ pw_source_set("block_allocator_testing") {
     ":pw_allocator",
     ":test_harness",
     "$dir_pw_assert:assert",
-    "block:detailed_block",
-    "block:testing",
-    dir_pw_unit_test,
-  ]
-  deps = [
-    "$dir_pw_assert:check",
     "$dir_pw_bytes:alignment",
     "$pw_external_fuchsia:stdcompat",
+    "block:detailed_block",
+    "block:testing",
     dir_pw_status,
+    dir_pw_unit_test,
   ]
-  sources = [ "block_allocator_testing.cc" ]
 }
 
 pw_source_set("counter") {
