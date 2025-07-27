@@ -334,21 +334,7 @@ class TransferThread : public thread::ThreadCore {
 
   void HandleTimeouts();
 
-  rpc::Writer& stream_for(TransferStream stream) {
-    switch (stream) {
-      case TransferStream::kClientRead:
-        return client_read_stream_.as_writer();
-      case TransferStream::kClientWrite:
-        return client_write_stream_.as_writer();
-      case TransferStream::kServerRead:
-        return server_read_stream_.as_writer();
-      case TransferStream::kServerWrite:
-        return server_write_stream_.as_writer();
-    }
-    // An unknown TransferStream value was passed, which means this function
-    // was passed an invalid enum value.
-    PW_ASSERT(false);
-  }
+  rpc::Writer& stream_for(TransferStream stream);
 
   bool TryWaitForEventToProcess() {
     if constexpr (cfg::kWaitForEventProcessingIndefinitely) {

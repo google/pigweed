@@ -619,6 +619,22 @@ void TransferThread::GetResourceState(uint32_t resource_id) {
   }
 }
 
+rpc::Writer& TransferThread::stream_for(TransferStream stream) {
+  switch (stream) {
+    case TransferStream::kClientRead:
+      return client_read_stream_.as_writer();
+    case TransferStream::kClientWrite:
+      return client_write_stream_.as_writer();
+    case TransferStream::kServerRead:
+      return server_read_stream_.as_writer();
+    case TransferStream::kServerWrite:
+      return server_write_stream_.as_writer();
+  }
+  // An unknown TransferStream value was passed, which means this function
+  // was passed an invalid enum value.
+  PW_CRASH("Unsupported stream type");
+}
+
 }  // namespace pw::transfer::internal
 
 PW_MODIFY_DIAGNOSTICS_POP();
