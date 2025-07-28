@@ -31,6 +31,11 @@ class CommandPacket : public DynamicPacket {
   // Construct an HCI Command packet from an Emboss view T and initialize its
   // header with the |opcode| and size.
   template <typename T>
+  static CommandPacketT<T> New(pw::bluetooth::emboss::OpCode opcode) {
+    return New<T>(opcode, T::IntrinsicSizeInBytes().Read());
+  }
+
+  template <typename T>
   static CommandPacketT<T> New(hci_spec::OpCode opcode) {
     return New<T>(opcode, T::IntrinsicSizeInBytes().Read());
   }
@@ -39,6 +44,13 @@ class CommandPacket : public DynamicPacket {
   // total bytes (header + payload) and initialize its header with the |opcode|
   // and size. This constructor is meant for variable size packets, for which
   // clients must calculate packet size manually.
+  template <typename T>
+  static CommandPacketT<T> New(pw::bluetooth::emboss::OpCode opcode,
+                               size_t packet_size) {
+    CommandPacketT<T> packet(opcode, packet_size);
+    return packet;
+  }
+
   template <typename T>
   static CommandPacketT<T> New(hci_spec::OpCode opcode, size_t packet_size) {
     CommandPacketT<T> packet(opcode, packet_size);
@@ -54,6 +66,8 @@ class CommandPacket : public DynamicPacket {
   uint16_t ocf() const;
 
  protected:
+  explicit CommandPacket(pw::bluetooth::emboss::OpCode opcode,
+                         size_t packet_size);
   explicit CommandPacket(hci_spec::OpCode opcode, size_t packet_size);
 
  private:
@@ -70,6 +84,9 @@ class CommandPacketT : public CommandPacket {
 
  private:
   friend class CommandPacket;
+
+  CommandPacketT(pw::bluetooth::emboss::OpCode opcode, size_t packet_size)
+      : CommandPacket(opcode, packet_size) {}
 
   CommandPacketT(hci_spec::OpCode opcode, size_t packet_size)
       : CommandPacket(opcode, packet_size) {}

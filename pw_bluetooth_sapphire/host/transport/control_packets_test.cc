@@ -106,4 +106,14 @@ TEST(EmbossControlPackets, ArrayFieldWithVariableLengthElements) {
   EXPECT_EQ(second_report_view.data()[1].Read(), 0x34);
 }
 
+TEST(EmbossControlPackets, NewWritesOpcodeAndParameterTotalSize) {
+  auto packet = CommandPacket::New<
+      pw::bluetooth::emboss::LEPeriodicAdvertisingCreateSyncCommandWriter>(
+      pw::bluetooth::emboss::OpCode::LE_PERIODIC_ADVERTISING_CREATE_SYNC);
+  auto view = packet.view_t();
+  EXPECT_EQ(view.header().opcode().Read(),
+            pw::bluetooth::emboss::OpCode::LE_PERIODIC_ADVERTISING_CREATE_SYNC);
+  EXPECT_EQ(view.header().parameter_total_size().Read(), 14u);
+}
+
 }  // namespace bt::hci
