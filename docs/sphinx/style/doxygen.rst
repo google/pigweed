@@ -642,3 +642,30 @@ the header files.
    /// @class RandomGenerator random.h "pw_random/random.h"``
 
 See `b/295023422 <https://issues.pigweed.dev/issues/295023422>`_.
+
+.. _docs-style-doxygen-doxlink:
+
+-------------------------------------
+Link from Sphinx site to Doxygen site
+-------------------------------------
+.. _Doxylink: https://sphinxcontrib-doxylink.readthedocs.io/en/stable/
+
+Within your reStructuredText, use the ``:doxylink:`` directive.
+
+For example, the following link jumps you to the API reference
+for ``pw::persistent_ram::Persistent``: :doxylink:`Persistent`
+
+Here's the underlying reStructuredText:
+
+.. code-block::
+
+   :doxylink:`Persistent`
+
+If there are naming collision, you may need to fully qualify the
+namespace like this: :doxylink:`pw::persistent_ram::Persistent`
+
+.. code-block::
+
+   :doxylink:`pw::persistent_ram::Persistent`
+
+This feature is powered by `Doxylink`_.

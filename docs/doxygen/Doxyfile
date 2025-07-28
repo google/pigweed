@@ -50,6 +50,9 @@ GENERATE_BUGLIST       = NO
 # https://www.doxygen.nl/manual/config.html#cfg_generate_latex
 GENERATE_LATEX         = NO
 
+# https://www.doxygen.nl/manual/config.html#cfg_generate_tagfile
+GENERATE_TAGFILE       = bazel-out/k8-fastbuild/bin/docs/doxygen/html/index.tag
+
 # https://www.doxygen.nl/manual/config.html#cfg_generate_testlist
 GENERATE_TESTLIST      = NO
 

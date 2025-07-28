@@ -27,11 +27,11 @@
 
 namespace pw::persistent_ram {
 
-// A PersistentBufferWriter implements the pw::stream::Writer interface and
-// provides handles to mutate and access the underlying data of a
-// PersistentBuffer. This object should NOT be stored in persistent RAM.
-//
-// Only one writer should be open at a given time.
+/// `PersistentBufferWriter` implements the `pw::stream::Writer` interface and
+/// provides handles to mutate and access the underlying data of a
+/// `PersistentBuffer`. This object should NOT be stored in persistent RAM.
+///
+/// Only one writer should be open at a given time.
 class PersistentBufferWriter : public stream::NonSeekableWriter {
  public:
   PersistentBufferWriter() = delete;
@@ -66,17 +66,27 @@ PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Wuninitialized");
 PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
 
-// When a PersistentBuffer is statically allocated in persistent memory, its
-// state will persist across soft resets in accordance with the expected
-// behavior of the underlying RAM. This object is completely safe to use before
-// static constructors are called as its constructor is effectively a no-op.
-//
-// While the stored data can be read by PersistentBuffer's public functions,
-// each public function must validate the integrity of the stored data. It's
-// typically more performant to get a handle to a PersistentBufferWriter
-// instead, as data is validated on creation of the PersistentBufferWriter,
-// which allows access to the underlying data without needing to validate the
-// data's integrity with each call to PersistentBufferWriter functions.
+/// A persistent storage container for variable-length serialized data.
+/// Rather than allowing direct access to the underlying buffer for
+/// random-access mutations, `PersistentBuffer` is mutable through a
+/// `PersistentBufferWriter` that implements the `pw::stream::Writer`
+/// interface. This removes the potential for logical errors due to RAII or
+/// `open()`/`close()` semantics as both the `PersistentBuffer` and
+/// `PersistentBufferWriter` can be used validly as long as their access is
+/// serialized.
+///
+/// When a PersistentBuffer is statically allocated in persistent memory, its
+/// state will persist across soft resets in accordance with the expected
+/// behavior of the underlying RAM. This object is completely safe to use before
+/// static constructors are called as its constructor is effectively a no-op.
+///
+/// While the stored data can be read via the public functions of
+/// `PersistentBuffer`, each public function must validate the integrity of
+/// the stored data. It's typically more performant to get a handle to a
+/// `PersistentBufferWriter` instead, as data is validated on creation of the
+/// `PersistentBufferWriter`, which allows access to the underlying data
+/// without needing to validate the data's integrity with each call to
+/// `PersistentBufferWriter` functions.
 template <size_t kMaxSizeBytes>
 class PersistentBuffer {
  public:

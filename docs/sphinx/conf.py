@@ -98,6 +98,7 @@ extensions = [
     "sphinx.ext.autodoc",  # Automatic documentation for Python code
     "sphinx.ext.napoleon",  # Parses Google-style docstrings
     "sphinxarg.ext",  # Automatic documentation of Python argparse
+    "sphinxcontrib.doxylink",
     "sphinxcontrib.mermaid",
     "sphinx_design",
     "sphinx_copybutton",  # Copy-to-clipboard button on code blocks
@@ -299,6 +300,10 @@ exclude_patterns = ['docs/templates/**']
 doxygen_xml_path = (
     './_doxygen/xml/' if is_bazel_build else './../../../doxygen/xml/'
 )
+doxylink = {
+    "doxylink": (os.path.abspath("doxygen/doxygen/index.tag"), "./doxygen"),
+}
+
 breathe_projects = {
     # Assuming doxygen output is at out/docs/doxygen/
     # This dir should be relative to out/docs/gen/docs/pw_docgen_tree/

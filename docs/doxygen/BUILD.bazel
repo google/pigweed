@@ -74,6 +74,7 @@ filegroup(
         "//pw_multibuf:doxygen",
         "//pw_numeric:doxygen",
         "//pw_perf_test:doxygen",
+        "//pw_persistent_ram:doxygen",
         "//pw_polyfill:doxygen",
         "//pw_preprocessor:doxygen",
         "//pw_protobuf:doxygen",
