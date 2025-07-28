@@ -81,7 +81,6 @@ pw_python_package("py") {
     "pw_env_setup/cipd_setup/python.json",
     "pw_env_setup/cipd_setup/rbe.json",
     "pw_env_setup/cipd_setup/riscv.json",
-    "pw_env_setup/cipd_setup/ruff.json",
     "pw_env_setup/cipd_setup/rust.json",
     "pw_env_setup/cipd_setup/testing.json",
     "pw_env_setup/cipd_setup/upstream.json",
