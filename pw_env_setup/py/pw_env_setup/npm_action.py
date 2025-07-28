@@ -54,4 +54,5 @@ def run_action(env=None):
             stdin=subprocess.DEVNULL,
             cwd=repo_root,
             env=npm_env,
+            check=True,
         )
