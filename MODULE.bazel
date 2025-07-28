@@ -136,6 +136,8 @@ cipd_repository = use_repo_rule("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl"
 cipd_composite_repository = use_repo_rule("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_composite_repository")
 
 # Fetch llvm toolchain.
+LLVM_VERSION = "git_revision:03b0f55d9c6319a851a60bb084faca0e32a38f2b"
+
 cipd_composite_repository(
     name = "llvm_toolchain",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
@@ -143,7 +145,7 @@ cipd_composite_repository(
         "fuchsia/third_party/clang/${os}-${arch}",
         "fuchsia/third_party/clang/target/riscv32-unknown-elf",
     ],
-    tag = "git_revision:03b0f55d9c6319a851a60bb084faca0e32a38f2b",
+    tag = LLVM_VERSION,
 )
 
 # Fetch linux sysroot for host builds.
@@ -190,7 +192,10 @@ register_toolchains(
 
 # Rust toolchains
 pw_rust = use_extension("//pw_toolchain/rust:extensions.bzl", "pw_rust")
-pw_rust.toolchain(cipd_tag = "git_revisions:fe5c95d4ae33ec9d7831921e448e2daf8264ea42,7b074fc9362a4a6a5f172dd8936a22fb25eff96b")
+
+RUST_VERSION = "git_revisions:fe5c95d4ae33ec9d7831921e448e2daf8264ea42,7b074fc9362a4a6a5f172dd8936a22fb25eff96b"
+
+pw_rust.toolchain(cipd_tag = RUST_VERSION)
 use_repo(pw_rust, "pw_rust_toolchains")
 
 register_toolchains(
