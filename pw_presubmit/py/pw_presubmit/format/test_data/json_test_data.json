@@ -1,0 +1,6 @@
+{
+"key1": "value1",
+  "key2": ["foo", "bar","baz", "qux"],
+  "a": {"very": {"deeply": {"nested": "value"}}},
+  "key3": "A very long string that exceeds the typical 80 column limit, but isn't wrapped because of JSON reasons."
+}

@@ -81,6 +81,7 @@ py_library(
         "pw_presubmit/format/css.py",
         "pw_presubmit/format/gn.py",
         "pw_presubmit/format/java.py",
+        "pw_presubmit/format/json.py",
         "pw_presubmit/format/markdown.py",
         "pw_presubmit/format/owners.py",
         "pw_presubmit/format/private/__init__.py",
@@ -384,6 +385,19 @@ pw_py_test(
 pw_py_test(
     name = "whitespace_format_test",
     srcs = ["whitespace_format_test.py"],
+    deps = [
+        ":format_core",
+    ],
+)
+
+pw_py_test(
+    name = "json_format_test",
+    srcs = ["json_format_test.py"],
+    data = [
+        "pw_presubmit/format/test_data/json_test_data.json",
+        "pw_presubmit/format/test_data/json_test_data_golden.json",
+        "pw_presubmit/format/test_data/malformed_file.txt",
+    ],
     deps = [
         ":format_core",
     ],

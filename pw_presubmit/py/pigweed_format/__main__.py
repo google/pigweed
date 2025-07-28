@@ -23,6 +23,7 @@ from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter
 from pw_presubmit.format.java import JavaFormatter
+from pw_presubmit.format.json import JsonFormatter
 from pw_presubmit.format.private.cli import FormattingSuite
 from pw_presubmit.format.owners import OwnersFormatter
 from pw_presubmit.format.protobuf import ProtobufFormatter
@@ -112,6 +113,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             ),
             binary='clang-format',
             bazel_import_path='llvm_toolchain.clang_format',
+        ),
+        FormatterSetup(
+            formatter=JsonFormatter(
+                tool_runner=runfiles,
+            ),
+            binary=None,
+            bazel_import_path=None,
         ),
         FormatterSetup(
             formatter=MarkdownFormatter(

@@ -22,7 +22,6 @@ code. These tools must be available on the path when this script is invoked!
 import argparse
 import collections
 import difflib
-import json
 import logging
 import os
 from pathlib import Path
@@ -71,6 +70,10 @@ from pw_presubmit.format import cpp
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter, DEFAULT_GN_FILE_PATTERNS
 from pw_presubmit.format.java import DEFAULT_JAVA_FILE_PATTERNS
+from pw_presubmit.format.json import (
+    JsonFormatter,
+    DEFAULT_JSON_FILE_PATTERNS,
+)
 from pw_presubmit.format.markdown import DEFAULT_MARKDOWN_FILE_PATTERNS
 from pw_presubmit.format.owners import (
     OwnersFormatter,
@@ -396,45 +399,21 @@ def fix_py_format(ctx: _Context) -> dict[Path, str]:
     raise ValueError(ctx.format_options.python_formatter)
 
 
-def _format_json(contents: bytes) -> bytes:
-    return json.dumps(json.loads(contents), indent=2).encode() + b'\n'
-
-
-def _json_error(exc: json.JSONDecodeError, path: Path) -> str:
-    return f'{path}: {exc.msg} {exc.lineno}:{exc.colno}\n'
-
-
 def check_json_format(ctx: _Context) -> dict[Path, str]:
-    errors = {}
-
-    for path in ctx.paths:
-        orig = path.read_bytes()
-        try:
-            formatted = _format_json(orig)
-        except json.JSONDecodeError as exc:
-            errors[path] = _json_error(exc, path)
-            continue
-
-        if orig != formatted:
-            errors[path] = _diff(path, orig, formatted)
-
-    return errors
+    """Checks formatting; returns {path: diff} for files with bad formatting."""
+    formatter = JsonFormatter(tool_runner=PresubmitToolRunner())
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(
+            ctx.paths,
+            ctx.dry_run,
+        )
+    )
 
 
 def fix_json_format(ctx: _Context) -> dict[Path, str]:
-    errors = {}
-    for path in ctx.paths:
-        orig = path.read_bytes()
-        try:
-            formatted = _format_json(orig)
-        except json.JSONDecodeError as exc:
-            errors[path] = _json_error(exc, path)
-            continue
-
-        if orig != formatted:
-            path.write_bytes(formatted)
-
-    return errors
+    """Fixes formatting for the provided files in place."""
+    formatter = JsonFormatter(tool_runner=PresubmitToolRunner())
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def check_trailing_space(ctx: _Context) -> dict[Path, str]:
@@ -594,7 +573,7 @@ OWNERS_CODE_FORMAT = CodeFormat(
 
 JSON_FORMAT: CodeFormat = CodeFormat(
     'JSON',
-    FileFilter(endswith=['.json']),
+    DEFAULT_JSON_FILE_PATTERNS,
     check=check_json_format,
     fix=fix_json_format,
 )
