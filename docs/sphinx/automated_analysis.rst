@@ -38,11 +38,11 @@ the default checks; see `.pylintrc`_ for details. PyLint detects problems such
 as overly broad catch statements, unused arguments/variables, and mutable
 default parameter values.
 
-For upstream Pigweed, PyLint can be run with ``ninja python.lint.pylint`` or
-``ninja python.lint``.  It's also included in a variety of presubmit steps,
-like ``static_analysis`` and ``python_checks.gn_python_check``.  See the
-`Enabling analysis for your project`_ section to learn how to run PyLint on
-your Pigweed-based project.
+For upstream Pigweed, PyLint can be run with ``ninja python.lint.pylint``,
+``ninja python.lint``, or ``bazelisk build --config=pylint //...``.  It's also
+included in a variety of presubmit steps, like ``static_analysis`` and
+``python_checks.gn_python_check``.  See the `Enabling analysis for your
+project`_ section to learn how to run PyLint on your Pigweed-based project.
 
 .. _PyLint: https://pylint.org/
 .. _.pylintrc: https://cs.pigweed.dev/pigweed/+/main:.pylintrc
@@ -241,6 +241,59 @@ If you're using Pigweed's own host toolchain configuration, see the
 :ref:`module-pw_toolchain-bazel-clang-tidy` section for information on how to
 enable clang-tidy in your build.
 
+pylint
+------
+Add the following to your ``.bazelrc`` file:
+
+.. code-block::
+
+   build:pylint --aspects @pigweed//pw_build:pw_pylint.bzl%pylint_aspect
+   build:pylint --output_groups=report
+   build:pylint --build_tag_filters=-nopylint
+
+You can now run pylint on all your Python targets via,
+
+.. code-block:: sh
+
+   bazelisk build --config=pylint //...
+
+Disabling pylint for individual build targets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To exempt a particular build target from being linted with pylint, add
+``tags = ["nopylint"]`` to its attributes.
+
+Configuring the pylintrc file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+By default, Pigweed's pylint aspect uses an empty pylintrc file. To use a
+pylintrc file, set the ``@pigweed//pw_build:pylintrc`` label flag. For example,
+to use the ``.pylintrc`` at the root of your repository, add the following line
+to your ``.bazelrc``.
+
+.. code-block::
+
+   build:pylint --@pigweed//pw_build:pylintrc=//:.pylintrc
+
+You may wish to use Pigweed's own ``.pylintrc`` as a starting point.
+
+Configuring the pylint binary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+By default, Pigweed's pylint aspect fetches pylint from PyPI using pip, based on
+upstream Pigweed's pip requirements. To use a different pylint binary, set the
+``@pigweed//pw_build:pylint`` label flag to point to the binary you wish to use.
+
+In particular, if you also wish to use pylint from PyPI but at a different
+version, create a `py_console_script_binary
+<https://rules-python.readthedocs.io/en/latest/api/rules_python/python/entry_points/py_console_script_binary.html>`__
+to wrap it and point the label flag to it.
+
+Known limitations
+^^^^^^^^^^^^^^^^^
+*  The `wrong-import-order
+   <https://pylint.readthedocs.io/en/latest/user_guide/messages/convention/wrong-import-order.html>`__
+   check is unsupported. Because the directory layout of Python files in the
+   Bazel sandbox is different from a regular Python venv, pylint is confused
+   about which imports are first- vs third-party. This seems hard to fix because
+   pylint uses undocumented heuristics to categorize the imports.
 
 Fuzzers
 =======

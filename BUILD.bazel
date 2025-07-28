@@ -273,3 +273,8 @@ filegroup(
     srcs = [".clang-tidy"],
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "pylintrc",
+    srcs = [".pylintrc"],
+)

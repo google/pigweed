@@ -176,6 +176,12 @@ build:clang-tidy --build_tag_filters=-noclangtidy
 # TODO: https://pwbug.dev/341723612 - What do we do in GN?
 build:clang-tidy --copt=-Wno-pragma-once-outside-header
 
+# Pylint aspect configuration
+build:pylint --//pw_build:pylintrc=//:pylintrc
+build:pylint --aspects //pw_build:pw_pylint.bzl%pylint_aspect
+build:pylint --output_groups=report
+build:pylint --build_tag_filters=-nopylint
+
 # For some platforms i.e. google/oss-fuzz we need to use the system provided
 # rather than the hermetic toolchains. This allows oss-fuzz to override the
 # build with specialised compilers that are tightly coupled to the fuzzing
