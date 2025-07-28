@@ -30,4 +30,9 @@ py_library(
     ],
     data = ["stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"],
     imports = ["."],
+    deps = [
+        "//pw_cli/py:pw_cli",
+        "@pigweed_python_packages//coloredlogs",
+        "@pigweed_python_packages//pyserial",
+    ],
 )

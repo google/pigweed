@@ -125,6 +125,7 @@ py_library(
     name = "config_helper",
     srcs = ["tests/config_helper.py"],
     imports = ["tests"],
+    deps = ["//pw_emu/py:pw_emu"],
 )
 
 py_library(

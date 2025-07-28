@@ -30,6 +30,7 @@ py_library(
     ],
     imports = ["."],
     deps = [
+        "//pw_build/py:pw_project_builder",
         "//pw_cli/py:pw_cli",
         "@pigweed_python_packages//watchdog",
     ],

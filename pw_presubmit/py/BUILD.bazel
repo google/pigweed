@@ -218,6 +218,7 @@ pw_py_test(
 py_library(
     name = "format_testing_utils",
     srcs = ["format_testing_utils.py"],
+    deps = ["//pw_cli/py:pw_cli"],
 )
 
 pw_py_test(

@@ -71,6 +71,8 @@ py_library(
     ],
     imports = ["."],
     deps = [
+        "//pw_console/py:pw_console",
+        "//pw_protobuf:common_py_pb2",
         "//pw_rpc/py:pw_rpc_benchmark",
     ],
 )

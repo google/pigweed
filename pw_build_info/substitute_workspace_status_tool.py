@@ -82,7 +82,7 @@ def main():
 
     # Load the template input file.
     with args.template as file:
-        template = string.Template(args.template.read())
+        template = string.Template(file.read())
 
     # Expand the variables in the template.
     try:

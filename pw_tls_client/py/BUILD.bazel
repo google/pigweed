@@ -22,4 +22,5 @@ py_library(
     ],
     imports = ["."],
     visibility = ["//visibility:public"],
+    deps = ["@pigweed_python_packages//cryptography"],
 )

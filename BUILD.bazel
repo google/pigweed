@@ -78,6 +78,7 @@ copy_file(
 refresh_compile_commands(
     name = "refresh_compile_commands_for_fuchsia_sdk",
     out_dir = ".compile_commands",
+    tags = ["nopylint"],
     target_compatible_with = select({
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
