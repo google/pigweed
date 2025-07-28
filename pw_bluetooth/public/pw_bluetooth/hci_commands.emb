@@ -148,57 +148,34 @@ enum LEExtendedDuplicateFilteringOption:
     -- Period parameter is non-zero.
 
 
-enum LEPeriodicAdvertisingCreateSyncUseParams:
-  [maximum_bits: 1]
-
-  USE_PARAMS                   = 0x00
-    -- Use the Advertising_SID, Advertiser_Address_Type, and Adertiser_Address parameters to
-    -- determine which advertiser to listen to.
-
-  USE_PERIODIC_ADVERTISER_LIST = 0x01
-    -- Use the Periodic Advertiser List to determine which advertiser to listen to.
-
-
 bits LEPeriodicAdvertisingCreateSyncOptions:
   -- First parameter to the LE Periodic Advertising Create Sync command
-  0     [+1]  LEPeriodicAdvertisingCreateSyncUseParams  advertiser_source
-  $next [+1]  Flag                                      enable_reporting
+
+  0     [+1]  Flag  use_periodic_advertiser_list
+    -- 0: Use the Advertising_SID, Advertiser_Address_Type, and Advertiser_Address parameters
+    -- 1: Use the Periodic Advertiser List
+
+  $next [+1]  Flag  disable_reporting
     -- 0: Reporting initially enabled
     -- 1: Reporting initially disabled
 
-  $next [+1]  Flag                                      enable_duplicate_filtering
+  $next [+1]  Flag  enable_duplicate_filtering
     -- 0: Duplicate filtering initially disabled
     -- 1: Duplicate filtering initially enabled
 
 
-enum LEPeriodicAdvertisingAddressType:
-  -- Possible values that can be specified for the |advertiser_address_type| in an LE Periodic
-  -- Advertising Create Sync command.
-  [maximum_bits: 8]
-  PUBLIC = 0x00
-    -- Public Device Address or Public Identity Address
-
-  RANDOM = 0x01
-    -- Random Device Address or Random (static) Identity Address
-
-
-bits LEPeriodicAdvertisingSyncCTEType:
+bits LEPeriodicAdvertisingSyncCteType:
   -- Bit definitions for a |sync_cte_type| field in an LE Periodic Advertising Create Sync command
-
-  0     [+1]  Flag  dont_sync_aoa
+  0 [+1]  Flag  dont_sync_aoa
     -- Do not sync to packets with an AoA Constant Tone Extension
 
-  $next [+1]  Flag  dont_sync_aod_1us
+  1 [+1]  Flag  dont_sync_aod_1us
     -- Do not sync to packets with an AoD Constant Tone Extension with 1 microsecond slots
 
-  $next [+1]  Flag  dont_sync_aod_2us
+  2 [+1]  Flag  dont_sync_aod_2us
     -- Do not sync to packets with an AoD Constant Tone Extension with 2 microsecond slots
 
-  $next [+1]  Flag  dont_sync_type_3
-    -- Do not sync to packets with a typoe 3 Constant Tone Extension (currently reserved for future
-    -- use)
-
-  $next [+1]  Flag  dont_sync_without_cte
+  4 [+1]  Flag  dont_sync_without_cte
     -- Do not sync to packets without a Constant Tone Extension
 
 
@@ -2704,13 +2681,9 @@ struct LEExtendedCreateConnectionCommandV1:
 struct LEPeriodicAdvertisingCreateSyncCommand:
   -- 7.8.67 LE Periodic Advertising Create Sync command (v5.0) (LE)
   -- HCI_LE_Periodic_Advertising_Create_Sync
-
   let hdr_size = hci.CommandHeader.$size_in_bytes
-
   0     [+hdr_size]                                                hci.CommandHeader                       header
-
   $next [+1]  bits:
-
     0     [+LEPeriodicAdvertisingCreateSyncOptions.$size_in_bits]  LEPeriodicAdvertisingCreateSyncOptions  options
 
   $next [+1]                                                       UInt                                    advertising_sid
@@ -2718,29 +2691,26 @@ struct LEPeriodicAdvertisingCreateSyncCommand:
     [requires: 0x00 <= this <= 0x0F]
 
   $next [+1]                                                       hci.LEPeerAddressTypeNoAnon             advertiser_address_type
-
   $next [+hci.BdAddr.$size_in_bytes]                               hci.BdAddr                              advertiser_address
     -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
     -- Identity Address of the advertiser
 
   $next [+2]                                                       UInt                                    skip
-    -- The maximum number of periodic advertising events that can be skipped after a successful
-    -- receive
+    -- The maximum number of periodic advertising events that can be skipped after a successful receive
     [requires: 0x0000 <= this <= 0x01F3]
 
   $next [+2]                                                       UInt                                    sync_timeout
     -- Synchronization timeout for the periodic advertising.
     -- Time = N * 10 ms
-    -- Time Range: 100 ms to 163.84 s
+    -- Range: 100 ms to 163.84 s
     [requires: 0x000A <= this <= 0x4000]
 
   $next [+1]  bits:
-
-    0     [+LEPeriodicAdvertisingSyncCTEType.$size_in_bits]        LEPeriodicAdvertisingSyncCTEType        sync_cte_type
+    0     [+LEPeriodicAdvertisingSyncCteType.$size_in_bits]        LEPeriodicAdvertisingSyncCteType        sync_cte_type
       -- Constant Tone Extension sync options
 
 
-struct LEPeriodicAdvertisingCreateSyncCancel:
+struct LEPeriodicAdvertisingCreateSyncCancelCommand:
   -- 7.8.68 LE Periodic Advertising Create Sync Cancel command (v5.0) (LE)
   -- HCI_LE_Periodic_Advertising_Create_Sync_Cancel
   -- Note that this command has no arguments
@@ -2774,6 +2744,7 @@ struct LEAddDeviceToPeriodicAdvertiserListCommand:
   $next [+1]                          UInt                         advertising_sid
     -- Advertising SID subfield in the ADI field used to identify the Periodic
     -- Advertising.
+    [requires: 0x00 <= this <= 0x0F]
 
 
 struct LERemoveDeviceFromPeriodicAdvertiserListCommand:
@@ -2802,12 +2773,67 @@ struct LEClearPeriodicAdvertiserListCommand:
   0 [+hdr_size]  hci.CommandHeader  header
 
 
-struct LEReadPeriodicAdvertiserListSizeCommand:
-  -- 7.8.73 LE Read Periodic Advertiser List Size command (v5.0) (LE)
-  -- HCI_LE_Read_Periodic_Advertiser_List_Size
-  -- Note that this command has no arguments
+struct LEPeriodicAdvertisingSyncTransferCommand:
+  -- 7.8.89 LE Periodic Advertising Sync Transfer command (v5.1) (LE)
+  -- HCI_LE_Periodic_Advertising_Sync_Transfer
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0 [+hdr_size]  hci.CommandHeader  header
+  0     [+hdr_size]  hci.CommandHeader  header
+  $next [+2]         UInt               connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+2]         UInt               service_data
+  $next [+2]         UInt               sync_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+bits PeriodicAdvertisingProperties:
+  6 [+1]  Flag  include_tx_power
+
+
+struct LESetPeriodicSyncSubeventCommand:
+  -- 7.8.127 LE Set Periodic Sync Subevent command (v6.1) (LE)
+  -- HCI_LE_Set_Periodic_Sync_Subevent
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]                                       hci.CommandHeader              header
+  $next [+2]                                              UInt                           sync_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+2]  bits:
+    0     [+PeriodicAdvertisingProperties.$size_in_bits]  PeriodicAdvertisingProperties  periodic_advertising_properties
+
+  $next [+1]                                              UInt                           num_subevents_to_sync
+  $next [+num_subevents_to_sync]                          UInt:8[num_subevents_to_sync]  subevents
+
+
+enum PeriodicAdvertisingSyncTransferMode:
+  -- Mode parameter for the LE Set Periodic Advertising Sync Transfer Parameters
+  -- command.
+  [maximum_bits: 8]
+  DO_NOT_SYNC_TO_PA_TRAIN                             = 0x00
+  SYNC_AND_DISABLE_REPORTS                            = 0x01
+  SYNC_AND_ENABLE_REPORTS_WITHOUT_DUPLICATE_FILTERING = 0x02
+  SYNC_AND_ENABLE_REPORTS_WITH_DUPLICATE_FILTERING    = 0x03
+
+
+struct LESetPeriodicAdvertisingSyncTransferParametersCommand:
+  -- 7.8.91 LE Set Periodic Advertising Sync Transfer Parameters command (v6.1) (LE)
+  -- HCI_LE_Set_Periodic_Advertising_Sync_Transfer_Parameters
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]                                          hci.CommandHeader                    header
+  $next [+2]                                                 UInt                                 connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]                                                 PeriodicAdvertisingSyncTransferMode  mode
+  $next [+2]                                                 UInt                                 skip
+    [requires: 0x0000 <= this <= 0x01F3]
+
+  $next [+2]                                                 UInt                                 sync_timeout
+    -- Time = N * 10 ms
+    -- Range: 100 ms to 163.84 s
+    [requires: 0x000A <= this <= 0x4000]
+
+  $next [+1]  bits:
+    0     [+LEPeriodicAdvertisingSyncCteType.$size_in_bits]  LEPeriodicAdvertisingSyncCteType     sync_cte_type
 
 
 struct LEReadTransmitPowerCommand:
