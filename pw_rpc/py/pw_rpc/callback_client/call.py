@@ -86,6 +86,12 @@ class StreamResponse(NamedTuple):
     status: Status
     responses: Sequence[Any]
 
+    def unwrap_or_raise(self):
+        """Returns the response value or raises `ValueError` if not OK."""
+        if not self.status.ok():
+            raise ValueError(f'RPC returned non-OK status: {self.status}')
+        return self.responses
+
     def __repr__(self) -> str:
         return (
             f'({self.status}, '
