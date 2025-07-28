@@ -93,27 +93,6 @@ TEST_F(H4PacketTest, From_IncompleteMultiBuf) {
   EXPECT_EQ(h4_packet.Prepare(multibuf), Status::InvalidArgument());
 }
 
-TEST_F(H4PacketTest, SetType) {
-  auto h4_buffer = pw::bytes::Initialized<5>(0xff);
-  h4_buffer[0] = static_cast<std::byte>(H4Packet::Type::COMMAND);
-  MultiBuf::Instance multibuf(allocator_);
-  multibuf->PushBack(h4_buffer);
-
-  H4Packet h4_packet(allocator_);
-  EXPECT_EQ(h4_packet.Prepare(multibuf), OkStatus());
-
-  h4_packet.PopulateFrom(std::move(*multibuf));
-  EXPECT_EQ(h4_packet.type(), H4Packet::Type::COMMAND);
-  EXPECT_EQ(h4_packet.size(), 4u);
-
-  EXPECT_EQ(h4_packet.SetType(H4Packet::Type::ACL_DATA), OkStatus());
-  EXPECT_EQ(h4_packet.type(), H4Packet::Type::ACL_DATA);
-  EXPECT_EQ(h4_buffer[0], static_cast<std::byte>(H4Packet::Type::ACL_DATA));
-  for (size_t i = 1; i < h4_buffer.size(); i++) {
-    EXPECT_EQ(h4_buffer[i], std::byte{0xff});
-  }
-}
-
 TEST_F(H4PacketTest, Visit) {
   auto h4_buffer = pw::bytes::Concat(
       H4Packet::Type::COMMAND,

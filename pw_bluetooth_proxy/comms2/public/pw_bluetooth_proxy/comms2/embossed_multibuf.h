@@ -48,9 +48,6 @@ class EmbossedMultiBuf {
   bool AddLayer(size_t offset, size_t length = dynamic_extent) {
     return multibuf_->AddLayer(offset, length);
   }
-  bool ResizeTopLayer(size_t offset, size_t length = dynamic_extent) {
-    return multibuf_->ResizeTopLayer(offset, length);
-  }
 
  private:
   MultiBuf::Instance multibuf_;

@@ -46,12 +46,4 @@ void H4Packet::Assign(MultiBuf&& buffer) {
   AddLayer(sizeof(Type));
 }
 
-Status H4Packet::SetType(H4Packet::Type h4_type) {
-  ResizeTopLayer(0);
-  (*this)[0] = static_cast<std::byte>(h4_type);
-  ResizeTopLayer(sizeof(Type));
-  type_ = h4_type;
-  return OkStatus();
-}
-
 }  // namespace pw::bluetooth::proxy
