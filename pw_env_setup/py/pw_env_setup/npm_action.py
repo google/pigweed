@@ -16,8 +16,29 @@
 This action triggers `npm install` after CIPD setup.
 """
 import os
+from pathlib import Path
 import shutil
+import stat
+from string import Template
 import subprocess
+
+
+# The list of NPM tools that should be added to the PATH after installation
+# finishes. We do this by an allowlist since NPM has tools like `protoc` that we
+# never want to get added to the PATH.
+NPM_TOOLS = ('prettier',)
+
+
+# We need to use wrapper scripts rather than symlinks because the .cmd NPM
+# scripts on Windows are wrappers that do path-relative execution of NPM
+# modules. If we symlink to those, the relative path resolution breaks.
+_WINDOWS_NPM_LAUNCHER_TEMPLATE = """@echo off
+call ${program} %*
+"""
+
+_UNIX_NPM_LAUNCHER_TEMPLATE = """#!/usr/bin/env bash
+${program} $$@
+"""
 
 
 def run_action(env=None):
@@ -44,10 +65,10 @@ def run_action(env=None):
         subprocess.run(
             [
                 npm,
-                "install",
-                "--quiet",
-                "--no-progress",
-                "--loglevel=error",
+                'install',
+                '--quiet',
+                '--no-progress',
+                '--loglevel=error',
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -56,3 +77,34 @@ def run_action(env=None):
             env=npm_env,
             check=True,
         )
+
+        # Add symlinks to desired NPM tools to $PW_WEB_CIPD_INSTALL_DIR/bin.
+        bin_dir = Path(os.environ.get('PW_WEB_CIPD_INSTALL_DIR')) / 'bin'
+        if not bin_dir.exists():
+            bin_dir.mkdir()
+
+        for tool in NPM_TOOLS:
+            proc = subprocess.run(
+                [
+                    npm,
+                    'exec',
+                    'which',
+                    tool,
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=repo_root,
+                env=npm_env,
+                check=True,
+            )
+
+            tool_path = Path(proc.stdout.decode().strip())
+            extension = '.bat' if os.name == 'nt' else ''
+            dest = bin_dir / f'{tool}{extension}'
+            template = Template(
+                _WINDOWS_NPM_LAUNCHER_TEMPLATE
+                if os.name == 'nt'
+                else _UNIX_NPM_LAUNCHER_TEMPLATE
+            )
+            dest.write_text(template.substitute(program=tool_path))
+            dest.chmod(dest.stat().st_mode | stat.S_IEXEC)
