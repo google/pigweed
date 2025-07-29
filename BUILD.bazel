@@ -185,6 +185,24 @@ js_binary(
     visibility = [":__subpackages__"],
 )
 
+directory_path(
+    name = "prettier_entry_point",
+    directory = "//:node_modules/prettier/dir",
+    path = "bin/prettier.cjs",
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = [":__subpackages__"],
+)
+
+js_binary(
+    name = "prettier",
+    entry_point = ":prettier_entry_point",
+    env = {
+        "BAZEL_BINDIR": ".",
+    },
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = [":__subpackages__"],
+)
+
 filegroup(
     name = "js_files",
     srcs = glob([

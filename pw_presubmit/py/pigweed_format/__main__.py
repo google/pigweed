@@ -27,9 +27,11 @@ from pw_presubmit.format.json import JsonFormatter
 from pw_presubmit.format.private.cli import FormattingSuite
 from pw_presubmit.format.owners import OwnersFormatter
 from pw_presubmit.format.protobuf import ProtobufFormatter
+from pw_presubmit.format.javascript import JavaScriptFormatter
 from pw_presubmit.format.python import BlackFormatter
 from pw_presubmit.format.rst import RstFormatter
 from pw_presubmit.format.rust import RustfmtFormatter
+from pw_presubmit.format.typescript import TypeScriptFormatter
 from pw_presubmit.format.cmake import CmakeFormatter
 from pw_presubmit.format.css import CssFormatter
 from pw_presubmit.format.markdown import MarkdownFormatter
@@ -109,6 +111,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             bazel_import_path='pw_presubmit.py.gn_runfiles',
         ),
         FormatterSetup(
+            formatter=JavaScriptFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='prettier',
+            bazel_import_path='pw_presubmit.py.prettier_runfiles',
+        ),
+        FormatterSetup(
             formatter=JavaFormatter(
                 tool_runner=runfiles,
             ),
@@ -156,6 +165,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             ),
             binary='rustfmt',
             bazel_import_path='pw_presubmit.py.rustfmt_runfiles',
+        ),
+        FormatterSetup(
+            formatter=TypeScriptFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='prettier',
+            bazel_import_path='pw_presubmit.py.prettier_runfiles',
         ),
     ]
     enabled_formatters = []

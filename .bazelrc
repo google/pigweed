@@ -22,6 +22,8 @@ common --enable_workspace
 
 # Enable all desired formatters.
 common --//pw_presubmit/py:enable_gn_formatter=True
+common --//pw_presubmit/py:enable_javascript_formatter=True
+common --//pw_presubmit/py:enable_typescript_formatter=True
 
 # Default build_tag_filters and test_tag_filters
 # ==============================================

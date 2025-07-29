@@ -52,6 +52,9 @@ Language support:
    * - Java
      - ``--@pigweed//pw_presubmit/py:enable_java_formatter``
      - ✅
+   * - JavaScript
+     - ``--@pigweed//pw_presubmit/py:enable_javascript_formatter``
+     - ❌
    * - JSON
      - ``--@pigweed//pw_presubmit/py:enable_json_formatter``
      - ✅
@@ -72,6 +75,9 @@ Language support:
      - ✅
    * - Rust
      - ``--@pigweed//pw_presubmit/py:enable_rust_formatter``
+     - ❌
+   * - TypeScript
+     - ``--@pigweed//pw_presubmit/py:enable_typescript_formatter``
      - ❌
 
 -----------

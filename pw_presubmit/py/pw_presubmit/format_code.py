@@ -70,6 +70,7 @@ from pw_presubmit.format import cpp
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter, DEFAULT_GN_FILE_PATTERNS
 from pw_presubmit.format.java import DEFAULT_JAVA_FILE_PATTERNS
+from pw_presubmit.format.javascript import DEFAULT_JAVASCRIPT_FILE_PATTERNS
 from pw_presubmit.format.json import (
     JsonFormatter,
     DEFAULT_JSON_FILE_PATTERNS,
@@ -79,6 +80,7 @@ from pw_presubmit.format.owners import (
     OwnersFormatter,
     DEFAULT_OWNERS_FILE_PATTERNS,
 )
+from pw_presubmit.format.prettier import PrettierFormatter
 from pw_presubmit.format.private.cli_support import (
     summarize_findings,
     findings_to_formatted_diffs,
@@ -92,6 +94,7 @@ from pw_presubmit.format.rst import (
     RstFormatter,
     DEFAULT_RST_FILE_PATTERNS,
 )
+from pw_presubmit.format.typescript import DEFAULT_TYPESCRIPT_FILE_PATTERNS
 from pw_presubmit.format.whitespace import TrailingSpaceFormatter
 from pw_presubmit.tools import (
     log_run,
@@ -190,39 +193,22 @@ def clang_format_fix(ctx: _Context) -> dict[Path, str]:
     return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
-def _typescript_format(*args: Path | str, **kwargs) -> bytes:
-    # TODO: b/323378974 - Better integrate NPM actions with pw_env_setup so
-    # we don't have to manually set `npm_config_cache` every time we run npm.
-    # Force npm cache to live inside the environment directory.
-    npm_env = os.environ.copy()
-    npm_env['npm_config_cache'] = str(
-        Path(npm_env['_PW_ACTUAL_ENVIRONMENT_ROOT']) / 'npm-cache'
-    )
-
-    npm = shutil.which('npm.cmd' if os.name == 'nt' else 'npm')
-    return log_run(
-        [npm, 'exec', 'prettier', *args],
-        stdout=subprocess.PIPE,
-        stdin=subprocess.DEVNULL,
-        check=True,
-        env=npm_env,
-        **kwargs,
-    ).stdout
-
-
 def typescript_format_check(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    return _check_files(
-        ctx.paths,
-        lambda path, _: _typescript_format(path),
-        ctx.dry_run,
+    formatter = PrettierFormatter(
+        tool_runner=PresubmitToolRunner(),
+    )
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(ctx.paths, ctx.dry_run)
     )
 
 
 def typescript_format_fix(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    print_format_fix(_typescript_format(*ctx.paths, '--', '--write'))
-    return {}
+    formatter = PrettierFormatter(
+        tool_runner=PresubmitToolRunner(),
+    )
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def check_gn_format(ctx: _Context) -> dict[Path, str]:
@@ -495,14 +481,14 @@ JAVA_FORMAT: CodeFormat = CodeFormat(
 
 JAVASCRIPT_FORMAT: CodeFormat = CodeFormat(
     'JavaScript',
-    FileFilter(endswith=['.js', '.mjs', '.cjs']),
+    DEFAULT_JAVASCRIPT_FILE_PATTERNS,
     typescript_format_check,
     typescript_format_fix,
 )
 
 TYPESCRIPT_FORMAT: CodeFormat = CodeFormat(
     'TypeScript',
-    FileFilter(endswith=['.ts', '.mts', '.cts']),
+    DEFAULT_TYPESCRIPT_FILE_PATTERNS,
     typescript_format_check,
     typescript_format_fix,
 )

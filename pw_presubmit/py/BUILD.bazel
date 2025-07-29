@@ -82,9 +82,11 @@ py_library(
         "pw_presubmit/format/css.py",
         "pw_presubmit/format/gn.py",
         "pw_presubmit/format/java.py",
+        "pw_presubmit/format/javascript.py",
         "pw_presubmit/format/json.py",
         "pw_presubmit/format/markdown.py",
         "pw_presubmit/format/owners.py",
+        "pw_presubmit/format/prettier.py",
         "pw_presubmit/format/private/__init__.py",
         "pw_presubmit/format/private/cli.py",
         "pw_presubmit/format/private/cli_support.py",
@@ -92,6 +94,7 @@ py_library(
         "pw_presubmit/format/python.py",
         "pw_presubmit/format/rst.py",
         "pw_presubmit/format/rust.py",
+        "pw_presubmit/format/typescript.py",
         "pw_presubmit/format/whitespace.py",
     ],
     imports = ["."],
@@ -128,6 +131,14 @@ pw_py_importable_runfile(
 pw_py_importable_runfile(
     name = "gn_runfiles",
     src = "@gn",
+    executable = True,
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+pw_py_importable_runfile(
+    name = "prettier_runfiles",
+    src = "//:prettier",
     executable = True,
     tags = ["manual"],
     visibility = ["//visibility:private"],
@@ -181,6 +192,11 @@ bool_flag(
 )
 
 bool_flag(
+    name = "enable_javascript_formatter",
+    build_setting_default = False,
+)
+
+bool_flag(
     name = "enable_json_formatter",
     build_setting_default = True,
 )
@@ -207,6 +223,11 @@ bool_flag(
 
 bool_flag(
     name = "enable_rust_formatter",
+    build_setting_default = False,
+)
+
+bool_flag(
+    name = "enable_typescript_formatter",
     build_setting_default = False,
 )
 
@@ -246,6 +267,11 @@ config_setting(
 )
 
 config_setting(
+    name = "javascript_formatter_is_enabled",
+    flag_values = {":enable_javascript_formatter": "True"},
+)
+
+config_setting(
     name = "json_formatter_is_enabled",
     flag_values = {":enable_json_formatter": "True"},
 )
@@ -275,6 +301,11 @@ config_setting(
     flag_values = {":enable_rust_formatter": "True"},
 )
 
+config_setting(
+    name = "typescript_formatter_is_enabled",
+    flag_values = {":enable_typescript_formatter": "True"},
+)
+
 # This file is loaded by the formatter entry point at runtime and disables
 # formatters by their mnemonic.
 write_file(
@@ -302,6 +333,9 @@ write_file(
         ":java_formatter_is_enabled": [],
         "//conditions:default": ["Java"],
     }) + select({
+        ":javascript_formatter_is_enabled": [],
+        "//conditions:default": ["JavaScript"],
+    }) + select({
         ":json_formatter_is_enabled": [],
         "//conditions:default": ["JSON"],
     }) + select({
@@ -319,6 +353,9 @@ write_file(
     }) + select({
         ":rust_formatter_is_enabled": [],
         "//conditions:default": ["Rust"],
+    }) + select({
+        ":typescript_formatter_is_enabled": [],
+        "//conditions:default": ["TypeScript"],
     }),
     visibility = ["//visibility:private"],
 )
@@ -347,6 +384,10 @@ pw_py_binary(
         "//conditions:default": [],
     }) + select({
         ":gn_formatter_is_enabled": [":gn_runfiles"],
+        "//conditions:default": [],
+    }) + select({
+        ":javascript_formatter_is_enabled": [":prettier_runfiles"],
+        ":typescript_formatter_is_enabled": [":prettier_runfiles"],
         "//conditions:default": [],
     }) + select({
         ":rust_formatter_is_enabled": [":rustfmt_runfiles"],
