@@ -192,7 +192,7 @@ class ClockMcuxpressoFrg final : public DependentElement<ElementType> {
   }
 
   /// FRG clock configuration to enable FRG component.
-  const clock_frg_clk_config_t& config_;
+  const clock_frg_clk_config_t config_;
 };
 
 /// Alias for a blocking FRG clock tree element.

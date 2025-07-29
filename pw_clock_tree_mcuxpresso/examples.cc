@@ -23,14 +23,15 @@
 PW_CONSTINIT pw::clock_tree::ClockMcuxpressoFro fro_div4(kCLOCK_FroDiv4OutEn);
 
 // Define FRG0 configuration
-const clock_frg_clk_config_t g_frg0Config_BOARD_BOOTCLOCKRUN = {
+constexpr clock_frg_clk_config_t kFrg0Config = {
     .num = 0,
     .sfg_clock_src = _clock_frg_clk_config::kCLOCK_FrgFroDiv4,
     .divider = 255U,
-    .mult = 144};
+    .mult = 144,
+};
 
-PW_CONSTINIT pw::clock_tree::ClockMcuxpressoFrgNonBlocking frg_0(
-    fro_div4, g_frg0Config_BOARD_BOOTCLOCKRUN);
+PW_CONSTINIT pw::clock_tree::ClockMcuxpressoFrgNonBlocking frg_0(fro_div4,
+                                                                 kFrg0Config);
 
 // Define clock source selector FLEXCOMM0
 PW_CONSTINIT pw::clock_tree::ClockMcuxpressoSelectorNonBlocking
