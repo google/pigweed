@@ -38,9 +38,6 @@ cortex_m_hardware_fpu_flags_common = [
 cortex_m_hardware_fpu_flags =
     cortex_m_hardware_fpu_flags_common + [ "-mfpu=fpv4-sp-d16" ]
 
-cortex_m_hardware_fpu_v5_flags =
-    cortex_m_hardware_fpu_flags_common + [ "-mfpu=fpv5-d16" ]
-
 cortex_m_hardware_fpu_v5_sp_flags =
     cortex_m_hardware_fpu_flags_common + [ "-mfpu=fpv5-sp-d16" ]
 
@@ -130,6 +127,9 @@ if (pw_toolchain_USE_LLVM_PREBUILT_LIBRARIES) {
     defines = cortex_m_common_defines
   }
 } else {
+  cortex_m_hardware_fpu_v5_flags =
+      cortex_m_hardware_fpu_flags_common + [ "-mfpu=fpv5-d16" ]
+
   pw_clang_arm_config("cortex_m0plus") {
     cflags = [ "-mcpu=cortex-m0plus" ]
     cflags += cortex_m_common_flags
@@ -169,45 +169,45 @@ if (pw_toolchain_USE_LLVM_PREBUILT_LIBRARIES) {
     asmflags = cflags
     ldflags = cflags
   }
-}
 
-pw_clang_arm_config("cortex_m3") {
-  cflags = [ "-mcpu=cortex-m3" ]
-  cflags += cortex_m_common_flags
-  cflags += cortex_m_software_fpu_flags
-  asmflags = cflags
-  ldflags = cflags
-  rustflags = [ "--target=thumbv7m-none-eabi" ]
-}
+  pw_clang_arm_config("cortex_m3") {
+    cflags = [ "-mcpu=cortex-m3" ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_software_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+    rustflags = [ "--target=thumbv7m-none-eabi" ]
+  }
 
-pw_clang_arm_config("cortex_m7") {
-  cflags = [ "-mcpu=cortex-m7" ]
-  cflags += cortex_m_common_flags
-  cflags += cortex_m_software_fpu_flags
-  asmflags = cflags
-  ldflags = cflags
-}
+  pw_clang_arm_config("cortex_m7") {
+    cflags = [ "-mcpu=cortex-m7" ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_software_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+  }
 
-pw_clang_arm_config("cortex_m7f") {
-  cflags = [ "-mcpu=cortex-m7" ]
-  cflags += cortex_m_common_flags
-  cflags += cortex_m_hardware_fpu_v5_flags
-  asmflags = cflags
-  ldflags = cflags
-}
+  pw_clang_arm_config("cortex_m7f") {
+    cflags = [ "-mcpu=cortex-m7" ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_hardware_fpu_v5_flags
+    asmflags = cflags
+    ldflags = cflags
+  }
 
-pw_clang_arm_config("cortex_m33") {
-  cflags = [ "-mcpu=cortex-m33" ]
-  cflags += cortex_m_common_flags
-  cflags += cortex_m_software_fpu_flags
-  asmflags = cflags
-  ldflags = cflags
-}
+  pw_clang_arm_config("cortex_m33") {
+    cflags = [ "-mcpu=cortex-m33" ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_software_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+  }
 
-pw_clang_arm_config("cortex_m33f") {
-  cflags = [ "-mcpu=cortex-m33" ]
-  cflags += cortex_m_common_flags
-  cflags += cortex_m_hardware_fpu_v5_sp_flags
-  asmflags = cflags
-  ldflags = cflags
+  pw_clang_arm_config("cortex_m33f") {
+    cflags = [ "-mcpu=cortex-m33" ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_hardware_fpu_v5_sp_flags
+    asmflags = cflags
+    ldflags = cflags
+  }
 }
