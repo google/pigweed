@@ -14,7 +14,6 @@
 """Adapters and helpers for Bazel runfiles handling."""
 
 from dataclasses import dataclass
-from pathlib import Path
 
 
 @dataclass
@@ -25,7 +24,7 @@ class PythonRunfilesLabelAdapter:
     use this as the generated type for pw_py_importable_runfile libraries.
     """
 
-    runfiles_path: Path
+    runfiles_path: str
     source_repo: str
 
     def __iter__(self):
