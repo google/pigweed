@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_sync/borrow_testing.h"
+#include "pw_sync/test/borrow_testing.h"
 #include "pw_sync/timed_borrow.h"
 #include "pw_unit_test/framework.h"
 

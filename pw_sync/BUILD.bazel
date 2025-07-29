@@ -398,7 +398,7 @@ filegroup(
 cc_library(
     name = "threaded_testing",
     testonly = True,
-    hdrs = ["public/pw_sync/internal/threaded_testing.h"],
+    hdrs = ["public/pw_sync/test/threaded_testing.h"],
     strip_include_prefix = "public",
     deps = [
         ":thread_notification",
@@ -412,7 +412,7 @@ cc_library(
 cc_library(
     name = "timed_threaded_testing",
     testonly = True,
-    hdrs = ["public/pw_sync/internal/timed_threaded_testing.h"],
+    hdrs = ["public/pw_sync/test/timed_threaded_testing.h"],
     strip_include_prefix = "public",
     deps = [
         ":threaded_testing",
@@ -424,7 +424,7 @@ cc_library(
 cc_library(
     name = "lock_testing",
     srcs = ["lock_testing.cc"],
-    hdrs = ["public/pw_sync/lock_testing.h"],
+    hdrs = ["public/pw_sync/test/lock_testing.h"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
@@ -435,7 +435,7 @@ cc_library(
 
 cc_library(
     name = "borrow_testing",
-    hdrs = ["public/pw_sync/borrow_testing.h"],
+    hdrs = ["public/pw_sync/test/borrow_testing.h"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
@@ -446,7 +446,7 @@ cc_library(
 
 cc_library(
     name = "timed_borrow_testing",
-    hdrs = ["public/pw_sync/timed_borrow_testing.h"],
+    hdrs = ["public/pw_sync/test/timed_borrow_testing.h"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [

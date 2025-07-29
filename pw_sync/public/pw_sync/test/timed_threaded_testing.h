@@ -14,7 +14,7 @@
 #pragma once
 
 #include "pw_chrono/system_clock.h"
-#include "pw_sync/internal/threaded_testing.h"
+#include "pw_sync/test/threaded_testing.h"
 #include "pw_thread/sleep.h"
 
 namespace pw::sync::test {

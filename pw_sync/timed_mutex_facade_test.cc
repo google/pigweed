@@ -15,7 +15,7 @@
 #include <chrono>
 
 #include "pw_chrono/system_clock.h"
-#include "pw_sync/timed_borrow_testing.h"
+#include "pw_sync/test/timed_borrow_testing.h"
 #include "pw_sync/timed_mutex.h"
 #include "pw_unit_test/framework.h"
 

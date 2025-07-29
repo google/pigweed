@@ -248,7 +248,7 @@ pw_test_group("tests") {
 
 pw_source_set("threaded_testing") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_sync/internal/threaded_testing.h" ]
+  public = [ "public/pw_sync/test/threaded_testing.h" ]
   public_deps = [
     ":thread_notification",
     "$dir_pw_thread:test_thread_context",
@@ -259,7 +259,7 @@ pw_source_set("threaded_testing") {
 
 pw_source_set("timed_threaded_testing") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_sync/internal/timed_threaded_testing.h" ]
+  public = [ "public/pw_sync/test/timed_threaded_testing.h" ]
   public_deps = [
     ":threaded_testing",
     "$dir_pw_chrono:system_clock",
@@ -269,7 +269,7 @@ pw_source_set("timed_threaded_testing") {
 
 pw_source_set("lock_testing") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_sync/lock_testing.h" ]
+  public = [ "public/pw_sync/test/lock_testing.h" ]
   sources = [ "lock_testing.cc" ]
   public_deps = [
     ":virtual_basic_lockable",
@@ -280,7 +280,7 @@ pw_source_set("lock_testing") {
 
 pw_source_set("borrow_testing") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_sync/borrow_testing.h" ]
+  public = [ "public/pw_sync/test/borrow_testing.h" ]
   public_deps = [
     ":borrow",
     ":lock_traits",
@@ -289,7 +289,7 @@ pw_source_set("borrow_testing") {
 
 pw_source_set("timed_borrow_testing") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_sync/timed_borrow_testing.h" ]
+  public = [ "public/pw_sync/test/timed_borrow_testing.h" ]
   public_deps = [
     ":borrow_testing",
     ":timed_borrow",

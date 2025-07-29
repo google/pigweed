@@ -237,7 +237,7 @@ pw_add_facade(pw_sync.condition_variable INTERFACE
 
 pw_add_library(pw_sync.threaded_testing INTERFACE
   HEADERS
-    public/pw_sync/internal/threaded_testing.h
+    public/pw_sync/test/threaded_testing.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -249,7 +249,7 @@ pw_add_library(pw_sync.threaded_testing INTERFACE
 
 pw_add_library(pw_sync.timed_threaded_testing INTERFACE
   HEADERS
-    public/pw_sync/internal/timed_threaded_testing.h
+    public/pw_sync/test/timed_threaded_testing.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -260,7 +260,7 @@ pw_add_library(pw_sync.timed_threaded_testing INTERFACE
 
 pw_add_library(pw_sync.lock_testing STATIC
   HEADERS
-    public/pw_sync/lock_testing.h
+    public/pw_sync/test/lock_testing.h
   SOURCES
     lock_testing.cc
   PUBLIC_INCLUDES
@@ -274,7 +274,7 @@ pw_add_library(pw_sync.lock_testing STATIC
 
 pw_add_library(pw_sync.borrow_testing INTERFACE
   HEADERS
-    public/pw_sync/borrow_testing.h
+    public/pw_sync/test/borrow_testing.h
   PUBLIC_DEPS
     pw_sync.borrow
     pw_sync.lock_traits
@@ -282,7 +282,7 @@ pw_add_library(pw_sync.borrow_testing INTERFACE
 
 pw_add_library(pw_sync.timed_borrow_testing INTERFACE
   HEADERS
-    public/pw_sync/timed_borrow_testing.h
+    public/pw_sync/test/timed_borrow_testing.h
   PUBLIC_DEPS
     pw_sync.borrow_testing
     pw_sync.timed_borrow

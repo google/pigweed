@@ -14,8 +14,8 @@
 
 #include "pw_sync/borrow.h"
 
-#include "pw_sync/lock_testing.h"
-#include "pw_sync/timed_borrow_testing.h"
+#include "pw_sync/test/lock_testing.h"
+#include "pw_sync/test/timed_borrow_testing.h"
 #include "pw_unit_test/framework.h"
 
 using namespace std::chrono_literals;

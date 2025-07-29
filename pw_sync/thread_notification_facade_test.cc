@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_sync/internal/threaded_testing.h"
+#include "pw_sync/test/threaded_testing.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_unit_test/framework.h"
 

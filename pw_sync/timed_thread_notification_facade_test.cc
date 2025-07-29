@@ -15,7 +15,7 @@
 #include <chrono>
 
 #include "pw_chrono/system_clock.h"
-#include "pw_sync/internal/timed_threaded_testing.h"
+#include "pw_sync/test/timed_threaded_testing.h"
 #include "pw_sync/timed_thread_notification.h"
 #include "pw_unit_test/framework.h"
 
