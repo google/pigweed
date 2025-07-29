@@ -130,6 +130,17 @@ pw_add_test(pw_bytes.packed_ptr_test
     pw_bytes
 )
 
+pw_add_test(pw_bytes.span_test
+  SOURCES
+    span_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_bytes
+  GROUPS
+    modules
+    pw_bytes
+)
+
 pw_add_test(pw_bytes.suffix_test
   SOURCES
     suffix_test.cc

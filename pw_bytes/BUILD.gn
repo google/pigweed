@@ -125,6 +125,7 @@ pw_test("packed_ptr_test") {
 pw_test("span_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "span_test.cc" ]
+  negative_compilation_tests = true
 }
 
 pw_test("suffix_test") {

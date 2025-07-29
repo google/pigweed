@@ -132,7 +132,10 @@ pw_cc_test(
 pw_cc_test(
     name = "span_test",
     srcs = ["span_test.cc"],
-    deps = [":pw_bytes"],
+    deps = [
+        ":pw_bytes",
+        "//pw_compilation_testing:negative_compilation_testing",
+    ],
 )
 
 pw_cc_test(

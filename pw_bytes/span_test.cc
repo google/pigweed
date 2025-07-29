@@ -14,6 +14,7 @@
 
 #include "pw_bytes/span.h"
 
+#include "pw_compilation_testing/negative_compilation.h"
 #include "pw_unit_test/framework.h"
 
 // TODO: https://pwbug.dev/395945006 - DRY these macros with
@@ -102,7 +103,7 @@ void ObjectAsWritableBytesWorksInt() {
 
 TEST_FOR_ALL_INT_TYPES(ObjectAsWritableBytes, WorksInt)
 
-struct Foo {
+struct Serializable {
   char c;
   unsigned char uc;
   uint8_t u8;
@@ -115,11 +116,11 @@ struct Foo {
   int64_t i64;
 
   // In C++20:
-  // bool operator==(const Foo& other) const = default;
+  // bool operator==(const Serializable& other) const = default;
 };
-static_assert(sizeof(Foo) == 1 + 1 + 1 + 1 + 2 + 2 + 4 + 4 + 8 + 8);
+static_assert(sizeof(Serializable) == 1 + 1 + 1 + 1 + 2 + 2 + 4 + 4 + 8 + 8);
 
-constexpr bool operator==(const Foo& lhs, const Foo& rhs) {
+constexpr bool operator==(const Serializable& lhs, const Serializable& rhs) {
   // clang-format off
   return (lhs.c == rhs.c)
       && (lhs.uc == rhs.uc)
@@ -134,7 +135,7 @@ constexpr bool operator==(const Foo& lhs, const Foo& rhs) {
   // clang-format on
 }
 
-constexpr Foo kFooInit = {
+constexpr Serializable kSerializableInit = {
     .c = 'A',
     .uc = 'Z',
     .u8 = 243,
@@ -147,8 +148,8 @@ constexpr Foo kFooInit = {
     .i64 = -2718281828459045,
 };
 
-TEST(ObjectAsBytes, WorksStruct) {
-  const Foo val = kFooInit;
+TEST(ObjectAsBytes, WorksWithSerializable) {
+  const Serializable val = kSerializableInit;
 
   std::array<std::byte, sizeof(val)> buf;
   std::memcpy(&buf, &val, sizeof(val));
@@ -156,16 +157,79 @@ TEST(ObjectAsBytes, WorksStruct) {
   EXPECT_SEQ_EQ(pw::ObjectAsBytes(val), buf);
 }
 
-TEST(ObjectAsWritableBytes, WorksStruct) {
-  Foo src = kFooInit;
+TEST(ObjectAsWritableBytes, WorksWithSerializable) {
+  Serializable src = kSerializableInit;
   pw::ConstByteSpan src_bytes = pw::ObjectAsBytes(src);
 
-  Foo dst{};
+  Serializable dst{};
   pw::ByteSpan dst_bytes = pw::ObjectAsWritableBytes(dst);
 
   std::copy(src_bytes.begin(), src_bytes.end(), dst_bytes.begin());
 
   EXPECT_EQ(src, dst);
 }
+
+struct NotTriviallyCopyable {
+  uint64_t u64 = 0;
+
+  NotTriviallyCopyable() = default;
+
+  // The explicit copy-constructor and copy-assignment operators make this type
+  // not trivially copyable.
+  NotTriviallyCopyable(const NotTriviallyCopyable& other) { *this = other; }
+  NotTriviallyCopyable& operator=(const NotTriviallyCopyable& other) {
+    u64 = other.u64;
+    return *this;
+  }
+};
+
+static_assert(!std::is_trivially_copyable_v<NotTriviallyCopyable>);
+
+#if PW_NC_TEST(ObjectAsBytesFailsWithNotTriviallyCopyable)
+PW_NC_EXPECT(
+    "cannot treat object as bytes: "
+    "copying bytes may result in an invalid object");
+pw::ConstByteSpan FailsWithNotTriviallyCopyable(
+    const NotTriviallyCopyable& obj) {
+  return pw::ObjectAsBytes(obj);
+}
+#elif PW_NC_TEST(ObjectAsWritableBytesFailsWithNotTriviallyCopyable)
+PW_NC_EXPECT(
+    "cannot treat object as bytes: "
+    "copying bytes may result in an invalid object");
+pw::ByteSpan FailsWithNotTriviallyCopyable(NotTriviallyCopyable& obj) {
+  return pw::ObjectAsWritableBytes(obj);
+}
+#endif  // PW_NC_TEST
+
+struct NonUniqueRepresentation {
+  // For alignment, 7 padding bytes follow this field, making this type have
+  // multiple possible represantations for the same value.
+  uint8_t u8;
+
+  uint64_t u64;
+};
+
+static_assert(
+    !std::has_unique_object_representations_v<NonUniqueRepresentation>);
+
+#if PW_NC_TEST(ObjectAsBytesFailsWithNonUniqueRepresentation)
+PW_NC_EXPECT(
+    "cannot treat object as bytes: "
+    "type includes indeterminate bytes which may leak information "
+    "or result in incorrect object hashing");
+pw::ConstByteSpan FailsWithNonUniqueRepresentation(
+    const NonUniqueRepresentation& obj) {
+  return pw::ObjectAsBytes(obj);
+}
+#elif PW_NC_TEST(ObjectAsWritableBytesFailsWithNonUniqueRepresentation)
+PW_NC_EXPECT(
+    "cannot treat object as bytes: "
+    "type includes indeterminate bytes which may leak information "
+    "or result in incorrect object hashing");
+pw::ByteSpan FailsWithNonUniqueRepresentation(NonUniqueRepresentation& obj) {
+  return pw::ObjectAsWritableBytes(obj);
+}
+#endif  // PW_NC_TEST
 
 }  // namespace
