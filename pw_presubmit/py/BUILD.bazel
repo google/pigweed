@@ -105,6 +105,7 @@ py_library(
 py_console_script_binary(
     name = "black",
     pkg = "@pigweed_python_packages//black",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 
@@ -112,6 +113,7 @@ pw_py_importable_runfile(
     name = "black_runfiles",
     src = ":black",
     executable = True,
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 
@@ -119,6 +121,7 @@ pw_py_importable_runfile(
     name = "buildifier_runfiles",
     src = "@buildifier",
     executable = True,
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 
@@ -143,15 +146,63 @@ pw_py_importable_runfile(
 )
 
 bool_flag(
+    name = "enable_python_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_bazel_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_cpp_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_cmake_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_css_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
     name = "enable_gn_formatter",
     build_setting_default = False,
 )
 
-config_setting(
-    name = "gn_formatter_is_disabled",
-    flag_values = {
-        ":enable_gn_formatter": "false",
-    },
+bool_flag(
+    name = "enable_java_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_json_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_markdown_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_owners_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_protobuf_formatter",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "enable_rst_formatter",
+    build_setting_default = True,
 )
 
 bool_flag(
@@ -160,21 +211,114 @@ bool_flag(
 )
 
 config_setting(
-    name = "rust_formatter_is_disabled",
-    flag_values = {
-        ":enable_rust_formatter": "false",
-    },
+    name = "python_formatter_is_enabled",
+    flag_values = {":enable_python_formatter": "True"},
 )
 
+config_setting(
+    name = "bazel_formatter_is_enabled",
+    flag_values = {":enable_bazel_formatter": "True"},
+)
+
+config_setting(
+    name = "cpp_formatter_is_enabled",
+    flag_values = {":enable_cpp_formatter": "True"},
+)
+
+config_setting(
+    name = "cmake_formatter_is_enabled",
+    flag_values = {":enable_cmake_formatter": "True"},
+)
+
+config_setting(
+    name = "css_formatter_is_enabled",
+    flag_values = {":enable_css_formatter": "True"},
+)
+
+config_setting(
+    name = "gn_formatter_is_enabled",
+    flag_values = {":enable_gn_formatter": "True"},
+)
+
+config_setting(
+    name = "java_formatter_is_enabled",
+    flag_values = {":enable_java_formatter": "True"},
+)
+
+config_setting(
+    name = "json_formatter_is_enabled",
+    flag_values = {":enable_json_formatter": "True"},
+)
+
+config_setting(
+    name = "markdown_formatter_is_enabled",
+    flag_values = {":enable_markdown_formatter": "True"},
+)
+
+config_setting(
+    name = "owners_formatter_is_enabled",
+    flag_values = {":enable_owners_formatter": "True"},
+)
+
+config_setting(
+    name = "protobuf_formatter_is_enabled",
+    flag_values = {":enable_protobuf_formatter": "True"},
+)
+
+config_setting(
+    name = "rst_formatter_is_enabled",
+    flag_values = {":enable_rst_formatter": "True"},
+)
+
+config_setting(
+    name = "rust_formatter_is_enabled",
+    flag_values = {":enable_rust_formatter": "True"},
+)
+
+# This file is loaded by the formatter entry point at runtime and disables
+# formatters by their mnemonic.
 write_file(
     name = "disabled_formatters",
     out = "pigweed_format/disabled_formatters.txt",
     content = select({
-        ":gn_formatter_is_disabled": ["gn"],
-        "//conditions:default": [],
+        ":python_formatter_is_enabled": [],
+        "//conditions:default": ["Python"],
     }) + select({
-        ":rust_formatter_is_disabled": ["rustfmt"],
-        "//conditions:default": [],
+        ":bazel_formatter_is_enabled": [],
+        "//conditions:default": ["Bazel"],
+    }) + select({
+        ":cpp_formatter_is_enabled": [],
+        "//conditions:default": ["C/C++"],
+    }) + select({
+        ":cmake_formatter_is_enabled": [],
+        "//conditions:default": ["CMake"],
+    }) + select({
+        ":css_formatter_is_enabled": [],
+        "//conditions:default": ["CSS"],
+    }) + select({
+        ":gn_formatter_is_enabled": [],
+        "//conditions:default": ["GN"],
+    }) + select({
+        ":java_formatter_is_enabled": [],
+        "//conditions:default": ["Java"],
+    }) + select({
+        ":json_formatter_is_enabled": [],
+        "//conditions:default": ["JSON"],
+    }) + select({
+        ":markdown_formatter_is_enabled": [],
+        "//conditions:default": ["Markdown"],
+    }) + select({
+        ":owners_formatter_is_enabled": [],
+        "//conditions:default": ["Owners"],
+    }) + select({
+        ":protobuf_formatter_is_enabled": [],
+        "//conditions:default": ["Protobuf"],
+    }) + select({
+        ":rst_formatter_is_enabled": [],
+        "//conditions:default": ["reStructuredText"],
+    }) + select({
+        ":rust_formatter_is_enabled": [],
+        "//conditions:default": ["Rust"],
     }),
     visibility = ["//visibility:private"],
 )
@@ -187,18 +331,26 @@ pw_py_binary(
     ],
     main = "pigweed_format/__main__.py",
     deps = [
-        ":black_runfiles",
-        ":buildifier_runfiles",
         ":format_core",
         "//pw_build/py:pw_build",
-        "@llvm_toolchain//:py_clang_format",
         "@rules_python//python/runfiles",
     ] + select({
-        ":gn_formatter_is_disabled": [],
-        "//conditions:default": [":gn_runfiles"],
+        ":python_formatter_is_enabled": [":black_runfiles"],
+        "//conditions:default": [],
     }) + select({
-        ":rust_formatter_is_disabled": [],
-        "//conditions:default": [":rustfmt_runfiles"],
+        ":bazel_formatter_is_enabled": [":buildifier_runfiles"],
+        "//conditions:default": [],
+    }) + select({
+        ":cpp_formatter_is_enabled": ["@llvm_toolchain//:py_clang_format"],
+        ":java_formatter_is_enabled": ["@llvm_toolchain//:py_clang_format"],
+        ":protobuf_formatter_is_enabled": ["@llvm_toolchain//:py_clang_format"],
+        "//conditions:default": [],
+    }) + select({
+        ":gn_formatter_is_enabled": [":gn_runfiles"],
+        "//conditions:default": [],
+    }) + select({
+        ":rust_formatter_is_enabled": [":rustfmt_runfiles"],
+        "//conditions:default": [],
     }),
 )
 

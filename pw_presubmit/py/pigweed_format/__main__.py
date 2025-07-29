@@ -158,9 +158,16 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             bazel_import_path='pw_presubmit.py.rustfmt_runfiles',
         ),
     ]
-    enabled_formatters = [
-        fmt for fmt in all_formatters if fmt.binary not in disabled_formatters
-    ]
+    enabled_formatters = []
+    for fmt in all_formatters:
+        if fmt.formatter.mnemonic not in disabled_formatters:
+            enabled_formatters.append(fmt)
+        else:
+            disabled_formatters.remove(fmt.formatter.mnemonic)
+
+    assert (
+        not disabled_formatters
+    ), f'Attempted to disable unknown formatters: {disabled_formatters}'
 
     # Setup runfiles.
     for formatter in enabled_formatters:
