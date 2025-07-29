@@ -198,7 +198,6 @@ sphinx_build_binary(
         "@pigweed_python_packages//sphinx_copybutton",
         "@pigweed_python_packages//sphinx_design",
         "@pigweed_python_packages//sphinx_reredirects",
-        "@pigweed_python_packages//sphinxcontrib_doxylink",
         "@pigweed_python_packages//sphinxcontrib_mermaid",
         "@rules_python//python/runfiles",
     ],

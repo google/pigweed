@@ -111,10 +111,10 @@ following some guidelines:
 ---------------------------------
 pw::persistent_ram::Persistent<T>
 ---------------------------------
-:doxylink:`Persistent` is a simple container for holding its templated value
-``T`` with CRC16 integrity checking. Note that a ``Persistent`` will be lost if a
-write/set operation is interrupted or otherwise not completed, as it is not
-double buffered.
+The Persistent is a simple container for holding its templated value ``T`` with
+CRC16 integrity checking. Note that a Persistent will be lost if a write/set
+operation is interrupted or otherwise not completed, as it is not double
+buffered.
 
 The default constructor does nothing, meaning it will result in either invalid
 state initially or a valid persisted value from a previous session.
@@ -127,7 +127,7 @@ Example: Storing an integer
 A common use case of persistent data is to track boot counts, or effectively
 how often the device has rebooted. This can be useful for monitoring how many
 times the device rebooted and/or crashed. This can be easily accomplished using
-the :doxylink:`Persistent` container.
+the Persistent container.
 
 .. code-block:: cpp
 
@@ -168,9 +168,9 @@ Example: Storing larger objects
 Larger objects may be inefficient to copy back and forth due to the need for
 a working copy. To work around this, you can get a Mutator handle that provides
 direct access to the underlying object. As long as the Mutator is in scope, it
-is invalid to access the underlying :doxylink:`Persistent`, but you'll be able
-to directly modify the object in place. Once the Mutator goes out of scope, the
-Persistent object's checksum is updated to reflect the changes.
+is invalid to access the underlying Persistent, but you'll be able to directly
+modify the object in place. Once the Mutator goes out of scope, the Persistent
+object's checksum is updated to reflect the changes.
 
 .. code-block:: cpp
 
@@ -220,14 +220,13 @@ Persistent object's checksum is updated to reflect the changes.
 ------------------------------------
 pw::persistent_ram::PersistentBuffer
 ------------------------------------
-:doxylink:`PersistentBuffer` is a persistent storage container for variable-length
+The PersistentBuffer is a persistent storage container for variable-length
 serialized data. Rather than allowing direct access to the underlying buffer for
 random-access mutations, the PersistentBuffer is mutable through a
-:doxylink:`PersistentBufferWriter` that implements the :doxylink:`pw::stream::Writer`
-interface. This removes the potential for logical errors due to RAII or
-``open()``/``close()`` semantics as both the ``PersistentBuffer`` and
-``PersistentBufferWriter`` can be used validly as long as their access is
-serialized.
+PersistentBufferWriter that implements the pw::stream::Writer interface. This
+removes the potential for logical errors due to RAII or open()/close() semantics
+as both the PersistentBuffer and PersistentBufferWriter can be used validly as
+long as their access is serialized.
 
 Example
 -------

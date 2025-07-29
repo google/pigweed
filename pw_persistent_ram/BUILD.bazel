@@ -118,14 +118,6 @@ pw_size_table(
     ],
 )
 
-filegroup(
-    name = "doxygen",
-    srcs = [
-        "public/pw_persistent_ram/persistent.h",
-        "public/pw_persistent_ram/persistent_buffer.h",
-    ],
-)
-
 sphinx_docs_library(
     name = "docs",
     srcs = [
