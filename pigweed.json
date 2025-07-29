@@ -214,6 +214,11 @@
           [
             "run",
             "//pw_presubmit/py:check_formatting"
+          ],
+          [
+            "build",
+            "--config=pylint",
+            "//..."
           ]
         ],
         "integration": [
