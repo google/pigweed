@@ -88,8 +88,11 @@ from pw_presubmit.format.python import (
     BlackFormatter,
     DEFAULT_PYTHON_FILE_PATTERNS,
 )
+from pw_presubmit.format.rst import (
+    RstFormatter,
+    DEFAULT_RST_FILE_PATTERNS,
+)
 from pw_presubmit.format.whitespace import TrailingSpaceFormatter
-from pw_presubmit.rst_format import reformat_rst
 from pw_presubmit.tools import (
     log_run,
     PresubmitToolRunner,
@@ -433,21 +436,20 @@ def fix_trailing_space(ctx: _Context) -> dict[Path, str]:
 
 
 def rst_format_check(ctx: _Context) -> dict[Path, str]:
-    errors: dict[Path, str] = {}
-    for path in ctx.paths:
-        result = reformat_rst(
-            path, diff=True, in_place=False, suppress_stdout=True
+    """Checks formatting; returns {path: diff} for files with bad formatting."""
+    formatter = RstFormatter(tool_runner=PresubmitToolRunner())
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(
+            ctx.paths,
+            ctx.dry_run,
         )
-        if result:
-            errors[path] = ''.join(result)
-    return errors
+    )
 
 
 def rst_format_fix(ctx: _Context) -> dict[Path, str]:
-    errors: dict[Path, str] = {}
-    for path in ctx.paths:
-        reformat_rst(path, diff=True, in_place=True, suppress_stdout=True)
-    return errors
+    """Fixes formatting for the provided files in place."""
+    formatter = RstFormatter(tool_runner=PresubmitToolRunner())
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def print_format_fix(stdout: bytes):
@@ -552,7 +554,7 @@ CMAKE_FORMAT: CodeFormat = CodeFormat(
 
 RST_FORMAT: CodeFormat = CodeFormat(
     'reStructuredText',
-    FileFilter(endswith=['.rst']),
+    DEFAULT_RST_FILE_PATTERNS,
     rst_format_check,
     rst_format_fix,
 )

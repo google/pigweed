@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# Copyright 2023 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,45 +11,24 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Restructured Text Formatting."""
+"""Formatter for reStructuredText files."""
 
-import argparse
 from dataclasses import dataclass, field
-import difflib
 from functools import cached_property
 from pathlib import Path
 import textwrap
 from typing import Iterable
 
-from pw_cli.diff import colorize_diff
+from pw_cli.file_filter import FileFilter
+from pw_presubmit.format.core import (
+    FileFormatter,
+    FormattedFileContents,
+    FormatFixStatus,
+)
 
+DEFAULT_RST_FILE_PATTERNS = FileFilter(endswith=['.rst'])
 TAB_WIDTH = 8  # Number of spaces to use for \t replacement
 CODE_BLOCK_INDENTATION = 3
-
-
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-
-    parser.add_argument(
-        '--diff',
-        action='store_true',
-        help='Print a diff of formatting changes.',
-    )
-    parser.add_argument(
-        '-i',
-        '--in-place',
-        action='store_true',
-        help='Replace existing file with the reformatted copy.',
-    )
-    parser.add_argument(
-        'rst_files',
-        nargs='+',
-        default=[],
-        type=Path,
-        help='Paths to rst files.',
-    )
-
-    return parser.parse_args()
 
 
 def _indent_amount(line: str) -> int:
@@ -71,7 +48,7 @@ def _fix_whitespace(line: str) -> str:
 
 
 @dataclass
-class CodeBlock:
+class _CodeBlock:
     """Store a single code block."""
 
     directive_lineno: int
@@ -177,82 +154,69 @@ class CodeBlock:
         yield from self.code_block_lines()
         yield '\n'
 
-    def __repr__(self) -> str:
-        return ''.join(self.lines())
 
-
-def _parse_and_format_rst(in_text: str) -> Iterable[str]:
+def _parse_and_format_rst(in_text: str) -> str:
     """Reindents code blocks to 3 spaces and fixes whitespace."""
-    current_block: CodeBlock | None = None
+    output_lines: list[str] = []
+    current_block: _CodeBlock | None = None
     for index, line in enumerate(in_text.splitlines(keepends=True)):
         # If a code block is active, process this line.
         if current_block:
             current_block.append_line(index, line)
             if current_block.finished():
-                yield from current_block.lines()
+                output_lines.extend(current_block.lines())
                 # This line wasn't part of the code block, process as normal.
-                yield _fix_whitespace(line)
+                output_lines.append(_fix_whitespace(line))
                 # Erase this code_block variable
                 current_block = None
         # Check for new code block start
         elif line.lstrip().startswith(('.. code-block::', '.. code::')):
-            current_block = CodeBlock(
+            current_block = _CodeBlock(
                 directive_lineno=index,
                 # Change `.. code::` to Sphinx's `.. code-block::`.
                 directive_line=line.replace('code::', 'code-block::'),
             )
             continue
         else:
-            yield _fix_whitespace(line)
+            output_lines.append(_fix_whitespace(line))
     # If the document ends with a code block it may still need to be written.
     if current_block is not None:
-        yield from current_block.lines()
-
-
-def reformat_rst(
-    file_name: Path,
-    diff: bool = False,
-    in_place: bool = False,
-    suppress_stdout: bool = False,
-) -> list[str]:
-    """Reformats an rst file and returns a list of diff lines."""
-    in_text = file_name.read_text()
-    out_lines = list(_parse_and_format_rst(in_text))
+        output_lines.extend(current_block.lines())
 
     # Remove blank lines from the end of the output, if any.
-    while out_lines and not out_lines[-1].strip():
-        out_lines.pop()
+    while output_lines and not output_lines[-1].strip():
+        output_lines.pop()
 
     # Add a trailing \n if needed.
-    if out_lines and not out_lines[-1].endswith('\n'):
-        out_lines[-1] += '\n'
+    if output_lines and not output_lines[-1].endswith('\n'):
+        output_lines[-1] += '\n'
 
-    result_diff = list(
-        difflib.unified_diff(
-            in_text.splitlines(True),
-            out_lines,
-            f'{file_name}  (original)',
-            f'{file_name}  (reformatted)',
+    return ''.join(output_lines)
+
+
+class RstFormatter(FileFormatter):
+    """A custom reStructuredText formatter."""
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('mnemonic', 'reStructuredText')
+        kwargs.setdefault('file_patterns', DEFAULT_RST_FILE_PATTERNS)
+        super().__init__(**kwargs)
+
+    def format_file_in_memory(
+        self, file_path: Path, file_contents: bytes
+    ) -> FormattedFileContents:
+        """Formats the provided file contents in-memory."""
+        formatted_text = _parse_and_format_rst(file_contents.decode())
+        return FormattedFileContents(
+            ok=True,
+            formatted_file_contents=formatted_text.encode(),
+            error_message=None,
         )
-    )
-    if diff and result_diff:
-        if not suppress_stdout:
-            print(''.join(colorize_diff(result_diff)))
 
-    if in_place:
-        file_name.write_text(''.join(out_lines))
-
-    return result_diff
-
-
-def rst_format_main(
-    rst_files: list[Path],
-    diff: bool = False,
-    in_place: bool = False,
-) -> None:
-    for rst_file in rst_files:
-        reformat_rst(rst_file, diff, in_place)
-
-
-if __name__ == '__main__':
-    rst_format_main(**vars(_parse_args()))
+    def format_file(self, file_path: Path) -> FormatFixStatus:
+        """Formats the provided file in-place."""
+        original_contents = file_path.read_bytes()
+        result = self.format_file_in_memory(file_path, original_contents)
+        if result.formatted_file_contents != original_contents:
+            file_path.write_bytes(result.formatted_file_contents)
+        return FormatFixStatus(ok=True, error_message=None)

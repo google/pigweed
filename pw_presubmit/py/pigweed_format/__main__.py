@@ -28,6 +28,7 @@ from pw_presubmit.format.private.cli import FormattingSuite
 from pw_presubmit.format.owners import OwnersFormatter
 from pw_presubmit.format.protobuf import ProtobufFormatter
 from pw_presubmit.format.python import BlackFormatter
+from pw_presubmit.format.rst import RstFormatter
 from pw_presubmit.format.rust import RustfmtFormatter
 from pw_presubmit.format.cmake import CmakeFormatter
 from pw_presubmit.format.css import CssFormatter
@@ -141,6 +142,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             ),
             binary='clang-format',
             bazel_import_path='llvm_toolchain.clang_format',
+        ),
+        FormatterSetup(
+            formatter=RstFormatter(
+                tool_runner=runfiles,
+            ),
+            binary=None,
+            bazel_import_path=None,
         ),
         FormatterSetup(
             formatter=RustfmtFormatter(

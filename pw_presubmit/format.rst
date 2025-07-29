@@ -49,6 +49,9 @@ Language support:
    * - Python (using ``black``)
      - ✅
      - ❌
+   * - reStructuredText
+     - ✅
+     - ❌
    * - Rust
      - ❌
      - ✅

@@ -51,7 +51,6 @@ py_library(
         "pw_presubmit/presubmit_context.py",
         "pw_presubmit/python_checks.py",
         "pw_presubmit/repo.py",
-        "pw_presubmit/rst_format.py",
         "pw_presubmit/shell_checks.py",
         "pw_presubmit/source_in_build.py",
         "pw_presubmit/todo_check.py",
@@ -89,6 +88,7 @@ py_library(
         "pw_presubmit/format/private/cli_support.py",
         "pw_presubmit/format/protobuf.py",
         "pw_presubmit/format/python.py",
+        "pw_presubmit/format/rst.py",
         "pw_presubmit/format/rust.py",
         "pw_presubmit/format/whitespace.py",
     ],
@@ -398,6 +398,18 @@ pw_py_test(
         "pw_presubmit/format/test_data/json_test_data.json",
         "pw_presubmit/format/test_data/json_test_data_golden.json",
         "pw_presubmit/format/test_data/malformed_file.txt",
+    ],
+    deps = [
+        ":format_core",
+    ],
+)
+
+pw_py_test(
+    name = "rst_format_test",
+    srcs = ["rst_format_test.py"],
+    data = [
+        "pw_presubmit/format/test_data/rst_test_data.rst",
+        "pw_presubmit/format/test_data/rst_test_data_golden.rst",
     ],
     deps = [
         ":format_core",
