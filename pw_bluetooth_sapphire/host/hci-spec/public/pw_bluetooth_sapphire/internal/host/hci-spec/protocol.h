@@ -50,6 +50,9 @@ using EventCode = uint8_t;
 // Data Connection Handle used for ACL and SCO logical link connections.
 using ConnectionHandle = uint16_t;
 
+// Handle used to identify a periodic advertising sync.
+using SyncHandle = uint16_t;
+
 // Handle used to identify an advertising set used in the 5.0 Extended
 // Advertising feature.
 using AdvertisingHandle = uint8_t;

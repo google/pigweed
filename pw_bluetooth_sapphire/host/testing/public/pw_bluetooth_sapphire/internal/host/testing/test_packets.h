@@ -43,8 +43,19 @@ DynamicByteBuffer CommandCompletePacket(
     pw::bluetooth::emboss::StatusCode =
         pw::bluetooth::emboss::StatusCode::SUCCESS);
 
+DynamicByteBuffer CommandCompletePacket(
+    pw::bluetooth::emboss::OpCode opcode,
+    pw::bluetooth::emboss::StatusCode =
+        pw::bluetooth::emboss::StatusCode::SUCCESS);
+
 DynamicByteBuffer CommandStatusPacket(
     hci_spec::OpCode op_code,
+    pw::bluetooth::emboss::StatusCode status_code =
+        pw::bluetooth::emboss::StatusCode::SUCCESS,
+    uint8_t num_packets = 0xF0);
+
+DynamicByteBuffer CommandStatusPacket(
+    pw::bluetooth::emboss::OpCode op_code,
     pw::bluetooth::emboss::StatusCode status_code =
         pw::bluetooth::emboss::StatusCode::SUCCESS,
     uint8_t num_packets = 0xF0);
@@ -178,6 +189,88 @@ DynamicByteBuffer LERequestPeerScaCompletePacket(
     pw::bluetooth::emboss::LESleepClockAccuracyRange sca);
 DynamicByteBuffer LERequestPeerScaPacket(hci_spec::ConnectionHandle conn);
 
+DynamicByteBuffer LEPeriodicAdvertisingCreateSyncPacket(
+    DeviceAddress address,
+    uint8_t sid,
+    uint16_t sync_timeout,
+    bool filter_duplicates = false,
+    bool use_periodic_advertiser_list = false);
+
+DynamicByteBuffer LEPeriodicAdvertisingCreateSyncCancelPacket();
+
+DynamicByteBuffer LEAddDeviceToPeriodicAdvertiserListPacket(
+    DeviceAddress address, uint8_t sid);
+
+DynamicByteBuffer LERemoveDeviceFromPeriodicAdvertiserListPacket(
+    DeviceAddress address, uint8_t sid);
+
+DynamicByteBuffer LEPeriodicAdvertisingSyncEstablishedEventPacketV1(
+    pw::bluetooth::emboss::StatusCode status,
+    hci_spec::SyncHandle sync_handle,
+    uint8_t advertising_sid,
+    DeviceAddress address,
+    pw::bluetooth::emboss::LEPhy phy,
+    uint16_t interval,
+    pw::bluetooth::emboss::LEClockAccuracy clock_accuracy);
+
+DynamicByteBuffer LEPeriodicAdvertisingSyncEstablishedEventPacketV2(
+    pw::bluetooth::emboss::StatusCode status,
+    hci_spec::SyncHandle sync_handle,
+    uint8_t advertising_sid,
+    DeviceAddress address,
+    pw::bluetooth::emboss::LEPhy phy,
+    uint16_t interval,
+    pw::bluetooth::emboss::LEClockAccuracy clock_accuracy,
+    uint8_t num_subevents);
+
+DynamicByteBuffer LEPeriodicAdvertisingReportEventPacketV1(
+    hci_spec::SyncHandle sync_handle,
+    pw::bluetooth::emboss::LEPeriodicAdvertisingDataStatus data_status,
+    const DynamicByteBuffer& data);
+
+DynamicByteBuffer LEPeriodicAdvertisingReportEventPacketV2(
+    hci_spec::SyncHandle sync_handle,
+    uint16_t event_counter,
+    uint8_t subevent,
+    pw::bluetooth::emboss::LEPeriodicAdvertisingDataStatus data_status,
+    const DynamicByteBuffer& data);
+
+DynamicByteBuffer LESyncLostEventPacket(hci_spec::SyncHandle sync_handle);
+
+DynamicByteBuffer LEBigInfoAdvertisingReportEventPacket(
+    hci_spec::SyncHandle sync_handle,
+    uint8_t num_bis,
+    uint8_t nse,
+    uint16_t iso_interval,
+    uint8_t bn,
+    uint8_t pto,
+    uint8_t irc,
+    uint16_t max_pdu,
+    uint32_t sdu_interval,
+    uint16_t max_sdu,
+    pw::bluetooth::emboss::IsoPhyType phy,
+    pw::bluetooth::emboss::BigFraming framing,
+    bool encryption);
+
+DynamicByteBuffer LEPeriodicAdvertisingSyncTransferReceivedEventPacket(
+    pw::bluetooth::emboss::StatusCode status,
+    hci_spec::ConnectionHandle connection_handle,
+    uint16_t service_data,
+    hci_spec::SyncHandle sync_handle,
+    uint8_t advertising_sid,
+    DeviceAddress address,
+    pw::bluetooth::emboss::LEPhy phy,
+    uint16_t pa_interval,
+    pw::bluetooth::emboss::LEClockAccuracy advertiser_clock_accuracy);
+
+DynamicByteBuffer LEPeriodicAdvertisingTerminateSyncPacket(
+    hci_spec::SyncHandle sync_handle);
+
+DynamicByteBuffer LESetPeriodicAdvertisingSyncTransferParamsPacket(
+    hci_spec::ConnectionHandle connection_handle,
+    pw::bluetooth::emboss::PeriodicAdvertisingSyncTransferMode mode,
+    uint16_t sync_timeout);
+
 DynamicByteBuffer LEStartEncryptionPacket(hci_spec::ConnectionHandle,
                                           uint64_t random_number,
                                           uint16_t encrypted_diversifier,
@@ -285,7 +378,6 @@ DynamicByteBuffer UserPasskeyNotificationPacket(DeviceAddress address,
 DynamicByteBuffer UserPasskeyRequestNegativeReply(DeviceAddress address);
 DynamicByteBuffer UserPasskeyRequestNegativeReplyResponse(
     DeviceAddress address);
-
 DynamicByteBuffer UserPasskeyRequestPacket(DeviceAddress address);
 DynamicByteBuffer UserPasskeyRequestReplyPacket(DeviceAddress address,
                                                 uint32_t passkey);
