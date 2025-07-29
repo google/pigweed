@@ -1123,24 +1123,6 @@ class BasicMultiBuf {
     generic().TruncateTopLayer(length);
   }
 
-  /// Resizes the current top layer.
-  ///
-  /// The range given by `offset` and `length` MUST fall within this MultiBuf.
-  /// It is an error to call this method when `NumLayers()` < 2.
-  ///
-  /// Returns false and leaves the object unmodified if the top layer is sealed;
-  /// otherwise returns true.
-  ///
-  /// @param[in]  offset  New offset from the start of layer beneath the top
-  ///                     layer.
-  /// @param[in]  length  New length of the top layer.
-  [[nodiscard]] bool ResizeTopLayer(size_t offset,
-                                    size_t length = dynamic_extent) {
-    static_assert(is_layerable(),
-                  "`ResizeTopLayer` may only be called on layerable MultiBufs");
-    return generic().ResizeTopLayer(offset, length);
-  }
-
   /// Removes the top layer.
   ///
   /// After this call, the layer beneath the top layer will be the new top
@@ -1375,18 +1357,7 @@ class GenericMultiBuf final
   void UnsealTopLayer();
 
   /// @copydoc BasicMultiBuf<>::TruncateTopLayer
-  void TruncateTopLayer(size_t length) {
-    PW_ASSERT(length <= size());
-    PW_ASSERT(!IsTopLayerSealed());
-    if (length < size()) {
-      // TODO: b/432038569 - Reconsider the `ResizeTopLayer` API.
-      std::ignore = ResizeTopLayer(GetOffset(0), length);
-    }
-  }
-
-  /// @copydoc BasicMultiBuf<>::ResizeTopLayer
-  [[nodiscard]] bool ResizeTopLayer(size_t offset,
-                                    size_t length = dynamic_extent);
+  void TruncateTopLayer(size_t length);
 
   /// @copydoc BasicMultiBuf<>::PopLayer
   void PopLayer();

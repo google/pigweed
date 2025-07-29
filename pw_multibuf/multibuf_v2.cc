@@ -385,15 +385,19 @@ void GenericMultiBuf::UnsealTopLayer() {
   }
 }
 
-bool GenericMultiBuf::ResizeTopLayer(size_t offset, size_t length) {
+void GenericMultiBuf::TruncateTopLayer(size_t length) {
   PW_CHECK_UINT_GT(depth_, 2u);
+  PW_CHECK_UINT_LE(length, size());
+  PW_CHECK(!IsTopLayerSealed(),
+           "MultiBuf::TruncateTopLayer() was called on a sealed layer; call "
+           "UnsealTopLayer first");
+  if (length == size()) {
+    return;
+  }
+  size_t offset = GetOffset(0);
   Entry& current = deque_[depth_ - 1];
   CheckRange(offset, length, current.view.offset + size());
-  if (IsTopLayerSealed()) {
-    return false;
-  }
   SetLayer(offset, length);
-  return true;
 }
 
 void GenericMultiBuf::PopLayer() {

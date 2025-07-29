@@ -2353,60 +2353,7 @@ TEST_F(MultiBufTest, PopFrontFragmentSkipsZeroLengthChunks) {
   EXPECT_TRUE(mbi->empty());
 }
 
-TEST_F(MultiBufTest, ResizeTopLayerSucceedsWithZeroLength) {
-  ConstMultiBuf::Instance mbi(allocator_);
-  AddLayers(*mbi);
-  EXPECT_EQ(mbi->size(), 32u);
-  EXPECT_TRUE(mbi->ResizeTopLayer(0, 0));
-  EXPECT_EQ(mbi->size(), 0u);
-}
-
-TEST_F(MultiBufTest, ResizeTopLayerSucceedsWithNonzeroLength) {
-  ConstMultiBuf::Instance mbi(allocator_);
-  AddLayers(*mbi);
-  EXPECT_EQ(mbi->size(), 32u);
-  EXPECT_TRUE(mbi->ResizeTopLayer(6, 12));
-  EXPECT_EQ(mbi->size(), 12u);
-}
-
-TEST_F(MultiBufTest, ResizeTopLayerSucceedsWithOffsetThatSkipsChunks) {
-  ConstMultiBuf::Instance mbi(allocator_);
-  AddLayers(*mbi);
-
-  // See `AddLayers`. Second-from-top layer lengths should be [12, 8, 12, 16].
-  EXPECT_EQ(mbi->size(), 32u);
-  EXPECT_TRUE(mbi->ResizeTopLayer(32));
-  EXPECT_EQ(mbi->size(), 16u);
-}
-
-TEST_F(MultiBufTest, ResizeTopLayerFailsWhenSealed) {
-  ConstMultiBuf::Instance mbi(allocator_);
-  AddLayers(*mbi);
-  mbi->SealTopLayer();
-  EXPECT_EQ(mbi->size(), 32u);
-  EXPECT_FALSE(mbi->ResizeTopLayer(6, 12));
-  EXPECT_EQ(mbi->size(), 32u);
-}
-
-TEST_F(MultiBufTest, ResizeTopLayerSucceedsAfterUnseal) {
-  ConstMultiBuf::Instance mbi(allocator_);
-  AddLayers(*mbi);
-  mbi->SealTopLayer();
-  EXPECT_EQ(mbi->size(), 32u);
-  EXPECT_FALSE(mbi->ResizeTopLayer(6, 12));
-  EXPECT_EQ(mbi->size(), 32u);
-  mbi->UnsealTopLayer();
-  EXPECT_TRUE(mbi->ResizeTopLayer(6, 12));
-  EXPECT_EQ(mbi->size(), 12u);
-}
-
-#if PW_NC_TEST(CannotCallResizeTopLayerWhenUnlayered)
-PW_NC_EXPECT("`ResizeTopLayer` may only be called on layerable MultiBufs");
-[[maybe_unused]] bool ShouldAssert(const FlatMultiBuf& mb) {
-  return mb.ResizeTopLayer(0);
-}
-
-#elif PW_NC_TEST(CannotCallSealTopLayerWhenUnlayered)
+#if PW_NC_TEST(CannotCallSealTopLayerWhenUnlayered)
 PW_NC_EXPECT("`SealTopLayer` may only be called on layerable MultiBufs");
 [[maybe_unused]] void ShouldAssert(const FlatMultiBuf& mb) {
   mb.SealTopLayer();
