@@ -87,6 +87,12 @@ class SequencedBucket : public internal::BucketBase<SequencedBucket<BlockType>,
     items_.insert(iter, *item_to_add);
   }
 
+  /// @copydoc `BucketBase::FindLargest`
+  const BlockType* DoFindLargest() const {
+    auto iter = std::max_element(items_.begin(), items_.end(), Base::Compare);
+    return BlockType::FromUsableSpace(&(*iter));
+  }
+
   /// @copydoc `BucketBase::RemoveAny`
   BlockType* DoRemoveAny() {
     SequencedItem& item = items_.front();

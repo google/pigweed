@@ -208,6 +208,23 @@ TEST_F(FirstFitAllocatorTest, ResizeSmallLargerAcrossThreshold) {
   UseMemory(Fetch(1), kThreshold * 2);
 }
 
+TEST_F(FirstFitAllocatorTest, GetMaxAllocatableWhenAllFree) {
+  GetMaxAllocatableWhenAllFree();
+}
+
+TEST_F(FirstFitAllocatorTest, GetMaxAllocatableWhenLargeFreeBlocksAvailable) {
+  GetMaxAllocatableWhenLargeFreeBlocksAvailable();
+}
+
+TEST_F(FirstFitAllocatorTest,
+       GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable) {
+  GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable();
+}
+
+TEST_F(FirstFitAllocatorTest, GetMaxAllocatableWhenNoBlocksFree) {
+  GetMaxAllocatableWhenNoBlocksFree();
+}
+
 TEST_F(FirstFitAllocatorTest, MeasureFragmentation) { MeasureFragmentation(); }
 
 TEST_F(FirstFitAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }

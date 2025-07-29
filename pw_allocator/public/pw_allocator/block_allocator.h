@@ -127,6 +127,28 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///                     `BlockType::Init`.
   void Init(ByteSpan region);
 
+  /// Returns the largest single allocation that can succeed, given the current
+  /// state of the allocator.
+  ///
+  /// The largest allocation possible at any given time is the inner size of the
+  /// the largest free block. This method may be expensive to call if the block
+  /// allocator implementation does not track its largest block. As a result, it
+  /// should primarily be used for diagnostic purposes after an allocation
+  /// failure, e.g.
+  ///
+  /// @code{.cpp}
+  /// auto my_object = block_allocator.MakeUnique<MyObject>(my_args);
+  /// if (my_object == nullptr) {
+  ///   PW_LOG("failed to allocate: needed %zu bytes, but only have %zu",
+  ///     sizeof(MyObject), block_allocator.GetMaxAllocatable());
+  /// }
+  /// @endcode
+  ///
+  /// Note that this method does not consider alignment. An allocation with a
+  /// large alignment requirement may fail even when a large enough block is
+  /// available if that block cannot satisfy the alignment requirement.
+  size_t GetMaxAllocatable() { return DoGetMaxAllocatable(); }
+
   /// Returns fragmentation information for the block allocator's memory region.
   Fragmentation MeasureFragmentation() const;
 
@@ -193,6 +215,9 @@ class BlockAllocator : public internal::GenericBlockAllocator {
 
   /// @copydoc Deallocator::GetInfo
   Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
+
+  /// @copydoc BlockAllocator::GetMaxAllocatable
+  virtual size_t DoGetMaxAllocatable() = 0;
 
   /// Selects a free block to allocate from.
   ///

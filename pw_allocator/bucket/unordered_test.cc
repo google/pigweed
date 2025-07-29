@@ -40,6 +40,12 @@ TEST_F(UnorderedBucketTest, FailsToAddWhenBlockIsTooSmall) {
   FailsToAddWhenBlockIsTooSmall();
 }
 
+TEST_F(UnorderedBucketTest, FindsLargestWhenEmpty) { FindsLargestWhenEmpty(); }
+
+TEST_F(UnorderedBucketTest, FindsLargestWithBlocks) {
+  FindsLargestWithBlocks();
+}
+
 TEST_F(UnorderedBucketTest, FailsToRemoveBlockWhenNotFound) {
   FailsToRemoveBlockWhenNotFound();
 }

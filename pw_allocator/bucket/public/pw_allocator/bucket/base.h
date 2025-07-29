@@ -96,6 +96,12 @@ class BucketBase {
     return true;
   }
 
+  /// Returns the block of the largest inner size in the bucket, or null if the
+  /// bucket is empty.
+  const BlockType* FindLargest() const {
+    return empty() ? nullptr : derived()->DoFindLargest();
+  }
+
   /// Removes and returns a block if the bucket is not empty; otherwise returns
   /// null. Exactly which block is returned depends on the specific bucket
   /// implementation.
@@ -125,11 +131,13 @@ class BucketBase {
   /// Removes all blocks from this bucket.
   void Clear() { derived()->items_.clear(); }
 
+ protected:
   /// Returns an iterator the first element in a range whose successor satisfies
   /// a given `predicate`.
   ///
-  /// The returned iterator will be in the range (`before_first`, `last`),
-  /// and will be the element before `last` element satisfies the predicate.
+  /// The returned iterator will be in the range [`before_first`, `last`),
+  /// and will be the element **before** the first element that satisfies the
+  /// predicate.
   ///
   /// This is intended to act similar to `std::find_if` in order to return
   /// iterators that can be used with sorted forward lists like
@@ -163,21 +171,29 @@ class BucketBase {
     };
   }
 
+  /// Returns whether the first item represents a block with a smaller inner
+  /// size than the block represented by the second item.
+  static bool Compare(const ItemType& item1, const ItemType& item2) {
+    const BlockType* block1 = BlockType::FromUsableSpace(&item1);
+    const BlockType* block2 = BlockType::FromUsableSpace(&item2);
+    return block1->InnerSize() < block2->InnerSize();
+  }
+
   /// Returns the block storing the item pointed to by the provided `iter`, or
   /// null if the iterator is the `last` iterator.
   template <typename Iterator>
-  constexpr BlockType* GetBlockFromIterator(Iterator iter, Iterator last) {
+  constexpr static BlockType* GetBlockFromIterator(Iterator iter,
+                                                   Iterator last) {
     return iter != last ? BlockType::FromUsableSpace(&(*iter)) : nullptr;
   }
 
   /// Returns the block storing the item after the provided `prev` iterator, or
   /// null if the iterator points to the element before the `last` iterator.
   template <typename Iterator>
-  constexpr BlockType* GetBlockFromPrev(Iterator prev, Iterator last) {
+  constexpr static BlockType* GetBlockFromPrev(Iterator prev, Iterator last) {
     return GetBlockFromIterator(++prev, last);
   }
 
- protected:
   /// Returns an existing item stored in a free block's usable space.
   ///
   /// The item is created when adding a block to a bucket, that is, in the

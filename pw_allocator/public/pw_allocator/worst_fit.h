@@ -57,6 +57,14 @@ class WorstFitAllocator : public BlockAllocator<BlockType> {
   WorstFitAllocator(ByteSpan region) { Base::Init(region); }
 
  private:
+  /// @copydoc BlockAllocator::GetMaxAllocatable
+  size_t DoGetMaxAllocatable() override {
+    const BlockType* largest = large_bucket_.empty()
+                                   ? small_bucket_.FindLargest()
+                                   : large_bucket_.FindLargest();
+    return largest == nullptr ? 0 : largest->InnerSize();
+  }
+
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override {
     BlockType* block = large_bucket_.RemoveCompatible(layout);

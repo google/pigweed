@@ -116,6 +116,26 @@ TEST_F(TlsfAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
+TEST_F(TlsfAllocatorTest, GetMaxAllocatableWhenAllFree) {
+  GetMaxAllocatableWhenAllFree();
+}
+
+TEST_F(TlsfAllocatorTest, GetMaxAllocatableWhenLargeFreeBlocksAvailable) {
+  GetMaxAllocatableWhenLargeFreeBlocksAvailable();
+}
+
+TEST_F(TlsfAllocatorTest, GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable) {
+  GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable();
+}
+
+TEST_F(TlsfAllocatorTest, GetMaxAllocatableWhenMultipleFreeBlocksAvailable) {
+  GetMaxAllocatableWhenMultipleFreeBlocksAvailable();
+}
+
+TEST_F(TlsfAllocatorTest, GetMaxAllocatableWhenNoBlocksFree) {
+  GetMaxAllocatableWhenNoBlocksFree();
+}
+
 TEST_F(TlsfAllocatorTest, MeasureFragmentation) { MeasureFragmentation(); }
 
 TEST_F(TlsfAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }

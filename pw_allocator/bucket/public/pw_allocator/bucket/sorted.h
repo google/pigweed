@@ -29,6 +29,14 @@ namespace pw::allocator {
 /// type, hence it is the most "compact".
 class SortedItem : public IntrusiveForwardList<SortedItem>::Item {};
 
+// Forward declarations.
+
+template <typename BlockType>
+class ForwardSortedBucket;
+
+template <typename BlockType>
+class ReverseSortedBucket;
+
 namespace internal {
 
 /// Container of size-sorted free blocks.
@@ -43,15 +51,17 @@ namespace internal {
 /// that indicates where each item should be inserted in the list.
 template <typename Derived, typename BlockType>
 class SortedBucketBase : public BucketBase<Derived, BlockType, SortedItem> {
- private:
+ public:
+  ~SortedBucketBase() { Base::Clear(); }
+
+ protected:
   using Base = BucketBase<Derived, BlockType, SortedItem>;
   friend Base;
 
- public:
   constexpr SortedBucketBase() = default;
-  ~SortedBucketBase() { Base::Clear(); }
 
- private:
+  const IntrusiveForwardList<SortedItem>& items() const { return items_; }
+
   /// @copydoc `BucketBase::Add`
   void DoAdd(BlockType& block) {
     auto* item_to_add = new (block.UsableSpace()) SortedItem();
@@ -85,6 +95,7 @@ class SortedBucketBase : public BucketBase<Derived, BlockType, SortedItem> {
     return block;
   }
 
+ private:
   IntrusiveForwardList<SortedItem> items_;
 };
 
@@ -101,7 +112,13 @@ template <typename BlockType>
 class ForwardSortedBucket
     : public internal::SortedBucketBase<ForwardSortedBucket<BlockType>,
                                         BlockType> {
- public:
+ private:
+  using Base =
+      internal::SortedBucketBase<ForwardSortedBucket<BlockType>, BlockType>;
+
+  friend Base;
+  friend typename Base::Base;
+
   /// Returns a lambda that tests if the block storing an item has an inner size
   /// larger than the given `inner_size`.
   ///
@@ -111,6 +128,20 @@ class ForwardSortedBucket
       auto* block = BlockType::FromUsableSpace(&item);
       return inner_size < block->InnerSize();
     };
+  }
+
+  /// @copydoc `BucketBase::FindLargest`
+  const BlockType* DoFindLargest() const {
+    const auto& items = Base::items();
+    if (items.empty()) {
+      return nullptr;
+    }
+    auto iter = items.before_begin();
+    auto prev = iter;
+    do {
+      prev = iter++;
+    } while (iter != items.end());
+    return BlockType::FromUsableSpace(&(*prev));
   }
 };
 
@@ -125,7 +156,13 @@ template <typename BlockType>
 class ReverseSortedBucket
     : public internal::SortedBucketBase<ReverseSortedBucket<BlockType>,
                                         BlockType> {
- public:
+ private:
+  using Base =
+      internal::SortedBucketBase<ReverseSortedBucket<BlockType>, BlockType>;
+
+  friend Base;
+  friend typename Base::Base;
+
   /// Returns a lambda that tests if the block storing an item has an inner size
   /// smaller than the given `inner_size`.
   ///
@@ -135,6 +172,13 @@ class ReverseSortedBucket
       auto* block = BlockType::FromUsableSpace(&item);
       return block->InnerSize() < inner_size;
     };
+  }
+
+  /// @copydoc `BucketBase::FindLargest`
+  const BlockType* DoFindLargest() const {
+    const auto& items = Base::items();
+    auto iter = items.begin();
+    return BlockType::FromUsableSpace(&(*iter));
   }
 };
 

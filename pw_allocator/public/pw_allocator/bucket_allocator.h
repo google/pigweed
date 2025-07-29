@@ -86,14 +86,26 @@ class BucketAllocator : public BlockAllocator<BlockType> {
   }
 
  private:
+  /// @copydoc BlockAllocator::GetMaxAllocatable
+  size_t DoGetMaxAllocatable() override {
+    for (auto b = buckets_.rbegin(); b != buckets_.rend(); ++b) {
+      const BlockType* largest = b->FindLargest();
+      if (largest != nullptr) {
+        return largest->InnerSize();
+      }
+    }
+    return 0;
+  }
+
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override {
     for (auto& bucket : buckets_) {
-      if (layout.size() <= bucket.max_inner_size()) {
-        BlockType* block = bucket.RemoveCompatible(layout);
-        if (block != nullptr) {
-          return BlockType::AllocFirst(std::move(block), layout);
-        }
+      if (bucket.max_inner_size() < layout.size()) {
+        continue;
+      }
+      BlockType* block = bucket.RemoveCompatible(layout);
+      if (block != nullptr) {
+        return BlockType::AllocFirst(std::move(block), layout);
       }
     }
     return BlockResult<BlockType>(nullptr, Status::NotFound());

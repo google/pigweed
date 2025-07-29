@@ -118,6 +118,9 @@ class TlsfAllocator : public BlockAllocator<BlockType> {
   }
 
  private:
+  /// @copydoc BlockAllocator::GetMaxAllocatable
+  size_t DoGetMaxAllocatable() override;
+
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override;
 
@@ -166,6 +169,19 @@ constexpr TlsfAllocator<BlockType, kMinSize, kNumShelves>::TlsfAllocator() {
   largest.set_max_inner_size(std::numeric_limits<size_t>::max());
 
   bucket_bitmaps_.fill(0);
+}
+
+template <typename BlockType, size_t kMinSize, size_t kNumShelves>
+size_t TlsfAllocator<BlockType, kMinSize, kNumShelves>::DoGetMaxAllocatable() {
+  size_t shelf_index =
+      shelf_bitmap_ == 0 ? 0 : (31 - internal::CountLZero(shelf_bitmap_));
+  uint16_t bucket_bitmap = bucket_bitmaps_[shelf_index];
+  size_t bucket_index =
+      bucket_bitmap == 0 ? 0 : (15 - internal::CountLZero(bucket_bitmap));
+  const LargeBucket& bucket = shelves_[shelf_index][bucket_index];
+  const BlockType* largest =
+      bucket.empty() ? small_bucket_.FindLargest() : bucket.FindLargest();
+  return largest == nullptr ? 0 : largest->InnerSize();
 }
 
 template <typename BlockType, size_t kMinSize, size_t kNumShelves>

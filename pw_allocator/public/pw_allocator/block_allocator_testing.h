@@ -44,17 +44,19 @@ class BlockAllocatorTest : public ::testing::Test {
  public:
   using BlockType = typename BlockAllocatorType::BlockType;
 
+  static constexpr size_t OuterSize(size_t inner_size) {
+    return BlockType::OuterSizeFromInnerSize(inner_size);
+  }
+
   // The number of allocated pointers cached by the test fixture.
   static constexpr size_t kNumPtrs = 16;
 
   // Represents the sizes of various allocations.
   static constexpr size_t kLargeInnerSize = kCapacity / 8;
-  static constexpr size_t kLargeOuterSize =
-      BlockType::kBlockOverhead + kLargeInnerSize;
+  static constexpr size_t kLargeOuterSize = OuterSize(kLargeInnerSize);
 
   static constexpr size_t kSmallInnerSize = BlockType::kBlockOverhead * 2;
-  static constexpr size_t kSmallOuterSize =
-      BlockType::kBlockOverhead + kSmallInnerSize;
+  static constexpr size_t kSmallOuterSize = OuterSize(kSmallInnerSize);
 
   static constexpr size_t kSmallerOuterSize = kSmallInnerSize;
   static constexpr size_t kLargerOuterSize =
@@ -132,6 +134,11 @@ class BlockAllocatorTest : public ::testing::Test {
   void ResizeSmallLarger();
   void ResizeSmallLargerFailure();
   void IterateOverBlocks();
+  void GetMaxAllocatableWhenAllFree();
+  void GetMaxAllocatableWhenLargeFreeBlocksAvailable();
+  void GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable();
+  void GetMaxAllocatableWhenMultipleFreeBlocksAvailable();
+  void GetMaxAllocatableWhenNoBlocksFree();
   void MeasureFragmentation();
   void PoisonPeriodically();
 
@@ -484,6 +491,67 @@ void BlockAllocatorTest<BlockAllocatorType, kCapacity>::IterateOverBlocks() {
   }
   EXPECT_EQ(used_count, 3U);
   EXPECT_EQ(free_count, 4U);
+}
+
+template <typename BlockAllocatorType, size_t kCapacity>
+void BlockAllocatorTest<BlockAllocatorType,
+                        kCapacity>::GetMaxAllocatableWhenAllFree() {
+  BlockAllocatorType& allocator = GetAllocator();
+  EXPECT_EQ(allocator.GetMaxAllocatable(),
+            kCapacity - BlockType::kBlockOverhead);
+}
+
+template <typename BlockAllocatorType, size_t kCapacity>
+void BlockAllocatorTest<BlockAllocatorType, kCapacity>::
+    GetMaxAllocatableWhenLargeFreeBlocksAvailable() {
+  BlockAllocatorType& allocator = GetAllocator({
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kLargeOuterSize, Preallocation::kFree},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kLargeOuterSize, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  EXPECT_EQ(allocator.GetMaxAllocatable(), kLargeInnerSize);
+}
+
+template <typename BlockAllocatorType, size_t kCapacity>
+void BlockAllocatorTest<BlockAllocatorType, kCapacity>::
+    GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable() {
+  BlockAllocatorType& allocator = GetAllocator({
+      {kLargeOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kFree},
+      {kLargeOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  EXPECT_EQ(allocator.GetMaxAllocatable(), kSmallInnerSize);
+}
+
+template <typename BlockAllocatorType, size_t kCapacity>
+void BlockAllocatorTest<BlockAllocatorType, kCapacity>::
+    GetMaxAllocatableWhenMultipleFreeBlocksAvailable() {
+  BlockAllocatorType& allocator = GetAllocator({
+      {OuterSize(kSmallInnerSize * 3), Preallocation::kFree},
+      {OuterSize(kSmallInnerSize * 1), Preallocation::kUsed},
+      {OuterSize(kSmallInnerSize * 4), Preallocation::kFree},
+      {OuterSize(kSmallInnerSize * 1), Preallocation::kUsed},
+      {OuterSize(kSmallInnerSize * 5), Preallocation::kFree},
+      {OuterSize(kSmallInnerSize * 9), Preallocation::kUsed},
+      {OuterSize(kSmallInnerSize * 2), Preallocation::kFree},
+      {OuterSize(kSmallInnerSize * 6), Preallocation::kUsed},
+      {OuterSize(kSmallInnerSize * 5), Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  EXPECT_EQ(allocator.GetMaxAllocatable(), kSmallInnerSize * 5);
+}
+
+template <typename BlockAllocatorType, size_t kCapacity>
+void BlockAllocatorTest<BlockAllocatorType,
+                        kCapacity>::GetMaxAllocatableWhenNoBlocksFree() {
+  BlockAllocatorType& allocator = GetAllocator({
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  EXPECT_EQ(allocator.GetMaxAllocatable(), 0U);
 }
 
 template <typename BlockAllocatorType, size_t kCapacity>

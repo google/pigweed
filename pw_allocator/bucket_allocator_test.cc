@@ -205,6 +205,26 @@ TEST_F(BucketAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
+TEST_F(BucketAllocatorTest, GetMaxAllocatableWhenAllFree) {
+  GetMaxAllocatableWhenAllFree();
+}
+
+TEST_F(BucketAllocatorTest, GetMaxAllocatableWhenLargeFreeBlocksAvailable) {
+  GetMaxAllocatableWhenLargeFreeBlocksAvailable();
+}
+
+TEST_F(BucketAllocatorTest, GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable) {
+  GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable();
+}
+
+TEST_F(BucketAllocatorTest, GetMaxAllocatableWhenMultipleFreeBlocksAvailable) {
+  GetMaxAllocatableWhenMultipleFreeBlocksAvailable();
+}
+
+TEST_F(BucketAllocatorTest, GetMaxAllocatableWhenNoBlocksFree) {
+  GetMaxAllocatableWhenNoBlocksFree();
+}
+
 TEST_F(BucketAllocatorTest, MeasureFragmentation) { MeasureFragmentation(); }
 
 TEST_F(BucketAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }

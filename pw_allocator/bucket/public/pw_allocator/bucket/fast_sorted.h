@@ -87,6 +87,13 @@ class FastSortedBucket
     items_.insert(*item);
   }
 
+  /// @copydoc `BucketBase::FindLargest`
+  const BlockType* DoFindLargest() const {
+    auto iter = items_.end();
+    --iter;
+    return BlockType::FromUsableSpace(&(*iter));
+  }
+
   /// @copydoc `BucketBase::RemoveAny`
   BlockType* DoRemoveAny() {
     auto iter = items_.begin();
@@ -153,6 +160,12 @@ class ReverseFastSortedBucket
  private:
   /// @copydoc `BucketBase::Add`
   void DoAdd(BlockType& block) { impl_.DoAdd(block); }
+
+  /// @copydoc `BucketBase::FindLargest`
+  const BlockType* DoFindLargest() const {
+    auto iter = impl_.items_.begin();
+    return BlockType::FromUsableSpace(&(*iter));
+  }
 
   /// @copydoc `BucketBase::RemoveAny`
   BlockType* DoRemoveAny() {

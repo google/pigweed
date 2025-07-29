@@ -81,6 +81,9 @@ class DlAllocator : public BlockAllocator<BlockType> {
   ~DlAllocator() override { Flush(); }
 
  private:
+  /// @copydoc BlockAllocator::GetMaxAllocatable
+  size_t DoGetMaxAllocatable() override;
+
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override;
 
@@ -154,6 +157,27 @@ constexpr DlAllocator<BlockType>::DlAllocator() {
     bins_in_round /= 2;
   }
   bitmaps_.fill(0);
+}
+
+template <typename BlockType>
+size_t DlAllocator<BlockType>::DoGetMaxAllocatable() {
+  ReleaseFastBins();
+  size_t bitmap_index = bitmaps_.size() - 1;
+  uintptr_t bitmap = bitmaps_[bitmap_index];
+  while (bitmap_index != 0 && bitmap == 0) {
+    --bitmap_index;
+    bitmap = bitmaps_[bitmap_index];
+  }
+  if (bitmap == 0) {
+    // No free blocks.
+    return 0;
+  }
+  size_t bitmap_offset = kBitmapBits - internal::CountLZero(bitmap) - 1;
+  size_t index = bitmap_index * kBitmapBits + bitmap_offset;
+  const BlockType* largest =
+      index < kNumSmallBins ? small_bins_[index].FindLargest()
+                            : large_bins_[index - kNumSmallBins].FindLargest();
+  return largest == nullptr ? 0 : largest->InnerSize();
 }
 
 template <typename BlockType>

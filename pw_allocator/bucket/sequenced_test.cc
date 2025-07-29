@@ -40,6 +40,12 @@ TEST_F(SequencedBucketTest, FailsToAddWhenBlockIsTooSmall) {
   FailsToAddWhenBlockIsTooSmall();
 }
 
+TEST_F(SequencedBucketTest, FindsLargestWhenEmpty) { FindsLargestWhenEmpty(); }
+
+TEST_F(SequencedBucketTest, FindsLargestWithBlocks) {
+  FindsLargestWithBlocks();
+}
+
 TEST_F(SequencedBucketTest, FailsToRemoveBlockWhenNotFound) {
   FailsToRemoveBlockWhenNotFound();
 }

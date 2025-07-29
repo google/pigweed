@@ -41,6 +41,12 @@ TEST_F(FastSortedBucketTest, FailsToAddWhenBlockIsTooSmall) {
   FailsToAddWhenBlockIsTooSmall();
 }
 
+TEST_F(FastSortedBucketTest, FindsLargestWhenEmpty) { FindsLargestWhenEmpty(); }
+
+TEST_F(FastSortedBucketTest, FindsLargestWithBlocks) {
+  FindsLargestWithBlocks();
+}
+
 TEST_F(FastSortedBucketTest, FailsToRemoveBlockWhenNotFound) {
   FailsToRemoveBlockWhenNotFound();
 }
@@ -78,6 +84,14 @@ using ::pw::allocator::ReverseFastSortedBucket;
 
 using ReverseFastSortedBucketTest =
     BucketTest<ReverseFastSortedBucket<BlockType>>;
+
+TEST_F(ReverseFastSortedBucketTest, FindsLargestWhenEmpty) {
+  FindsLargestWhenEmpty();
+}
+
+TEST_F(ReverseFastSortedBucketTest, FindsLargestWithBlocks) {
+  FindsLargestWithBlocks();
+}
 
 TEST_F(ReverseFastSortedBucketTest, RemovesByLayout) { RemovesByLayout(); }
 

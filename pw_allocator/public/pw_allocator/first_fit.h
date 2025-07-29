@@ -65,6 +65,12 @@ class FirstFitAllocator : public BlockAllocator<BlockType> {
   void set_threshold(size_t threshold) { bucket_.set_threshold(threshold); }
 
  private:
+  /// @copydoc BlockAllocator::GetMaxAllocatable
+  size_t DoGetMaxAllocatable() override {
+    const BlockType* largest = bucket_.FindLargest();
+    return largest == nullptr ? 0 : largest->InnerSize();
+  }
+
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override {
     BlockType* block = bucket_.RemoveCompatible(layout);

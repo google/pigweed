@@ -116,6 +116,27 @@ TEST_F(BestFitAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
+TEST_F(BestFitAllocatorTest, GetMaxAllocatableWhenAllFree) {
+  GetMaxAllocatableWhenAllFree();
+}
+
+TEST_F(BestFitAllocatorTest, GetMaxAllocatableWhenLargeFreeBlocksAvailable) {
+  GetMaxAllocatableWhenLargeFreeBlocksAvailable();
+}
+
+TEST_F(BestFitAllocatorTest,
+       GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable) {
+  GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable();
+}
+
+TEST_F(BestFitAllocatorTest, GetMaxAllocatableWhenMultipleFreeBlocksAvailable) {
+  GetMaxAllocatableWhenMultipleFreeBlocksAvailable();
+}
+
+TEST_F(BestFitAllocatorTest, GetMaxAllocatableWhenNoBlocksFree) {
+  GetMaxAllocatableWhenNoBlocksFree();
+}
+
 TEST_F(BestFitAllocatorTest, MeasureFragmentation) { MeasureFragmentation(); }
 
 TEST_F(BestFitAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }

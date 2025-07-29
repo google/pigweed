@@ -116,6 +116,26 @@ TEST_F(DlAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
+TEST_F(DlAllocatorTest, GetMaxAllocatableWhenAllFree) {
+  GetMaxAllocatableWhenAllFree();
+}
+
+TEST_F(DlAllocatorTest, GetMaxAllocatableWhenLargeFreeBlocksAvailable) {
+  GetMaxAllocatableWhenLargeFreeBlocksAvailable();
+}
+
+TEST_F(DlAllocatorTest, GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable) {
+  GetMaxAllocatableWhenOnlySmallFreeBlocksAvailable();
+}
+
+TEST_F(DlAllocatorTest, GetMaxAllocatableWhenMultipleFreeBlocksAvailable) {
+  GetMaxAllocatableWhenMultipleFreeBlocksAvailable();
+}
+
+TEST_F(DlAllocatorTest, GetMaxAllocatableWhenNoBlocksFree) {
+  GetMaxAllocatableWhenNoBlocksFree();
+}
+
 TEST_F(DlAllocatorTest, MeasureFragmentation) { MeasureFragmentation(); }
 
 // Fuzz tests.

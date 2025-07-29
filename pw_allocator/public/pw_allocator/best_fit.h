@@ -57,6 +57,14 @@ class BestFitAllocator : public BlockAllocator<BlockType> {
   BestFitAllocator(ByteSpan region) { Base::Init(region); }
 
  private:
+  /// @copydoc BlockAllocator::GetMaxAllocatable
+  size_t DoGetMaxAllocatable() override {
+    const BlockType* largest = large_bucket_.empty()
+                                   ? small_bucket_.FindLargest()
+                                   : large_bucket_.FindLargest();
+    return largest == nullptr ? 0 : largest->InnerSize();
+  }
+
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override {
     // The small bucket is slower; skip it if we can.

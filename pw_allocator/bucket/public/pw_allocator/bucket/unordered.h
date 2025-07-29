@@ -62,6 +62,12 @@ class UnorderedBucket : public internal::BucketBase<UnorderedBucket<BlockType>,
     return BlockType::FromUsableSpace(&item);
   }
 
+  /// @copydoc `BucketBase::FindLargest`
+  const BlockType* DoFindLargest() const {
+    auto iter = std::max_element(items_.begin(), items_.end(), Base::Compare);
+    return BlockType::FromUsableSpace(&(*iter));
+  }
+
   /// @copydoc `BucketBase::Remove`
   bool DoRemove(BlockType& block) {
     return items_.remove(Base::GetItemFrom(block));
