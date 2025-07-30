@@ -298,6 +298,7 @@ dependencies = [
  "anyhow",
  "askama",
  "bitfield-struct",
+ "bitflags",
  "clap",
  "cliclack",
  "compiler_builtins",

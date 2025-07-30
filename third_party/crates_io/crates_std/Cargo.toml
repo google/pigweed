@@ -25,6 +25,7 @@ path = "fake.rs"
 anyhow = "1.0.95"
 askama = "0.14.0"
 bitfield-struct = "0.10.1"
+bitflags = "2.9.1"
 clap = { version = "4.5.23", features = ["derive"] }
 cliclack = "0.3.5"
 compiler_builtins = "0.1.160"
