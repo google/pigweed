@@ -94,8 +94,8 @@ def _combine_fragments(output: Path, fragments: List[Path]) -> None:
 
 def _check_for_rosetta() -> bool:
     try:
-        # Rosetta's internal name is OAH -- check if the OAH daemon is running.
-        subprocess.check_call(('pgrep', '-q', 'oahd'))
+        # Check if running a universal binary in x86_64 mode works.
+        subprocess.check_call(('arch', '-x86_64', '/usr/bin/true'))
         return True
     except subprocess.CalledProcessError:
         return False
