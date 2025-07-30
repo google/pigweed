@@ -89,7 +89,7 @@ impl<Clock: crate::Clock> Ord for Instant<Clock> {
 // Manually implement PartialOrd so that we don't require `Clock` to be PartialOrd
 impl<Clock: crate::Clock> PartialOrd for Instant<Clock> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.ticks.cmp(&other.ticks))
+        Some(self.cmp(other))
     }
 }
 
@@ -238,7 +238,7 @@ impl<Clock: crate::Clock> Ord for Duration<Clock> {
 // Manually implement PartialOrd so that we don't require `Clock` to be PartialOrd
 impl<Clock: crate::Clock> PartialOrd for Duration<Clock> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.ticks.cmp(&other.ticks))
+        Some(self.cmp(other))
     }
 }
 

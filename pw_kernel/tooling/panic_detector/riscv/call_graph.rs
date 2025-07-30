@@ -209,7 +209,7 @@ impl<'a> Snippet<'a> {
     }
     #[must_use]
     pub fn instructions_at_addr(&'a self, addr: u32) -> Option<InstrIterator<'a>> {
-        if addr % 2 != 0 || addr < self.addr {
+        if !addr.is_multiple_of(2) || addr < self.addr {
             return None;
         }
         let Ok(offset) = usize::try_from(addr - self.addr) else {

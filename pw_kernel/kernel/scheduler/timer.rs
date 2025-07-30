@@ -53,7 +53,7 @@ impl<C: time::Clock> Eq for TimerCallback<C> {}
 
 impl<C: time::Clock> PartialOrd for TimerCallback<C> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.deadline.cmp(&other.deadline))
+        Some(self.cmp(other))
     }
 }
 
