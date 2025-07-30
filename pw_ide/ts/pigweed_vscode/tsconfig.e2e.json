@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "sourceMap": true,
     "rootDir": ".",
+    "composite": true,
     "types": [
       "node",
       "mocha"

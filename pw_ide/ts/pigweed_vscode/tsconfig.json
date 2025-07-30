@@ -11,6 +11,14 @@
     "sourceMap": true,
     "strict": true
   },
+  "references": [
+    {
+      "path": "./tsconfig.webview.json"
+    },
+    {
+      "path": "./tsconfig.e2e.json"
+    }
+  ],
   "exclude": [
     "*.js",
     "**/*.e2e.test.ts",
