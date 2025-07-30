@@ -125,6 +125,7 @@ class TokenizedTracer {
   void Enable(bool enable) {
     if (enable != enabled_ && enable) {
       event_queue_.Clear();
+      last_trace_time_ = 0;
     }
     enabled_ = enable;
   }

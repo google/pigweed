@@ -18,6 +18,8 @@
 #include "pw_trace/trace.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
 #include "pw_trace_tokenized/trace_callback.h"
+#include "pw_varint/varint.h"
+#include "pw_thread/sleep.h"
 // clang-format on
 
 #include <deque>
@@ -26,6 +28,7 @@
 
 namespace {
 
+using namespace std::chrono_literals;
 // Use a fake line number for traces so the test doesn't depend on line numbers.
 #define TRACE_LINE 12345
 
@@ -43,6 +46,7 @@ class TraceTestInterface {
     pw::trace::EventType event_type;
     const char* module;
     uint32_t trace_id;
+    PW_TRACE_TIME_TYPE trace_time = 0;
     bool operator==(const TraceInfo& b) const {
       return trace_ref == b.trace_ref && event_type == b.event_type &&
              module == b.module && trace_id == b.trace_id;
@@ -121,8 +125,24 @@ class TraceTestInterface {
                                 size_t size) {
     TraceTestInterface* test_interface =
         reinterpret_cast<TraceTestInterface*>(user_data);
-    static_cast<void>(bytes);
     test_interface->sink_bytes_received_ += size;
+
+    if (test_interface->current_trace_event_.trace_time == 0) {
+      // bytes 0-3 is token, time start from offset 4
+      auto offset = 4;
+      auto byte_ptr = static_cast<const std::byte*>(bytes) + offset;
+      pw::span<const std::byte> byte_span(byte_ptr, size - offset);
+      uint64_t time;
+      size_t length = pw::varint::Decode(byte_span, &time);
+      EXPECT_NE(length, 0u);
+      if (test_interface->trace_time == 0) {
+        test_interface->trace_time = time;
+      } else {
+        test_interface->trace_time += time;
+      }
+      test_interface->current_trace_event_.trace_time =
+          test_interface->trace_time;
+    }
   }
 
   static void TraceSinkEndBlock(void* user_data) {
@@ -139,19 +159,28 @@ class TraceTestInterface {
 
   // Check that the next event in the buffer is equal to the expected (and pop
   // that event).
-  bool CheckEvent(const TraceInfo& expected) {
+  bool CheckEvent(const TraceInfo& expected,
+                  PW_TRACE_TIME_TYPE time_l = 0,
+                  PW_TRACE_TIME_TYPE time_r =
+                      std::numeric_limits<PW_TRACE_TIME_TYPE>::max()) {
     if (buffer_.empty()) {
       return false;
     }
     TraceInfo actual = buffer_.front();
     buffer_.pop_front();
-    return actual == expected;
+    EXPECT_GT(actual.trace_time, 0u);
+    return actual == expected && actual.trace_time >= time_l &&
+           actual.trace_time <= time_r;
   }
+
+  void ResetTraceTime(void) { trace_time = 0; }
 
  private:
   ActionOnEvent action_ = ActionOnEvent::None;
   TraceInfo event_match_;
   TraceInfo current_trace_event_;
+  // time of the most recent trace entry
+  PW_TRACE_TIME_TYPE trace_time = 0;
   size_t sink_block_size_;
   size_t sink_bytes_received_;
   std::deque<TraceInfo> buffer_;
@@ -195,14 +224,46 @@ class TraceTestInterface {
                  trace_id,                                                    \
                  module,                                                      \
                  PW_TRACE_FLAGS_DEFAULT)
-#define _EXPECT_TRACE7(                                                      \
-    interface, event_type, label, group, trace_id, module, flags)            \
-  do {                                                                       \
-    static uint32_t _label_token =                                           \
-        PW_TRACE_REF(event_type, module, label, flags, group);               \
-    EXPECT_TRUE(                                                             \
-        interface.CheckEvent({_label_token, event_type, module, trace_id})); \
+#define _EXPECT_TRACE7(                                           \
+    interface, event_type, label, group, trace_id, module, flags) \
+  _EXPECT_TRACE9(interface,                                       \
+                 event_type,                                      \
+                 label,                                           \
+                 group,                                           \
+                 trace_id,                                        \
+                 module,                                          \
+                 PW_TRACE_FLAGS_DEFAULT,                          \
+                 0,                                               \
+                 std::numeric_limits<PW_TRACE_TIME_TYPE>::max())
+#define _EXPECT_TRACE9(interface,                                       \
+                       event_type,                                      \
+                       label,                                           \
+                       group,                                           \
+                       trace_id,                                        \
+                       module,                                          \
+                       flags,                                           \
+                       time_l,                                          \
+                       time_r)                                          \
+  do {                                                                  \
+    static uint32_t _label_token =                                      \
+        PW_TRACE_REF(event_type, module, label, flags, group);          \
+    EXPECT_TRUE(interface.CheckEvent(                                   \
+        {_label_token, event_type, module, trace_id}, time_l, time_r)); \
   } while (0)
+
+// timestamp of the trace event is expected to be within the range of
+// [time_l, time_r]
+#define EXPECT_TRACE_WITH_TIME_RANGE(             \
+    interface, event_type, label, time_l, time_r) \
+  _EXPECT_TRACE9(interface,                       \
+                 event_type,                      \
+                 label,                           \
+                 PW_TRACE_GROUP_LABEL_DEFAULT,    \
+                 PW_TRACE_TRACE_ID_DEFAULT,       \
+                 PW_TRACE_MODULE_NAME,            \
+                 PW_TRACE_FLAGS_DEFAULT,          \
+                 time_l,                          \
+                 time_r)
 
 #define EXPECT_TRACE_DATA(...) \
   PW_DELEGATE_BY_ARG_COUNT(_EXPECT_TRACE_DATA, __VA_ARGS__)
@@ -257,6 +318,7 @@ class TraceTestInterface {
 
 TEST(TokenizedTrace, Instant) {
   TraceTestInterface test_interface;
+  pw::this_thread::sleep_for(500ms);
 
   PW_TRACE_INSTANT("Test");
   PW_TRACE_INSTANT("Test2", "g");
@@ -528,6 +590,38 @@ TEST(TokenizedTrace, Data) {
                     PW_TRACE_TYPE_INSTANT,
                     "label",
                     "i");  // TODO(rgoliver): check data
+  EXPECT_TRUE(test_interface.GetEvents().empty());
+}
+
+TEST(TokenizedTrace, Timestamp) {
+  TraceTestInterface test_interface;
+
+  PW_TRACE_SET_ENABLED(false);
+  PW_TRACE_SET_ENABLED(true);
+  test_interface.ResetTraceTime();
+
+  PW_TRACE_TIME_TYPE t1 = pw_trace_GetTraceTime();
+  PW_TRACE_INSTANT("Test1");
+
+  PW_TRACE_TIME_TYPE t2 = pw_trace_GetTraceTime();
+  PW_TRACE_INSTANT("Test2");
+
+  PW_TRACE_TIME_TYPE t3 = pw_trace_GetTraceTime();
+
+  PW_TRACE_SET_ENABLED(false);
+  pw::this_thread::sleep_for(800ms);
+  PW_TRACE_SET_ENABLED(true);
+  test_interface.ResetTraceTime();
+  PW_TRACE_TIME_TYPE t4 = pw_trace_GetTraceTime();
+  PW_TRACE_INSTANT("Test3");
+  PW_TRACE_TIME_TYPE t5 = pw_trace_GetTraceTime();
+
+  EXPECT_TRACE_WITH_TIME_RANGE(
+      test_interface, PW_TRACE_TYPE_INSTANT, "Test1", t1, t2);
+  EXPECT_TRACE_WITH_TIME_RANGE(
+      test_interface, PW_TRACE_TYPE_INSTANT, "Test2", t2, t3);
+  EXPECT_TRACE_WITH_TIME_RANGE(
+      test_interface, PW_TRACE_TYPE_INSTANT, "Test3", t4, t5);
   EXPECT_TRUE(test_interface.GetEvents().empty());
 }
 

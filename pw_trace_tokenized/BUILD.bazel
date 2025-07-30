@@ -291,8 +291,11 @@ pw_cc_test(
     ],
     features = ["-conversion_warnings"],
     deps = [
+        ":pw_trace_host_trace_time",
         ":pw_trace_tokenized",
+        "//pw_thread:sleep",
         "//pw_trace",
+        "//pw_varint",
     ],
 )
 

@@ -84,6 +84,7 @@ pw_add_test(pw_trace_tokenized.trace_tokenized_test
   SOURCES
     trace_test.cc
   PRIVATE_DEPS
+    pw_thread.sleep
     pw_trace_tokenized.core
     pw_trace
     ${pw_trace_tokenizer_time}
