@@ -68,8 +68,6 @@ pub extern "C" fn pw_assert_HandleFailure() -> ! {
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    Target::console_init();
-
     kernel::static_init_state!(static mut INIT_STATE: InitKernelState<Arch>);
 
     // SAFETY: `main` is only executed once, so we never generate more than one
