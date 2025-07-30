@@ -148,7 +148,9 @@ pw_source_set("trace_service_pwpb") {
     ":base_trace_service",
     ":protos.pwpb_rpc",
   ]
-  deps = [ "$dir_pw_chrono:system_clock" ]
+  if (pw_trace_tokenizer_time != "") {
+    deps = [ "$pw_trace_tokenizer_time" ]
+  }
   sources = [
     "public/pw_trace_tokenized/trace_service_pwpb.h",
     "trace_service_pwpb.cc",

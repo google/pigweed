@@ -118,11 +118,10 @@ TEST_F(TraceServiceTest, GetClockParameters) {
   context(tracer, writer);
 
   ASSERT_EQ(context.call({}), OkStatus());
+  EXPECT_EQ(1,
+            context.response().clock_parameters.tick_period_seconds_numerator);
   EXPECT_EQ(
-      static_cast<int32_t>(PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR),
-      context.response().clock_parameters.tick_period_seconds_numerator);
-  EXPECT_EQ(
-      static_cast<int32_t>(PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR),
+      static_cast<int32_t>(pw_trace_GetTraceTimeTicksPerSecond()),
       context.response().clock_parameters.tick_period_seconds_denominator);
   EXPECT_EQ(
       static_cast<int32_t>(chrono::SystemClock::epoch),

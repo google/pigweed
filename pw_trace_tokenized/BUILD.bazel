@@ -129,7 +129,6 @@ cc_library(
     deps = [
         ":base_trace_service",
         ":protos_pwpb_rpc",
-        "//pw_chrono:system_clock",
     ],
 )
 

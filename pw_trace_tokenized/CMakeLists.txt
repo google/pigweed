@@ -157,8 +157,6 @@ pw_add_library(pw_trace_tokenized.base_trace_service STATIC
 pw_add_library(pw_trace_tokenized.trace_service_pwpb STATIC
   SOURCES
     trace_service_pwpb.cc
-  PRIVATE_DEPS
-    pw_chrono.system_clock
   PUBLIC_DEPS
     pw_trace_tokenized.base_trace_service
     pw_trace_tokenized.protos.pwpb_rpc
