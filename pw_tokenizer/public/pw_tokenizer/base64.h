@@ -68,6 +68,7 @@ PW_EXTERN_C_END
 #include "pw_tokenizer/config.h"
 #include "pw_tokenizer/tokenize.h"
 
+/// String tokenization and compression library
 namespace pw::tokenizer {
 
 // Returns the size of a tokenized message (token + arguments) when encoded as

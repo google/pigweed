@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+/// Interrupt context interface
 namespace pw::interrupt {
 
 /// @brief Checks if the currently executing code is within an interrupt service

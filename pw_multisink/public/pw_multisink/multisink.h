@@ -26,6 +26,7 @@
 #include "pw_sync/lock_annotations.h"
 
 namespace pw {
+/// Message forwarding to multiple sinks
 namespace multisink {
 
 // An asynchronous single-writer multi-reader queue that ensures readers can

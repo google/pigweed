@@ -43,6 +43,7 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
+/// Unoptimized I/O library
 namespace pw::sys_io {
 
 /// Reads a single byte from the `pw_sys_io` backend.

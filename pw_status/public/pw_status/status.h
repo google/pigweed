@@ -72,6 +72,7 @@ const char* pw_StatusString(pw_Status status);
 
 }  // extern "C"
 
+/// The Pigweed namespace
 namespace pw {
 
 /// `Status` is a thin, zero-cost abstraction around the `pw_Status` enum. It

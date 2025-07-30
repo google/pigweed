@@ -29,6 +29,7 @@
 #include "pw_stream/stream.h"
 #include "pw_sync/borrow.h"
 
+/// Blob data library
 namespace pw::blob_store {
 
 // BlobStore is a storage container for a single blob of data. BlobStore is

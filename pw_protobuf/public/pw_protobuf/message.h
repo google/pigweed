@@ -28,6 +28,7 @@
 #include "pw_stream/interval_reader.h"
 #include "pw_stream/stream.h"
 
+/// Protocol buffer encoding and decoding library
 namespace pw::protobuf {
 
 // The following defines classes that represent various parsed proto integer

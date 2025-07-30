@@ -20,6 +20,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
+/// Transport-agnostic packet routing library
 namespace pw::router {
 
 // A packet router with a static routing table.

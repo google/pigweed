@@ -35,6 +35,7 @@
 
 #include "pw_chrono/virtual_clock.h"
 
+/// Portable std::chrono library for embedded
 namespace pw::chrono {
 namespace backend {
 

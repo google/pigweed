@@ -26,6 +26,7 @@
 #include "pw_status/status_with_size.h"
 #include "pw_toolchain/internal/sibling_cast.h"
 
+/// Streaming data library
 namespace pw::stream {
 
 /// A generic stream that may support reading, writing, and seeking, but makes

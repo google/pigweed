@@ -44,6 +44,7 @@
 /// to be used by the function and `T` indicates the applicable element type.
 
 namespace pw {
+/// Embedded-friendly container class templates and algorithms
 namespace containers {
 
 /// Container-based version of the <algorithm> `std::all_of()` function to

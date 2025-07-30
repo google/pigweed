@@ -21,6 +21,7 @@
 #include "pw_bluetooth/gatt/types.h"
 #include "pw_span/span.h"
 
+/// Bluetooth profiles library
 namespace pw::bluetooth_profiles {
 
 // Device information to be exposed by the Device Information Service, according

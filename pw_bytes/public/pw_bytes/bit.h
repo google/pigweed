@@ -23,6 +23,7 @@ namespace pw {
 
 using ::cpp20::endian;
 
+/// Binary data manipulation utilities
 namespace bytes {
 
 /// Queries size of the object or type in bits.

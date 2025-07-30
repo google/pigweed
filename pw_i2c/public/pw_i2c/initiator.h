@@ -22,6 +22,7 @@
 #include "pw_i2c/message.h"
 #include "pw_status/status.h"
 
+/// Cross-platform I2C library
 namespace pw::i2c {
 
 /// @brief The common, base driver interface for initiating thread-safe

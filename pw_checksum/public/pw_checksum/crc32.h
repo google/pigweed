@@ -76,6 +76,7 @@ static inline uint32_t pw_checksum_Crc32Append(const void* data,
 
 #include "pw_span/span.h"
 
+/// Checksum calculation library
 namespace pw::checksum {
 
 // Calculates the CRC32 for all data passed to Update.

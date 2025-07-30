@@ -27,6 +27,7 @@
 #include "pw_status/status_with_size.h"
 
 namespace pw {
+/// Ring buffer libraries
 namespace ring_buffer {
 
 // A circular ring buffer for arbitrary length data entries. Each PushBack()

@@ -25,6 +25,7 @@
 #include "pw_status/status_with_size.h"
 #include "pw_uart/uart_base.h"
 
+/// Core UART interfaces
 namespace pw::uart {
 
 /// Represents an abstract UART interface.

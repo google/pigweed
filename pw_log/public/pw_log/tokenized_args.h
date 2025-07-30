@@ -91,6 +91,7 @@
 
 #ifdef __cplusplus
 
+/// Portable logging library
 namespace pw::log {
 
 /// Type of a log token. Either a `const char*` or a `pw::tokenizer::Token`.

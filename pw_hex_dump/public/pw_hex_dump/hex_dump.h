@@ -20,6 +20,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
+/// Hexdump utilities
 namespace pw::dump {
 
 /// Size, in bytes, of the resulting string after converting an address to a

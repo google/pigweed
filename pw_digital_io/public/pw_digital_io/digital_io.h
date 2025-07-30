@@ -20,6 +20,7 @@
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
+/// GPIO library
 namespace pw::digital_io {
 
 // The logical state of a digital line.

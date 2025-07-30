@@ -25,6 +25,7 @@
 #include "pw_bluetooth_proxy/rfcomm_channel.h"
 #include "pw_status/status.h"
 
+/// Lightweight proxy for augmenting Bluetooth functionality
 namespace pw::bluetooth::proxy {
 
 /// `ProxyHost` acts as the main coordinator for proxy functionality. After

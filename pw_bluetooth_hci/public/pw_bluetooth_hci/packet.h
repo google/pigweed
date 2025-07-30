@@ -21,6 +21,7 @@
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 
+/// Bluetooth Host Controller Interface (HCI) utilities
 namespace pw::bluetooth_hci {
 
 // HCI Packets as defined in the Bluetooth Core Specification Version 5.3

@@ -25,6 +25,7 @@
 #include "pw_transfer/transfer.raw_rpc.pb.h"
 #include "pw_transfer/transfer_thread.h"
 
+/// Reliable data transfer protocol over pw_rpc
 namespace pw::transfer {
 namespace internal {
 

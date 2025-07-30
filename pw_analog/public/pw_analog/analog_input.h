@@ -16,6 +16,7 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_result/result.h"
 
+/// Analog-to-digital converter (ADC) library
 namespace pw::analog {
 
 /// Base interface for getting analog-to-digital (ADC) samples from one ADC

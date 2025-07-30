@@ -24,6 +24,7 @@
 #include "pw_cpu_exception/state.h"
 #include "pw_span/span.h"
 
+/// Consistent interface for entering CPU exception handlers
 namespace pw::cpu_exception {
 
 // Gets raw CPU state as a single contiguous block of data. The particular

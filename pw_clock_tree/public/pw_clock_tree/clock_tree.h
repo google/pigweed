@@ -23,6 +23,7 @@
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/mutex.h"
 
+/// Clock tree management library
 namespace pw::clock_tree {
 
 /// Abstract base class for a clock tree element of a clock tree.

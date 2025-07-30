@@ -18,6 +18,7 @@
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
+/// Secure software delivery library
 namespace pw::software_update {
 
 class BlobStoreOpenableReader final : public OpenableReader {

@@ -17,6 +17,7 @@
 
 #include "pw_tokenizer/tokenize.h"
 
+/// Sensor codegen library
 namespace pw::sensor {
 
 #define PW_SENSOR_UNIT_TYPE(_unit_name, _domain, _name_str, _symbol_str) \

@@ -23,6 +23,7 @@
 #include "pw_sync/virtual_basic_lockable.h"
 #include "pw_sync_backend/mutex_native.h"
 
+/// Thread and interrupt synchronization library
 namespace pw::sync {
 
 /// The `Mutex` is a synchronization primitive that can be used to protect

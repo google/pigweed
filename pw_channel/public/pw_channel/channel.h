@@ -39,6 +39,7 @@
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 
+/// Async, zero-copy library for sending and receiving bytes or datagrams
 namespace pw::channel {
 
 /// @addtogroup pw_channel

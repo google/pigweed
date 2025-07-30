@@ -19,6 +19,7 @@
 
 #include "pw_chre/host_link.h"
 
+/// Android Context Hub Runtime Environment backend
 namespace pw::chre {
 
 /// A message to be sent to a CHRE nanoapp.

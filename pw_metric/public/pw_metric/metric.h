@@ -22,6 +22,7 @@
 #include "pw_preprocessor/arguments.h"
 #include "pw_tokenizer/tokenize.h"
 
+/// Lightweight manual instrumentation library
 namespace pw::metric {
 
 // Currently, this is for tokens, but later may be a char* when non-tokenized

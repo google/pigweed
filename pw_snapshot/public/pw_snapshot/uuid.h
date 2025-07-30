@@ -19,6 +19,7 @@
 #include "pw_result/result.h"
 #include "pw_span/span.h"
 
+/// Storage format and tooling for capturing point-in-time system state
 namespace pw::snapshot {
 
 // Snapshot UUIDs are expected to be 128-bit.

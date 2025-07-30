@@ -19,6 +19,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 #include "pw_multibuf/allocator.h"
 
+/// Dual-mode Bluetooth host stack
 namespace pw::bluetooth_sapphire {
 
 /// Must only be constructed and destroyed on the Bluetooth thread.

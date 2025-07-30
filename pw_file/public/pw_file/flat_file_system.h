@@ -27,6 +27,7 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
+/// File system interactions between a client and server
 namespace pw::file {
 
 // This implements the pw.file.FileSystem RPC service. This implementation

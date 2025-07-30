@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+/// Micro-benchmarks library
 namespace pw::perf_test {
 
 /// Data reported on completion of an iteration.

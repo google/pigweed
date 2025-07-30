@@ -27,6 +27,7 @@
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread_core.h"
 
+/// Work queue library for threads and interrupts
 namespace pw::work_queue {
 
 /// Enables threads and interrupts to enqueue work as a

@@ -177,6 +177,7 @@ size_t pw_varint_DecodeCustom(const void* input,
 #include "pw_span/span.h"
 
 namespace pw {
+/// Variable-length integer encoding and decoding library
 namespace varint {
 
 /// Maximum size of a varint (LEB128) encoded `uint32_t`.

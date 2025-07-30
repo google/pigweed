@@ -29,6 +29,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
+/// Efficient, low-code-size RPC system for embedded
 namespace pw::rpc {
 
 class Server : public internal::Endpoint {

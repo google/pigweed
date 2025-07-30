@@ -21,6 +21,7 @@
 #include "pw_rpc/server.h"
 
 namespace pw {
+/// Opinionated system framework
 namespace system {
 
 class AsyncCore;  // Forward declaration for function declaration.

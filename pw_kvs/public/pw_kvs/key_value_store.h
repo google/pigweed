@@ -33,6 +33,7 @@
 #include "pw_status/status_with_size.h"
 
 namespace pw {
+/// Lightweight key-value store library
 namespace kvs {
 
 enum class GargbageCollectOnWrite {

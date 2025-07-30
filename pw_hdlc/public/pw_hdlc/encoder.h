@@ -22,6 +22,7 @@
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
+/// Serial comms library
 namespace pw::hdlc {
 
 /// @brief Writes an HDLC unnumbered information frame (UI frame) to the

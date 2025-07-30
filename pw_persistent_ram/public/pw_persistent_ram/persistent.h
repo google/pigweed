@@ -24,6 +24,7 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_span/span.h"
 
+/// Persistent RAM utilities and containers
 namespace pw::persistent_ram {
 
 // Behavior to use when attempting to get a handle to the underlying data stored

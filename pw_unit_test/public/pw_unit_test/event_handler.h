@@ -14,6 +14,7 @@
 #pragma once
 
 namespace pw {
+/// GoogleTest for embedded
 namespace unit_test {
 
 // The result of a complete test run.

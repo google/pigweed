@@ -21,6 +21,7 @@
 #include "pw_bytes/span.h"
 #include "pw_status/status.h"
 
+/// Serial Peripheral Interface library
 namespace pw::spi {
 
 // ClockPolarity is a configuration parameter that specifies whether a SPI

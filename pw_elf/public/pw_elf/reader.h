@@ -28,6 +28,7 @@
 #include "pw_status/try.h"
 #include "pw_stream/stream.h"
 
+/// Basic ELF reader library
 namespace pw::elf {
 
 /// A basic reader for ELF files.

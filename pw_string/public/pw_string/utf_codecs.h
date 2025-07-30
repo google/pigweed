@@ -14,8 +14,6 @@
 
 #pragma once
 
-/// Provides basic helpers for reading and writing UTF-8 encoded strings.
-
 #include <array>
 #include <cstdint>
 #include <string_view>
@@ -25,6 +23,8 @@
 #include "pw_string/string_builder.h"
 
 namespace pw {
+
+/// Provides basic helpers for reading and writing UTF-8-encoded strings.
 namespace utf {
 /// Checks if the code point is in a valid range.
 ///

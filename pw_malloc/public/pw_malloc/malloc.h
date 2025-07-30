@@ -20,6 +20,7 @@
 #include "pw_malloc/config.h"
 #include "pw_preprocessor/util.h"
 
+/// Replacement interface for standard libc dynamic memory operations
 namespace pw::malloc {
 
 /// Sets the memory to be used by the system allocator.

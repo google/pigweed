@@ -21,6 +21,7 @@
 #include "pw_log/tokenized_args.h"
 #include "pw_sync/lock_annotations.h"
 
+/// Cooperative async tasks for embedded
 namespace pw::async2 {
 
 /// Generates a token for use as a task name.

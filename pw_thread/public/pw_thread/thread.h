@@ -43,6 +43,7 @@
 #endif  // _PW_THREAD_GENERIC_CREATION_UNSUPPORTED
 
 namespace pw {
+/// Thread creation and execution library
 namespace thread {
 
 /// The class `Thread` can represent a single thread of execution. Threads allow

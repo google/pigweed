@@ -15,6 +15,7 @@
 
 #include "pw_chrono/system_clock.h"
 
+/// (Deprecated) Async library
 namespace pw::async {
 
 class Task;

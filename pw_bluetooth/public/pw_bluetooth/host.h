@@ -30,6 +30,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
+/// Host-layer Bluetooth Low Energy (BLE) library
 namespace pw::bluetooth {
 
 /// Host is the entrypoint API for interacting with a Bluetooth host stack. Host

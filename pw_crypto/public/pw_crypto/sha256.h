@@ -23,7 +23,10 @@
 #include "pw_status/try.h"
 #include "pw_stream/stream.h"
 
-namespace pw::crypto::sha256 {
+/// Cryptography library
+namespace pw::crypto {
+
+namespace sha256 {
 
 /// The size of a SHA256 digest in bytes.
 inline constexpr uint32_t kDigestSizeBytes = 32;
@@ -182,4 +185,6 @@ inline Status Hash(stream::Reader& reader, ByteSpan out_digest) {
   return sha256.Final(out_digest);
 }
 
-}  // namespace pw::crypto::sha256
+}  // namespace sha256
+
+}  // namespace pw::crypto

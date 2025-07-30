@@ -21,6 +21,7 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/packet.h"
 
+/// pw_rpc-over-gRPC library
 namespace pw::grpc {
 
 class GrpcChannelOutput : public rpc::ChannelOutput {

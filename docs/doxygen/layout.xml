@@ -22,8 +22,11 @@ the License.
     <tab type="pages" visible="yes" title="" intro=""/>
     <tab type="modules" visible="yes" title="" intro=""/>
     <tab type="namespaces" visible="yes" title="">
-      <tab type="namespacelist" visible="yes" title="" intro=""/>
-      <tab type="namespacemembers" visible="yes" title="" intro=""/>
+      <tab type="namespacelist" visible="yes" title="Index"
+           intro="Note that many core Pigweed interfaces are exposed
+                  directly under the pw interface, e.g. pw::Status. You
+                  can view them by scrolling to the bottom of this index."/>
+      <tab type="namespacemembers" visible="no" title="" intro=""/>
     </tab>
     <tab type="concepts" visible="yes" title="">
     </tab>

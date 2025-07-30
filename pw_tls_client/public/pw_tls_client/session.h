@@ -24,6 +24,7 @@
 // backend::SessionImplementation type.
 #include "pw_tls_client_backends/backend_types.h"
 
+/// TLS session interface
 namespace pw::tls_client {
 
 // Session provides APIs for performing TLS communication.

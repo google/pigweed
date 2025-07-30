@@ -29,6 +29,7 @@
 
 #include "pw_function/internal/static_invoker.h"
 
+/// Embedded-friendly std::function
 namespace pw::function {
 
 /// Returns a function pointer that invokes a `pw::Function`, lambda, or other

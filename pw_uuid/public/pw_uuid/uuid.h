@@ -26,6 +26,7 @@
 #include "pw_string/hex.h"
 #include "pw_string/string.h"
 
+/// 128-bit universally unique identifier library
 namespace pw::uuid {
 
 /// Represents a 128-bit universally unique identifier (UUID).

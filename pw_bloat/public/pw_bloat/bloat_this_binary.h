@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+/// Binary size reports library
 namespace pw::bloat {
 
 // Function providing fundamental C/C++ functions to prevent them from appearing

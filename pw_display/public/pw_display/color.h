@@ -19,6 +19,7 @@
 #include <cinttypes>
 #include <cstdint>
 
+/// Graphic display and framebuffer library
 namespace pw::display {
 
 /// Base type for pixels in RGBA8888 format.
