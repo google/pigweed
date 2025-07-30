@@ -99,13 +99,16 @@ TEST_F(TraceServiceTest, StopNoData) {
 
   std::array<std::byte, PW_TRACE_BUFFER_SIZE_BYTES> dest_buffer;
   stream::MemoryWriter writer(dest_buffer);
+  PW_PWPB_TEST_METHOD_CONTEXT(TraceService, Start)
+  context_start(tracer, writer);
   PW_PWPB_TEST_METHOD_CONTEXT(TraceService, Stop)
-  context(tracer, writer);
+  context_stop(tracer, writer);
 
-  tracer.Enable(true);
+  tracer.Enable(false);
+  ASSERT_EQ(context_start.call({}), OkStatus());
 
   // stopping with no trace data results in Unavailable
-  ASSERT_EQ(context.call({}), Status::Unavailable());
+  ASSERT_EQ(context_stop.call({}), Status::Unavailable());
 }
 
 TEST_F(TraceServiceTest, GetClockParameters) {

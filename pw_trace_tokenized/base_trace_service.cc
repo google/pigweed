@@ -32,6 +32,8 @@ Status BaseTraceService::Start() {
     return Status::FailedPrecondition();
   }
 
+  trace::GetBuffer()->Clear();
+
   tokenized_tracer_.Enable(true);
 
   return OkStatus();
@@ -67,8 +69,6 @@ Status BaseTraceService::Stop() {
     PW_LOG_ERROR("Failed to write trace data: %d)", status.code());
     return status;
   }
-
-  ring_buffer->Clear();
 
   return OkStatus();
 }
