@@ -21,10 +21,10 @@ use pw_log::info;
 use pw_status::{Error, Result};
 use time::Instant;
 
+use crate::Kernel;
 use crate::memory::MemoryConfig as _;
 use crate::scheduler::timer::TimerCallback;
 use crate::sync::spinlock::SpinLockGuard;
-use crate::Kernel;
 
 mod locks;
 pub mod thread;

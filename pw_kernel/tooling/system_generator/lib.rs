@@ -18,7 +18,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use askama::Template;
 use clap::{Args, Parser, Subcommand};
 use serde::Deserialize;

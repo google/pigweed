@@ -90,7 +90,9 @@ impl BareSpinLock {
     // Must be called with interrupts disabled.
     #[inline]
     unsafe fn unlock(&self) {
-        *self.is_locked.get() = false;
+        unsafe {
+            *self.is_locked.get() = false;
+        }
     }
 }
 

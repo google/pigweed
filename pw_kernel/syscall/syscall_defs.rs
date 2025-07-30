@@ -251,7 +251,7 @@ pub struct WaitReturn {
     pub wait_group_pending_signals: SignalMask,
 }
 
-extern "C" {
+unsafe extern "C" {
     /// Perform a synchronous channel transaction
     ///
     /// Performs a transaction from the initiator side of a channel and blocks

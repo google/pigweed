@@ -36,7 +36,7 @@ impl TargetInterface for Target {
 
 declare_target!(Target);
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[allow(non_snake_case)]
 pub extern "C" fn pw_assert_HandleFailure() -> ! {
     use kernel::Arch as _;

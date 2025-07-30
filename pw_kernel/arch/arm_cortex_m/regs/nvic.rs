@@ -25,17 +25,21 @@ const unsafe fn bit_reg_and_mask(index: usize, reg_base: *mut u32) -> (*mut u32,
     assert!(index < 32 * 16);
     let offset = index / 32;
     let mask = 1 << (index % 32);
-    (reg_base.add(offset), mask)
+    unsafe { (reg_base.add(offset), mask) }
 }
 
 unsafe fn get_indexed_bit(index: usize, reg_base: *mut u32) -> bool {
-    let (reg, mask) = bit_reg_and_mask(index, reg_base);
-    (reg.read_volatile() & mask) != 0
+    unsafe {
+        let (reg, mask) = bit_reg_and_mask(index, reg_base);
+        (reg.read_volatile() & mask) != 0
+    }
 }
 
 unsafe fn set_indexed_bit(index: usize, reg_base: *mut u32) {
-    let (reg, mask) = bit_reg_and_mask(index, reg_base);
-    reg.write_volatile(mask)
+    unsafe {
+        let (reg, mask) = bit_reg_and_mask(index, reg_base);
+        reg.write_volatile(mask)
+    }
 }
 
 const unsafe fn priority_reg_and_offset(index: usize, reg_base: *mut u32) -> (*mut u32, usize) {
@@ -43,7 +47,7 @@ const unsafe fn priority_reg_and_offset(index: usize, reg_base: *mut u32) -> (*m
     assert!(index < 32 * 16);
     let reg_offset = index / 4;
     let field_offset = (index % 4) * 8;
-    (reg_base.add(reg_offset), field_offset)
+    (unsafe { reg_base.add(reg_offset) }, field_offset)
 }
 
 /// Nested Vectored Interrupt Controller peripheral

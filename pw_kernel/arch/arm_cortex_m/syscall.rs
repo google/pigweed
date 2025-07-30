@@ -23,7 +23,7 @@ use super::regs::Regs;
 // There is potential to put the call to `raw_handle_syscall()` directly into
 // the SVCall handler to save some code space and execution time.
 #[exception(exception = "SVCall")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn handle_svc(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
     // In order to allow syscalls to block, be preempted, and have other
     // threads make syscalls they need be run without svcall being active.  If

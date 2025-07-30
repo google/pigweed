@@ -71,8 +71,8 @@ fn token_backend(domain: &str, fragments: &[TokenStream2]) -> TokenStream2 {
             };
             // This is currently manually verified to be correct.
             // TODO: b/287132907 - Add integration tests for token database.
-            #[cfg_attr(target_os = "macos", link_section = #mac_section)]
-            #[cfg_attr(not(target_os = "macos"), link_section = #section)]
+            #[cfg_attr(target_os = "macos", unsafe(link_section = #mac_section))]
+            #[cfg_attr(not(target_os = "macos"), unsafe(link_section = #section))]
             #[used]
             static #ident: TokenEntry = TokenEntry {
                 magic: #TOKENIZER_ENTRY_MAGIC,

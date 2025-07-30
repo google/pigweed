@@ -31,7 +31,7 @@
 //! To use the macros, an exception name must be provided:
 //! ```
 //! #[exception(exception = "HardFault")]
-//! #[no_mangle]
+//! #[unsafe(no_mangle)]
 //! extern "C" fn hard_fault(frame: *mut FullExceptionFrame) ->  *mut FullExceptionFrame {
 //! }
 //! ```
@@ -40,7 +40,7 @@
 //! interrupts while invoking the handler:
 //! ```
 //! #[exception(exception = "PendSV", disable_interrupts)]
-//! #[no_mangle]
+//! #[unsafe(no_mangle)]
 //! extern "C" fn pendsv(frame: *mut FullExceptionFrame) -> *mut FullExceptionFrame {
 //! ```
 
@@ -49,7 +49,7 @@ use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, Error, FnArg, Ident, ItemFn, Token, Type};
+use syn::{Error, FnArg, Ident, ItemFn, Token, Type, parse_macro_input};
 
 #[derive(Eq, PartialEq, Hash, Debug)]
 enum KernelMode {
@@ -262,7 +262,7 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
     restore_exception_frame(&mut asm, &kernel_mode);
 
     quote! {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         #[unsafe(naked)]
         pub unsafe extern "C" fn #exception_ident() -> ! {
             unsafe {

@@ -18,9 +18,9 @@ use core::ops::{Deref, DerefMut};
 use pw_status::Result;
 use time::Instant;
 
-use crate::scheduler::thread::Thread;
-use crate::scheduler::WaitQueueLock;
 use crate::Kernel;
+use crate::scheduler::WaitQueueLock;
+use crate::scheduler::thread::Thread;
 
 const MUTEX_DEBUG: bool = false;
 macro_rules! mutex_debug {

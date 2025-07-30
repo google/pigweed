@@ -15,7 +15,7 @@
 use core::arch::asm;
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
-use core::sync::atomic::{compiler_fence, Ordering};
+use core::sync::atomic::{Ordering, compiler_fence};
 
 pub struct InterruptGuard {
     saved_primask: u32,
@@ -91,7 +91,7 @@ impl BareSpinLock {
     // Must be called with interrupts disabled.
     #[inline]
     unsafe fn unlock(&self) {
-        *self.is_locked.get() = false;
+        unsafe { *self.is_locked.get() = false };
     }
 }
 

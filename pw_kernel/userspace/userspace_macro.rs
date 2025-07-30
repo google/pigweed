@@ -15,7 +15,7 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{parse, Ident, ItemFn, ReturnType, Type, Visibility};
+use syn::{Ident, ItemFn, ReturnType, Type, Visibility, parse};
 
 fn validate_and_set_entry_ident(
     args: TokenStream,
@@ -72,8 +72,8 @@ pub fn arm_cortex_m_entry(args: TokenStream, input: TokenStream) -> TokenStream 
         use core::arch::global_asm;
         global_asm!(#asm, options(raw));
 
-        #[no_mangle]
-        #[export_name = "main"]
+        #[unsafe(no_mangle)]
+        #[unsafe(export_name = "main")]
         extern "C" #f
     )
     .into()
@@ -88,8 +88,8 @@ pub fn riscv_entry(args: TokenStream, input: TokenStream) -> TokenStream {
         use core::arch::global_asm;
         global_asm!(#asm, options(raw));
 
-        #[no_mangle]
-        #[export_name = "main"]
+        #[unsafe(no_mangle)]
+        #[unsafe(export_name = "main")]
         extern "C" #f
     )
     .into()

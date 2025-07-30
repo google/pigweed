@@ -27,8 +27,8 @@ use pw_log::info;
 use pw_status::{Error, Result};
 
 use crate::exceptions::{
-    exception, ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking,
-    ExcReturnStack, ExceptionFrame, KernelExceptionFrame, RetPsrVal,
+    ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking, ExcReturnStack,
+    ExceptionFrame, KernelExceptionFrame, RetPsrVal, exception,
 };
 use crate::in_interrupt_handler;
 use crate::protection::MemoryConfig;
@@ -46,10 +46,12 @@ const STACK_ALIGNMENT: usize = 8;
 // Cleared inside the pendsv handler when the context switch actually happens.
 static mut ACTIVE_THREAD: *mut ArchThreadState = core::ptr::null_mut();
 unsafe fn get_active_thread() -> *mut ArchThreadState {
-    ACTIVE_THREAD
+    unsafe { ACTIVE_THREAD }
 }
 unsafe fn set_active_thread(t: *mut ArchThreadState) {
-    ACTIVE_THREAD = t;
+    unsafe {
+        ACTIVE_THREAD = t;
+    }
 }
 
 pub struct ArchThreadState {
@@ -106,7 +108,9 @@ impl Arch for crate::Arch {
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
     ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>> {
-        pw_assert::assert!(new_thread_state == sched_state.get_current_arch_thread_state());
+        pw_assert::assert!(unsafe {
+            new_thread_state == sched_state.get_current_arch_thread_state()
+        });
         // TODO - konkers: Allow $expr to be tokenized.
 
         // info!(
@@ -203,7 +207,7 @@ impl Arch for crate::Arch {
 
         unsafe {
             // Set the VTOR (assumes it exists)
-            extern "C" {
+            unsafe extern "C" {
                 fn pw_boot_vector_table_addr();
             }
             let vector_table = pw_boot_vector_table_addr as *const ();
@@ -394,7 +398,7 @@ extern "C" fn trampoline(
 // Called by the pendsv handler, returns the new stack to switch to after
 // performing some housekeeping.
 #[exception(exception = "PendSV", disable_interrupts)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
     // TODO:
     // save incoming frame to active_thread.archstate

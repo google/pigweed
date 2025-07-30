@@ -35,11 +35,12 @@ template("pw_rust_executable") {
   pw_internal_build_target(target_name) {
     forward_variables_from(invoker, "*")
 
-    _edition = "2021"
+    _edition = "2024"
     if (defined(invoker.edition)) {
       _edition = invoker.edition
     }
-    assert(_edition == "2015" || _edition == "2018" || _edition == "2021",
+    assert(_edition == "2015" || _edition == "2018" || _edition == "2021" ||
+               _edition == "2024",
            "edition ${_edition} is not supported")
 
     if (!defined(configs)) {

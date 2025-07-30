@@ -251,7 +251,7 @@ impl KernelExceptionFrame {
 }
 
 #[exception(exception = "HardFault")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn pw_kernel_hard_fault(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
     let hfsr = with_exposed_provenance::<u32>(0xE000ED2C);
     info!("HardFault (HFSR: {:08x})", unsafe { hfsr.read_volatile() }
@@ -263,7 +263,7 @@ extern "C" fn pw_kernel_hard_fault(frame: *mut KernelExceptionFrame) -> *mut Ker
 }
 
 #[exception(exception = "DefaultHandler")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn pw_kernel_default(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
     info!("DefaultHandler");
     unsafe { &*frame }.dump();
@@ -272,7 +272,7 @@ extern "C" fn pw_kernel_default(frame: *mut KernelExceptionFrame) -> *mut Kernel
 }
 
 #[exception(exception = "NonMaskableInt")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn pw_kernel_non_maskable_int(
     frame: *mut KernelExceptionFrame,
 ) -> *mut KernelExceptionFrame {
@@ -283,7 +283,7 @@ extern "C" fn pw_kernel_non_maskable_int(
 }
 
 #[exception(exception = "MemoryManagement")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn pw_kernel_memory_management(
     frame: *mut KernelExceptionFrame,
 ) -> *mut KernelExceptionFrame {
@@ -299,7 +299,7 @@ extern "C" fn pw_kernel_memory_management(
 }
 
 #[exception(exception = "BusFault")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn pw_kernel_bus_fault(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
     let bfar = with_exposed_provenance::<u32>(0xE000ED38);
     info!(
@@ -311,7 +311,7 @@ extern "C" fn pw_kernel_bus_fault(frame: *mut KernelExceptionFrame) -> *mut Kern
 }
 
 #[exception(exception = "UsageFault")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn pw_kernel_usage_fault(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
     info!("UsageFault");
     unsafe { &*frame }.dump();
@@ -322,7 +322,7 @@ extern "C" fn pw_kernel_usage_fault(frame: *mut KernelExceptionFrame) -> *mut Ke
 // SVCall is defined in syscall.rs
 
 #[exception(exception = "DebugMonitor")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn pw_kernel_debug_monitor(
     frame: *mut KernelExceptionFrame,
 ) -> *mut KernelExceptionFrame {

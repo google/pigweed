@@ -18,14 +18,14 @@ use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use clap::Parser;
 use object::build::elf::{
     AttributeTag, AttributesSection, AttributesSubsection, AttributesSubsubsection, Builder,
     Section, SectionData, SectionId,
 };
 use object::build::{ByteString, Bytes, Id};
-use object::{elf, ReadRef};
+use object::{ReadRef, elf};
 
 // Don't copy these sections, as the object writer won't allow multiple
 // sections of SYMTAB and STRTAB type.  All other sections should be copied

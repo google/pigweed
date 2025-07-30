@@ -55,7 +55,6 @@ platform(
 rust_binary(
     name = "target",
     srcs = ["target.rs"],
-    edition = "2021",
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     deps = COMMON_DEPS,
@@ -64,7 +63,6 @@ rust_binary(
 rust_test(
     name = "unittest_runner",
     srcs = ["target.rs"],
-    edition = "2021",
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     use_libtest_harness = False,

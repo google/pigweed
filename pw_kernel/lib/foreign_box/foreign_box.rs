@@ -65,7 +65,7 @@ impl<T: ?Sized> ForeignBox<T> {
                 pw_assert::panic!("Null pointer");
             }
         };
-        Self::new(ptr)
+        unsafe { Self::new(ptr) }
     }
 
     #[allow(clippy::must_use_candidate)]
@@ -89,7 +89,7 @@ impl<T: ?Sized> ForeignBox<T> {
     /// Creates an "mutable unenforceable borrow" of the contained data.
     #[must_use]
     pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
-        self.inner.as_mut()
+        unsafe { self.inner.as_mut() }
     }
 }
 

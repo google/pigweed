@@ -308,7 +308,7 @@
     },
     "//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
-        "bzlTransitiveDigest": "t//giaYFU5EuiKVvAYvcwsEJ5mXXdy98jc2xUwF8uus=",
+        "bzlTransitiveDigest": "WSr9E49zersK2bM/b00YA1Tr0mYzmt9OsMoniQX20KM=",
         "usagesDigest": "qiewob+qY1JYSV+267l9czxbojq2wpobHeM59oHfyKs=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -4092,9 +4092,9 @@
         "usagesDigest": "iEj3gLEk+7Sy04PhIcKiaZv4dbnH1oohYqAmNDzw5fU=",
         "recordedFileInputs": {
           "@@//third_party/crates_io/crates_no_std/Cargo.lock": "dd3f285832e0668eb99724d5f48a95bc074ef272d4a86ba2b6ed672cc2517df2",
-          "@@//third_party/crates_io/crates_no_std/Cargo.toml": "3257489e153d5640854bb111780e17a60dcd2e8bcd6d2b4c6b72654a3a959a02",
+          "@@//third_party/crates_io/crates_no_std/Cargo.toml": "d441c53f6e5201439731f14e7b7511bcfee838fdf24f582a635dbbd0a9ab1ef6",
           "@@//third_party/crates_io/crates_std/Cargo.lock": "1bb8bcc7bdc2096abf7076a2ca90238529021b885793dd0571e23a6e6b7ba511",
-          "@@//third_party/crates_io/crates_std/Cargo.toml": "2f63558b8ea137fe0ec82ab3c1708a64247a944c51ab1257391896b8e7cffa76"
+          "@@//third_party/crates_io/crates_std/Cargo.toml": "43114a1eb8235707822f567de3c72960bb12e42501262503839f8b482f32880f"
         },
         "recordedDirentsInputs": {},
         "envVariables": {

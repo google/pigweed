@@ -28,7 +28,7 @@ fn panic_handler(info: &core::panic::PanicInfo) -> ! {
 
 // This panic_is_possible function is the hook used by the panic detector
 // to identify the presence a panic handler.
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[inline(never)]
 extern "C" fn panic_is_possible(
     filename: *const u8,

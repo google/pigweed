@@ -14,7 +14,7 @@
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, Ident, ItemFn};
+use syn::{Ident, ItemFn, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -87,10 +87,10 @@ pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
 
             #[used]
-            #[cfg_attr(target_os = "linux", link_section = ".init_array")]
-            #[cfg_attr(target_os = "none", link_section = ".init_array")]
-            #[cfg_attr(target_vendor = "apple", link_section = "__DATA,__mod_init_func")]
-            #[cfg_attr(windows, link_section = ".CRT$XCU")]
+            #[cfg_attr(target_os = "linux", unsafe(link_section = ".init_array"))]
+            #[cfg_attr(target_os = "none", unsafe(link_section = ".init_array"))]
+            #[cfg_attr(target_vendor = "apple", unsafe(link_section = "__DATA,__mod_init_func"))]
+            #[cfg_attr(windows, unsafe(link_section = ".CRT$XCU"))]
             static #ctor_ident: extern "C" fn() -> usize = #ctor_fn_ident;
         };
 

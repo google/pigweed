@@ -32,7 +32,7 @@ pub type ConsoleUart = UartPeripheral<
 
 static UART: SpinLock<arch_arm_cortex_m::BareSpinLock, Option<ConsoleUart>> = SpinLock::new(None);
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {
     let mut uart = UART.lock();
     match &mut (*uart) {

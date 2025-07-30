@@ -17,7 +17,7 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::process;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use cliclack::{intro, outro, outro_cancel, spinner};
 use serde::Deserialize;
 

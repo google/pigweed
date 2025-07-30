@@ -16,8 +16,8 @@ use core::ops::Bound;
 use std::collections::BTreeMap;
 
 use anyhow::anyhow;
-use object::read::elf::{ElfFile32, ProgramHeader};
 use object::Endian;
+use object::read::elf::{ElfFile32, ProgramHeader};
 /// Gives access to the program data (.text, .rodata, etc) in an elf file, based
 /// on the virtual memory address.
 pub struct ElfMem<'a> {

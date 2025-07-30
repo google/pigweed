@@ -22,11 +22,11 @@ use target_common::{declare_target, TargetInterface};
 use {console_backend as _, kernel as _, rp235x_hal as hal};
 mod userspace_demo_codegen;
 
-#[link_section = ".start_block"]
+#[unsafe(link_section = ".start_block")]
 #[used]
 pub static IMAGE_DEF: hal::block::ImageDef = hal::block::ImageDef::secure_exe();
 
-#[link_section = ".bi_entries"]
+#[unsafe(link_section = ".bi_entries")]
 #[used]
 pub static PICOTOOL_ENTRIES: [hal::binary_info::EntryAddr; 5] = [
     hal::binary_info::rp_program_name!(c"maize"),
@@ -87,7 +87,7 @@ impl TargetInterface for Target {
 
 declare_target!(Target);
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[allow(non_snake_case)]
 pub extern "C" fn pw_assert_HandleFailure() -> ! {
     use kernel::Arch as _;

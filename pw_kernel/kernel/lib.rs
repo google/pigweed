@@ -29,8 +29,8 @@ pub use memory::{MemoryRegion, MemoryRegionType};
 #[doc(hidden)]
 pub use scheduler::thread::{Process, Stack, StackStorage, StackStorageExt, Thread, ThreadState};
 use scheduler::timer::TimerQueue;
+use scheduler::{SchedulerState, thread};
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
-use scheduler::{thread, SchedulerState};
 use sync::spinlock::{BareSpinLock, SpinLock, SpinLockGuard};
 
 pub trait Arch: 'static + Copy + thread::ThreadArg {

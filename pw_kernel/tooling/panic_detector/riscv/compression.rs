@@ -14,10 +14,10 @@
 
 use super::Instr;
 use crate::riscv::{
-    Instr32B, Instr32I, Instr32IS, Instr32J, Instr32R, Instr32S, Instr32U, Opcode, Reg,
-    FUNCT10_ADD, FUNCT10_AND, FUNCT10_OR, FUNCT10_SRAI, FUNCT10_SRLI, FUNCT10_SUB, FUNCT10_XOR,
     FUNCT3_BRANCH_EQ, FUNCT3_BRANCH_NE, FUNCT3_LOAD_W, FUNCT3_OP_ADDI, FUNCT3_OP_ANDI,
-    FUNCT3_OP_SLI, FUNCT3_STORE_W,
+    FUNCT3_OP_SLI, FUNCT3_STORE_W, FUNCT10_ADD, FUNCT10_AND, FUNCT10_OR, FUNCT10_SRAI,
+    FUNCT10_SRLI, FUNCT10_SUB, FUNCT10_XOR, Instr32B, Instr32I, Instr32IS, Instr32J, Instr32R,
+    Instr32S, Instr32U, Opcode, Reg,
 };
 const OP_MASK_5: u16 = 0xe003;
 const OP_MASK_6: u16 = 0xf003;
@@ -339,7 +339,7 @@ mod rv16 {
     use bitfield_struct::bitfield;
     use pw_cast::try_cast;
 
-    use crate::riscv::{sign_extend_i16, sign_extend_i32, Reg};
+    use crate::riscv::{Reg, sign_extend_i16, sign_extend_i32};
     const fn unwrap_or_0(val: Option<u16>) -> u16 {
         match val {
             Some(val) => val,

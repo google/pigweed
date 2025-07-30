@@ -27,17 +27,17 @@ pub trait TargetInterface {
 #[macro_export]
 macro_rules! declare_target {
     ($target:ty) => {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub fn pw_kernel_target_name() -> &'static str {
             <$target as $crate::TargetInterface>::NAME
         }
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub fn pw_kernel_target_console_init() {
             <$target as $crate::TargetInterface>::console_init();
         }
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub fn pw_kernel_target_main() -> ! {
             <$target as $crate::TargetInterface>::main();
         }
@@ -53,7 +53,7 @@ macro_rules! declare_target {
 pub unsafe fn run_ctors() {
     type CtorFn = unsafe extern "C" fn() -> usize;
 
-    extern "C" {
+    unsafe extern "C" {
         static __init_array_start: CtorFn;
         static __init_array_end: CtorFn;
     }

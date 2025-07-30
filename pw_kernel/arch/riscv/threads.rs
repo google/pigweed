@@ -15,10 +15,10 @@
 use core::arch::{asm, naked_asm};
 use core::mem;
 
+use kernel::Arch;
 use kernel::scheduler::thread::Stack;
 use kernel::scheduler::{self, SchedulerState};
 use kernel::sync::spinlock::SpinLockGuard;
-use kernel::Arch;
 use log_if::debug_if;
 use pw_status::Result;
 
@@ -101,8 +101,8 @@ impl Arch for super::Arch {
         debug_if!(
             LOG_CONTEXT_SWITCH,
             "context switch from frame {:#08x} to frame {:#08x}",
-            (*old_thread_state).frame as usize,
-            (*new_thread_state).frame as usize,
+            unsafe { (*old_thread_state).frame } as usize,
+            unsafe { (*new_thread_state).frame } as usize,
         );
 
         // Memory config is swapped before the context switch instead of after.
@@ -112,15 +112,19 @@ impl Arch for super::Arch {
         // Memory context switch overhead is avoided for threads in the same
         // memory config space.
         #[cfg(feature = "user_space")]
-        if (*new_thread_state).memory_config != (*old_thread_state).memory_config {
-            (*(*new_thread_state).memory_config).write();
+        if unsafe { (*new_thread_state).memory_config }
+            != unsafe { (*old_thread_state).memory_config }
+        {
+            unsafe { (*(*new_thread_state).memory_config).write() };
         }
 
         // Note: there is a small window of time where the new memory configuration
         // is active (above) and the new thread is active (below).  Since this code
         // always executes in M-Mode, it bypasses the memory config and by the
         // time control is returned to user space, the memory config is correct.
-        riscv_context_switch(&mut (*old_thread_state).frame, (*new_thread_state).frame);
+        let old_thread_frame = unsafe { &mut (*old_thread_state).frame };
+        let new_thread_frame = unsafe { (*new_thread_state).frame };
+        riscv_context_switch(old_thread_frame, new_thread_frame);
 
         sched_state
     }
@@ -224,7 +228,7 @@ impl kernel::scheduler::thread::ThreadState for ArchThreadState {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[unsafe(naked)]
 extern "C" fn riscv_context_switch(
     old_frame: *mut *mut ContextSwitchFrame,
@@ -273,7 +277,7 @@ extern "C" fn riscv_context_switch(
 
 // Since the context switch frame does not contain the function arg registers,
 // pass the initial function and arguments via two of the saved s registers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[unsafe(naked)]
 extern "C" fn asm_user_trampoline() {
     naked_asm!(
@@ -300,7 +304,7 @@ extern "C" fn asm_user_trampoline() {
 
 // Since the context switch frame does not contain the function arg registers,
 // pass the initial function and arguments via two of the saved s registers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[unsafe(naked)]
 extern "C" fn asm_trampoline() {
     naked_asm!(
@@ -320,7 +324,7 @@ extern "C" fn asm_trampoline() {
 }
 
 #[allow(unused)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn trampoline(
     initial_function: extern "C" fn(usize, usize, usize),
     arg0: usize,

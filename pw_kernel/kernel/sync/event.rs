@@ -18,8 +18,8 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use pw_status::Result;
 use time::Instant;
 
-use crate::scheduler::WaitQueueLock;
 use crate::Kernel;
+use crate::scheduler::WaitQueueLock;
 
 /// Configuration for the behavior of an [`Event`].
 #[derive(Eq, PartialEq)]

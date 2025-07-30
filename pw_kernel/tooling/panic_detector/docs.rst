@@ -32,7 +32,7 @@ find the panic call sites.
        }
    }
 
-   #[no_mangle]
+   #[unsafe(no_mangle)]
    #[inline(never)]
    extern "C" fn panic_is_possible(filename: *const u8, filename_len: usize, line: u32, col: u32) -> !{
        // The arguments to this function are reverse-engineereddocs.html

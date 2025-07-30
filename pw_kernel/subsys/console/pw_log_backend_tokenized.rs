@@ -86,7 +86,7 @@ pub mod __private {
     }
 
     fn unreachable() -> ! {
-        extern "C" {
+        unsafe extern "C" {
             fn pw_assert_HandleFailure() -> !;
         }
 

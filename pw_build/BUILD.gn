@@ -176,6 +176,10 @@ config("rust_edition_2021") {
   rustflags = [ "--edition=2021" ]
 }
 
+config("rust_edition_2024") {
+  rustflags = [ "--edition=2024" ]
+}
+
 config("strict_warnings") {
   cflags = [
     "-Wall",

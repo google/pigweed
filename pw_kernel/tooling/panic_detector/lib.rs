@@ -20,11 +20,11 @@ use core::fmt::Debug;
 use std::collections::HashSet;
 use std::path::Path;
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use object::read::elf::{ElfFile32, FileHeader};
-use object::{elf, LittleEndian};
+use object::{LittleEndian, elf};
 
-use crate::riscv::call_graph::{list_functions, FuncRepo, Function};
+use crate::riscv::call_graph::{FuncRepo, Function, list_functions};
 use crate::riscv::{DecodedInstr, ElfMem, InstrA, Reg};
 
 pub mod riscv;
@@ -297,17 +297,17 @@ impl Expr {
                     // Always put the constant last.
                     core::mem::swap(a, b);
                 }
-                if let Expr::Const(b) = &**b {
-                    if *b == 0 {
-                        *self = (**a).clone();
-                        self.optimize();
-                        return;
-                    }
+                if let Expr::Const(b) = &**b
+                    && *b == 0
+                {
+                    *self = (**a).clone();
+                    self.optimize();
+                    return;
                 }
-                if let (Expr::Add(c, d), Expr::Const(b)) = (&**a, &**b) {
-                    if let Expr::Const(d) = &**d {
-                        *self = Expr::add((**c).clone(), Expr::Const(b.wrapping_add(*d)));
-                    }
+                if let (Expr::Add(c, d), Expr::Const(b)) = (&**a, &**b)
+                    && let Expr::Const(d) = &**d
+                {
+                    *self = Expr::add((**c).clone(), Expr::Const(b.wrapping_add(*d)));
                 }
             }
             Expr::PtrDeref(ptr) => {
@@ -373,16 +373,16 @@ impl Expr {
                 self.optimize();
                 // Self may have been changed by the call to optimize(), so make
                 // sure we're still a PtrDeref to make the borrow checker happy.
-                if let Self::PtrDeref(ptr) = self {
-                    if let DecodedInstr::Sw(i) = instr_d {
-                        let store_expr =
-                            Expr::add(Expr::reg(i.rs1()), Expr::Const(i.imm().cast_unsigned()));
-                        if store_expr == **ptr {
-                            // This instruction modifies the memory address we dereferenced.
-                            // Update the expression tree.
-                            *self = Expr::reg(i.rs2());
-                            self.optimize();
-                        }
+                if let Self::PtrDeref(ptr) = self
+                    && let DecodedInstr::Sw(i) = instr_d
+                {
+                    let store_expr =
+                        Expr::add(Expr::reg(i.rs1()), Expr::Const(i.imm().cast_unsigned()));
+                    if store_expr == **ptr {
+                        // This instruction modifies the memory address we dereferenced.
+                        // Update the expression tree.
+                        *self = Expr::reg(i.rs2());
+                        self.optimize();
                     }
                 }
             }

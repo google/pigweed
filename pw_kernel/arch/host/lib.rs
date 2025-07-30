@@ -14,8 +14,8 @@
 
 #![no_std]
 
-use kernel::scheduler::thread::{Stack, ThreadState};
 use kernel::scheduler::SchedulerState;
+use kernel::scheduler::thread::{Stack, ThreadState};
 use kernel::sync::spinlock::SpinLockGuard;
 use kernel::{Arch, Kernel, KernelState, MemoryRegionType};
 use pw_log::info;

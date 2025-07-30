@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use std::io::{stdout, Write as StdWrite};
+use std::io::{Write as StdWrite, stdout};
 
 use pw_status::{Error, Result};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {
     stdout().lock().write_all(buf).map_err(|_| Error::Unknown)
 }

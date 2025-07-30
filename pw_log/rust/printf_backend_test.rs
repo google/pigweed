@@ -21,7 +21,7 @@ fn flush_stdout() {
     // Safety: Test only.  Calling into a libc function w/o any dependency on
     // data from the Rust side.
     unsafe {
-        extern "C" {
+        unsafe extern "C" {
             static stdout: *mut libc::FILE;
         }
         libc::fflush(stdout);
@@ -34,7 +34,7 @@ fn flush_stdout() {
     // Safety: Test only.  Calling into a libc function w/o any dependency on
     // data from the Rust side.
     unsafe {
-        extern "C" {
+        unsafe extern "C" {
             // MacOS uses a #define to declare stdout so we need to expand that
             // manually.
             static __stdoutp: *mut libc::FILE;

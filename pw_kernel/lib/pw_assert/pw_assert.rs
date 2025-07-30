@@ -14,7 +14,7 @@
 #![no_std]
 
 #[cfg(not(feature = "default_handler"))]
-extern "C" {
+unsafe extern "C" {
     pub fn pw_assert_HandleFailure() -> !;
 }
 

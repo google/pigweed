@@ -26,7 +26,7 @@ pub trait RO<T> {
     #[inline]
     unsafe fn raw_read(&self) -> T {
         let ptr = with_exposed_provenance::<T>(Self::ADDR);
-        ptr.read_volatile()
+        unsafe { ptr.read_volatile() }
     }
 }
 
@@ -40,7 +40,7 @@ pub trait RW<T> {
     #[inline]
     unsafe fn raw_read(&self) -> T {
         let ptr = with_exposed_provenance::<T>(Self::ADDR);
-        ptr.read_volatile()
+        unsafe { ptr.read_volatile() }
     }
 
     /// Write a raw value to the specified register
@@ -51,7 +51,7 @@ pub trait RW<T> {
     #[inline]
     unsafe fn raw_write(&mut self, val: T) {
         let ptr = with_exposed_provenance_mut::<T>(Self::ADDR);
-        ptr.write_volatile(val)
+        unsafe { ptr.write_volatile(val) }
     }
 }
 

@@ -45,7 +45,7 @@ static UART: SpinLock<arch_riscv::BareSpinLock, Uart> = SpinLock::new(Uart {
     base_addr: BASE_ADDR,
 });
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {
     let uart = UART.lock();
     uart.write_all(buf)

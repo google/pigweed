@@ -321,7 +321,7 @@ impl FormatFragment {
             return Some(fragment);
         };
 
-        let Self::Literal(ref mut literal_self) = self else {
+        let Self::Literal(literal_self) = self else {
             return Some(fragment);
         };
 

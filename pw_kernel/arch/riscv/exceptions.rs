@@ -145,10 +145,10 @@ unsafe fn interrupt_handler(interrupt: Interrupt, mepc: usize, frame: &TrapFrame
 }
 
 #[exception(exception = "_start_trap")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn trap_handler(mcause: MCauseVal, mepc: usize, frame: &mut TrapFrame) {
     match mcause.cause() {
-        Cause::Interrupt(interrupt) => interrupt_handler(interrupt, mepc, frame),
+        Cause::Interrupt(interrupt) => unsafe { interrupt_handler(interrupt, mepc, frame) },
         Cause::Exception(exception) => exception_handler(exception, mepc, frame),
     }
 }

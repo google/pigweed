@@ -15,12 +15,12 @@
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use pw_format::macros::{
-    generate_core_fmt, Arg, CoreFmtFormatMacroGenerator, CoreFmtFormatStringParser,
-    FormatAndArgsFlavor, FormatStringParser, PrintfFormatStringParser, Result,
+    Arg, CoreFmtFormatMacroGenerator, CoreFmtFormatStringParser, FormatAndArgsFlavor,
+    FormatStringParser, PrintfFormatStringParser, Result, generate_core_fmt,
 };
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, Expr, Token};
+use syn::{Expr, Token, parse_macro_input};
 
 type TokenStream2 = proc_macro2::TokenStream;
 

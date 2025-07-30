@@ -241,10 +241,10 @@ macro_rules! impl_args_list {
                   format_str: *const c_uchar,
                   log_level_str: *const c_uchar,
               ) -> c_int {
-                  extern "C" {
+                  unsafe extern "C" {
                     fn printf(fmt: *const c_uchar, ...) -> c_int;
                   }
-                  printf(format_str, log_level_str, $(self. $current_num),*)
+                  unsafe { printf(format_str, log_level_str, $(self. $current_num),*) }
               }
           }
 
@@ -270,10 +270,10 @@ macro_rules! impl_args_list {
                   format_str: *const c_uchar,
                   log_level_str: *const c_uchar,
               ) -> c_int {
-                  extern "C" {
+                  unsafe extern "C" {
                     fn printf(fmt: *const c_uchar, ...) -> c_int;
                   }
-                  printf(format_str, log_level_str, $(self. $current_num),*)
+                  unsafe { printf(format_str, log_level_str, $(self. $current_num),*) }
               }
           }
       };

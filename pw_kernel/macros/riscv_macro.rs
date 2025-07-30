@@ -32,7 +32,7 @@
 //! the symbol name for the main trap handler (aka `_start_trap` for `riscv-rt`)
 //! ```
 //! #[exception(exception = "_start_trap")]
-//! #[no_mangle]
+//! #[unsafe(no_mangle)]
 //! unsafe extern "C" fn trap_handler(mcause: MCauseVal, mepc: usize, frame: &mut TrapFrame) {
 //! }
 //! ```
@@ -41,7 +41,7 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, Ident, ItemFn, Token};
+use syn::{Ident, ItemFn, Token, parse_macro_input};
 
 #[derive(Eq, PartialEq, Hash, Debug)]
 enum KernelMode {
@@ -316,9 +316,9 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
     }
 
     quote! {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         #[unsafe(naked)]
-        #[link_section = ".trap"]
+        #[unsafe(link_section = ".trap")]
         pub unsafe extern "C" fn #exception_ident() -> ! {
             unsafe {
                 core::arch::naked_asm!(#asm)
@@ -327,7 +327,7 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
         // Compile time assert that the handler function signature matches.
         const _: crate::exceptions::ExceptionHandler = #handler_ident;
 
-        #[link_section = ".trap"]
+        #[unsafe(link_section = ".trap")]
         #handler
     }
     .into()

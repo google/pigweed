@@ -19,7 +19,6 @@ rust_binary(
     srcs = [
         "main.rs",
     ],
-    edition = "2021",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [

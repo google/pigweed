@@ -101,7 +101,6 @@ COMMON_DEPS = [
 rust_binary(
     name = "target",
     srcs = SRCS,
-    edition = "2021",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
@@ -125,7 +124,6 @@ rust_binary(
         "userspace_demo_target.rs",
         ":userspace_demo_codegen",
     ],
-    edition = "2021",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
@@ -137,7 +135,6 @@ rust_binary(
 rust_test(
     name = "unittest_runner",
     srcs = SRCS,
-    edition = "2021",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     use_libtest_harness = False,
