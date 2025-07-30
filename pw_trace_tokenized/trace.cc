@@ -16,13 +16,21 @@
 
 #include "pw_trace/trace.h"
 
+#include <mutex>
+
 #include "pw_preprocessor/util.h"
+#include "pw_sync/interrupt_spin_lock.h"
 #include "pw_trace_tokenized/trace_callback.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
 #include "pw_varint/varint.h"
 
 namespace pw {
 namespace trace {
+
+namespace {
+pw::sync::InterruptSpinLock trace_lock;
+pw::sync::InterruptSpinLock trace_queue_lock;
+}  // namespace
 
 Callbacks& GetCallbacks() {
   static Callbacks callbacks;
@@ -77,31 +85,32 @@ void TokenizedTracer::HandleTraceEvent(uint32_t trace_token,
     return;
   }
 
-  // Create trace event
-  PW_TRACE_QUEUE_LOCK();
-  if (!event_queue_
-           .TryPushBack(event.trace_token,
-                        event.event_type,
-                        event.module,
-                        event.trace_id,
-                        event.flags,
-                        event.data_buffer,
-                        event.data_size)
-           .ok()) {
-    // Queue full dropping sample
-    // TODO(rgoliver): Allow other strategies, for example: drop oldest, try
-    // empty queue, or block.
+  {
+    std::lock_guard lock(trace_queue_lock);
+    // Create trace event
+    if (!event_queue_
+             .TryPushBack(event.trace_token,
+                          event.event_type,
+                          event.module,
+                          event.trace_id,
+                          event.flags,
+                          event.data_buffer,
+                          event.data_size)
+             .ok()) {
+      // Queue full dropping sample
+      // TODO(rgoliver): Allow other strategies, for example: drop oldest, try
+      // empty queue, or block.
+    }
   }
-  PW_TRACE_QUEUE_UNLOCK();
 
   // Sample is now in queue (if not dropped), try to empty the queue if not
   // already being emptied.
-  if (PW_TRACE_TRY_LOCK()) {
+  if (trace_lock.try_lock()) {
     while (!event_queue_.IsEmpty()) {
       HandleNextItemInQueue(event_queue_.PeekFront());
       event_queue_.PopFront();
     }
-    PW_TRACE_UNLOCK();
+    trace_lock.unlock();
   }
 
   // Disable after processing if an event callback had set the flag.
@@ -194,7 +203,7 @@ pw::Status Callbacks::RegisterSink(SinkStartBlock start_func,
                                    void* user_data,
                                    SinkHandle* handle) {
   pw_Status status = PW_STATUS_RESOURCE_EXHAUSTED;
-  PW_TRACE_LOCK();
+  std::lock_guard lock(trace_lock);
   for (size_t sink_idx = 0; sink_idx < PW_TRACE_CONFIG_MAX_SINKS; sink_idx++) {
     if (IsSinkFree(sink_idx)) {
       sink_callbacks_[sink_idx].start_block = start_func;
@@ -208,19 +217,17 @@ pw::Status Callbacks::RegisterSink(SinkStartBlock start_func,
       break;
     }
   }
-  PW_TRACE_UNLOCK();
   return status;
 }
 
 pw::Status Callbacks::UnregisterSink(SinkHandle handle) {
-  PW_TRACE_LOCK();
+  std::lock_guard lock(trace_lock);
   if (handle >= PW_TRACE_CONFIG_MAX_SINKS) {
     return PW_STATUS_INVALID_ARGUMENT;
   }
   sink_callbacks_[handle].start_block = nullptr;
   sink_callbacks_[handle].add_bytes = nullptr;
   sink_callbacks_[handle].end_block = nullptr;
-  PW_TRACE_UNLOCK();
   return PW_STATUS_OK;
 }
 
@@ -245,7 +252,7 @@ pw::Status Callbacks::RegisterEventCallback(
     void* user_data,
     EventCallbackHandle* handle) {
   pw_Status status = PW_STATUS_RESOURCE_EXHAUSTED;
-  PW_TRACE_LOCK();
+  std::lock_guard lock(trace_lock);
   for (size_t i = 0; i < PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS; i++) {
     if (event_callbacks_[i].callback == nullptr) {
       event_callbacks_[i].callback = callback;
@@ -259,12 +266,11 @@ pw::Status Callbacks::RegisterEventCallback(
       break;
     }
   }
-  PW_TRACE_UNLOCK();
   return status;
 }
 
 pw::Status Callbacks::UnregisterEventCallback(EventCallbackHandle handle) {
-  PW_TRACE_LOCK();
+  std::lock_guard lock(trace_lock);
   if (handle >= PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS) {
     return PW_STATUS_INVALID_ARGUMENT;
   }
@@ -273,7 +279,6 @@ pw::Status Callbacks::UnregisterEventCallback(EventCallbackHandle handle) {
   called_on_every_event_count_ +=
       event_callbacks_[handle].called_on_every_event ? 1 : 0;
   event_callbacks_[handle].called_on_every_event = kCallOnlyWhenEnabled;
-  PW_TRACE_UNLOCK();
   return PW_STATUS_OK;
 }
 

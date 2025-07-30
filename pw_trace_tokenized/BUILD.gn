@@ -241,6 +241,7 @@ pw_source_set("core") {
     ":config",
     "$dir_pw_assert",
     "$dir_pw_ring_buffer",
+    "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_trace:facade",
     "$dir_pw_varint",
   ]

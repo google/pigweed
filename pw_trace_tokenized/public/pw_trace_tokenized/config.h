@@ -77,41 +77,6 @@ static_assert(
 #define PW_TRACE_CONFIG_MAX_SINKS 2
 #endif  // PW_TRACE_CONFIG_MAX_SINKS
 
-// --- Config options for locks ---
-
-// PW_TRACE_LOCK  Is is also called when registering and unregistering callbacks
-// and sinks.
-#ifndef PW_TRACE_LOCK
-#define PW_TRACE_LOCK()
-#endif  // PW_TRACE_LOCK
-
-// PW_TRACE_TRY_LOCK is is called when events need to be emptied from the queue,
-// if multiple trace events happened at the same time only one task needs to get
-// this lock and will empty the queue for all tasks, therefore there is no need
-// to block in trace events.
-// This should lock the same object as PW_TRACE_LOCK, and be unlocked using
-// PW_TRACE_UNLOCK
-// Returns true if lock was acquired and false if the lock is currently held and
-// could not be aquired.
-#ifndef PW_TRACE_TRY_LOCK
-#define PW_TRACE_TRY_LOCK() (true)  // Returns true if lock successful
-#endif                              // PW_TRACE_TRY_LOCK
-
-#ifndef PW_TRACE_UNLOCK
-#define PW_TRACE_UNLOCK()
-#endif  // PW_TRACE_UNLOCK
-
-// PW_TRACE_QUEUE_* is used to lock while queueing an event, this is a quick
-// copy operation and was designed to be suitable in a critical section to
-// avoid unneccessary blocking and task switches.
-#ifndef PW_TRACE_QUEUE_LOCK
-#define PW_TRACE_QUEUE_LOCK()
-#endif  // PW_TRACE_QUEUE_LOCK
-
-#ifndef PW_TRACE_QUEUE_UNLOCK
-#define PW_TRACE_QUEUE_UNLOCK()
-#endif  // PW_TRACE_QUEUE_UNLOCK
-
 // --- Config options for optional trace buffer ---
 
 // PW_TRACE_BUFFER_SIZE_BYTES is the size in bytes of the optional trace buffer.

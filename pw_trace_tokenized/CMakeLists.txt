@@ -61,6 +61,7 @@ pw_add_library(pw_trace_tokenized.core STATIC
     pw_trace_tokenized.config
     pw_assert
     pw_ring_buffer
+    pw_sync.interrupt_spin_lock
     pw_trace.facade
     pw_varint
     ${pw_trace_tokenizer_time}
