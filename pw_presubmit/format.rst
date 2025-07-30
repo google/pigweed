@@ -49,6 +49,9 @@ Language support:
    * - GN build files
      - ``--@pigweed//pw_presubmit/py:enable_gn_formatter``
      - ❌
+   * - Go
+     - ``--@pigweed//pw_presubmit/py:enable_go_formatter``
+     - ❌
    * - Java
      - ``--@pigweed//pw_presubmit/py:enable_java_formatter``
      - ✅

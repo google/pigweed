@@ -22,6 +22,7 @@ from pw_presubmit.format.core import FileFormatter
 from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter
+from pw_presubmit.format.go import GofmtFormatter
 from pw_presubmit.format.java import JavaFormatter
 from pw_presubmit.format.json import JsonFormatter
 from pw_presubmit.format.private.cli import FormattingSuite
@@ -110,6 +111,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             ),
             binary='gn',
             bazel_import_path='pw_presubmit.py.gn_runfiles',
+        ),
+        FormatterSetup(
+            formatter=GofmtFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='gofmt',
+            bazel_import_path='pw_presubmit.py.gofmt_runfiles',
         ),
         FormatterSetup(
             formatter=JavaScriptFormatter(

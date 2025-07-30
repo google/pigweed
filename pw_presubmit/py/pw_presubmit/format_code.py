@@ -69,6 +69,7 @@ from pw_presubmit.format.css import DEFAULT_CSS_FILE_PATTERNS
 from pw_presubmit.format import cpp
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter, DEFAULT_GN_FILE_PATTERNS
+from pw_presubmit.format.go import GofmtFormatter, DEFAULT_GO_FILE_PATTERNS
 from pw_presubmit.format.java import DEFAULT_JAVA_FILE_PATTERNS
 from pw_presubmit.format.javascript import DEFAULT_JAVASCRIPT_FILE_PATTERNS
 from pw_presubmit.format.json import (
@@ -263,19 +264,19 @@ def fix_owners_format(ctx: _Context) -> dict[Path, str]:
 
 def check_go_format(ctx: _Context) -> dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    return _check_files(
-        ctx.paths,
-        lambda path, _: log_run(
-            ['gofmt', path], stdout=subprocess.PIPE, check=True
-        ).stdout,
-        ctx.dry_run,
+    formatter = GofmtFormatter(tool_runner=PresubmitToolRunner())
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(
+            ctx.paths,
+            ctx.dry_run,
+        )
     )
 
 
 def fix_go_format(ctx: _Context) -> dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    log_run(['gofmt', '-w', *ctx.paths], check=True)
-    return {}
+    formatter = GofmtFormatter(tool_runner=PresubmitToolRunner())
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 # TODO: b/259595799 - Remove yapf support.
@@ -503,7 +504,7 @@ CSS_FORMAT: CodeFormat = CodeFormat(
 )
 
 GO_FORMAT: CodeFormat = CodeFormat(
-    'Go', FileFilter(endswith=['.go']), check_go_format, fix_go_format
+    'Go', DEFAULT_GO_FILE_PATTERNS, check_go_format, fix_go_format
 )
 
 PYTHON_FORMAT: CodeFormat = CodeFormat(

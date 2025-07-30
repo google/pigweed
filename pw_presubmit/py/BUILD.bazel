@@ -81,6 +81,7 @@ py_library(
         "pw_presubmit/format/cpp.py",
         "pw_presubmit/format/css.py",
         "pw_presubmit/format/gn.py",
+        "pw_presubmit/format/go.py",
         "pw_presubmit/format/java.py",
         "pw_presubmit/format/javascript.py",
         "pw_presubmit/format/json.py",
@@ -124,6 +125,14 @@ pw_py_importable_runfile(
 pw_py_importable_runfile(
     name = "buildifier_runfiles",
     src = "@buildifier",
+    executable = True,
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+pw_py_importable_runfile(
+    name = "gofmt_runfiles",
+    src = "@go//:bin/gofmt",
     executable = True,
     tags = ["manual"],
     visibility = ["//visibility:private"],
@@ -184,6 +193,11 @@ bool_flag(
 
 bool_flag(
     name = "enable_gn_formatter",
+    build_setting_default = False,
+)
+
+bool_flag(
+    name = "enable_go_formatter",
     build_setting_default = False,
 )
 
@@ -268,6 +282,11 @@ config_setting(
 )
 
 config_setting(
+    name = "go_formatter_is_enabled",
+    flag_values = {":enable_go_formatter": "True"},
+)
+
+config_setting(
     name = "java_formatter_is_enabled",
     flag_values = {":enable_java_formatter": "True"},
 )
@@ -341,6 +360,9 @@ write_file(
         ":gn_formatter_is_enabled": [],
         "//conditions:default": ["GN"],
     }) + select({
+        ":go_formatter_is_enabled": [],
+        "//conditions:default": ["Go"],
+    }) + select({
         ":java_formatter_is_enabled": [],
         "//conditions:default": ["Java"],
     }) + select({
@@ -399,6 +421,9 @@ pw_py_binary(
         "//conditions:default": [],
     }) + select({
         ":gn_formatter_is_enabled": [":gn_runfiles"],
+        "//conditions:default": [],
+    }) + select({
+        ":go_formatter_is_enabled": [":gofmt_runfiles"],
         "//conditions:default": [],
     }) + select({
         ":javascript_formatter_is_enabled": [":prettier_runfiles"],

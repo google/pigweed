@@ -36,6 +36,7 @@ pw_python_package("py") {
     "pw_presubmit/format/cpp.py",
     "pw_presubmit/format/css.py",
     "pw_presubmit/format/gn.py",
+    "pw_presubmit/format/go.py",
     "pw_presubmit/format/java.py",
     "pw_presubmit/format/javascript.py",
     "pw_presubmit/format/json.py",

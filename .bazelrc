@@ -22,6 +22,7 @@ common --enable_workspace
 
 # Enable all desired formatters.
 common --//pw_presubmit/py:enable_gn_formatter=True
+common --//pw_presubmit/py:enable_go_formatter=True
 common --//pw_presubmit/py:enable_javascript_formatter=True
 common --//pw_presubmit/py:enable_typescript_formatter=True
 

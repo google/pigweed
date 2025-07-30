@@ -411,6 +411,13 @@ cipd_repository(
     tag = "git_revision:97b68a0bb62b7528bc3491c7949d6804223c2b82",
 )
 
+# This is only used to get access to gofmt for code formatting.
+cipd_repository(
+    name = "go",
+    path = "infra/3pp/tools/go/${platform}",
+    tag = "version:3@1.24.5",
+)
+
 # Set up legacy pw_transfer test binaries.
 # Required by: pigweed.
 # Used in modules: //pw_transfer.
