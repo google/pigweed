@@ -202,6 +202,10 @@
             "test",
             "--platforms=//pw_grpc:test_platform",
             "//pw_grpc/..."
+          ],
+          [
+            "build",
+            "//docs"
           ]
         ],
         "docs": [
