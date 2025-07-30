@@ -30,13 +30,6 @@ template("fuzztest_source_set") {
     remove_configs = []
     forward_variables_from(invoker, "*")
     public_configs += [ "$pw_external_fuzztest:fuzztest_public_config" ]
-    remove_configs += [
-      "$dir_pw_fuzzer:instrumentation",
-      "$dir_pw_toolchain/host_clang:sanitize_address",
-      "$dir_pw_toolchain/host_clang:sanitize_memory",
-      "$dir_pw_toolchain/host_clang:sanitize_undefined",
-      "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
-      "$dir_pw_toolchain/host_clang:sanitize_thread",
-    ]
+    remove_configs += [ "$dir_pw_fuzzer:instrumentation" ]
   }
 }
