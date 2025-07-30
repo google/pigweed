@@ -30,7 +30,8 @@ export const clangdPath = () => {
   const args = ['cquery', createClangdSymlinkTarget, '--output=files'];
   logger.info(`Running ${cmd} ${args.join(' ')}`);
   const result = child_process.spawnSync(cmd, args, { cwd: workingDir.get() });
-  const clangPath = result.stdout.toString().trim();
+  // Sometimes the stdout has more than just path (like in fish shell).
+  const clangPath = result.stdout.toString().trim().split('\n').pop()!;
   logger.info('clangPath resolves to ' + clangPath);
   if (existsSync(path.join(workingDir.get(), clangPath))) {
     return path.join(workingDir.get(), clangPath);
