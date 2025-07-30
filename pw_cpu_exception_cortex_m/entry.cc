@@ -145,12 +145,12 @@ extern "C" {
 PW_USED void pw_PackageAndHandleCpuException(
     pw_cpu_exception_State* cpu_state) {
   // Capture memory mapped registers.
-  cpu_state->extended.cfsr = cortex_m_cfsr;
-  cpu_state->extended.mmfar = cortex_m_mmfar;
-  cpu_state->extended.bfar = cortex_m_bfar;
-  cpu_state->extended.icsr = cortex_m_icsr;
-  cpu_state->extended.hfsr = cortex_m_hfsr;
-  cpu_state->extended.shcsr = cortex_m_shcsr;
+  cpu_state->extended.cfsr = cortex_m_cfsr();
+  cpu_state->extended.mmfar = cortex_m_mmfar();
+  cpu_state->extended.bfar = cortex_m_bfar();
+  cpu_state->extended.icsr = cortex_m_icsr();
+  cpu_state->extended.hfsr = cortex_m_hfsr();
+  cpu_state->extended.shcsr = cortex_m_shcsr();
 
   // CPU may have automatically pushed state to the program stack. If it did,
   // the values can be copied into in the pw_cpu_exception_State struct that is

@@ -267,7 +267,7 @@ void BeginExtendedFaultUnalignedStackTest() {
 }
 
 void EnableAllFaultHandlers() {
-  cortex_m_shcsr |=
+  cortex_m_shcsr() |=
       kMemFaultEnableMask | kBusFaultEnableMask | kUsageFaultEnableMask;
 }
 
@@ -485,22 +485,22 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
 
   // Clear HFSR forced (nested) hard fault mask if set. This will only be
   // set by the nested fault test.
-  EXPECT_EQ(state->extended.hfsr, cortex_m_hfsr);
-  if (cortex_m_hfsr & kHfsrForcedMask) {
-    cortex_m_hfsr = kHfsrForcedMask;
+  EXPECT_EQ(state->extended.hfsr, cortex_m_hfsr());
+  if (cortex_m_hfsr() & kHfsrForcedMask) {
+    cortex_m_hfsr() = kHfsrForcedMask;
   }
 
-  if (cortex_m_cfsr & kCfsrUnalignedMask) {
+  if (cortex_m_cfsr() & kCfsrUnalignedMask) {
     // Copy captured state to check later.
     std::memcpy(&captured_states[exceptions_handled],
                 state,
                 sizeof(pw_cpu_exception_State));
 
     // Disable unaligned read/write trapping to "handle" exception.
-    cortex_m_cfsr = kCfsrUnalignedMask;
+    cortex_m_cfsr() = kCfsrUnalignedMask;
     exceptions_handled++;
     return;
-  } else if (cortex_m_cfsr & kCfsrDivbyzeroMask) {
+  } else if (cortex_m_cfsr() & kCfsrDivbyzeroMask) {
     // Copy captured state to check later.
     std::memcpy(&captured_states[exceptions_handled],
                 state,
@@ -516,12 +516,12 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
     }
 
     // Disable divide-by-zero trapping to "handle" exception.
-    cortex_m_cfsr = kCfsrDivbyzeroMask;
+    cortex_m_cfsr() = kCfsrDivbyzeroMask;
     exceptions_handled++;
     return;
   }
 
-  EXPECT_EQ(state->extended.shcsr, cortex_m_shcsr);
+  EXPECT_EQ(state->extended.shcsr, cortex_m_shcsr());
 
   // If an unexpected exception occurred, just enter an infinite loop.
   InfiniteLoop();

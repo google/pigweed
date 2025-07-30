@@ -298,7 +298,7 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
 
   exceptions_handled++;
 
-  EXPECT_EQ(state->extended.shcsr, cortex_m_shcsr);
+  EXPECT_EQ(state->extended.shcsr, cortex_m_shcsr());
 }
 
 }  // namespace
