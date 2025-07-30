@@ -32,6 +32,8 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
       pw_chrono.system_timer pw_chrono_zephyr.system_timer pw_chrono/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_INTERRUPT_CONTEXT
       pw_interrupt.context pw_interrupt_zephyr.context pw_interrupt/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_LOG_STRING
+      pw_log pw_log_string pw_log/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_LOG_ZEPHYR
       pw_log pw_log_zephyr pw_log/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_LOG_TOKENIZED

@@ -14,6 +14,16 @@
 
 menu "pw_log"
 
+config PIGWEED_LOG_PIGWEED_OVERRIDES
+    bool
+    select LOG_CUSTOM_HEADER
+    imply SHELL_CUSTOM_HEADER
+    help
+      Map all the Zephyr log macros to use Pigweed's PW_LOG* macros, so that
+      all logs are consumed by the same log backend, provided by the user. The
+      user must also provide the log backend header indirection.
+      Use PIGWEED_LOG_PIGWEED if PIGWEED_LOG is enabled.
+
 choice PIGWEED_LOG
     prompt "Logging backend used"
     default PIGWEED_LOG_ZEPHYR if CPP
@@ -28,7 +38,7 @@ config PIGWEED_LOG_NONE
       PW_LOG_ statements will not work.
 
 config PIGWEED_LOG_ZEPHYR
-    bool "Zephyr logging for PW_LOG_* statements"
+    bool "Maps all PW_LOG_* macros to Zephyr log macros"
     select PIGWEED_PREPROCESSOR
     help
       Once the Pigweed logging is enabled, all Pigweed logs via PW_LOG_*() will
@@ -40,14 +50,27 @@ config PIGWEED_LOG_ZEPHYR
       - :c:macro:`PW_LOG_LEVEL_CRITICAL` maps to Zephyr's LOG_LEVEL_ERR
       - :c:macro:`PW_LOG_LEVEL_FATAL` maps to Zephyr's LOG_LEVEL_ERR
 
+config PIGWEED_LOG_PIGWEED
+    bool "Maps all Zephyr log macros to PW_LOG_* macros unifying their handling"
+    select PIGWEED_LOG_PIGWEED_OVERRIDES
+    help
+      Same as PIGWEED_LOG_PIGWEED_OVERRIDES.
+
+config PIGWEED_LOG_STRING
+    bool "All logs are strings and implement your own pw_log_string_HandleMessageVaList"
+    select PIGWEED_LOG_PIGWEED_OVERRIDES
+    help
+      Map all the Zephyr log macros to use Pigweed's then use the
+      :ref:`module-pw_log_string` target as to receive the logs as strings.
+      Users must provide pw_log_string_HandleMessageVaList
+
 menuconfig PIGWEED_LOG_TOKENIZED
-    bool "Maps all Zephyr log macros to tokenized PW_LOG_* macros"
+    bool "Maps all Zephyr log macros to pw_tokenizer"
+    select PIGWEED_LOG_PIGWEED_OVERRIDES
     select PIGWEED_PREPROCESSOR
     select PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
     select PIGWEED_SYS_IO
     select PIGWEED_TOKENIZER
-    select LOG_CUSTOM_HEADER
-    select SHELL_CUSTOM_HEADER
     help
       Map all the Zephyr log macros to use Pigweed's then use the
       :ref:`module-pw_log_tokenized` target as the logging backend in order to
@@ -56,9 +79,8 @@ menuconfig PIGWEED_LOG_TOKENIZED
 
 config PIGWEED_LOG_TOKENIZED_LIB
     bool "Tokenize logging and implement your own pw_log_tokenized_HandleLog"
+    select PIGWEED_LOG_PIGWEED_OVERRIDES
     select PIGWEED_TOKENIZER
-    select LOG_CUSTOM_HEADER
-    select SHELL_CUSTOM_HEADER
     help
       Same as PIGWEED_LOG_TOKENIZED but you'll need to implement
       pw_log_tokenized_HandleLog. This gives you flexiblity to access handlers
@@ -89,7 +111,7 @@ menuconfig PIGWEED_LOG_TOKENIZED_RPC
 
 endchoice
 
-if PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED || PIGWEED_LOG_TOKENIZED_RPC
+if !PIGWEED_LOG_NONE
 
 choice "PIGWEED_LOG_LEVEL_CHOICE"
 	prompt "Max compiled-in log level for pigweed"
@@ -138,7 +160,7 @@ config PIGWEED_LOG_LEVEL
 	default 4 if PIGWEED_LOG_LEVEL_DBG
 	default LOG_DEFAULT_LEVEL if PIGWEED_LOG_LEVEL_DEFAULT
 
-endif # PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED || PIGWEED_LOG_TOKENIZED_RPC
+endif # !PIGWEED_LOG_NONE
 
 if PIGWEED_LOG_TOKENIZED
 rsource "Kconfig.tokenized"
