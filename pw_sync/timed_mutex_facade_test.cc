@@ -19,10 +19,13 @@
 #include "pw_sync/timed_mutex.h"
 #include "pw_unit_test/framework.h"
 
-using pw::chrono::SystemClock;
 using namespace std::chrono_literals;
 
-namespace pw::sync {
+using pw::chrono::SystemClock;
+using pw::sync::TimedMutex;
+using pw::sync::VirtualTimedMutex;
+using pw::sync::test::TimedBorrowTest;
+
 namespace {
 
 extern "C" {
@@ -48,7 +51,7 @@ constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
 
 // TODO: b/235284163 - Add real concurrency tests once we have pw::thread.
 
-TEST(TimedMutex, LockUnlock) {
+TEST(TimedMutexTest, LockUnlock) {
   TimedMutex mutex;
   mutex.lock();
   mutex.unlock();
@@ -58,7 +61,7 @@ TEST(TimedMutex, LockUnlock) {
 }
 
 TimedMutex static_mutex;
-TEST(TimedMutex, LockUnlockStatic) {
+TEST(TimedMutexTest, LockUnlockStatic) {
   static_mutex.lock();
   static_mutex.unlock();
   // TODO: b/235284163 - Ensure it fails to lock when already held by someone
@@ -66,7 +69,7 @@ TEST(TimedMutex, LockUnlockStatic) {
   // EXPECT_FALSE(static_mutex.try_lock());
 }
 
-TEST(TimedMutex, TryLockUnlock) {
+TEST(TimedMutexTest, TryLockUnlock) {
   TimedMutex mutex;
   const bool locked = mutex.try_lock();
   EXPECT_TRUE(locked);
@@ -78,7 +81,7 @@ TEST(TimedMutex, TryLockUnlock) {
   // else.
 }
 
-TEST(TimedMutex, TryLockUnlockFor) {
+TEST(TimedMutexTest, TryLockUnlockFor) {
   TimedMutex mutex;
 
   SystemClock::time_point before = SystemClock::now();
@@ -97,7 +100,7 @@ TEST(TimedMutex, TryLockUnlockFor) {
   // held by someone else and a negative duration is used.
 }
 
-TEST(TimedMutex, TryLockUnlockUntil) {
+TEST(TimedMutexTest, TryLockUnlockUntil) {
   TimedMutex mutex;
 
   const SystemClock::time_point deadline =
@@ -117,7 +120,7 @@ TEST(TimedMutex, TryLockUnlockUntil) {
 }
 
 // Unit tests for a `Borrowable`that uses a `TimedMutex` as its lock.
-using TimedMutexBorrowTest = test::TimedBorrowTest<TimedMutex>;
+using TimedMutexBorrowTest = TimedBorrowTest<TimedMutex>;
 
 TEST_F(TimedMutexBorrowTest, Acquire) { TestAcquire(); }
 
@@ -151,7 +154,7 @@ TEST_F(TimedMutexBorrowTest, TryAcquireUntilFailure) {
   TestTryAcquireUntilFailure(kRoundedArbitraryDuration);
 }
 
-TEST(VirtualTimedMutex, LockUnlock) {
+TEST(VirtualTimedMutexTest, LockUnlock) {
   VirtualTimedMutex mutex;
   mutex.lock();
   // TODO: b/235284163 - Ensure it fails to lock when already held by someone
@@ -161,7 +164,7 @@ TEST(VirtualTimedMutex, LockUnlock) {
 }
 
 VirtualTimedMutex static_virtual_mutex;
-TEST(VirtualTimedMutex, LockUnlockStatic) {
+TEST(VirtualTimedMutexTest, LockUnlockStatic) {
   static_virtual_mutex.lock();
   // TODO: b/235284163 - Ensure it fails to lock when already held by someone
   // else.
@@ -169,7 +172,7 @@ TEST(VirtualTimedMutex, LockUnlockStatic) {
   static_virtual_mutex.unlock();
 }
 
-TEST(VirtualMutex, LockUnlockExternal) {
+TEST(VirtualTimedMutexTest, LockUnlockExternal) {
   VirtualTimedMutex virtual_timed_mutex;
   auto& mutex = virtual_timed_mutex.timed_mutex();
   mutex.lock();
@@ -179,7 +182,7 @@ TEST(VirtualMutex, LockUnlockExternal) {
 }
 
 // Unit tests for a `Borrowable`that uses a `VirtualTimedMutex` as its lock.
-using VirtualTimedMutexBorrowTest = test::TimedBorrowTest<VirtualTimedMutex>;
+using VirtualTimedMutexBorrowTest = TimedBorrowTest<VirtualTimedMutex>;
 
 TEST_F(VirtualTimedMutexBorrowTest, Acquire) { TestAcquire(); }
 
@@ -219,13 +222,13 @@ TEST_F(VirtualTimedMutexBorrowTest, TryAcquireUntilFailure) {
   TestTryAcquireUntilFailure(kRoundedArbitraryDuration);
 }
 
-TEST(TimedMutex, LockUnlockInC) {
+TEST(TimedMutexTest, LockUnlockInC) {
   TimedMutex mutex;
   pw_sync_TimedMutex_CallLock(&mutex);
   pw_sync_TimedMutex_CallUnlock(&mutex);
 }
 
-TEST(TimedMutex, TryLockUnlockInC) {
+TEST(TimedMutexTest, TryLockUnlockInC) {
   TimedMutex mutex;
   ASSERT_TRUE(pw_sync_TimedMutex_CallTryLock(&mutex));
   // TODO: b/235284163 - Ensure it fails to lock when already held by someone
@@ -234,7 +237,7 @@ TEST(TimedMutex, TryLockUnlockInC) {
   pw_sync_TimedMutex_CallUnlock(&mutex);
 }
 
-TEST(TimedMutex, TryLockUnlockForInC) {
+TEST(TimedMutexTest, TryLockUnlockForInC) {
   TimedMutex mutex;
 
   pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
@@ -252,7 +255,7 @@ TEST(TimedMutex, TryLockUnlockForInC) {
   // held by someone else and a negative duration is used.
 }
 
-TEST(TimedMutex, TryLockUnlockUntilInC) {
+TEST(TimedMutexTest, TryLockUnlockUntilInC) {
   TimedMutex mutex;
   pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
@@ -271,4 +274,3 @@ TEST(TimedMutex, TryLockUnlockUntilInC) {
 }
 
 }  // namespace
-}  // namespace pw::sync

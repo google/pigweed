@@ -18,7 +18,10 @@
 #include "pw_sync/test/borrow_testing.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::sync {
+using pw::sync::Mutex;
+using pw::sync::VirtualMutex;
+using pw::sync::test::BorrowTest;
+
 namespace {
 
 extern "C" {
@@ -32,7 +35,7 @@ void pw_sync_Mutex_CallUnlock(pw_sync_Mutex* mutex);
 
 // TODO: b/235284163 - Add real concurrency tests once we have pw::thread.
 
-TEST(Mutex, LockUnlock) {
+TEST(MutexTest, LockUnlock) {
   Mutex mutex;
   mutex.lock();
   // TODO: b/235284163 - Ensure it fails to lock when already held.
@@ -41,14 +44,14 @@ TEST(Mutex, LockUnlock) {
 }
 
 Mutex static_mutex;
-TEST(Mutex, LockUnlockStatic) {
+TEST(MutexTest, LockUnlockStatic) {
   static_mutex.lock();
   // TODO: b/235284163 - Ensure it fails to lock when already held.
   // EXPECT_FALSE(static_mutex.try_lock());
   static_mutex.unlock();
 }
 
-TEST(Mutex, TryLockUnlock) {
+TEST(MutexTest, TryLockUnlock) {
   Mutex mutex;
   const bool locked = mutex.try_lock();
   EXPECT_TRUE(locked);
@@ -60,7 +63,7 @@ TEST(Mutex, TryLockUnlock) {
 }
 
 // Unit tests for a `Borrowable`that uses a `Mutex` as its lock.
-using MutexBorrowTest = test::BorrowTest<Mutex>;
+using MutexBorrowTest = BorrowTest<Mutex>;
 
 TEST_F(MutexBorrowTest, Acquire) { TestAcquire(); }
 
@@ -78,7 +81,7 @@ TEST_F(MutexBorrowTest, TryAcquireSuccess) { TestTryAcquireSuccess(); }
 
 TEST_F(MutexBorrowTest, TryAcquireFailure) { TestTryAcquireFailure(); }
 
-TEST(VirtualMutex, LockUnlock) {
+TEST(VirtualMutexTest, LockUnlock) {
   VirtualMutex mutex;
   mutex.lock();
   // TODO: b/235284163 - Ensure it fails to lock when already held.
@@ -87,14 +90,14 @@ TEST(VirtualMutex, LockUnlock) {
 }
 
 VirtualMutex static_virtual_mutex;
-TEST(VirtualMutex, LockUnlockStatic) {
+TEST(VirtualMutexTest, LockUnlockStatic) {
   static_virtual_mutex.lock();
   // TODO: b/235284163 - Ensure it fails to lock when already held.
   // EXPECT_FALSE(static_virtual_mutex.try_lock());
   static_virtual_mutex.unlock();
 }
 
-TEST(VirtualMutex, LockUnlockExternal) {
+TEST(VirtualMutexTest, LockUnlockExternal) {
   VirtualMutex virtual_mutex;
   auto& mutex = virtual_mutex.mutex();
   mutex.lock();
@@ -104,7 +107,7 @@ TEST(VirtualMutex, LockUnlockExternal) {
 }
 
 // Unit tests for a `Borrowable`that uses a `VirtualMutex` as its lock.
-using VirtualMutexBorrowTest = test::BorrowTest<VirtualMutex>;
+using VirtualMutexBorrowTest = BorrowTest<VirtualMutex>;
 
 TEST_F(VirtualMutexBorrowTest, Acquire) { TestAcquire(); }
 
@@ -122,13 +125,13 @@ TEST_F(VirtualMutexBorrowTest, TryAcquireSuccess) { TestTryAcquireSuccess(); }
 
 TEST_F(VirtualMutexBorrowTest, TryAcquireFailure) { TestTryAcquireFailure(); }
 
-TEST(Mutex, LockUnlockInC) {
+TEST(MutexTest, LockUnlockInC) {
   Mutex mutex;
   pw_sync_Mutex_CallLock(&mutex);
   pw_sync_Mutex_CallUnlock(&mutex);
 }
 
-TEST(Mutex, TryLockUnlockInC) {
+TEST(MutexTest, TryLockUnlockInC) {
   Mutex mutex;
   ASSERT_TRUE(pw_sync_Mutex_CallTryLock(&mutex));
   // TODO: b/235284163 - Ensure it fails to lock when already held.
@@ -137,4 +140,3 @@ TEST(Mutex, TryLockUnlockInC) {
 }
 
 }  // namespace
-}  // namespace pw::sync

@@ -18,10 +18,11 @@
 #include "pw_sync/counting_semaphore.h"
 #include "pw_unit_test/framework.h"
 
-using pw::chrono::SystemClock;
 using namespace std::chrono_literals;
 
-namespace pw::sync {
+using pw::chrono::SystemClock;
+using pw::sync::CountingSemaphore;
+
 namespace {
 
 extern "C" {
@@ -326,4 +327,3 @@ TEST(CountingSemaphore, MaxInC) {
 }
 
 }  // namespace
-}  // namespace pw::sync

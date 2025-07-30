@@ -25,7 +25,10 @@
 #include "pw_thread/thread.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::sync {
+using pw::sync::ConditionVariable;
+using pw::sync::Mutex;
+using pw::sync::TimedThreadNotification;
+
 namespace {
 
 using namespace std::chrono_literals;
@@ -342,4 +345,3 @@ TEST(WaitUntil, TimeoutApproximatelyCorrect) {
 }
 
 }  // namespace
-}  // namespace pw::sync

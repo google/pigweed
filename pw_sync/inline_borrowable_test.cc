@@ -23,10 +23,14 @@
 #include "pw_sync/mutex.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::sync {
-namespace {
-
 using namespace std::chrono_literals;
+
+using pw::sync::BorrowedPointer;
+using pw::sync::InlineBorrowable;
+using pw::sync::Mutex;
+using pw::sync::VirtualInterruptSpinLock;
+
+namespace {
 
 // A trivial type that is copyable and movable.
 struct TrivialType {
@@ -71,7 +75,7 @@ class PW_LOCKABLE("VirtualCustomMutex") VirtualCustomMutex
   int id() const { return id_; }
 
  private:
-  pw::sync::Mutex mutex_;
+  Mutex mutex_;
   int id_;
 };
 
@@ -221,4 +225,3 @@ TEST_F(InlineBorrowableReferenceTypesTest, TestFromFactory) {
 }
 
 }  // namespace
-}  // namespace pw::sync

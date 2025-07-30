@@ -18,10 +18,11 @@
 #include "pw_sync/binary_semaphore.h"
 #include "pw_unit_test/framework.h"
 
-using pw::chrono::SystemClock;
 using namespace std::chrono_literals;
 
-namespace pw::sync {
+using pw::chrono::SystemClock;
+using pw::sync::BinarySemaphore;
+
 namespace {
 
 extern "C" {
@@ -295,4 +296,3 @@ TEST(BinarySemaphore, MaxInC) {
 }
 
 }  // namespace
-}  // namespace pw::sync

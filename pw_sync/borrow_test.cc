@@ -20,14 +20,25 @@
 
 using namespace std::chrono_literals;
 
-namespace pw::sync::test {
+using pw::chrono::SystemClock;
+using pw::sync::Borrowable;
+using pw::sync::BorrowedPointer;
+using pw::sync::VirtualBasicLockable;
+using pw::sync::test::BaseObj;
+using pw::sync::test::BorrowTest;
+using pw::sync::test::Derived;
+using pw::sync::test::FakeBasicLockable;
+using pw::sync::test::FakeLockable;
+using pw::sync::test::FakeTimedLockable;
+using pw::sync::test::TimedBorrowTest;
+
 namespace {
 
 // We can't control the SystemClock's period configuration, so just in case
 // duration cannot be accurately expressed in integer ticks, round the
 // duration up.
-constexpr chrono::SystemClock::duration kRoundedArbitraryDuration =
-    chrono::SystemClock::for_at_least(42ms);
+constexpr SystemClock::duration kRoundedArbitraryDuration =
+    SystemClock::for_at_least(42ms);
 
 TEST(BorrowedPointerTest, MoveConstruct) {
   Derived derived(1);
@@ -124,4 +135,3 @@ TEST_F(FakeTimedLockableBorrowTest, TryAcquireUntilFailure) {
 }
 
 }  // namespace
-}  // namespace pw::sync::test

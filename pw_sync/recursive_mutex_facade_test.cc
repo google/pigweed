@@ -17,7 +17,8 @@
 #include "pw_sync/recursive_mutex.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::sync {
+using pw::sync::RecursiveMutex;
+
 namespace {
 
 extern "C" {
@@ -31,7 +32,7 @@ void pw_sync_RecursiveMutex_CallUnlock(pw_sync_RecursiveMutex* mutex);
 
 // TODO: b/235284163 - Add real concurrency tests once we have pw::thread.
 
-TEST(RecursiveMutex, LockUnlock) PW_NO_LOCK_SAFETY_ANALYSIS {
+TEST(RecursiveMutexTest, LockUnlock) PW_NO_LOCK_SAFETY_ANALYSIS {
   pw::sync::RecursiveMutex mutex;
   for (int i = 0; i < 10; ++i) {
     mutex.lock();
@@ -43,7 +44,7 @@ TEST(RecursiveMutex, LockUnlock) PW_NO_LOCK_SAFETY_ANALYSIS {
 }
 
 RecursiveMutex static_mutex;
-TEST(RecursiveMutex, LockUnlockStatic) PW_NO_LOCK_SAFETY_ANALYSIS {
+TEST(RecursiveMutexTest, LockUnlockStatic) PW_NO_LOCK_SAFETY_ANALYSIS {
   static_mutex.lock();
   for (int i = 0; i < 10; ++i) {
     EXPECT_TRUE(static_mutex.try_lock());
@@ -54,7 +55,7 @@ TEST(RecursiveMutex, LockUnlockStatic) PW_NO_LOCK_SAFETY_ANALYSIS {
   static_mutex.unlock();  // undo the inital lock() call
 }
 
-TEST(RecursiveMutex, TryLockUnlock) PW_NO_LOCK_SAFETY_ANALYSIS {
+TEST(RecursiveMutexTest, TryLockUnlock) PW_NO_LOCK_SAFETY_ANALYSIS {
   pw::sync::RecursiveMutex mutex;
   ASSERT_TRUE(mutex.try_lock());
 
@@ -67,7 +68,7 @@ TEST(RecursiveMutex, TryLockUnlock) PW_NO_LOCK_SAFETY_ANALYSIS {
   mutex.unlock();
 }
 
-TEST(RecursiveMutex, LockUnlockInC) {
+TEST(RecursiveMutexTest, LockUnlockInC) {
   pw::sync::RecursiveMutex mutex;
 
   pw_sync_RecursiveMutex_CallLock(&mutex);
@@ -79,7 +80,7 @@ TEST(RecursiveMutex, LockUnlockInC) {
   pw_sync_RecursiveMutex_CallUnlock(&mutex);
 }
 
-TEST(RecursiveMutex, TryLockUnlockInC) {
+TEST(RecursiveMutexTest, TryLockUnlockInC) {
   pw::sync::RecursiveMutex mutex;
   ASSERT_TRUE(pw_sync_RecursiveMutex_CallTryLock(&mutex));
 
@@ -93,4 +94,3 @@ TEST(RecursiveMutex, TryLockUnlockInC) {
 }
 
 }  // namespace
-}  // namespace pw::sync

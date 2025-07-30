@@ -16,11 +16,12 @@
 #include "pw_sync/thread_notification.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::sync {
+using pw::sync::ThreadNotification;
+
 namespace {
 
 // Test fixture used to release the notification.
-class ThreadNotificationTest : public test::OptionallyThreadedTest {
+class ThreadNotificationTest : public pw::sync::test::OptionallyThreadedTest {
  protected:
   void ReleaseTwice(ThreadNotification& notification) {
     notification_ = &notification;
@@ -64,4 +65,3 @@ TEST_F(ThreadNotificationTest, ReleaseStatic) {
 }
 
 }  // namespace
-}  // namespace pw::sync

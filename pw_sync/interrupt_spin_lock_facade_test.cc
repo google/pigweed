@@ -16,7 +16,10 @@
 #include "pw_sync/test/borrow_testing.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::sync {
+using pw::sync::InterruptSpinLock;
+using pw::sync::VirtualInterruptSpinLock;
+using pw::sync::test::BorrowTest;
+
 namespace {
 
 extern "C" {
@@ -32,8 +35,8 @@ void pw_sync_InterruptSpinLock_CallUnlock(
 
 }  // extern "C"
 
-TEST(InterruptSpinLock, LockUnlock) {
-  pw::sync::InterruptSpinLock interrupt_spin_lock;
+TEST(InterruptSpinLockTest, LockUnlock) {
+  InterruptSpinLock interrupt_spin_lock;
   interrupt_spin_lock.lock();
   interrupt_spin_lock.unlock();
 }
@@ -42,15 +45,15 @@ TEST(InterruptSpinLock, LockUnlock) {
 // systems given that uniprocessor systems cannot fail to acquire an ISL.
 
 InterruptSpinLock static_interrupt_spin_lock;
-TEST(InterruptSpinLock, LockUnlockStatic) {
+TEST(InterruptSpinLockTest, LockUnlockStatic) {
   static_interrupt_spin_lock.lock();
   // TODO: b/235284163 - Ensure other cores fail to lock when its locked.
   // EXPECT_FALSE(static_interrupt_spin_lock.try_lock());
   static_interrupt_spin_lock.unlock();
 }
 
-TEST(InterruptSpinLock, TryLockUnlock) {
-  pw::sync::InterruptSpinLock interrupt_spin_lock;
+TEST(InterruptSpinLockTest, TryLockUnlock) {
+  InterruptSpinLock interrupt_spin_lock;
   const bool locked = interrupt_spin_lock.try_lock();
   EXPECT_TRUE(locked);
   if (locked) {
@@ -61,7 +64,7 @@ TEST(InterruptSpinLock, TryLockUnlock) {
 }
 
 // Unit tests for a `Borrowable`that uses a `InterruptSpinLock` as its lock.
-using InterruptSpinLockBorrowTest = test::BorrowTest<InterruptSpinLock>;
+using InterruptSpinLockBorrowTest = BorrowTest<InterruptSpinLock>;
 
 TEST_F(InterruptSpinLockBorrowTest, Acquire) { TestAcquire(); }
 
@@ -85,8 +88,8 @@ TEST_F(InterruptSpinLockBorrowTest, TryAcquireFailure) {
   TestTryAcquireFailure();
 }
 
-TEST(VirtualInterruptSpinLock, LockUnlock) {
-  pw::sync::VirtualInterruptSpinLock interrupt_spin_lock;
+TEST(VirtualInterruptSpinLockTest, LockUnlock) {
+  VirtualInterruptSpinLock interrupt_spin_lock;
   interrupt_spin_lock.lock();
   // TODO: b/235284163 - Ensure other cores fail to lock when its locked.
   // EXPECT_FALSE(interrupt_spin_lock.try_lock());
@@ -94,7 +97,7 @@ TEST(VirtualInterruptSpinLock, LockUnlock) {
 }
 
 VirtualInterruptSpinLock static_virtual_interrupt_spin_lock;
-TEST(VirtualInterruptSpinLock, LockUnlockStatic) {
+TEST(VirtualInterruptSpinLockTest, LockUnlockStatic) {
   static_virtual_interrupt_spin_lock.lock();
   // TODO: b/235284163 - Ensure other cores fail to lock when its locked.
   // EXPECT_FALSE(static_virtual_interrupt_spin_lock.try_lock());
@@ -103,8 +106,7 @@ TEST(VirtualInterruptSpinLock, LockUnlockStatic) {
 
 // Unit tests for a `Borrowable`that uses a `VirtualInterruptSpinLock` as its
 // lock.
-using VirtualInterruptSpinLockBorrowTest =
-    test::BorrowTest<VirtualInterruptSpinLock>;
+using VirtualInterruptSpinLockBorrowTest = BorrowTest<VirtualInterruptSpinLock>;
 
 TEST_F(VirtualInterruptSpinLockBorrowTest, Acquire) { TestAcquire(); }
 
@@ -130,14 +132,14 @@ TEST_F(VirtualInterruptSpinLockBorrowTest, TryAcquireFailure) {
   TestTryAcquireFailure();
 }
 
-TEST(InterruptSpinLock, LockUnlockInC) {
-  pw::sync::InterruptSpinLock interrupt_spin_lock;
+TEST(InterruptSpinLockTest, LockUnlockInC) {
+  InterruptSpinLock interrupt_spin_lock;
   pw_sync_InterruptSpinLock_CallLock(&interrupt_spin_lock);
   pw_sync_InterruptSpinLock_CallUnlock(&interrupt_spin_lock);
 }
 
-TEST(InterruptSpinLock, TryLockUnlockInC) {
-  pw::sync::InterruptSpinLock interrupt_spin_lock;
+TEST(InterruptSpinLockTest, TryLockUnlockInC) {
+  InterruptSpinLock interrupt_spin_lock;
   ASSERT_TRUE(pw_sync_InterruptSpinLock_CallTryLock(&interrupt_spin_lock));
   // TODO: b/235284163 - Ensure other cores fail to lock when its locked.
   // EXPECT_FALSE(pw_sync_InterruptSpinLock_CallTryLock(&interrupt_spin_lock));
@@ -145,4 +147,3 @@ TEST(InterruptSpinLock, TryLockUnlockInC) {
 }
 
 }  // namespace
-}  // namespace pw::sync
