@@ -76,6 +76,9 @@ Language support:
    * - Rust
      - ``--@pigweed//pw_presubmit/py:enable_rust_formatter``
      - ❌
+   * - Starlark
+     - ``--@pigweed//pw_presubmit/py:enable_starlark_formatter``
+     - ✅
    * - TypeScript
      - ``--@pigweed//pw_presubmit/py:enable_typescript_formatter``
      - ❌

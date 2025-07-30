@@ -31,6 +31,7 @@ from pw_presubmit.format.javascript import JavaScriptFormatter
 from pw_presubmit.format.python import BlackFormatter
 from pw_presubmit.format.rst import RstFormatter
 from pw_presubmit.format.rust import RustfmtFormatter
+from pw_presubmit.format.starlark import StarlarkFormatter
 from pw_presubmit.format.typescript import TypeScriptFormatter
 from pw_presubmit.format.cmake import CmakeFormatter
 from pw_presubmit.format.css import CssFormatter
@@ -165,6 +166,13 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             ),
             binary='rustfmt',
             bazel_import_path='pw_presubmit.py.rustfmt_runfiles',
+        ),
+        FormatterSetup(
+            formatter=StarlarkFormatter(
+                tool_runner=runfiles,
+            ),
+            binary='buildifier',
+            bazel_import_path='pw_presubmit.py.buildifier_runfiles',
         ),
         FormatterSetup(
             formatter=TypeScriptFormatter(

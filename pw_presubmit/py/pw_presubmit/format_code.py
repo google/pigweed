@@ -94,6 +94,7 @@ from pw_presubmit.format.rst import (
     RstFormatter,
     DEFAULT_RST_FILE_PATTERNS,
 )
+from pw_presubmit.format.starlark import DEFAULT_STARLARK_FILE_PATTERNS
 from pw_presubmit.format.typescript import DEFAULT_TYPESCRIPT_FILE_PATTERNS
 from pw_presubmit.format.whitespace import TrailingSpaceFormatter
 from pw_presubmit.tools import (
@@ -525,7 +526,7 @@ BAZEL_FORMAT: CodeFormat = CodeFormat(
 
 COPYBARA_FORMAT: CodeFormat = CodeFormat(
     'Copybara',
-    FileFilter(endswith=['.bara.sky']),
+    DEFAULT_STARLARK_FILE_PATTERNS,
     check_bazel_format,
     fix_bazel_format,
 )

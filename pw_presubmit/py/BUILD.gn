@@ -49,6 +49,7 @@ pw_python_package("py") {
     "pw_presubmit/format/python.py",
     "pw_presubmit/format/rst.py",
     "pw_presubmit/format/rust.py",
+    "pw_presubmit/format/starlark.py",
     "pw_presubmit/format/test_data/__init__.py",
     "pw_presubmit/format/typescript.py",
     "pw_presubmit/format/whitespace.py",
