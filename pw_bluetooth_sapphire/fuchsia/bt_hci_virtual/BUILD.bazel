@@ -62,7 +62,6 @@ fuchsia_cc_library(
         "//pw_bluetooth_sapphire/fuchsia/host/fidl:helpers",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/testing:fake_controller",
-        "//pw_log_fuchsia",
         "//pw_random_fuchsia:zircon_random_generator",
         "@fuchsia_sdk//fidl/fuchsia.driver.framework:fuchsia.driver.framework_cpp",
         "@fuchsia_sdk//fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp",
@@ -83,6 +82,7 @@ fuchsia_cc_driver(
     output_name = "bt-hci-virtual",
     deps = [
         ":common",
+        "//pw_log_fuchsia:pw_log_fuchsia_driver",
     ],
 )
 

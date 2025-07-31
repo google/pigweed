@@ -24,6 +24,7 @@ fuchsia_cc_test(
     deps = [
         "//pw_bluetooth_sapphire/host/sco:sco_test.lib",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
+        "//pw_log_fuchsia:pw_log_fuchsia_syslog",
     ],
 )
 

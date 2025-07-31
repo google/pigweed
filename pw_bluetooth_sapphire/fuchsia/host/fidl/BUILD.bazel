@@ -233,6 +233,7 @@ fuchsia_cc_test(
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
         "//pw_bluetooth_sapphire/host/testing:loop_fixture",
         "//pw_bluetooth_sapphire/host/testing:test_helpers",
+        "//pw_log_fuchsia:pw_log_fuchsia_syslog",
         "@fuchsia_sdk//pkg/async_patterns_testing_cpp",
     ],
 )

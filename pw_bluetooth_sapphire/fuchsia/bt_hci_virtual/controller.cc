@@ -20,8 +20,6 @@
 #include <memory>
 #include <string>
 
-#include "pw_log/log.h"
-
 namespace bt_hci_virtual {
 
 VirtualController::VirtualController(

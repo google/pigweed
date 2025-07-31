@@ -20,30 +20,57 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# NOTE: This only includes the headers. The target must depend on either
+# `pw_log_fuchsia_syslog` or `pw_log_fuchsia_driver` below (otherwise you will
+# see linker failures).
 cc_library(
     name = "pw_log_fuchsia",
-    srcs = [
-        "log_fuchsia.cc",
-    ],
     hdrs = [
         "public/pw_log_fuchsia/log_backend.h",
         "public_overrides/pw_log_backend/log_backend.h",
     ],
-    implementation_deps = ["//pw_assert:check"],
     includes = [
         "public",
         "public_overrides",
     ],
+    deps = [
+        "@fuchsia_sdk//pkg/async-cpp",
+        "@pigweed//pw_preprocessor",
+    ],
+)
+
+# This library should be used for everything except drivers.
+cc_library(
+    name = "pw_log_fuchsia_syslog",
+    srcs = [
+        "log_fuchsia.cc",
+    ],
+    implementation_deps = ["//pw_assert:check"],
     target_compatible_with = ["@platforms//os:fuchsia"],
     deps = [
+        ":pw_log_fuchsia",
         "@fuchsia_sdk//fidl/fuchsia.diagnostics.types:fuchsia.diagnostics.types_cpp",
         "@fuchsia_sdk//fidl/fuchsia.logger:fuchsia.logger_cpp",
         "@fuchsia_sdk//pkg/async-cpp",
         "@fuchsia_sdk//pkg/component_incoming_cpp",
-        "@fuchsia_sdk//pkg/syslog_structured_backend",
+        "@fuchsia_sdk//pkg/syslog_cpp",
         "@pigweed//pw_log:facade",
         "@pigweed//pw_preprocessor",
         "@pigweed//pw_string:builder",
+    ],
+)
+
+# This library should be used for drivers.
+cc_library(
+    name = "pw_log_fuchsia_driver",
+    srcs = [
+        "log_fuchsia_driver.cc",
+    ],
+    target_compatible_with = ["@platforms//os:fuchsia"],
+    deps = [
+        ":pw_log_fuchsia",
+        "@fuchsia_sdk//pkg/driver_logging_cpp",
+        "@pigweed//pw_log:facade",
     ],
 )
 

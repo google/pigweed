@@ -23,6 +23,7 @@ pw_test_group("tests") {
 pw_source_set("satisfy_presubmit") {
   sources = [
     "log_fuchsia.cc",
+    "log_fuchsia_driver.cc",
     "public/pw_log_fuchsia/log_backend.h",
     "public_overrides/pw_log_backend/log_backend.h",
   ]

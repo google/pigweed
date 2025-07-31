@@ -29,6 +29,7 @@ fuchsia_cc_test(
         "//pw_bluetooth_sapphire/host/common:uuid_string_util",
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
+        "//pw_log_fuchsia:pw_log_fuchsia_syslog",
     ],
 )
 

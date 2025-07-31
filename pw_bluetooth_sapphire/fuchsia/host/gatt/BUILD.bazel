@@ -24,6 +24,7 @@ fuchsia_cc_test(
     death_unittest = True,
     deps = [
         "//pw_bluetooth_sapphire/host/gatt:gatt_test.lib",
+        "//pw_log_fuchsia:pw_log_fuchsia_syslog",
         "@pigweed//pw_bluetooth_sapphire/host/testing:gtest_main",
     ],
 )
