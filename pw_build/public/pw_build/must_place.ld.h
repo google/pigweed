@@ -13,18 +13,27 @@
 // the License.
 #pragma once
 
+// A private implementation of PW_STRINGIFY to avoid depending on
+// pw_preprocessor (which is for C and C++ code).
+#define __PW_MUST_PLACE_STRINGIFY(x) #x
+#define _PW_MUST_PLACE_STRINGIFY(x) __PW_MUST_PLACE_STRINGIFY(x)
+
 /// @defgroup pw_must_place
 /// @{
 
 // clang-format off
 /// @cond PRIVATE
-#define ___PW_MUST_PLACE(isection, start_sym, end_sym)  \
-    start_sym = .;                                              \
-    isection                                                    \
-    end_sym = .;                                                \
-    ASSERT(start_sym != end_sym,                                \
-           "Error: No symbols found in pattern below");         \
-    ASSERT(start_sym != end_sym, #isection)
+#define ___PW_MUST_PLACE(isection, start_sym, end_sym)                                       \
+    start_sym = .;                                                                           \
+    isection                                                                                 \
+    end_sym = .;                                                                             \
+    ASSERT(start_sym != end_sym,                                                             \
+           "Error: PW_MUST_PLACE did not find required input section(s) matching pattern:"); \
+    ASSERT(start_sym != end_sym, #isection);                                                 \
+    ASSERT(start_sym != end_sym, "at file, line:");                                          \
+    ASSERT(start_sym != end_sym, __FILE__);                                                  \
+    ASSERT(start_sym != end_sym, _PW_MUST_PLACE_STRINGIFY(__LINE__));                        \
+    ASSERT(start_sym != end_sym, "")
 
 #define __PW_MUST_PLACE(isection, sym_prefix, unique)   \
     ___PW_MUST_PLACE(isection, sym_prefix ## start_ ## unique, sym_prefix ## end_ ## unique)
@@ -86,13 +95,17 @@
 
 // clang-format off
 /// @cond PRIVATE
-#define ___PW_MUST_PLACE_SIZE(isection, isize, start_sym, end_sym)  \
-    start_sym = .;                                                  \
-    isection                                                        \
-    end_sym = .;                                                    \
-    ASSERT(end_sym - start_sym == isize ,                           \
-           "Error: Pattern did not match expected size");           \
-    ASSERT(end_sym - start_sym == isize, #isection)
+#define ___PW_MUST_PLACE_SIZE(isection, isize, start_sym, end_sym)                    \
+    start_sym = .;                                                                    \
+    isection                                                                          \
+    end_sym = .;                                                                      \
+    ASSERT(end_sym - start_sym == isize ,                                             \
+           "Error: PW_MUST_PLACE_SIZE found input section(s) with unexpected size:"); \
+    ASSERT(end_sym - start_sym == isize, #isection);                                  \
+    ASSERT(end_sym - start_sym == isize, "at file, line:");                           \
+    ASSERT(end_sym - start_sym == isize, __FILE__);                                   \
+    ASSERT(end_sym - start_sym == isize, _PW_MUST_PLACE_STRINGIFY(__LINE__));         \
+    ASSERT(end_sym - start_sym == isize, "")
 
 #define __PW_MUST_PLACE_SIZE(isection, isize, sym_prefix, unique)   \
     ___PW_MUST_PLACE_SIZE(isection, isize, sym_prefix ## start_ ## unique, sym_prefix ## end_ ## unique)
@@ -157,13 +170,17 @@
 
 // clang-format off
 /// @cond PRIVATE
-#define ___PW_MUST_NOT_PLACE(isection, start_sym, end_sym)  \
-    start_sym = .;                                              \
-    isection                                                    \
-    end_sym = .;                                                \
-    ASSERT(start_sym == end_sym,                                \
-           "Error: Symbols found in pattern below but marked as must not place.");         \
-    ASSERT(start_sym == end_sym, #isection)
+#define ___PW_MUST_NOT_PLACE(isection, start_sym, end_sym)                                  \
+    start_sym = .;                                                                          \
+    isection                                                                                \
+    end_sym = .;                                                                            \
+    ASSERT(start_sym == end_sym,                                                            \
+           "Error: PW_MUST_NOT_PLACE found unexpected input section(s) matching pattern:"); \
+    ASSERT(start_sym == end_sym, #isection);                                                \
+    ASSERT(start_sym == end_sym, "at file, line:");                                         \
+    ASSERT(start_sym == end_sym, __FILE__);                                                 \
+    ASSERT(start_sym == end_sym, _PW_MUST_PLACE_STRINGIFY(__LINE__));                       \
+    ASSERT(start_sym == end_sym, "")
 
 #define __PW_MUST_NOT_PLACE(isection, sym_prefix, unique)   \
     ___PW_MUST_NOT_PLACE(isection, sym_prefix ## start_ ## unique, sym_prefix ## end_ ## unique)
