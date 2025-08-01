@@ -25,6 +25,7 @@ pw_python_package("py") {
     "pw_ide/__init__.py",
     "pw_ide/__main__.py",
     "pw_ide/activate.py",
+    "pw_ide/bazel_canonicalize_args.py",
     "pw_ide/cli.py",
     "pw_ide/commands.py",
     "pw_ide/compile_commands_generator.py",

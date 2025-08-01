@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_platform//platform_data:defs.bzl", "platform_data")
 load("@rules_python//python:defs.bzl", "py_library")
 load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
@@ -51,9 +52,26 @@ py_library(
 )
 
 pw_py_binary(
-    name = "compile_commands_generator_binary",
+    name = "compile_commands_generator_binary_internal",
     srcs = ["pw_ide/compile_commands_generator.py"],
     main = "pw_ide/compile_commands_generator.py",
+    deps = [
+        ":compile_commands_generator",
+    ],
+)
+
+# We wrap our binary here to always build it for host_platform
+# regardless of the config passed to it.
+platform_data(
+    name = "compile_commands_generator_binary",
+    platform = "@bazel_tools//tools:host_platform",
+    target = ":compile_commands_generator_binary_internal",
+)
+
+pw_py_binary(
+    name = "bazel_canonicalize_args",
+    srcs = ["pw_ide/bazel_canonicalize_args.py"],
+    main = "pw_ide/bazel_canonicalize_args.py",
     deps = [
         ":compile_commands_generator",
     ],
