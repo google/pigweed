@@ -3235,6 +3235,20 @@ def generate_to_string_for_enum(
     output.write_line('}')
 
 
+def generate_all_for_enum(
+    proto_enum: ProtoEnum, root: ProtoNode, output: OutputFile
+) -> None:
+    """Creates all C++ code for a proto enum."""
+    generate_funcs = (
+        generate_code_for_enum,
+        generate_function_for_enum,
+        generate_to_string_for_enum,
+    )
+    for generate in generate_funcs:
+        output.write_line()
+        generate(proto_enum, root, output)
+
+
 def forward_declare(
     message: ProtoMessage,
     root: ProtoNode,
@@ -3287,12 +3301,7 @@ def forward_declare(
     # Declare the message's enums.
     for child in message.children():
         if child.type() == ProtoNode.Type.ENUM:
-            output.write_line()
-            generate_code_for_enum(cast(ProtoEnum, child), message, output)
-            output.write_line()
-            generate_function_for_enum(cast(ProtoEnum, child), message, output)
-            output.write_line()
-            generate_to_string_for_enum(cast(ProtoEnum, child), message, output)
+            generate_all_for_enum(cast(ProtoEnum, child), message, output)
 
     output.write_line(f'}}  // namespace {namespace}')
 
@@ -3539,6 +3548,24 @@ def generate_find_functions_for_message(
     output.write_line(f'}}  // namespace {namespace}')
 
 
+def generate_all_for_message(
+    message: ProtoMessage,
+    root: ProtoNode,
+    output: OutputFile,
+    codegen_options: GeneratorOptions,
+) -> None:
+    """Creates C++ code for a protobuf message."""
+    generate_funcs = (
+        generate_struct_for_message,
+        generate_table_for_message,
+        generate_sizes_for_message,
+        generate_find_functions_for_message,
+    )
+    for generate in generate_funcs:
+        output.write_line()
+        generate(message, root, output, codegen_options)
+
+
 def generate_is_trivially_comparable_specialization(
     message: ProtoMessage,
     root: ProtoNode,
@@ -3655,29 +3682,13 @@ def generate_code_for_package(
     # Define all top-level enums.
     for node in package.children():
         if node.type() == ProtoNode.Type.ENUM:
-            output.write_line()
-            generate_code_for_enum(cast(ProtoEnum, node), package, output)
-            output.write_line()
-            generate_function_for_enum(cast(ProtoEnum, node), package, output)
-            output.write_line()
-            generate_to_string_for_enum(cast(ProtoEnum, node), package, output)
+            generate_all_for_enum(cast(ProtoEnum, node), package, output)
+
+    messages = list(dependency_sorted_messages(package))
 
     # Run through all messages, generating structs and classes for each.
-    messages = []
-    for message in dependency_sorted_messages(package):
-        output.write_line()
-        generate_struct_for_message(message, package, output, codegen_options)
-        output.write_line()
-        generate_table_for_message(message, package, output, codegen_options)
-        output.write_line()
-        generate_sizes_for_message(message, package, output, codegen_options)
-        output.write_line()
-        generate_find_functions_for_message(
-            message,
-            package,
-            output,
-            codegen_options,
-        )
+    for message in messages:
+        generate_all_for_message(message, package, output, codegen_options)
 
         for class_type in ClassType.types_in_definition_order():
             output.write_line()
@@ -3688,8 +3699,6 @@ def generate_code_for_package(
                 codegen_options,
                 class_type,
             )
-
-        messages.append(message)
 
     # Run a second pass through the messages, this time defining all of the
     # methods which were previously only declared.
