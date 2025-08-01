@@ -13,6 +13,7 @@
 # the License.
 """This module defines the generated code for pw_protobuf C++ classes."""
 
+from __future__ import annotations
 import abc
 from dataclasses import dataclass
 import enum
@@ -87,38 +88,43 @@ class ClassType(enum.Enum):
     # MEMORY_DECODER = 3
     STREAMING_DECODER = 4
 
+    @staticmethod
+    def types_in_definition_order() -> Iterable[ClassType]:
+        """Returns all class types in the order they should be defined."""
+        # These classes have inter-dependencies, so they
+        # need to be defined in this order.
+        return (
+            ClassType.STREAMING_ENCODER,
+            ClassType.MEMORY_ENCODER,
+            ClassType.STREAMING_DECODER,
+        )
+
     def base_class_name(self) -> str:
         """Returns the base class used by this class type."""
-        if self is self.STREAMING_ENCODER:
-            return 'StreamEncoder'
-        if self is self.MEMORY_ENCODER:
-            return 'MemoryEncoder'
-        if self is self.STREAMING_DECODER:
-            return 'StreamDecoder'
-
-        raise ValueError('Unknown class type')
+        return {
+            ClassType.STREAMING_ENCODER: 'StreamEncoder',
+            ClassType.MEMORY_ENCODER: 'MemoryEncoder',
+            ClassType.STREAMING_DECODER: 'StreamDecoder',
+        }[self]
 
     def codegen_class_name(self) -> str:
         """Returns the base class used by this class type."""
-        if self is self.STREAMING_ENCODER:
-            return 'StreamEncoder'
-        if self is self.MEMORY_ENCODER:
-            return 'MemoryEncoder'
-        if self is self.STREAMING_DECODER:
-            return 'StreamDecoder'
-
-        raise ValueError('Unknown class type')
+        return {
+            ClassType.STREAMING_ENCODER: 'StreamEncoder',
+            ClassType.MEMORY_ENCODER: 'MemoryEncoder',
+            ClassType.STREAMING_DECODER: 'StreamDecoder',
+        }[self]
 
     def is_encoder(self) -> bool:
         """Returns True if this class type is an encoder."""
-        if self is self.STREAMING_ENCODER:
-            return True
-        if self is self.MEMORY_ENCODER:
-            return True
-        if self is self.STREAMING_DECODER:
-            return False
+        return {
+            ClassType.STREAMING_ENCODER: True,
+            ClassType.MEMORY_ENCODER: True,
+            ClassType.STREAMING_DECODER: False,
+        }[self]
 
-        raise ValueError('Unknown class type')
+    def is_decoder(self) -> bool:
+        return not self.is_encoder()
 
 
 # protoc captures stdout, so we need to printf debug to stderr.
@@ -3030,7 +3036,7 @@ def generate_class_for_message(
             output.write_line('}')
 
         # Generate entry for message table read or write methods.
-        if class_type == ClassType.STREAMING_DECODER:
+        if class_type.is_decoder():
             output.write_line()
             output.write_line('::pw::Status Read(Message& message) {')
             with output.indent():
@@ -3040,10 +3046,7 @@ def generate_class_for_message(
                     'kMessageFields);'
                 )
             output.write_line('}')
-        elif class_type in (
-            ClassType.STREAMING_ENCODER,
-            ClassType.MEMORY_ENCODER,
-        ):
+        elif class_type.is_encoder():
             output.write_line()
             output.write_line('::pw::Status Write(const Message& message) {')
             with output.indent():
@@ -3675,56 +3678,30 @@ def generate_code_for_package(
             output,
             codegen_options,
         )
-        output.write_line()
-        generate_class_for_message(
-            message,
-            package,
-            output,
-            codegen_options,
-            ClassType.STREAMING_ENCODER,
-        )
-        output.write_line()
-        generate_class_for_message(
-            message,
-            package,
-            output,
-            codegen_options,
-            ClassType.MEMORY_ENCODER,
-        )
-        output.write_line()
-        generate_class_for_message(
-            message,
-            package,
-            output,
-            codegen_options,
-            ClassType.STREAMING_DECODER,
-        )
+
+        for class_type in ClassType.types_in_definition_order():
+            output.write_line()
+            generate_class_for_message(
+                message,
+                package,
+                output,
+                codegen_options,
+                class_type,
+            )
+
         messages.append(message)
 
     # Run a second pass through the messages, this time defining all of the
     # methods which were previously only declared.
     for message in messages:
-        define_not_in_class_methods(
-            message,
-            package,
-            output,
-            codegen_options,
-            ClassType.STREAMING_ENCODER,
-        )
-        define_not_in_class_methods(
-            message,
-            package,
-            output,
-            codegen_options,
-            ClassType.MEMORY_ENCODER,
-        )
-        define_not_in_class_methods(
-            message,
-            package,
-            output,
-            codegen_options,
-            ClassType.STREAMING_DECODER,
-        )
+        for class_type in ClassType.types_in_definition_order():
+            define_not_in_class_methods(
+                message,
+                package,
+                output,
+                codegen_options,
+                class_type,
+            )
 
     if package.cpp_namespace():
         output.write_line(f'\n}}  // namespace {package.cpp_namespace()}')
