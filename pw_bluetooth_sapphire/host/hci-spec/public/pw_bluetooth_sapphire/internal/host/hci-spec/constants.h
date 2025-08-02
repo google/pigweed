@@ -176,7 +176,7 @@ enum class LESupportedFeature : uint64_t {
   // Added in 5.2
   kConnectedIsochronousStreamCentral     = (1 << 28),
   kConnectedIsochronousStreamPeripheral  = (1 << 29),
-  kIsochronousBoradcaster                = (1 << 30),
+  kIsochronousBroadcaster                = (1 << 30),
   kSynchronizedReceiver                  = (1ull << 31),
   kConnectedIsochronousStreamHostSupport = (1ull << 32),
   kLEPowerControlRequest                 = (1ull << 33),
