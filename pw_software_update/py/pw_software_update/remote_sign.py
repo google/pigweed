@@ -201,7 +201,7 @@ class RemoteSignClient:
         signed_bundle_blob_name: str | None = None,
         request_overrides: dict | None = None,
         timeout_s: int = DEFAULT_TIMEOUT_S,
-    ) -> bytes:
+    ) -> storage.Blob:
         """Upload file to GCS and download signed counterpart when ready.
 
         Args:
