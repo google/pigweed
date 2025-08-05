@@ -128,6 +128,12 @@ PREDEFINED             = __cplusplus=202002L \
 # https://www.doxygen.nl/manual/config.html#cfg_project_brief
 PROJECT_BRIEF          = "C/C++ API Reference"
 
+# We hardcode the logo in header.html. We don't attempt to set it via
+# PROJECT_LOGO because Doxygen expects the PROJECT_LOGO file to be local
+# whereas we fetch our logo over CDN.
+# https://www.doxygen.nl/manual/config.html#cfg_project_logo
+# PROJECT_LOGO           =
+
 # https://www.doxygen.nl/manual/config.html#cfg_project_name
 PROJECT_NAME           = "Pigweed"
 

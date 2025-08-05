@@ -60,9 +60,10 @@ $extrastylesheet
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <!--BEGIN PROJECT_LOGO-->
-  <td id="projectlogo"><img alt="Logo" src="$relpath^$projectlogo"/></td>
-  <!--END PROJECT_LOGO-->
+  <!-- We hardcode the logo here because setting it via Doxygen's PROJECT_LOGO
+       option does not work. PROJECT_LOGO expects the logo file to be local
+       whereas we fetch ours over a CDN. -->
+  <td id="projectlogo"><img alt="Logo" src="https://storage.googleapis.com/pigweed-media/pw_logo.svg"/></td>
   <!--BEGIN PROJECT_NAME-->
   <td id="projectalign">
    <div id="projectname">$projectname<!--BEGIN PROJECT_NUMBER--><span id="projectnumber">&#160;$projectnumber</span><!--END PROJECT_NUMBER-->

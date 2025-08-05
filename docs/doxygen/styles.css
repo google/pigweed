@@ -1565,17 +1565,19 @@ dl.section dd {
 	text-align: center;
 	vertical-align: bottom;
 	border-collapse: separate;
+  padding: 0.5em;
 }
 
 #projectlogo img
 {
 	border: 0px none;
+  height: 4em;
 }
 
 #projectalign
 {
         vertical-align: middle;
-        padding-left: 0.5em;
+        padding: 0;
 }
 
 #projectname
