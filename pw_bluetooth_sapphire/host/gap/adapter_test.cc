@@ -1527,6 +1527,8 @@ TEST_F(AdapterTest, LEConnectedIsochronousStreamSupported) {
       hci_spec::LESupportedFeature::kConnectedIsochronousStreamPeripheral);
   settings.le_acl_data_packet_length = 0x1B;
   settings.le_total_num_acl_data_packets = 2;
+  settings.iso_data_packet_length = 0xc0;
+  settings.total_num_iso_data_packets = 8;
 
   test_device()->set_settings(settings);
 
@@ -1641,6 +1643,8 @@ TEST_F(AdapterScoAndIsoDisabledTest,
 TEST_F(AdapterTest, IsoDataChannelInitializedSuccessfully) {
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
+  settings.le_features |= static_cast<uint64_t>(
+      hci_spec::LESupportedFeature::kConnectedIsochronousStreamPeripheral);
   test_device()->set_settings(settings);
 
   bool success = false;

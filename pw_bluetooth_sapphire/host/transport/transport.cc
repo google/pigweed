@@ -120,11 +120,6 @@ bool Transport::InitializeScoDataChannel(const DataBufferInfo& buffer_info) {
 bool Transport::InitializeIsoDataChannel(const DataBufferInfo& buffer_info) {
   PW_CHECK(buffer_info.IsAvailable());
 
-  if (static_cast<uint32_t>(*features_ & FeaturesBits::kHciIso) == 0) {
-    bt_log(WARN, "hci", "HCI ISO not supported");
-    return false;
-  }
-
   iso_data_channel_ = IsoDataChannel::Create(buffer_info,
                                              command_channel_.get(),
                                              controller_.get(),
