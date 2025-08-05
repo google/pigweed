@@ -17,6 +17,12 @@
 /* The standard CSS for doxygen 1.9.6*/
 
 html {
+
+/* Pigweed styles */
+--pw-font-body: "Noto Sans", sans-serif;
+--pw-font-code: "Roboto Mono", monospace;
+--pw-font-headings: "Lato", sans-serif;
+
 /* page base colors */
 --page-background-color: white;
 --page-foreground-color: black;
@@ -166,14 +172,14 @@ html {
 --tooltip-shadow: 1px 1px 7px gray;
 
 /** font-family */
---font-family-normal: Roboto,sans-serif;
---font-family-monospace: monospace,fixed;
---font-family-nav: 'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
---font-family-title: Tahoma,Arial,sans-serif;
---font-family-toc: Verdana,'DejaVu Sans',Geneva,sans-serif;
---font-family-search: Arial,Verdana,sans-serif;
---font-family-icon: Arial,Helvetica;
---font-family-tooltip: Roboto,sans-serif;
+--font-family-normal: var(--pw-font-body);
+--font-family-monospace: var(--pw-font-code);
+--font-family-nav: var(--pw-font-headings);
+--font-family-title: var(--pw-font-headings);
+--font-family-toc: var(--pw-font-body);
+--font-family-search: var(--pw-font-body);
+--font-family-icon: var(--pw-font-body);
+--font-family-tooltip: var(--pw-font-body);
 
 }
 
@@ -329,17 +335,7 @@ html {
 --tooltip-link-color: #79C0FF;
 --tooltip-shadow: none;
 
-/** font-family */
---font-family-normal: Roboto,sans-serif;
---font-family-monospace: monospace,fixed;
---font-family-nav: 'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
---font-family-title: Tahoma,Arial,sans-serif;
---font-family-toc: Verdana,'DejaVu Sans',Geneva,sans-serif;
---font-family-search: Arial,Verdana,sans-serif;
---font-family-icon: Arial,Helvetica;
---font-family-tooltip: Roboto,sans-serif;
-
-}}
+}
 body {
     background-color: var(--page-background-color);
     color: var(--page-foreground-color);
@@ -357,7 +353,7 @@ body, table, div, p, dl {
 .title {
 	font-weight: 400;
 	font-size: 14px;
-	font-family: var(--font-family-normal);
+	font-family: var(--font-family-title);
 	line-height: 28px;
 	font-size: 150%;
 	font-weight: bold;
@@ -366,6 +362,7 @@ body, table, div, p, dl {
 
 h1.groupheader {
 	font-size: 150%;
+  font-family: var(--font-family-title);
 }
 
 h2.groupheader {
@@ -377,10 +374,12 @@ h2.groupheader {
 	padding-top: 8px;
 	padding-bottom: 4px;
 	width: 100%;
+  font-family: var(--font-family-title);
 }
 
 h3.groupheader {
 	font-size: 100%;
+  font-family: var(--font-family-title);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -390,6 +389,7 @@ h1, h2, h3, h4, h5, h6 {
 	-o-transition: text-shadow 0.5s linear;
 	transition: text-shadow 0.5s linear;
 	margin-right: 15px;
+  font-family: var(--font-family-title);
 }
 
 h1.glow, h2.glow, h3.glow, h4.glow, h5.glow, h6.glow {
@@ -907,11 +907,13 @@ table.memberdecls {
 	border: none;
 	margin: 4px;
 	padding: 1px 0 0 8px;
+  font-family: var(--font-family-monospace);
 }
 
 .mdescLeft, .mdescRight {
 	padding: 0px 8px 4px 8px;
 	color: var(--memdecl-foreground-color);
+  font-family: var(--font-family-monospace);
 }
 
 .memSeparator {
@@ -955,6 +957,7 @@ table.memberdecls {
 	line-height: 1.25;
 	font-weight: 300;
 	float:left;
+  font-family: var(--font-family-monospace);
 }
 
 .permalink
@@ -1581,12 +1584,14 @@ dl.section dd {
 	font-family: var(--font-family-title);
 	margin: 0px;
 	padding: 2px 0px;
+  font-weight: bold;
+  font-style: italic;
 }
 
 #projectbrief
 {
 	font-size: 90%;
-        font-family: var(--font-family-title);
+  font-family: var(--font-family-normal);
 	margin: 0px;
 	padding: 0px;
 }
@@ -2005,6 +2010,10 @@ details[open]>summary::before {
 
 body {
     scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-background-color);
+}
+
+code {
+  font-family: var(--font-family-monospace);
 }
 
 ::-webkit-scrollbar {
