@@ -22,25 +22,35 @@ html {
 --pw-font-body: "Noto Sans", sans-serif;
 --pw-font-code: "Roboto Mono", monospace;
 --pw-font-headings: "Lato", sans-serif;
+/* Light-mode-specific Pigweed styles */
+--pw-color-background-primary: #ffffff;
+--pw-color-background-secondary: #f8f9fb;
+--pw-color-background-code: #f8f8f8;
+--pw-color-brand-primary: #b529aa;
+--pw-color-brand-secondary: #016074;
+--pw-color-foreground-primary: #222832;
+--pw-color-link: #2a5adf;
+--pw-color-nav-active: var(--pw-color-brand-primary);
+--pw-color-nav-inactive: #48566b;
+--pw-color-search-background: var(--pw-color-row-odd);
 
 /* page base colors */
---page-background-color: white;
---page-foreground-color: black;
---page-link-color: #3D578C;
---page-visited-link-color: #4665A2;
+--page-background-color: var(--pw-color-background-primary);
+--page-foreground-color: var(--pw-color-foreground-primary);
+--page-link-color: var(--pw-color-link);
+--page-visited-link-color: var(--pw-color-link);
 
 /* index */
---index-odd-item-bg-color: #F8F9FC;
---index-even-item-bg-color: white;
+--index-odd-item-bg-color: var(--pw-color-background-primary);
+--index-even-item-bg-color: var(--pw-color-background-primary);
 --index-header-color: black;
 --index-separator-color: #A0A0A0;
 
 /* header */
---header-background-color: #F9FAFC;
---header-separator-color: #C4CFE5;
---header-gradient-image: url('nav_h.png');
---group-header-separator-color: #879ECB;
---group-header-color: #354C7B;
+--header-background-color: var(--pw-color-background-primary);
+--header-separator-color: var(--separator-color);
+--group-header-separator-color: var(--separator-color);
+--group-header-color: var(--pw-color-foreground-primary);
 --inherit-header-color: gray;
 
 --footer-foreground-color: #2A3D61;
@@ -48,10 +58,10 @@ html {
 --citation-label-color: #334975;
 --glow-color: cyan;
 
---title-background-color: white;
---title-separator-color: #5373B4;
---directory-separator-color: #9CAFD4;
---separator-color: #4A6AAA;
+--title-background-color: var(--pw-color-background-secondary);
+--title-separator-color: var(--separator-color);
+--directory-separator-color: var(--separator-color);
+--separator-color: #d1d5da;
 
 --blockquote-background-color: #F7F8FB;
 --blockquote-border-color: #9CAFD4;
@@ -64,21 +74,20 @@ html {
 --icon-doc-image: url('doc.png');
 
 /* brief member declaration list */
---memdecl-background-color: #F9FAFC;
---memdecl-separator-color: #DEE4F0;
---memdecl-foreground-color: #555;
---memdecl-template-color: #4665A2;
+--memdecl-background-color: var(--pw-color-background-primary);
+--memdecl-separator-color: var(--separator-color);
+--memdecl-foreground-color: var(--pw-color-foreground-primary);
+--memdecl-template-color: var(--pw-color-foreground-primary);
 
 /* detailed member list */
---memdef-border-color: #A8B8D9;
---memdef-title-background-color: #E2E8F2;
---memdef-title-gradient-image: url('nav_f.png');
---memdef-proto-background-color: #DFE5F1;
---memdef-proto-text-color: #253555;
+--memdef-border-color: var(--separator-color);
+--memdef-title-background-color: var(--pw-color-background-secondary);
+--memdef-proto-background-color: var(--pw-color-background-secondary);
+--memdef-proto-text-color: var(--pw-color-foreground-primary);
 --memdef-proto-text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.9);
---memdef-doc-background-color: white;
---memdef-param-name-color: #602020;
---memdef-template-color: #4665A2;
+--memdef-doc-background-color: var(--pw-color-background-primary);
+--memdef-param-name-color: var(--pw-color-foreground-primary);
+--memdef-template-color: var(--pw-color-foreground-primary);
 
 /* tables */
 --table-cell-border-color: #2D4068;
@@ -92,22 +101,15 @@ html {
 --label-foreground-color: white;
 
 /** navigation bar/tree/menu */
---nav-background-color: #F9FAFC;
---nav-foreground-color: #364D7C;
---nav-gradient-image: url('tab_b.png');
---nav-gradient-hover-image: url('tab_h.png');
---nav-gradient-active-image: url('tab_a.png');
---nav-gradient-active-image-parent: url("../tab_a.png");
---nav-separator-image: url('tab_s.png');
---nav-breadcrumb-image: url('bc_s.png');
---nav-breadcrumb-border-color: #C2CDE4;
---nav-splitbar-image: url('splitbar.png');
---nav-font-size-level1: 13px;
---nav-font-size-level2: 10px;
---nav-font-size-level3: 9px;
---nav-text-normal-color: #283A5D;
---nav-text-hover-color: white;
---nav-text-active-color: white;
+--nav-background-color: var(--pw-color-background-primary);
+--nav-foreground-color: var(--pw-color-foreground-primary);
+--nav-breadcrumb-border-color: var(--separator-color);
+--nav-font-size-level1: 1em;
+--nav-font-size-level2: 1em;
+--nav-font-size-level3: 1em;
+--nav-text-normal-color: var(--pw-color-nav-inactive);
+--nav-text-hover-color: var(--pw-color-brand-secondary);
+--nav-text-active-color: var(--pw-color-nav-active);
 --nav-text-normal-shadow: 0px 1px 1px rgba(255, 255, 255, 0.9);
 --nav-text-hover-shadow: 0px 1px 1px rgba(0, 0, 0, 1.0);
 --nav-text-active-shadow: 0px 1px 1px rgba(0, 0, 0, 1.0);
@@ -124,8 +126,8 @@ html {
 --toc-header-color: #4665A2;
 
 /** search field */
---search-background-color: white;
---search-foreground-color: #909090;
+--search-background-color: var(--pw-color-search-background);
+--search-foreground-color: var(--pw-color-nav-inactive);
 --search-magnification-image: url('mag.svg');
 --search-magnification-select-image: url('mag_sel.svg');
 --search-active-color: black;
@@ -153,8 +155,8 @@ html {
 --code-vhdl-logic-color: #FF0000;
 --code-link-color: #4665A2;
 --code-external-link-color: #4665A2;
---fragment-foreground-color: black;
---fragment-background-color: #FBFCFD;
+--fragment-foreground-color: var(--pw-color-foreground-primary);
+--fragment-background-color: var(--pw-color-background-code);
 --fragment-border-color: #C4CFE5;
 --fragment-lineno-border-color: #00FF00;
 --fragment-lineno-background-color: #E8E8E8;
@@ -174,12 +176,12 @@ html {
 /** font-family */
 --font-family-normal: var(--pw-font-body);
 --font-family-monospace: var(--pw-font-code);
---font-family-nav: var(--pw-font-headings);
+--font-family-nav: var(--pw-font-body);
 --font-family-title: var(--pw-font-headings);
 --font-family-toc: var(--pw-font-body);
---font-family-search: var(--pw-font-body);
+--font-family-search: var(--pw-font-code);
 --font-family-icon: var(--pw-font-body);
---font-family-tooltip: var(--pw-font-body);
+--font-family-tooltip: var(--pw-font-code);
 
 }
 
@@ -187,24 +189,24 @@ html {
   html:not(.dark-mode) {
     color-scheme: dark;
 
-/* page base colors */
---page-background-color: black;
---page-foreground-color: #C9D1D9;
---page-link-color: #90A5CE;
---page-visited-link-color: #A3B4D7;
+/* Dark-mode-specific Pigweed styles */
+--pw-color-background-primary: #1c2128;
+--pw-color-background-secondary: #22272e;
+--pw-color-background-code: #2d333b;
+--pw-color-brand-primary: #fb71fe;
+--pw-color-brand-secondary: #8be9fd;
+--pw-color-foreground-primary: #ffffffcc;
+--pw-color-link: #2b8cee;
+--pw-color-nav-inactive: #9ca4af;
+--pw-color-row-even: #29313d;
+--pw-color-row-odd: #222832;
+--pw-color-search-background: var(--pw-color-row-even);
 
 /* index */
---index-odd-item-bg-color: #0B101A;
---index-even-item-bg-color: black;
 --index-header-color: #C4CFE5;
 --index-separator-color: #334975;
 
 /* header */
---header-background-color: #070B11;
---header-separator-color: #141C2E;
---header-gradient-image: url('nav_hd.png');
---group-header-separator-color: #283A5D;
---group-header-color: #90A5CE;
 --inherit-header-color: #A0A0A0;
 
 --footer-foreground-color: #5B7AB7;
@@ -212,10 +214,7 @@ html {
 --citation-label-color: #90A5CE;
 --glow-color: cyan;
 
---title-background-color: #090D16;
---title-separator-color: #354C79;
---directory-separator-color: #283A5D;
---separator-color: #283A5D;
+--separator-color: #48566b;
 
 --blockquote-background-color: #101826;
 --blockquote-border-color: #283A5D;
@@ -227,22 +226,8 @@ html {
 --icon-foreground-color: #C4CFE5;
 --icon-doc-image: url('docd.png');
 
-/* brief member declaration list */
---memdecl-background-color: #0B101A;
---memdecl-separator-color: #2C3F65;
---memdecl-foreground-color: #BBB;
---memdecl-template-color: #7C95C6;
-
 /* detailed member list */
---memdef-border-color: #233250;
---memdef-title-background-color: #1B2840;
---memdef-title-gradient-image: url('nav_fd.png');
---memdef-proto-background-color: #19243A;
---memdef-proto-text-color: #9DB0D4;
 --memdef-proto-text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.9);
---memdef-doc-background-color: black;
---memdef-param-name-color: #D28757;
---memdef-template-color: #7C95C6;
 
 /* tables */
 --table-cell-border-color: #283A5D;
@@ -256,22 +241,6 @@ html {
 --label-foreground-color: #CCCCCC;
 
 /** navigation bar/tree/menu */
---nav-background-color: #101826;
---nav-foreground-color: #364D7C;
---nav-gradient-image: url('tab_bd.png');
---nav-gradient-hover-image: url('tab_hd.png');
---nav-gradient-active-image: url('tab_ad.png');
---nav-gradient-active-image-parent: url("../tab_ad.png");
---nav-separator-image: url('tab_sd.png');
---nav-breadcrumb-image: url('bc_sd.png');
---nav-breadcrumb-border-color: #2A3D61;
---nav-splitbar-image: url('splitbard.png');
---nav-font-size-level1: 13px;
---nav-font-size-level2: 10px;
---nav-font-size-level3: 9px;
---nav-text-normal-color: #B6C4DF;
---nav-text-hover-color: #DCE2EF;
---nav-text-active-color: #DCE2EF;
 --nav-text-normal-shadow: 0px 1px 1px black;
 --nav-text-hover-shadow: 0px 1px 1px rgba(0, 0, 0, 1.0);
 --nav-text-active-shadow: 0px 1px 1px rgba(0, 0, 0, 1.0);
@@ -288,8 +257,6 @@ html {
 --toc-header-color: #A3B4D7;
 
 /** search field */
---search-background-color: black;
---search-foreground-color: #C5C5C5;
 --search-magnification-image: url('mag_d.svg');
 --search-magnification-select-image: url('mag_seld.svg');
 --search-active-color: #C5C5C5;
@@ -317,8 +284,6 @@ html {
 --code-vhdl-logic-color: #FF0000;
 --code-link-color: #79C0FF;
 --code-external-link-color: #79C0FF;
---fragment-foreground-color: #C9D1D9;
---fragment-background-color: black;
 --fragment-border-color: #30363D;
 --fragment-lineno-border-color: #30363D;
 --fragment-lineno-background-color: black;
@@ -366,7 +331,6 @@ h1.groupheader {
 }
 
 h2.groupheader {
-	border-bottom: 1px solid var(--group-header-separator-color);
 	color: var(--group-header-color);
 	font-size: 150%;
 	font-weight: normal;
@@ -466,8 +430,6 @@ td.navtab {
 }
 
 td.navtabHL {
-	background-image: var(--nav-gradient-active-image);
-	background-repeat:repeat-x;
 	padding-right: 6px;
 	padding-left: 6px;
 }
@@ -626,6 +588,7 @@ ul.multicol {
   direction: ltr;
   overflow-x: auto; /*Fixed: fragment lines overlap floating elements*/
   overflow-y: hidden;
+  padding: 0.5em;
 }
 
 pre.fragment {
@@ -868,7 +831,6 @@ th.dirtab {
 hr {
 	height: 0px;
 	border: none;
-	border-top: 1px solid var(--separator-color);
 }
 
 hr.footer {
@@ -951,8 +913,6 @@ table.memberdecls {
 	border-top-right-radius: 4px;
 	border-top-left-radius: 4px;
 	margin-bottom: -1px;
-	background-image: var(--memdef-title-gradient-image);
-	background-repeat: repeat-x;
 	background-color: var(--memdef-title-background-color);
 	line-height: 1.25;
 	font-weight: 300;
@@ -1028,8 +988,6 @@ table.memberdecls {
         border-right: 1px solid var(--memdef-border-color);
         padding: 6px 10px 2px 10px;
         border-top-width: 0;
-        background-image:url('nav_g.png');
-        background-repeat:repeat-x;
         background-color: var(--memdef-doc-background-color);
         /* opera specific markup */
         border-bottom-left-radius: 4px;
@@ -1176,11 +1134,13 @@ div.directory {
 .directory tr.odd {
 	padding-left: 6px;
 	background-color: var(--index-odd-item-bg-color);
+  border-bottom: 1px solid var(--separator-color);
 }
 
 .directory tr.even {
 	padding-left: 6px;
 	background-color: var(--index-even-item-bg-color);
+  border-bottom: 1px solid var(--separator-color);
 }
 
 .directory img {
@@ -1350,8 +1310,6 @@ table.fieldtable {
 }
 
 .fieldtable th {
-        background-image: var(--memdef-title-gradient-image);
-        background-repeat:repeat-x;
         background-color: var(--memdef-title-background-color);
         font-size: 90%;
         color: var(--memdef-proto-text-color);
@@ -1369,7 +1327,6 @@ table.fieldtable {
 	top: 0px;
 	left: 10px;
 	height: 36px;
-	background-image: var(--nav-gradient-image);
 	z-index: 101;
 	overflow: hidden;
 	font-size: 13px;
@@ -1377,16 +1334,13 @@ table.fieldtable {
 
 .navpath ul
 {
-	font-size: 11px;
-	background-image: var(--nav-gradient-image);
-	background-repeat:repeat-x;
-	background-position: 0 -5px;
+	font-size: 1em;
 	height:30px;
 	line-height:30px;
 	color:var(--nav-text-normal-color);
-	border:solid 1px var(--nav-breadcrumb-border-color);
+	border-top:solid 1px var(--nav-breadcrumb-border-color);
 	overflow:hidden;
-	margin:0px;
+	margin: 0 0 0 1em;
 	padding:0px;
 }
 
@@ -1394,21 +1348,16 @@ table.fieldtable {
 {
 	list-style-type:none;
 	float:left;
-	padding-left:10px;
-	padding-right:15px;
-	background-image:var(--nav-breadcrumb-image);
-	background-repeat:no-repeat;
-	background-position:right;
 	color: var(--nav-foreground-color);
 }
 
 .navpath li.navelem a
 {
 	height:32px;
-	display:block;
+	display:inline;
 	text-decoration: none;
 	outline: none;
-	color: var(--nav-text-normal-color);
+	color: var(--page-link-color);
 	font-family: var(--font-family-nav);
 	text-shadow: var(--nav-text-normal-shadow);
 	text-decoration: none;
@@ -1418,6 +1367,11 @@ table.fieldtable {
 {
 	color: var(--nav-text-hover-color);
 	text-shadow: var(--nav-text-hover-shadow);
+}
+
+.navelem:not(:first-child)::before {
+  content: "::";
+	color: var(--nav-text-normal-color);
 }
 
 .navpath li.footer
@@ -1474,11 +1428,8 @@ div.ingroups a
 
 div.header
 {
-        background-image: var(--header-gradient-image);
-        background-repeat:repeat-x;
 	background-color: var(--header-background-color);
 	margin:  0px;
-	border-bottom: 1px solid var(--header-separator-color);
 }
 
 div.headertitle
@@ -1588,6 +1539,7 @@ dl.section dd {
 	padding: 2px 0px;
   font-weight: bold;
   font-style: italic;
+  color: var(--pw-color-brand-primary);
 }
 
 #projectbrief
@@ -2034,7 +1986,6 @@ code {
 
 /* tabs */
 .tabs, .tabs2, .tabs3 {
-    background-image: var(--nav-gradient-image);
     width: 100%;
     z-index: 101;
     font-size: var(--nav-font-size-level1);
@@ -2059,7 +2010,6 @@ code {
 .tablist li {
     float: left;
     display: table-cell;
-    background-image: var(--nav-gradient-image);
     line-height: 36px;
     list-style: none;
 }
@@ -2068,9 +2018,6 @@ code {
     display: block;
     padding: 0 20px;
     font-weight: bold;
-    background-image:var(--nav-separator-image);
-    background-repeat:no-repeat;
-    background-position:right;
     color: var(--nav-text-normal-color);
     text-shadow: var(--nav-text-normal-shadow);
     text-decoration: none;
@@ -2082,16 +2029,17 @@ code {
 }
 
 .tablist a:hover {
-    background-image: var(--nav-gradient-hover-image);
-    background-repeat:repeat-x;
     color: var(--nav-text-hover-color);
     text-shadow: var(--nav-text-hover-shadow);
     text-decoration: none;
 }
 
 .tablist li.current a {
-    background-image: var(--nav-gradient-active-image);
-    background-repeat:repeat-x;
     color: var(--nav-text-active-color);
     text-shadow: var(--nav-text-active-shadow);
+}
+
+.tablist li.current a span {
+    border-bottom: 3px solid;
+    padding-bottom: 3px;
 }
