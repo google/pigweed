@@ -98,6 +98,7 @@ extensions = [
     "sphinx.ext.autodoc",  # Automatic documentation for Python code
     "sphinx.ext.napoleon",  # Parses Google-style docstrings
     "sphinxarg.ext",  # Automatic documentation of Python argparse
+    "sphinxcontrib.doxylink",
     "sphinxcontrib.mermaid",
     "sphinx_design",
     "sphinx_copybutton",  # Copy-to-clipboard button on code blocks
@@ -299,6 +300,18 @@ exclude_patterns = ['docs/templates/**']
 doxygen_xml_path = (
     './_doxygen/xml/' if is_bazel_build else './../../../doxygen/xml/'
 )
+# The location of the generated Doxygen tagfile. Note that this must
+# match the final location of the generated Doxygen HTML from the
+# perspective of the Sphinx build system. The organization of the
+# source files (as Sphinx sees it) can be viewed by running this:
+# bazelisk build //docs:sources
+tagfile_path = os.path.abspath("doxygen/doxygen/index.tag")
+# The relative path that Doxylink should use when creating links.
+doxygen_site_path = "./doxygen"
+doxylink = {
+    "doxylink": (tagfile_path, doxygen_site_path),
+}
+
 breathe_projects = {
     # Assuming doxygen output is at out/docs/doxygen/
     # This dir should be relative to out/docs/gen/docs/pw_docgen_tree/

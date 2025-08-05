@@ -50,6 +50,12 @@ GENERATE_BUGLIST       = NO
 # https://www.doxygen.nl/manual/config.html#cfg_generate_latex
 GENERATE_LATEX         = NO
 
+# rules_doxygen replaces `OUTDIR` with the correct output directory path:
+# https://github.com/TendTo/rules_doxygen/blob/main/docs/doxygen_doc.md
+#
+# https://www.doxygen.nl/manual/config.html#cfg_generate_tagfile
+GENERATE_TAGFILE       = {{OUTDIR}}/html/index.tag
+
 # https://www.doxygen.nl/manual/config.html#cfg_generate_testlist
 GENERATE_TESTLIST      = NO
 
@@ -88,13 +94,11 @@ MACRO_EXPANSION        = YES
 # https://www.doxygen.nl/manual/config.html#cfg_num_proc_threads
 NUM_PROC_THREADS       = 0
 
+# rules_doxygen replaces `OUTDIR` with the correct output directory path:
+# https://github.com/TendTo/rules_doxygen/blob/main/docs/doxygen_doc.md
+#
 # https://www.doxygen.nl/manual/config.html#cfg_output_directory
-# OUTPUT_DIRECTORY       =
-# IMPORTANT: rules_doxygen replaces the {{OUTPUT_DIRECTORY}} comment
-# below with the correct runtime path for the output directory.
-# https://github.com/TendTo/rules_doxygen/blob/2.2.0/doxygen/doxygen.bzl#L38
-# Do not modify the comment on the next line!
-# {{OUTPUT DIRECTORY}}
+OUTPUT_DIRECTORY       = {{OUTDIR}}
 
 # TODO: https://pwbug.dev/402489948 - Replace PW_ALLOCATOR_HAS_ATOMICS
 # when `pw_atomic` provides portable atomics.
