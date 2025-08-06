@@ -48,9 +48,9 @@ If the code is acceptable for submission as is, begin your message with LGTM:
 raised, begin your message with LGTM: [x]. If there are any code changes you
 suggest, in addition to mentioning them in your review generate a diff. Return a
 raw JSON object and nothing else. The JSON object must have four keys:
-"response_text", "diff", "number_of_suggestions" and "lgtm". The values must be
-single strings enclosed in double quotes with the newlines are represented by
-the `\n` escape character so they remain valid JSON. Do not use your tools to
-write any files.
+"response_text", "diff", "number_of_suggestions" and "lgtm". The "lgtm" value
+must be a boolean, and the other values must be single strings enclosed in
+double quotes with the newlines represented by the `\n` escape character so they
+remain valid JSON. Do not use your tools to write any files.
 
 The diff part should be a valid patch file.
