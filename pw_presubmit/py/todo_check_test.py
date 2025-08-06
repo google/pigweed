@@ -326,6 +326,16 @@ class TestTodoCheck(unittest.TestCase):
         self._run_bugs(contents)
         self.ctx.fail.assert_not_called()
 
+    def test_other_gh_issue(self) -> None:
+        contents = (
+            'TODO: https://github.com/bazel-contrib/rules_python/issues/3126 - '
+            'Python also sometimes works\n'
+        )
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
     def test_fxbug_dev(self) -> None:
         contents = 'TODO: fxbug.dev/123 - foo\n'
         self._run_bugs_users(contents)

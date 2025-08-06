@@ -50,7 +50,7 @@ BUGS_ONLY = re.compile(
     r'(?:\bTODO: https://(?:(?:pw|fx)bug\.dev|crbug\.com)/\d+ - )|'
     r'(?:\bTODO: (?:(?:pw|fx)bug\.dev|crbug\.com)/\d+ - )|'
     r'(?:\bTODO: <(?:(?:pw|fx)bug\.dev|crbug\.com)/\d+> - )|'
-    r'(?:\bTODO: https://github\.com/bazelbuild/[a-z][-_a-z0-9]*/issues/\d+[ ]-[ ])'
+    r'(?:\bTODO: https://github\.com/[a-zA-Z0-9][-a-zA-Z0-9]*/[a-zA-Z][-_a-zA-Z0-9\.]*/issues/\d+[ ]-[ ])'
 )
 BUGS_OR_USERNAMES = re.compile(
     r"""
@@ -89,10 +89,10 @@ BUGS_OR_USERNAMES = re.compile(
     \)
 .*\w  # Explanation.
 )|
-(?:  # Bazel GitHub issues. No usernames allowed.
+(?:  # GitHub issues. No usernames allowed.
     \bTODO:[ ]
     (?:
-        https://github\.com/bazelbuild/[a-z][-_a-z0-9]*/issues/\d+
+        https://github\.com/[a-zA-Z0-9][-a-zA-Z0-9]*/[a-zA-Z][-_a-zA-Z0-9\.]*/issues/\d+
     )
 [ ]-[ ].*\w  # Explanation.
 )
