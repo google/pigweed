@@ -151,18 +151,6 @@ the tutorial, not the VS Code path.
             specify that the Pigweed extension should load before the Bazel
             extension.
 
-      #. Make sure you're running the latest version of the Pigweed extension
-         by opening the `Extensions view`_, going to the page for the Pigweed
-         extension, and checking that your version is ``v1.3.3`` or later.
-
-         .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/pigweed_extension.png
-
-            Double-checking the Pigweed extension version
-
-         .. caution::
-
-            If you see a legacy version of the Pigweed extension, uninstall it.
-
    .. tab-item:: CLI
       :sync: cli
 
