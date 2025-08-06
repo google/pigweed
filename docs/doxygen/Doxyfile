@@ -71,6 +71,9 @@ GENERATE_TREEVIEW      = NO
 # https://www.doxygen.nl/manual/config.html#cfg_generate_xml
 GENERATE_XML           = YES
 
+# https://www.doxygen.nl/manual/config.html#cfg_html_colorstyle
+HTML_COLORSTYLE        = TOGGLE
+
 # https://www.doxygen.nl/manual/config.html#cfg_html_dynamic_menus
 HTML_DYNAMIC_MENUS     = NO
 

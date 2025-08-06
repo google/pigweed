@@ -110,9 +110,6 @@ html {
   --nav-text-normal-color: var(--pw-color-nav-inactive);
   --nav-text-hover-color: var(--pw-color-brand-secondary);
   --nav-text-active-color: var(--pw-color-nav-active);
-  --nav-text-normal-shadow: 0px 1px 1px rgba(255, 255, 255, 0.9);
-  --nav-text-hover-shadow: 0px 1px 1px rgba(0, 0, 0, 1.0);
-  --nav-text-active-shadow: 0px 1px 1px rgba(0, 0, 0, 1.0);
   --nav-menu-button-color: #364D7C;
   --nav-menu-background-color: white;
   --nav-menu-foreground-color: #555555;
@@ -241,9 +238,6 @@ html {
     --label-foreground-color: #CCCCCC;
 
     /** navigation bar/tree/menu */
-    --nav-text-normal-shadow: 0px 1px 1px black;
-    --nav-text-hover-shadow: 0px 1px 1px rgba(0, 0, 0, 1.0);
-    --nav-text-active-shadow: 0px 1px 1px rgba(0, 0, 0, 1.0);
     --nav-menu-button-color: #B6C4DF;
     --nav-menu-background-color: #05070C;
     --nav-menu-foreground-color: #BBBBBB;
@@ -434,7 +428,6 @@ td.navtabHL {
 
 td.navtabHL a, td.navtabHL a:visited {
   color: var(--nav-text-hover-color);
-  text-shadow: var(--nav-text-hover-shadow);
 }
 
 a.navtab {
@@ -1350,13 +1343,11 @@ table.fieldtable {
   outline: none;
   color: var(--page-link-color);
   font-family: var(--font-family-nav);
-  text-shadow: var(--nav-text-normal-shadow);
   text-decoration: none;
 }
 
 .navpath li.navelem a:hover {
   color: var(--nav-text-hover-color);
-  text-shadow: var(--nav-text-hover-shadow);
 }
 
 .navelem:not(:first-child)::before {
@@ -1988,7 +1979,6 @@ code {
   padding: 0 20px;
   font-weight: bold;
   color: var(--nav-text-normal-color);
-  text-shadow: var(--nav-text-normal-shadow);
   text-decoration: none;
   outline: none;
 }
@@ -1999,13 +1989,11 @@ code {
 
 .tablist a:hover {
   color: var(--nav-text-hover-color);
-  text-shadow: var(--nav-text-hover-shadow);
   text-decoration: none;
 }
 
 .tablist li.current a {
   color: var(--nav-text-active-color);
-  text-shadow: var(--nav-text-active-shadow);
 }
 
 .tablist li.current a span {
