@@ -19,7 +19,6 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
@@ -31,25 +30,11 @@ import pw_cli.tool_runner
 _LOG = logging.getLogger(__name__)
 
 
-class JsonExtractionError(Exception):
-    pass
-
-
 def _extract_json(gemini_output: str) -> dict:
     """Extracts and parses the JSON block from Gemini output."""
     # Gemini returns one JSON block contained inside triple backticks. Remove
     # those backticks to extract just the JSON part.
-    match = re.search(
-        r'```\s*(?:json)?(?P<json>.*?)```',
-        gemini_output,
-        re.DOTALL,
-    )
-    if not match:
-        _LOG.error('Failed to find a JSON block in the Gemini output:')
-        _LOG.error(gemini_output)
-        raise JsonExtractionError(gemini_output)
-
-    json_text = match.group('json')
+    json_text = gemini_output.strip().strip('`').removeprefix('json')
     try:
         return json.loads(json_text)
     except json.JSONDecodeError as e:
