@@ -2167,7 +2167,7 @@ TEST_F(
 
   // Registering event handler for different subevent code should succeed.
   id = cmd_channel()->AddLEMetaEventHandler(
-      kSubeventCode + 1,
+      static_cast<hci_spec::EventCode>(kSubeventCode + 1),
       [](const EventPacket&) { return EventCallbackResult::kContinue; });
   EXPECT_NE(0u, id);
 }

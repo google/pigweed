@@ -237,7 +237,9 @@ class CommandChannel final {
   // get invoked whenever the controller sends a LE Meta Event with a matching
   // subevent code.
   EventHandlerId AddLEMetaEventHandler(
-      hci_spec::EventCode le_meta_subevent_code, EventCallback event_callback);
+      std::variant<hci_spec::EventCode, pw::bluetooth::emboss::LeSubEventCode>
+          le_meta_subevent_code,
+      EventCallback event_callback);
 
   // Works just like AddEventHandler but the passed in event code is only valid
   // for vendor related debugging events. The event_callback will get invoked

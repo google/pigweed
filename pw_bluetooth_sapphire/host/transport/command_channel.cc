@@ -347,7 +347,13 @@ CommandChannel::AddOwnedEventHandler(hci_spec::EventCode event_code,
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
-    hci_spec::EventCode le_meta_subevent_code, EventCallback event_callback) {
+    std::variant<hci_spec::EventCode, pw::bluetooth::emboss::LeSubEventCode>
+        le_meta_subevent_code_variant,
+    EventCallback event_callback) {
+  uint8_t le_meta_subevent_code =
+      std::visit([](auto&& code) { return static_cast<uint8_t>(code); },
+                 le_meta_subevent_code_variant);
+
   EventHandlerData* handler = FindLEMetaEventHandler(le_meta_subevent_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR,
