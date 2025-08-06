@@ -51,6 +51,9 @@ def _pylint_aspect_impl(target, ctx):
     # modules are already installed, but in Bazel such an environment does not
     # exist. Build up the PYTHONPATH to so that all imports are successfully
     # found.
+    #
+    # TODO: b/248343713 - Refactor this to use rules_python's get_imports helper
+    # (perhaps as part of upstreaming this to rules_python).
     python_path = [
         # Other direct srcs of the current build target which are plain .py
         # files will be found at paths relative to the execroot.
@@ -60,12 +63,38 @@ def _pylint_aspect_impl(target, ctx):
         ctx.expand_make_variables("bindir_for_pythonpath", "$(BINDIR)", ctx.var),
     ]
     for path in target[_PyInfo].imports.to_list():
-        if "_virtual_imports" in path and "+" in path:
-            # Proto generated code in external Python dependency.
-            python_path.append(ctx.expand_make_variables("virtual_imports", "$(BINDIR)/external/" + path, ctx.var))
+        if "/_virtual_imports" in path:
+            # Proto generated code. (The leading / distinguishes this from
+            # pw_py_importable_runfile, handled next.)
+            python_path.append(
+                ctx.expand_make_variables(
+                    "proto_virtual_imports",
+                    "$(BINDIR)/" + _extract_import_dir(path),
+                    ctx.var,
+                ),
+            )
         elif "_virtual_imports" in path:
-            # Proto generated code in this repository.
-            python_path.append(ctx.expand_make_variables("virtual_imports", "$(BINDIR)/" + _extract_import_dir(path), ctx.var))
+            if "+" in path:
+                # Super-special case: pw_py_importable_runfile in an external
+                # repository. See https://pwbug.dev/248343713#comment10 and
+                # following.
+                python_path.append(
+                    ctx.expand_make_variables(
+                        "external_repo_importable_runfile_virtual_imports",
+                        "$(BINDIR)/external/" + path,
+                        ctx.var,
+                    ),
+                )
+            else:
+                # pw_py_importable_runfile in the same repository follows the
+                # pattern of proto generated code.
+                python_path.append(
+                    ctx.expand_make_variables(
+                        "same_repo_importable_runfile_virtual_imports",
+                        "$(BINDIR)/" + _extract_import_dir(path),
+                        ctx.var,
+                    ),
+                )
         elif "+" in path:
             # Non-generated external Python dependency.
             python_path.append("external/" + path)
