@@ -36,6 +36,7 @@ py_library(
         "pw_cli/env.py",
         "pw_cli/envparse.py",
         "pw_cli/file_filter.py",
+        "pw_cli/g_review.py",
         "pw_cli/git_repo.py",
         "pw_cli/interactive_prompts.py",
         "pw_cli/log.py",
@@ -61,6 +62,13 @@ py_library(
         "@pigweed_python_packages//prompt_toolkit",
         "@pigweed_python_packages//psutil",
     ],
+)
+
+pw_py_binary(
+    name = "g_review",
+    srcs = ["pw_cli/g_review.py"],
+    main = "pw_cli/g_review.py",
+    deps = [":pw_cli"],
 )
 
 pw_py_binary(

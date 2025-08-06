@@ -331,6 +331,9 @@ class GitRepo:
     def diff(self, *args) -> str:
         return self._git('diff', *args)
 
+    def show(self, *args) -> str:
+        return self._git('show', *args)
+
 
 class GitRepoFinder:
     """An efficient way to map files to the repo that tracks them (if any).

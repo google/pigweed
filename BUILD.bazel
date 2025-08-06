@@ -60,6 +60,11 @@ alias(
 )
 
 alias(
+    name = "g_review",
+    actual = "//pw_cli/py:g_review",
+)
+
+alias(
     name = "presubmit",
     actual = "//pw_presubmit/py:local_presubmit",
 )

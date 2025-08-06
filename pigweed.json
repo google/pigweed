@@ -42,6 +42,10 @@
           "module": "pw_presubmit.format_code",
           "function": "main"
         },
+        "g-review": {
+          "module": "pw_cli.g_review",
+          "function": "review"
+        },
         "heap-viewer": {
           "module": "pw_allocator.heap_viewer",
           "function": "main"
