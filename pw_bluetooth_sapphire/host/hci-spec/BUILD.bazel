@@ -27,6 +27,7 @@ cc_library(
         "util.cc",
     ],
     hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/big_info.h",
         "public/pw_bluetooth_sapphire/internal/host/hci-spec/constants.h",
         "public/pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h",
         "public/pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h",

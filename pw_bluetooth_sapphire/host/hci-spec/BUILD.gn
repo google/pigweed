@@ -26,6 +26,7 @@ pw_source_set("hci-spec") {
     "util.cc",
   ]
   public = [
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/big_info.h",
     "public/pw_bluetooth_sapphire/internal/host/hci-spec/constants.h",
     "public/pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h",
     "public/pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h",

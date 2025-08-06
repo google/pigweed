@@ -37,6 +37,7 @@ pw_source_set("hci") {
     "low_energy_connection.cc",
     "low_energy_connector.cc",
     "low_energy_scanner.cc",
+    "periodic_advertising_synchronizer.cc",
     "sco_connection.cc",
     "sequential_command_runner.cc",
   ]
@@ -59,6 +60,7 @@ pw_source_set("hci") {
     "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h",
     "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h",
     "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/periodic_advertising_synchronizer.h",
     "public/pw_bluetooth_sapphire/internal/host/hci/sco_connection.h",
     "public/pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h",
   ]
@@ -111,6 +113,7 @@ pw_test("hci_test") {
     "low_energy_connector_test.cc",
     "low_energy_multiple_advertising_test.cc",
     "low_energy_scanner_test.cc",
+    "periodic_advertising_synchronizer_test.cc",
     "sequential_command_runner_test.cc",
   ]
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"

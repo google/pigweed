@@ -59,6 +59,9 @@ class Identifier {
     return value_ != other.value_;
   }
 
+  // Postfix increment operator
+  Identifier operator++(int) { return Identifier(value_++); }
+
   // Returns a string representation of this identifier. This function allocates
   // memory.
   std::string ToString() const { return Traits::ToString(value_); }
