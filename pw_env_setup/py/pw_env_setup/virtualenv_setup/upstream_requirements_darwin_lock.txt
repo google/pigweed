@@ -1101,6 +1101,12 @@ pylint==3.3.5 \
     --hash=sha256:38d0f784644ed493d91f76b5333a0e370a1c1bc97c22068a77523b4bf1e82c31 \
     --hash=sha256:7cb170929a371238530b2eeea09f5f28236d106b70308c3d46a9c0cf11634633
     # via -r compiled_requirements.txt
+pyparsing==3.2.3 \
+    --hash=sha256:a749938e02d6fd0b59b356ca504a24982314bb090c383e3cf201c95ef7e2bfcf \
+    --hash=sha256:b9c13f1ab8b3b542f72e28f634bad4de758ab3ce4546e4301970ad6fa77c38be
+    # via
+    #   -r compiled_requirements.txt
+    #   sphinxcontrib-doxylink
 pyperclip==1.8.2 \
     --hash=sha256:105254a8b04934f0bc84e9c24eb360a591aaf6535c9def5f29d92af107a9bf57
     # via -r compiled_requirements.txt
@@ -1125,6 +1131,7 @@ python-dateutil==2.9.0.post0 \
     # via
     #   -r compiled_requirements.txt
     #   pykwalify
+    #   sphinxcontrib-doxylink
 pytz==2023.3 \
     --hash=sha256:1d8ce29db189191fb55338ee6d0387d82ab59f3d00eac103412d64e0ebd0c588 \
     --hash=sha256:a151b3abb88eda1d4e34a9814df37de2a80e301e68ba0fd856fb9b46bfbbbffb
@@ -1400,6 +1407,7 @@ sphinx==7.4.7 \
     #   sphinx-copybutton
     #   sphinx-design
     #   sphinx-reredirects
+    #   sphinxcontrib-doxylink
 sphinx-argparse==0.4.0 \
     --hash=sha256:73bee01f7276fae2bf621ccfe4d167af7306e7288e3482005405d9f826f9b037 \
     --hash=sha256:e0f34184eb56f12face774fbc87b880abdb9017a0998d1ec559b267e9697e449
@@ -1428,6 +1436,10 @@ sphinxcontrib-devhelp==1.0.2 \
     # via
     #   -r compiled_requirements.txt
     #   sphinx
+sphinxcontrib-doxylink==1.13.0 \
+    --hash=sha256:06cf63e7e03c335df226fee662ff1c6ebe071c569d7fe47ebba5d79b6b235cd3 \
+    --hash=sha256:c97f46eb86e7c73ca0c8d387511c18163ec988e4bc89d0b588ab6bed1b8c5ff8
+    # via -r compiled_requirements.txt
 sphinxcontrib-htmlhelp==2.0.1 \
     --hash=sha256:0cbdd302815330058422b98a113195c9249825d681e18f11e8b1f78a2f11efff \
     --hash=sha256:c38cb46dccf316c79de6e5515e1770414b797162b23cd3d06e67020e1d2a6903
