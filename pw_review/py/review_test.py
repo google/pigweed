@@ -86,10 +86,9 @@ class ReviewTest(unittest.TestCase):
         mock_named_temp_file.return_value = mock_temp_file
 
         # Run the review function
-        result = review.review()
+        review.review()
 
         # Assertions
-        self.assertEqual(result, 0)
         mock_subprocess_run.assert_called_once()
         mock_named_temp_file.assert_called_once_with(
             prefix='1234567', suffix='.patch', delete=False

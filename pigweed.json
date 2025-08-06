@@ -44,7 +44,7 @@
         },
         "review": {
           "module": "pw_review.review",
-          "function": "review"
+          "function": "main"
         },
         "heap-viewer": {
           "module": "pw_allocator.heap_viewer",

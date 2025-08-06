@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+import argparse
+from collections.abc import Sequence
 import json
 import logging
 from pathlib import Path
@@ -28,6 +30,18 @@ import pw_cli.git_repo
 import pw_cli.tool_runner
 
 _LOG = logging.getLogger(__name__)
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Creates an argument parser and parses arguments."""
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '--json-path',
+        help='If provided, write the raw Gemini JSON to this file.',
+    )
+
+    return parser.parse_args(argv)
 
 
 def _extract_json(gemini_output: str) -> dict:
@@ -57,7 +71,7 @@ def _write_patch_file(diff_text: str, commit_hash: str) -> None:
     print(f'Diff is saved to {patch}')
 
 
-def review():
+def review(json_path: str | None = None) -> None:
     """Use Gemini CLI to review the commit at HEAD."""
     _LOG.info('Creating a Gemini Code Review of the current commit at HEAD')
     _LOG.info('Staged and uncommitted changes are ignored.')
@@ -113,6 +127,13 @@ npx -y -- https://github.com/google-gemini/gemini-cli "$@"
         raise
 
     json_response = _extract_json(proc.stdout)
+    if json_path:
+        try:
+            with open(json_path, 'w') as outs:
+                json.dump(json_response, outs)
+        except IOError as e:
+            _LOG.error('Failed to write JSON to %s: %s', json_path, e)
+            raise
 
     try:
         response_text = json_response['response_text']
@@ -129,8 +150,11 @@ npx -y -- https://github.com/google-gemini/gemini-cli "$@"
         print(diff_text)
         _write_patch_file(diff_text, commit_hash)
 
+
+def main(argv: Sequence[str] | None = None) -> int:
+    review(**vars(parse_args(argv)))
     return 0
 
 
 if __name__ == '__main__':
-    sys.exit(review())
+    sys.exit(main())
