@@ -99,6 +99,12 @@ def review():
         )
     except FileNotFoundError:
         _LOG.error('gemini command not found, please add it to your path')
+        _LOG.error(
+            '''recommended contents of gemini executable:
+#!/bin/bash
+npx -y -- https://github.com/google-gemini/gemini-cli "$@"
+        '''.strip()
+        )
         raise
     except subprocess.CalledProcessError as e:
         _LOG.error('Gemini execution failed')
