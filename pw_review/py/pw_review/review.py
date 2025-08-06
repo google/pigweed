@@ -54,6 +54,7 @@ def _extract_json(gemini_output: str) -> dict:
         return json.loads(json_text)
     except json.JSONDecodeError as e:
         _LOG.error('Failed to parse the JSON response from Gemini: %s', e)
+        _LOG.error(repr(gemini_output))
         _LOG.error(repr(json_text))
         raise
 
