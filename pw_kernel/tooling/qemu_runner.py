@@ -34,6 +34,7 @@ try:
     from python.runfiles import runfiles  # type: ignore
 
     r = runfiles.Create()
+    assert r is not None
     _QEMU_ARM = r.Rlocation(
         *qemu.qemu_system_arm.RLOCATION,
     )
@@ -41,6 +42,9 @@ try:
 except ImportError:
     _LOG.fatal("runfiles could not find qemu")
 
+# Keep mypy happy
+assert _QEMU_ARM is not None
+assert _QEMU_RISCV32 is not None
 
 # Dict mapping the cpu type to the correct qemu binary
 _QEMU_BINARY_CPU_TYPE = dict[str, str](

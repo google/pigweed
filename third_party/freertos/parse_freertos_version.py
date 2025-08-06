@@ -34,10 +34,12 @@ def _parse_args() -> argparse.Namespace:
 def main(task_file) -> int:
     version: dict[str, str] = {}
     for line in task_file:
-        if _VERSION_MAJOR_REGEX.match(line):
-            version['MAJOR'] = _VERSION_MAJOR_REGEX.match(line)['value']
-        if _VERSION_MINOR_REGEX.match(line):
-            version['MINOR'] = _VERSION_MINOR_REGEX.match(line)['value']
+        major_version = _VERSION_MAJOR_REGEX.match(line)
+        if major_version:
+            version['MAJOR'] = major_version['value']
+        minor_version = _VERSION_MINOR_REGEX.match(line)
+        if minor_version:
+            version['MINOR'] = minor_version['value']
         if len(version.keys()) == 2:
             break
     if len(version.keys()) != 2:

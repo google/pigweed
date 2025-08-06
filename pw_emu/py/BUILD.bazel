@@ -29,7 +29,6 @@ py_library(
     imports = ["."],
     visibility = ["//visibility:public"],
     deps = [
-        "//pw_build/py:pw_build",
         "//pw_env_setup/py:pw_env_setup",
         "@pigweed_python_packages//psutil",
         "@pigweed_python_packages//pyserial",
@@ -132,5 +131,7 @@ py_library(
     name = "mock_emu_frontend",
     srcs = ["mock_emu_frontend.py"],
     imports = ["."],
-    deps = ["//pw_env_setup/py:pw_env_setup"],
+    deps = [
+        ":pw_emu",
+    ],
 )

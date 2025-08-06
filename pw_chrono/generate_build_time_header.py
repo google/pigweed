@@ -36,7 +36,7 @@ HEADER = """// Copyright 2021 The Pigweed Authors
 """
 
 
-def parse_args() -> None:
+def parse_args() -> argparse.Namespace:
     """Setup argparse."""
     parser = argparse.ArgumentParser()
     parser.add_argument("out", help="path for output header file")

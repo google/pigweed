@@ -19,7 +19,9 @@ import importlib.util
 
 loader = importlib.machinery.SourceFileLoader("embossc", sys.argv[1])
 spec = importlib.util.spec_from_loader(loader.name, loader)
+assert spec is not None
 main_module = importlib.util.module_from_spec(spec)
+assert spec.loader is not None
 spec.loader.exec_module(main_module)
 
 sys.exit(main_module.main(sys.argv[1:]))

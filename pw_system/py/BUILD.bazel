@@ -71,8 +71,11 @@ py_library(
     ],
     imports = ["."],
     deps = [
+        ":pw_system_lib",
         "//pw_console/py:pw_console",
         "//pw_protobuf:common_py_pb2",
+        "//pw_rpc:benchmark_py_pb2",
+        "//pw_rpc:echo_py_pb2",
         "//pw_rpc/py:pw_rpc_benchmark",
     ],
 )
@@ -85,6 +88,7 @@ pw_py_binary(
     main = "pw_system/console.py",
     deps = [
         ":pw_system_lib",
+        "@pigweed_python_packages//debugpy",
     ],
 )
 

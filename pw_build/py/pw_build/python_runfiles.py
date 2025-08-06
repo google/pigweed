@@ -14,6 +14,7 @@
 """Adapters and helpers for Bazel runfiles handling."""
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -25,7 +26,7 @@ class PythonRunfilesLabelAdapter:
     """
 
     runfiles_path: str
-    source_repo: str
+    source_repo: Optional[str]
 
     def __iter__(self):
         """Custom iterator to support passing an adapter to Rlocation()."""

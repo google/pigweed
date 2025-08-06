@@ -41,6 +41,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_config_loader",
+        "@pigweed_python_packages//pyyaml",
     ],
 )
 

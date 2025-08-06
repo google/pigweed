@@ -59,7 +59,10 @@ py_library(
     ],
     imports = ["."],
     # TODO: b/433321728 - Imports private parts of pw_env_setup.
-    tags = ["nopylint"],
+    tags = [
+        "nomypy",
+        "nopylint",
+    ],
     deps = [
         ":format_core",
         "//pw_build/py:pw_build",
@@ -110,7 +113,12 @@ py_library(
 py_console_script_binary(
     name = "black",
     pkg = "@pigweed_python_packages//black",
-    tags = ["manual"],
+    tags = [
+        # TODO: https://github.com/bazel-contrib/rules_python/issues/3126 - Remove
+        # this tag once the bug in rules_python is fixed.
+        "nomypy",
+        "manual",
+    ],
     visibility = ["//visibility:private"],
 )
 

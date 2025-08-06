@@ -48,6 +48,7 @@ pw_py_binary(
         "//pw_config_loader/py:pw_config_loader",
         "//pw_console/py:pw_console",
         "@pigweed_python_packages//prompt_toolkit",
+        "@pigweed_python_packages//watchdog",
     ],
 )
 
@@ -61,13 +62,19 @@ pw_py_binary(
         "--pw-watch-commands",
     ],
     main = "pw_watch/run.py",
-    deps = [":pw_watch"],
+    deps = [
+        ":pw_watch",
+        "@pigweed_python_packages//watchdog",
+    ],
 )
 
 pw_py_binary(
     name = "run",
     srcs = ["pw_watch/run.py"],
-    deps = [":pw_watch"],
+    deps = [
+        ":pw_watch",
+        "@pigweed_python_packages//watchdog",
+    ],
 )
 
 pw_py_test(

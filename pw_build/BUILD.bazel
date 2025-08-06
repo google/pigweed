@@ -40,6 +40,9 @@ py_console_script_binary(
     name = "pigweed_pip_pylint",
     pkg = "@pigweed_python_packages//pylint",
     script = "pylint",
+    # TODO: https://github.com/bazel-contrib/rules_python/issues/3126 - Remove
+    # this tag once the bug in rules_python is fixed.
+    tags = ["nomypy"],
 )
 
 label_flag(

@@ -52,7 +52,10 @@ py_library(
     ],
     imports = ["."],
     # TODO: b/433321728 - Imports private parts of pw_env_setup.
-    tags = ["nopylint"],
+    tags = [
+        "nomypy",
+        "nopylint",
+    ],
     deps = [
         "//pw_arduino_build/py:pw_arduino_build",
         "//pw_env_setup/py:pw_env_setup",

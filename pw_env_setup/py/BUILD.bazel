@@ -50,6 +50,10 @@ py_library(
         "pw_env_setup/config_file.py",
     ],
     imports = ["."],
+    # Must have the same tags as pw_env_setup_private to avoid action conflicts.
+    # See the last point in
+    # https://github.com/bazel-contrib/rules_python/blob/main/docs/precompiling.md#known-issues-caveats-and-idiosyncrasies
+    tags = ["nomypy"],
     # This library should be considered Pigweed implementation details.
     # Projects outside of Pigweed should never directly depend on the API of
     # this module.
@@ -121,6 +125,10 @@ py_library(
         ":pigweed_json",
     ],
     imports = ["."],
+    # error: Cannot find implementation or library stub for module named "pkg_resources"  [import-not-found]
+    # Maybe https://github.com/python/mypy/issues/18839 ? Unclear why it only
+    # happens in Bazel, though.
+    tags = ["nomypy"],
     # Nobody in the Bazel ecosystem should ever use these parts of pw_env_setup.
     visibility = ["//docs/sphinx:__pkg__"],
     deps = [
@@ -160,6 +168,7 @@ pw_py_test(
     srcs = ["environment_test.py"],
     deps = [
         ":pw_env_setup_private",
+        "@pigweed_python_packages//six",
     ],
 )
 

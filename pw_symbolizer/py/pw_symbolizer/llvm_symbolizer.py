@@ -26,6 +26,7 @@ try:
     from python.runfiles import runfiles  # type: ignore
 
     r = runfiles.Create()
+    assert r is not None
     _LLVM_SYMBOLIZER = r.Rlocation(
         'pigweed/pw_symbolizer/py/llvm-symbolizer-copy'
     )
@@ -47,6 +48,7 @@ class LlvmSymbolizer(symbolizer.Symbolizer):
         if llvm_symbolizer_binary:
             self._symbolizer_binary = str(llvm_symbolizer_binary)
         else:
+            assert _LLVM_SYMBOLIZER is not None
             self._symbolizer_binary = _LLVM_SYMBOLIZER
             if shutil.which(self._symbolizer_binary) is None:
                 raise FileNotFoundError(

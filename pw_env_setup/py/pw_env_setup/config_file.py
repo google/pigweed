@@ -28,7 +28,7 @@ try:
     # This will only succeed when using config_file from Bazel.
     from python.runfiles import runfiles  # type: ignore
 except (ImportError, ModuleNotFoundError):
-    runfiles = None
+    runfiles = None  # type: ignore[assignment]
 
 
 def _resolve_env(env: Mapping[str, str] | None) -> Mapping[str, str]:
@@ -66,6 +66,7 @@ def path(env: Mapping[str, str] | None = None) -> Path:
 
 def path_from_runfiles() -> Path:
     r = runfiles.Create()
+    assert r is not None
     location = r.Rlocation("pigweed.json")
     if location is None:
         # Failed to find pigweed.json

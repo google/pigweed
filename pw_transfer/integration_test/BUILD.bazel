@@ -53,6 +53,7 @@ pw_py_binary(
     tags = [
         # TODO: b/434032260 - Fix these warnings.
         "nopylint",
+        "nomypy",
     ],
     deps = [
         ":config_pb2",
@@ -74,6 +75,7 @@ pw_py_test(
     tags = [
         # TODO: b/434032260 - Fix these warnings.
         "nopylint",
+        "nomypy",
     ],
     deps = [
         ":config_pb2",
@@ -151,7 +153,10 @@ py_library(
     features = ["-conversion_warnings"],
     imports = ["."],
     # TODO: b/434032260 - Fix these warnings.
-    tags = ["nopylint"],
+    tags = [
+        "nomypy",
+        "nopylint",
+    ],
     deps = [
         ":config_pb2",
         "//pw_protobuf:status_proto_pb2",
@@ -212,6 +217,7 @@ pw_py_test(
         "integration",
         # TODO: b/434032260 - Fix these warnings.
         "nopylint",
+        "nomypy",
     ],
     deps = [
         ":config_pb2",
@@ -233,6 +239,7 @@ pw_py_test(
         "integration",
         # TODO: b/434032260 - Fix these warnings.
         "nopylint",
+        "nomypy",
     ],
     deps = [
         ":config_pb2",
@@ -254,6 +261,7 @@ pw_py_test(
         "integration",
         # TODO: b/434032260 - Fix these warnings.
         "nopylint",
+        "nomypy",
     ],
     deps = [
         ":config_pb2",
@@ -274,6 +282,7 @@ pw_py_test(
         "integration",
         # TODO: b/434032260 - Fix these warnings.
         "nopylint",
+        "nomypy",
     ],
     deps = [
         ":config_pb2",
@@ -292,6 +301,7 @@ pw_py_test(
         "integration",
         # TODO: b/434032260 - Fix these warnings.
         "nopylint",
+        "nomypy",
     ],
     deps = [
         ":config_pb2",
@@ -315,6 +325,7 @@ pw_py_test(
         "integration",
         # TODO: b/434032260 - Fix these warnings.
         "nopylint",
+        "nomypy",
     ],
     # Legacy binaries were only built for linux-x86_64.
     target_compatible_with = ["@platforms//os:linux"],
@@ -349,6 +360,7 @@ pw_py_binary(
     srcs = ["python_client.py"],
     tags = [
         # TODO: b/434032260 - Fix these warnings.
+        "nomypy",
         "nopylint",
     ],
     deps = [

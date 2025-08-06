@@ -61,6 +61,7 @@ pw_py_binary(
     imports = ["."],
     deps = [
         ":pw_sensor",
+        "@pigweed_python_packages//jsonschema",
         "@pigweed_python_packages//pyyaml",
     ],
 )

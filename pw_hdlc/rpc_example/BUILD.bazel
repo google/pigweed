@@ -52,5 +52,6 @@ pw_py_binary(
     deps = [
         "//pw_hdlc/py:pw_hdlc",
         "//pw_rpc/py:pw_rpc",
+        "@pigweed_python_packages//pyserial",
     ],
 )

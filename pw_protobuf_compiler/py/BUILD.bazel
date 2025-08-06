@@ -28,6 +28,10 @@ py_library(
         "pw_protobuf_compiler/python_protos.py",
     ],
     imports = ["."],
+    deps = [
+        "//pw_cli/py:pw_cli",
+        "@pigweed_python_packages//black",
+    ],
 )
 
 pw_py_test(
