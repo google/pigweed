@@ -58,6 +58,7 @@ bazel_dep(name = "emboss", version = "2024.1017.203246", repo_name = "com_google
 
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 bazel_dep(name = "rules_doxygen", version = "2.4.2", dev_dependency = True)
+bazel_dep(name = "rules_mypy", version = "0.38.0", dev_dependency = True)
 
 # Repository overrides
 # ====================
@@ -293,6 +294,19 @@ pip.parse(
     requirements_windows = "//pw_env_setup/py:pw_env_setup/virtualenv_setup/upstream_requirements_windows_lock.txt",
 )
 use_repo(pip, "pigweed_python_packages")
+
+types = use_extension("@rules_mypy//mypy:types.bzl", "types", dev_dependency = True)
+types.requirements(
+    name = "pip_types",
+    pip_requirements = "@pigweed_python_packages//:requirements.bzl",
+    # TODO: b/248344378 - Technically we should use separate per-OS requirements
+    # here. Support for this is added to rules_mypy in
+    # https://github.com/theoremlp/rules_mypy/pull/110. In practice I don't
+    # believe any of our -types repository dependencies are OS-specific at this
+    # time.
+    requirements_txt = "//pw_env_setup/py:pw_env_setup/virtualenv_setup/upstream_requirements_linux_lock.txt",
+)
+use_repo(types, "pip_types")
 
 # TODO: b/354241571 - The next two lines are only required because the Fuchsia
 # SDK doesn't correctly restrict the target platform compatibility of all its

@@ -227,6 +227,11 @@
             "build",
             "--config=pylint",
             "//..."
+          ],
+          [
+            "build",
+            "--config=mypy",
+            "//..."
           ]
         ],
         "integration": [

@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,8 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# This mypy.ini file is used by the GN build only. See
-# pw_build/mypy/mypy.ini for the file used by Bazel.
+"""Aspect for running mypy."""
 
-[mypy]
-no_implicit_optional = True
+load("@pip_types//:types.bzl", "types")
+load("@rules_mypy//mypy:mypy.bzl", "mypy")
+
+mypy_aspect = mypy(
+    mypy_ini = "@@//pw_build/mypy:mypy_ini",
+    mypy_cli = "@@//pw_build/mypy:mypy_cli",
+    suppression_tags = ["nomypy"],
+    types = types,
+)

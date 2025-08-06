@@ -185,6 +185,12 @@ build:pylint --aspects //pw_build:pw_pylint.bzl%pylint_aspect
 build:pylint --output_groups=report
 build:pylint --build_tag_filters=-nopylint
 
+# mypy aspect configuration
+build:mypy --aspects //pw_build/mypy:mypy.bzl%mypy_aspect
+build:mypy --output_groups=mypy
+# No build_tag_filters needed: the mypy aspect has built-in support for the
+# "nomypy" tag.
+
 # For some platforms i.e. google/oss-fuzz we need to use the system provided
 # rather than the hermetic toolchains. This allows oss-fuzz to override the
 # build with specialised compilers that are tightly coupled to the fuzzing
