@@ -48,7 +48,6 @@ pw_python_package("py") {
     "pw_cli/push.py",
     "pw_cli/pw_command_plugins.py",
     "pw_cli/requires.py",
-    "pw_cli/review.py",
     "pw_cli/shell_completion/__init__.py",
     "pw_cli/shell_completion/fish/__init__.py",
     "pw_cli/shell_completion/zsh/__init__.py",

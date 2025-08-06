@@ -121,6 +121,7 @@ pw_protobuf_compiler
 pw_random
 pw_random_fuchsia
 pw_result
+pw_review
 pw_ring_buffer
 pw_router
 pw_rpc

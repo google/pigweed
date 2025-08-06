@@ -61,7 +61,7 @@ alias(
 
 alias(
     name = "review",
-    actual = "//pw_cli/py:review",
+    actual = "//pw_review/py:review",
 )
 
 alias(

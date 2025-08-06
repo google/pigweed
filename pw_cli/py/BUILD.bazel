@@ -47,7 +47,6 @@ py_library(
         "pw_cli/push.py",
         "pw_cli/pw_command_plugins.py",
         "pw_cli/requires.py",
-        "pw_cli/review.py",
         "pw_cli/shell_completion/__init__.py",
         "pw_cli/shell_completion/fish/__init__.py",
         "pw_cli/shell_completion/zsh/__init__.py",
@@ -62,13 +61,6 @@ py_library(
         "@pigweed_python_packages//prompt_toolkit",
         "@pigweed_python_packages//psutil",
     ],
-)
-
-pw_py_binary(
-    name = "review",
-    srcs = ["pw_cli/review.py"],
-    main = "pw_cli/review.py",
-    deps = [":pw_cli"],
 )
 
 pw_py_binary(

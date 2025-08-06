@@ -43,7 +43,7 @@
           "function": "main"
         },
         "review": {
-          "module": "pw_cli.review",
+          "module": "pw_review.review",
           "function": "review"
         },
         "heap-viewer": {

@@ -160,6 +160,7 @@ declare_args() {
   dir_pw_random = get_path_info("../pw_random", "abspath")
   dir_pw_random_fuchsia = get_path_info("../pw_random_fuchsia", "abspath")
   dir_pw_result = get_path_info("../pw_result", "abspath")
+  dir_pw_review = get_path_info("../pw_review", "abspath")
   dir_pw_ring_buffer = get_path_info("../pw_ring_buffer", "abspath")
   dir_pw_router = get_path_info("../pw_router", "abspath")
   dir_pw_rpc = get_path_info("../pw_rpc", "abspath")
@@ -360,6 +361,7 @@ declare_args() {
     dir_pw_random,
     dir_pw_random_fuchsia,
     dir_pw_result,
+    dir_pw_review,
     dir_pw_ring_buffer,
     dir_pw_router,
     dir_pw_rpc,
@@ -550,6 +552,7 @@ declare_args() {
     "$dir_pw_random:tests",
     "$dir_pw_random_fuchsia:tests",
     "$dir_pw_result:tests",
+    "$dir_pw_review:tests",
     "$dir_pw_ring_buffer:tests",
     "$dir_pw_router:tests",
     "$dir_pw_rpc:tests",
@@ -740,6 +743,7 @@ declare_args() {
     "$dir_pw_random:docs",
     "$dir_pw_random_fuchsia:docs",
     "$dir_pw_result:docs",
+    "$dir_pw_review:docs",
     "$dir_pw_ring_buffer:docs",
     "$dir_pw_router:docs",
     "$dir_pw_rpc:docs",

@@ -684,6 +684,13 @@
       "C++17"
     ]
   },
+  "pw_review": {
+    "tagline": "AI code reviews",
+    "status": "experimental",
+    "languages": [
+      "Python"
+    ]
+  },
   "pw_ring_buffer": {
     "status": "stable"
   },
