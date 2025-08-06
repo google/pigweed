@@ -15,6 +15,8 @@
 
 #include <android/log.h>
 
+#include "pw_log/levels.h"
+
 // This backend supports PW_LOG_MODULE_NAME as a fallback for Android logging's
 // LOG_TAG if and only if LOG_TAG is not already set. We cannot directly set
 // LOG_TAG here because it may be defined after this header is included. We
@@ -28,39 +30,24 @@
     "Cannot set PW_LOG_TAG because LOG_TAG and PW_LOG_MODULE_NAME are not defined."
 #endif  // defined(LOG_TAG)
 
-// #define PW_LOG_LEVEL_DEBUG    1
-#define _PW_LOG_ANDROID_LEVEL_1(...) \
-  __android_log_print(               \
-      android_LogPriority::ANDROID_LOG_DEBUG, PW_LOG_TAG, __VA_ARGS__)
+constexpr int convert_pigweed_to_android_log_level(int log_level) {
+  switch (log_level) {
+    case PW_LOG_LEVEL_DEBUG:
+      return android_LogPriority::ANDROID_LOG_DEBUG;
+    case PW_LOG_LEVEL_INFO:
+      return android_LogPriority::ANDROID_LOG_INFO;
+    case PW_LOG_LEVEL_WARN:
+      return android_LogPriority::ANDROID_LOG_WARN;
+    case PW_LOG_LEVEL_ERROR:
+    case PW_LOG_LEVEL_CRITICAL:
+      return android_LogPriority::ANDROID_LOG_ERROR;
+    case PW_LOG_LEVEL_FATAL:
+      return android_LogPriority::ANDROID_LOG_FATAL;
+    default:
+      return android_LogPriority::ANDROID_LOG_DEBUG;
+  }
+}
 
-// #define PW_LOG_LEVEL_INFO    2
-#define _PW_LOG_ANDROID_LEVEL_2(...) \
-  __android_log_print(               \
-      android_LogPriority::ANDROID_LOG_INFO, PW_LOG_TAG, __VA_ARGS__)
-
-// #define PW_LOG_LEVEL_WARN    3
-#define _PW_LOG_ANDROID_LEVEL_3(...) \
-  __android_log_print(               \
-      android_LogPriority::ANDROID_LOG_WARN, PW_LOG_TAG, __VA_ARGS__)
-
-// #define PW_LOG_LEVEL_ERROR    4
-#define _PW_LOG_ANDROID_LEVEL_4(...) \
-  __android_log_print(               \
-      android_LogPriority::ANDROID_LOG_ERROR, PW_LOG_TAG, __VA_ARGS__)
-
-// #define PW_LOG_LEVEL_CRITICAL    5
-#define _PW_LOG_ANDROID_LEVEL_5(...) \
-  __android_log_print(               \
-      android_LogPriority::ANDROID_LOG_ERROR, PW_LOG_TAG, __VA_ARGS__)
-
-// #define PW_LOG_LEVEL_FATAL    7
-#define _PW_LOG_ANDROID_LEVEL_7(...) \
-  __android_log_print(               \
-      android_LogPriority::ANDROID_LOG_FATAL, PW_LOG_TAG, __VA_ARGS__)
-
-#define _PW_HANDLE_LOG(level, module, flags, ...) \
-  _PW_LOG_ANDROID_LEVEL_##level(__VA_ARGS__)
-
-// The indirection through _PW_HANDLE_LOG ensures the `level` argument is
-// expanded.
-#define PW_HANDLE_LOG(...) _PW_HANDLE_LOG(__VA_ARGS__)
+#define PW_HANDLE_LOG(level, module, flags, ...) \
+  __android_log_print(                           \
+      convert_pigweed_to_android_log_level(level), PW_LOG_TAG, __VA_ARGS__)
