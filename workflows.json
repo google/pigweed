@@ -92,10 +92,10 @@
       "type": "ANALYZER"
     },
     {
-      "name": "g-review",
+      "name": "review",
       "description": "Review the commit at HEAD using Gemini",
       "use_config": "bazel_default",
-      "target": "@pigweed//:g_review",
+      "target": "@pigweed//:review",
       "type": "ANALYZER"
     }
   ],
