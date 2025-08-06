@@ -15,6 +15,8 @@
 #undef PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION
 #define PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION 0
 
+#include <algorithm>
+
 #include "pw_bytes/array.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_protobuf/wire_format.h"
@@ -66,6 +68,11 @@ template <uint32_t val>
 constexpr std::byte ToByte() {
   static_assert(val <= 0xff);
   return static_cast<std::byte>(val);
+}
+
+template <typename T, typename Container>
+constexpr bool Contains(Container haystack, const T& needle) {
+  return std::find(haystack.begin(), haystack.end(), needle) != haystack.end();
 }
 
 TEST(Codegen, Codegen) {
@@ -644,6 +651,43 @@ TEST(Codegen, NestedEnumToStringInvalid) {
                "okay");
   EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(kInvalid, nullptr),
                nullptr);
+}
+
+TEST(Codegen, EnumValuesArray) {
+  EXPECT_EQ(test::pwpb::kBoolValues.size(), 3u);
+
+  EXPECT_TRUE(Contains(test::pwpb::kBoolValues, test::pwpb::Bool::kTrue));
+  EXPECT_TRUE(Contains(test::pwpb::kBoolValues, test::pwpb::Bool::kFalse));
+  EXPECT_TRUE(
+      Contains(test::pwpb::kBoolValues, test::pwpb::Bool::kFileNotFound));
+
+  for (const test::pwpb::Bool value : test::pwpb::kBoolValues) {
+    EXPECT_TRUE(test::pwpb::IsValidBool(value));
+  }
+}
+
+// Demonstrate how the k*Values array can be used in a constexpr context to,
+// e.g., produce a constexpr array of enum name strings.
+
+template <auto ToString, typename EnumType, size_t kNumValues>
+constexpr std::array<std::string_view, kNumValues> EnumToNames(
+    const std::array<EnumType, kNumValues>& values) {
+  std::array<std::string_view, kNumValues> result{};
+  for (size_t i = 0; i < kNumValues; ++i) {
+    result[i] = ToString(values[i], "");
+  }
+  return result;
+}
+
+constexpr auto kBoolNames =
+    EnumToNames<test::pwpb::BoolToString>(test::pwpb::kBoolValues);
+
+TEST(Codegen, EnumNamesArray) {
+  EXPECT_EQ(kBoolNames.size(), 3u);
+
+  EXPECT_TRUE(Contains(kBoolNames, "TRUE"));
+  EXPECT_TRUE(Contains(kBoolNames, "FALSE"));
+  EXPECT_TRUE(Contains(kBoolNames, "FILE_NOT_FOUND"));
 }
 
 }  // namespace

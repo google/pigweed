@@ -2163,6 +2163,20 @@ that return the enumeration as the appropriate generated type.
    * ``FooToString(static_cast<Foo>(666), "cheese")`` returns ``"cheese"``
      (assuming 666 is an invalid Foo enumerator).
 
+.. cpp:var:: inline constexpr std::array<Enum, 7> kEnumValues
+
+   An array of all enumerator values.
+
+   Example usage:
+
+   .. code-block:: c++
+
+      for (const Enum value : MyProto::kEnumValues) {
+      }
+
+   These can be used with ``EnumToString()`` to produce the enumerator names as
+   strings, with no overhead due to its ``constexpr`` implementation.
+
 To read enumerations with the lower-level API, you would need to cast the
 retured value from the ``uint32_t``.
 

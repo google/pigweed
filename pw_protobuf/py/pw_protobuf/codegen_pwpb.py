@@ -3235,6 +3235,25 @@ def generate_to_string_for_enum(
     output.write_line('}')
 
 
+def generate_values_array_for_enum(
+    proto_enum: ProtoEnum, root: ProtoNode, output: OutputFile
+) -> None:
+    """Creates a C++ array of all values for a proto enum."""
+    assert proto_enum.type() == ProtoNode.Type.ENUM
+
+    enum_name = proto_enum.cpp_namespace(root=root)
+    num_values = len(proto_enum.values())
+    array_type = f'std::array<{enum_name}, {num_values}>'
+    var_name = f'k{enum_name}Values'
+
+    output.write_line(f'// An array of all {enum_name} values.')
+    output.write_line(f'inline constexpr {array_type} {var_name} = {{')
+    with output.indent():
+        for name, _ in proto_enum.values():
+            output.write_line(f'{enum_name}::{name},')
+    output.write_line('};')
+
+
 def generate_all_for_enum(
     proto_enum: ProtoEnum, root: ProtoNode, output: OutputFile
 ) -> None:
@@ -3243,6 +3262,7 @@ def generate_all_for_enum(
         generate_code_for_enum,
         generate_function_for_enum,
         generate_to_string_for_enum,
+        generate_values_array_for_enum,
     )
     for generate in generate_funcs:
         output.write_line()
