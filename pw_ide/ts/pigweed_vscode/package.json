@@ -298,7 +298,7 @@
     "vsceLogin": "vsce login pigweed",
     "test:unit": "npm run clean && npm run build && vscode-test --label unitTests",
     "test:e2e": "npm run clean && npm run build && npm run build:e2e && vscode-test --label e2eTests",
-    "test:all": "npm run clean && npm run build && vscode-test"
+    "test:all": "rimraf .vscode-test && npm run clean && npm run build && vscode-test --jobs=1"
   },
   "dependencies": {
     "@bazel/bazelisk": "^1.19.0",
