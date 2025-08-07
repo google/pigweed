@@ -35,6 +35,13 @@ ALIASES                = "rst=^^\verbatim embed:rst:leading-asterisk^^" \
 # https://www.doxygen.nl/manual/config.html#cfg_case_sense_names
 CASE_SENSE_NAMES       = NO
 
+# This option, along with FULL_SIDEBAR and GENERATE_TREEVIEW,
+# controls the overall layout of the Doxygen HTML site.
+# https://www.doxygen.nl/manual/customize.html#minor_tweaks_treeview
+#
+# https://www.doxygen.nl/manual/config.html#cfg_disable_index
+DISABLE_INDEX          = NO
+
 # https://www.doxygen.nl/manual/config.html#cfg_extract_package
 EXTRACT_PACKAGE        = YES
 
@@ -43,6 +50,13 @@ EXTRACT_PRIV_VIRTUAL   = YES
 
 # https://www.doxygen.nl/manual/config.html#cfg_extract_static
 EXTRACT_STATIC         = YES
+
+# This option, along with DISABLE_INDEX and GENERATE_TREEVIEW,
+# controls the overall layout of the Doxygen HTML site.
+# https://www.doxygen.nl/manual/customize.html#minor_tweaks_treeview
+#
+# https://www.doxygen.nl/manual/config.html#cfg_full_sidebar
+FULL_SIDEBAR           = NO
 
 # https://www.doxygen.nl/manual/config.html#cfg_generate_buglist
 GENERATE_BUGLIST       = NO
@@ -62,8 +76,12 @@ GENERATE_TESTLIST      = NO
 # https://www.doxygen.nl/manual/config.html#cfg_generate_todolist
 GENERATE_TODOLIST      = NO
 
+# This option, along with DISABLE_INDEX and FULL_SIDEBAR,
+# controls the overall layout of the Doxygen HTML site.
+# https://www.doxygen.nl/manual/customize.html#minor_tweaks_treeview
+#
 # https://www.doxygen.nl/manual/config.html#cfg_generate_treeview
-GENERATE_TREEVIEW      = NO
+GENERATE_TREEVIEW      = YES
 
 # Breathe uses Doxygen's XML output to inject the API reference
 # information into our Sphinx site.

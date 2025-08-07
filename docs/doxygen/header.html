@@ -31,7 +31,18 @@ the License.
 <!--END DISABLE_INDEX-->
 <script type="text/javascript" src="$relpath^jquery.js"></script>
 <script type="text/javascript" src="$relpath^dynsections.js"></script>
-$treeview
+<!-- In the default Doxygen setup, `resize.js`, `navtreedata.js`, and
+     `navtree.js` are inserted at generation-time via the `treeview`
+     placeholder, similar to the `search`, `mathjax`, and `darkmode`
+     placeholders below. The `treeview` placeholder also causes Doxygen to
+     insert a `navtree.css` stylesheet that we don't want, so that's why we no
+     longer use the `treeview` placeholder and must insert the `script` tags
+     for `resize.js`, `navtreedata.js`, and `navtree.js` ourselves. The
+     `navtree.css` styles have been inlined into our main `styles.css` file
+     and customized. -->
+<script type="text/javascript" src="$relpath^resize.js"></script>
+<script type="text/javascript" src="$relpath^navtreedata.js"></script>
+<script type="text/javascript" src="$relpath^navtree.js"></script>
 $search
 $mathjax
 $darkmode
