@@ -1123,6 +1123,21 @@ class BasicMultiBuf {
     generic().TruncateTopLayer(length);
   }
 
+  /// Writes data from `src` to the MultiBuf and sizes the top layer to match.
+  ///
+  /// `src` must fit within the current top layer.
+  ///
+  /// @param[in]  src   Span to copy data from. Its length determines the
+  ///                   size of the new top layer.
+  void SetTopLayer(ConstByteSpan src) {
+    static_assert(!is_const() && is_layerable(),
+                  "`SetTopLayer` may only be called on mutable, layerable "
+                  "MultiBufs");
+    PW_ASSERT(src.size() <= size());
+    CopyFrom(src);
+    TruncateTopLayer(src.size());
+  }
+
   /// Removes the top layer.
   ///
   /// After this call, the layer beneath the top layer will be the new top
