@@ -18,17 +18,11 @@
 #include <cstdint>
 #include <limits>
 
+#include "pw_allocator/sync_allocator_testing.h"
 #include "pw_allocator/test_harness.h"
 #include "pw_allocator/testing.h"
-#include "pw_containers/vector.h"
-#include "pw_status/status_with_size.h"
-#include "pw_sync/binary_semaphore.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/mutex.h"
-#include "pw_thread/test_thread_context.h"
-#include "pw_thread/thread.h"
-#include "pw_thread/thread_core.h"
-#include "pw_thread/yield.h"
 #include "pw_unit_test/framework.h"
 
 // TODO: https://pwbug.dev/365161669 - Express joinability as a build-system
@@ -41,259 +35,113 @@ namespace {
 
 static constexpr size_t kCapacity = 8192;
 static constexpr size_t kMaxSize = 512;
-static constexpr size_t kNumAllocations = 128;
-static constexpr size_t kSize = 64;
-static constexpr size_t kAlignment = 4;
 static constexpr size_t kBackgroundRequests = 8;
 
-using ::pw::allocator::Layout;
 using ::pw::allocator::SynchronizedAllocator;
+using ::pw::allocator::test::BackgroundThreadCore;
+using ::pw::allocator::test::SyncAllocatorTest;
 using ::pw::allocator::test::TestHarness;
 using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<kCapacity>;
 
-struct Allocation {
-  void* ptr;
-  Layout layout;
-
-  /// Fills a valid allocation with a pattern of data.
-  void Paint() {
-    if (ptr != nullptr) {
-      auto* u8 = static_cast<uint8_t*>(ptr);
-      for (size_t i = 0; i < layout.size(); ++i) {
-        u8[i] = static_cast<uint8_t>(i & 0xFF);
-      }
-    }
-  }
-
-  /// Checks that a valid allocation has been properly `Paint`ed. Returns the
-  /// first index where the expected pattern doesn't match, e.g. where memory
-  /// has been corrupted, or `layout.size()` if the memory is all correct.
-  size_t Inspect() const {
-    if (ptr != nullptr) {
-      auto* u8 = static_cast<uint8_t*>(ptr);
-      for (size_t i = 0; i < layout.size(); ++i) {
-        if (u8[i] != (i & 0xFF)) {
-          return i;
-        }
-      }
-    }
-    return layout.size();
-  }
-};
-
-/// Test fixture that manages a background allocation thread.
-class Background final {
+/// Thread body that uses a test harness to perform random sequences of
+/// allocations on a synchronous allocator.
+class SynchronizedAllocatorTestThreadCore : public BackgroundThreadCore {
  public:
-  Background(pw::Allocator& allocator)
-      : Background(allocator, 1, std::numeric_limits<size_t>::max()) {}
-
-  Background(pw::Allocator& allocator, uint64_t seed, size_t iterations)
-      : background_(allocator, seed, iterations) {
-    background_thread_ =
-        pw::Thread(context_.options(), [this] { background_.Run(); });
-  }
-
-  ~Background() {
-    background_.Stop();
-    Await();
-  }
-
-  void Await() {
-    background_.Await();
-    if (background_thread_.joinable()) {
-      background_thread_.join();
-    }
+  SynchronizedAllocatorTestThreadCore(pw::Allocator& allocator,
+                                      uint64_t seed,
+                                      size_t num_iterations)
+      : num_iterations_(num_iterations) {
+    test_harness_.set_allocator(&allocator);
+    test_harness_.set_prng_seed(seed);
   }
 
  private:
-  /// Thread body that uses a test harness to perform random sequences of
-  /// allocations on a synchronous allocator.
-  class BackgroundThread {
-   public:
-    BackgroundThread(pw::Allocator& allocator, uint64_t seed, size_t iterations)
-        : iterations_(iterations) {
-      test_harness_.set_allocator(&allocator);
-      test_harness_.set_prng_seed(seed);
+  bool RunOnce() override {
+    if (iteration_ >= num_iterations_) {
+      iteration_ = 0;
+      return false;
     }
+    test_harness_.GenerateRequests(kMaxSize, kBackgroundRequests);
+    iteration_++;
+    return true;
+  }
 
-    void Run() {
-      for (size_t i = 0; i < iterations_ && !semaphore_.try_acquire(); ++i) {
-        test_harness_.GenerateRequests(kMaxSize, kBackgroundRequests);
-        pw::this_thread::yield();
-      }
-      semaphore_.release();
-    }
-
-    void Stop() { semaphore_.release(); }
-
-    void Await() {
-      semaphore_.acquire();
-      semaphore_.release();
-    }
-
-   private:
-    TestHarness test_harness_;
-    pw::sync::BinarySemaphore semaphore_;
-    size_t iterations_;
-  } background_;
-
-  pw::thread::test::TestThreadContext context_;
-  pw::Thread background_thread_;
+  TestHarness test_harness_;
+  size_t iteration_ = 0;
+  size_t num_iterations_;
 };
+
+/// Test fixture responsible for managing a synchronized allocator and a
+/// background thread that accesses it concurrently with unit tests.
+///
+/// @tparam LockType  Synchronization type used by the allocator.
+template <typename LockType>
+class SynchronizedAllocatorTestBase : public SyncAllocatorTest {
+ protected:
+  SynchronizedAllocatorTestBase()
+      : synchronized_(allocator_),
+        core_(synchronized_, 1, std::numeric_limits<size_t>::max()) {}
+
+  SynchronizedAllocator<LockType>& GetAllocator() override {
+    return synchronized_;
+  }
+
+  BackgroundThreadCore& GetCore() override { return core_; }
+
+ private:
+  AllocatorForTest allocator_;
+  SynchronizedAllocator<LockType> synchronized_;
+  SynchronizedAllocatorTestThreadCore core_;
+};
+
+using SynchronizedAllocatorInterruptSpinLockTest =
+    SynchronizedAllocatorTestBase<::pw::sync::InterruptSpinLock>;
+using SynchronizedAllocatorMutexTest =
+    SynchronizedAllocatorTestBase<::pw::sync::Mutex>;
 
 // Unit tests.
 
-// The tests below manipulate dynamically allocated memory while a background
-// thread simultaneously exercises the allocator. Allocations, queries and
-// resizes may fail, but memory must not be corrupted and the test must not
-// deadlock.
-
-template <typename LockType>
-void TestGetCapacity() {
-  AllocatorForTest allocator;
-  SynchronizedAllocator<LockType> synchronized(allocator);
-  Background background(synchronized);
-
-  pw::StatusWithSize capacity = synchronized.GetCapacity();
-  EXPECT_EQ(capacity.status(), pw::OkStatus());
-  EXPECT_EQ(capacity.size(), kCapacity);
+TEST_F(SynchronizedAllocatorInterruptSpinLockTest, GetCapacity) {
+  TestGetCapacity(kCapacity);
 }
 
-TEST(SynchronizedAllocatorTest, GetCapacitySpinLock) {
-  TestGetCapacity<pw::sync::InterruptSpinLock>();
+TEST_F(SynchronizedAllocatorMutexTest, GetCapacity) {
+  TestGetCapacity(kCapacity);
 }
 
-TEST(SynchronizedAllocatorTest, GetCapacityMutex) {
-  TestGetCapacity<pw::sync::Mutex>();
+TEST_F(SynchronizedAllocatorInterruptSpinLockTest,
+       AllocateDeallocateInterrupt) {
+  TestAllocate();
 }
 
-template <typename LockType>
-void TestAllocate() {
-  AllocatorForTest allocator;
-  SynchronizedAllocator<LockType> synchronized(allocator);
-  Background background(synchronized);
+TEST_F(SynchronizedAllocatorMutexTest, AllocateDeallocate) { TestAllocate(); }
 
-  pw::Vector<Allocation, kNumAllocations> allocations;
-  while (!allocations.full()) {
-    Layout layout(kSize, kAlignment);
-    void* ptr = synchronized.Allocate(layout);
-    Allocation allocation{ptr, layout};
-    allocation.Paint();
-    allocations.push_back(allocation);
-    pw::this_thread::yield();
-  }
-
-  for (const auto& allocation : allocations) {
-    EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
-    synchronized.Deallocate(allocation.ptr);
-  }
+TEST_F(SynchronizedAllocatorInterruptSpinLockTest, ResizeInterrupt) {
+  TestResize();
 }
 
-TEST(SynchronizedAllocatorTest, AllocateDeallocateInterruptSpinLock) {
-  TestAllocate<pw::sync::InterruptSpinLock>();
+TEST_F(SynchronizedAllocatorMutexTest, Resize) { TestResize(); }
+
+TEST_F(SynchronizedAllocatorInterruptSpinLockTest, ReallocateInterrupt) {
+  TestReallocate();
 }
 
-TEST(SynchronizedAllocatorTest, AllocateDeallocateMutex) {
-  TestAllocate<pw::sync::Mutex>();
-}
-
-template <typename LockType>
-void TestResize() {
-  AllocatorForTest allocator;
-  SynchronizedAllocator<LockType> synchronized(allocator);
-  Background background(synchronized);
-
-  pw::Vector<Allocation, kNumAllocations> allocations;
-  while (!allocations.full()) {
-    Layout layout(kSize, kAlignment);
-    void* ptr = synchronized.Allocate(layout);
-    Allocation allocation{ptr, layout};
-    allocation.Paint();
-    allocations.push_back(allocation);
-    pw::this_thread::yield();
-  }
-
-  // First, resize them smaller.
-  for (auto& allocation : allocations) {
-    EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
-    size_t new_size = allocation.layout.size() / 2;
-    if (!synchronized.Resize(allocation.ptr, new_size)) {
-      continue;
-    }
-    allocation.layout = Layout(new_size, allocation.layout.alignment());
-    allocation.Paint();
-    pw::this_thread::yield();
-  }
-
-  // Then, resize them back to their original size.
-  for (auto& allocation : allocations) {
-    EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
-    size_t old_size = allocation.layout.size() * 2;
-    if (!synchronized.Resize(allocation.ptr, old_size)) {
-      continue;
-    }
-    allocation.layout = Layout(old_size, allocation.layout.alignment());
-    allocation.Paint();
-    pw::this_thread::yield();
-  }
-}
-
-TEST(SynchronizedAllocatorTest, ResizeInterruptSpinLock) {
-  TestResize<pw::sync::InterruptSpinLock>();
-}
-
-TEST(SynchronizedAllocatorTest, ResizeMutex) { TestResize<pw::sync::Mutex>(); }
-
-template <typename LockType>
-void TestReallocate() {
-  AllocatorForTest allocator;
-  SynchronizedAllocator<LockType> synchronized(allocator);
-  Background background(synchronized);
-
-  pw::Vector<Allocation, kNumAllocations> allocations;
-  while (!allocations.full()) {
-    Layout layout(kSize, kAlignment);
-    void* ptr = synchronized.Allocate(layout);
-    Allocation allocation{ptr, layout};
-    allocation.Paint();
-    allocations.push_back(allocation);
-    pw::this_thread::yield();
-  }
-
-  for (auto& allocation : allocations) {
-    EXPECT_EQ(allocation.Inspect(), allocation.layout.size());
-    Layout new_layout = allocation.layout.Extend(1);
-    void* new_ptr = synchronized.Reallocate(allocation.ptr, new_layout);
-    if (new_ptr == nullptr) {
-      continue;
-    }
-    allocation.ptr = new_ptr;
-    allocation.layout = new_layout;
-    allocation.Paint();
-    pw::this_thread::yield();
-  }
-}
-
-TEST(SynchronizedAllocatorTest, ReallocateInterruptSpinLock) {
-  TestReallocate<pw::sync::InterruptSpinLock>();
-}
-
-TEST(SynchronizedAllocatorTest, ReallocateMutex) {
-  TestReallocate<pw::sync::Mutex>();
-}
+TEST_F(SynchronizedAllocatorMutexTest, Reallocate) { TestReallocate(); }
 
 template <typename LockType>
 void TestGenerateRequests() {
   constexpr size_t kNumIterations = 10000;
   AllocatorForTest allocator;
   SynchronizedAllocator<LockType> synchronized(allocator);
-  Background background1(synchronized, 1, kNumIterations);
-  Background background2(synchronized, 2, kNumIterations);
+  SynchronizedAllocatorTestThreadCore core1(synchronized, 1, kNumIterations);
+  SynchronizedAllocatorTestThreadCore core2(synchronized, 2, kNumIterations);
+  ::pw::allocator::test::Background background1(core1);
+  ::pw::allocator::test::Background background2(core2);
   background1.Await();
   background2.Await();
 }
 
-TEST(SynchronizedAllocatorTest, GenerateRequestsSpinLock) {
+TEST(SynchronizedAllocatorTest, GenerateRequestsInterruptSpinLock) {
   TestGenerateRequests<pw::sync::InterruptSpinLock>();
 }
 

@@ -235,18 +235,25 @@ AllocatorAsPool
 .. doxygenclass:: pw::allocator::AllocatorAsPool
    :members:
 
-.. _module-pw_allocator-api-pmr_allocator:
-
-PmrAllocator
-============
-.. doxygenclass:: pw::allocator::PmrAllocator
-   :members:
-
 .. _module-pw_allocator-api-fallback_allocator:
 
 FallbackAllocator
 =================
 .. doxygenclass:: pw::allocator::FallbackAllocator
+   :members:
+
+.. _module-pw_allocator-api-guarded_allocator:
+
+GuardedAllocator
+================
+.. doxygenclass:: pw::allocator::GuardedAllocator
+   :members:
+
+.. _module-pw_allocator-api-pmr_allocator:
+
+PmrAllocator
+============
+.. doxygenclass:: pw::allocator::PmrAllocator
    :members:
 
 .. _module-pw_allocator-api-synchronized_allocator:

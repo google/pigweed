@@ -273,6 +273,15 @@ pw_cc_size_binary(
     ],
 )
 
+pw_cc_size_binary(
+    name = "guarded_allocator",
+    srcs = ["guarded_allocator.cc"],
+    deps = _size_report_deps + [
+        "//pw_allocator:best_fit",
+        "//pw_allocator:guarded_allocator",
+    ],
+)
+
 _pmr_allocator_base_deps = _size_report_deps + [
     "//pw_allocator:best_fit",
     "//pw_allocator/block:detailed_block",

@@ -263,6 +263,15 @@ pw_executable("fallback_allocator") {
   ]
 }
 
+pw_executable("guarded_allocator") {
+  forward_variables_from(_size_report, "*")
+  sources = [ "guarded_allocator.cc" ]
+  deps += [
+    "$dir_pw_allocator:best_fit",
+    "$dir_pw_allocator:guarded_allocator",
+  ]
+}
+
 _pmr_allocator = {
   forward_variables_from(_size_report, "*")
   sources = [ "pmr_allocator.cc" ]

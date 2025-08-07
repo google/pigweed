@@ -419,6 +419,24 @@ pw_source_set("typed_pool") {
   ]
 }
 
+pw_source_set("guarded_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/guarded_allocator.h" ]
+  public_deps = [
+    ":pw_allocator",
+    ":synchronized_allocator",
+    "$dir_pw_sync:borrow",
+    dir_pw_result,
+  ]
+  deps = [
+    "$dir_pw_bytes:alignment",
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
+    dir_pw_span,
+  ]
+  sources = [ "guarded_allocator.cc" ]
+}
+
 pw_source_set("worst_fit") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/worst_fit.h" ]
@@ -488,6 +506,26 @@ pw_source_set("counter") {
     dir_pw_unit_test,
   ]
   sources = [ "counter.cc" ]
+}
+
+pw_source_set("sync_allocator_testing") {
+  public_configs = [ ":test_config" ]
+  public = [ "public/pw_allocator/sync_allocator_testing.h" ]
+  public_deps = [
+    ":allocator",
+    "$dir_pw_containers:vector",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
+    "$dir_pw_unit_test",
+  ]
+  deps = [
+    ":deallocator",
+    "$dir_pw_status",
+    "$dir_pw_thread:yield",
+  ]
+  sources = [ "sync_allocator_testing.cc" ]
 }
 
 pw_source_set("test_harness") {
@@ -662,6 +700,22 @@ pw_test("freelist_heap_test") {
   sources = [ "freelist_heap_test.cc" ]
 }
 
+pw_test("guarded_allocator_test") {
+  enable_if =
+      pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
+      pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
+      pw_thread_YIELD_BACKEND != "" &&
+      pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
+  deps = [
+    ":first_fit_block_allocator",
+    ":guarded_allocator",
+    ":sync_allocator_testing",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:mutex",
+  ]
+  sources = [ "guarded_allocator_test.cc" ]
+}
+
 pw_test("layout_test") {
   deps = [
     ":pw_allocator",
@@ -717,20 +771,12 @@ pw_test("synchronized_allocator_test") {
       pw_thread_YIELD_BACKEND != "" &&
       pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
   deps = [
+    ":sync_allocator_testing",
     ":synchronized_allocator",
     ":test_harness",
     ":testing",
-    "$dir_pw_containers:vector",
-    "$dir_pw_sync:binary_semaphore",
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:mutex",
-    "$dir_pw_sync:virtual_basic_lockable",
-    "$dir_pw_thread:test_thread_context",
-    "$dir_pw_thread:thread",
-    "$dir_pw_thread:thread_core",
-    "$dir_pw_thread:yield",
-    dir_pw_random,
-    dir_pw_status,
   ]
   sources = [ "synchronized_allocator_test.cc" ]
 }
@@ -809,6 +855,7 @@ pw_test_group("tests") {
     ":first_fit_test",
     ":fragmentation_test",
     ":freelist_heap_test",
+    ":guarded_allocator_test",
     ":layout_test",
     ":libc_allocator_test",
     ":metrics_test",

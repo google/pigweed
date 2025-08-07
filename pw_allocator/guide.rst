@@ -280,6 +280,9 @@ Consult the :ref:`module-pw_allocator-api` for additional details.
 - :ref:`module-pw_allocator-api-pmr_allocator`: Adapts an allocator to be a
   ``std::pmr::polymorphic_allocator``, which can be used with standard library
   containers that `use allocators`_, such as ``std::pmr::vector<T>``.
+- :ref:`module-pw_allocator-api-guarded_allocator`: Inserts guard values before
+  and after allocations, and provides a thread-safe way to check them in order
+  to detect heap overflows.
 - :ref:`module-pw_allocator-api-synchronized_allocator`: Synchronizes access to
   another allocator, allowing it to be used by multiple threads.
 - :ref:`module-pw_allocator-api-tracking_allocator`: Wraps another allocator and
