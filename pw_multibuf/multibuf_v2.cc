@@ -394,7 +394,7 @@ void GenericMultiBuf::TruncateTopLayer(size_t length) {
   if (length == size()) {
     return;
   }
-  size_t offset = GetOffset(0);
+  size_t offset = GetRelativeOffset(0);
   Entry& current = deque_[depth_ - 1];
   CheckRange(offset, length, current.view.offset + size());
   SetLayer(offset, length);

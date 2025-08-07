@@ -1416,10 +1416,27 @@ class GenericMultiBuf final
     return depth_ == 2 ? true : deque_[index + depth_ - 1].view.boundary;
   }
 
+  /// Returns the absolute offset of the given layer of the chunk at the given
+  /// index.
+  /// `layer` must be in the range [1, NumLayers()].
+  constexpr size_type GetOffset(size_type index, uint16_t layer) const {
+    return layer == 1 ? deque_[index + 1].base_view.offset
+                      : deque_[index + layer].view.offset;
+  }
+
   /// Returns the offset of the view of the chunk at the given index.
   constexpr size_type GetOffset(size_type index) const {
-    return depth_ == 2 ? deque_[index + 1].base_view.offset
-                       : deque_[index + depth_ - 1].view.offset;
+    return GetOffset(index, NumLayers());
+  }
+
+  /// Returns the offset relative to the layer below of the view of the chunk
+  /// at the given index.
+  constexpr size_type GetRelativeOffset(size_type index) const {
+    uint16_t layer = NumLayers();
+    if (layer == 1) {
+      return GetOffset(index, layer);
+    }
+    return GetOffset(index, layer) - GetOffset(index, layer - 1);
   }
 
   /// Returns the length of the view of the chunk at the given index.

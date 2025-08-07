@@ -2385,8 +2385,8 @@ TEST_F(MultiBufTest, TruncateTopLayerSucceedsWithNonzeroLength) {
   AddLayers(*mbi);
   EXPECT_EQ(mbi->size(), 32u);
   mbi->TruncateTopLayer(6);
-  constexpr auto expected =  // Keeps existing start offset 0 + 2 + 4 = 6.
-      pw::bytes::Array<0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b>();
+  constexpr auto expected =  // Keeps existing top layer start offset 4.
+      pw::bytes::Array<0x04, 0x05, 0x06, 0x07, 0x08, 0x09>();
   EXPECT_TRUE(
       std::equal(mbi->begin(), mbi->end(), expected.begin(), expected.end()));
 }
