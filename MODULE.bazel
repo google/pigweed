@@ -34,8 +34,6 @@ bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf")
 # LINT.ThenChange(pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json,pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list:protobuf)
 
-# A transitive dependency requires this.
-bazel_dep(name = "abseil-cpp", version = "20240116.1")
 bazel_dep(name = "re2", version = "2024-07-02.bcr.1")
 bazel_dep(name = "rules_android", version = "0.6.0")
 bazel_dep(name = "rules_cc", version = "0.1.2")
