@@ -45,17 +45,13 @@ device driver that requires that a clock tree abstraction is present in the syst
 Definition and use of clock tree elements
 =========================================
 
-For the example below we use a clock tree with two clock sources ``clock_a`` and ``clock_b``.
-``clock_a`` can be selected as an input source by ``clock_selector_c``, and ``clock_b`` is an input into
-divider ``clock_divider_d``, which can be selected as an alternative input source by
-``clock_selector_c``.
+For the example below we define a clock tree with a clock source ``clock_a``
+which is an input into divider ``clock_divider_d``.
 
 .. mermaid::
 
     flowchart LR
-          A(clock_a) -..-> C(clock_selector_c)
-          B(clock_b)--> D(clock_divider_d)
-          D -..-> C
+          A(clock_a)--> D(clock_divider_d)
 
 .. cpp:namespace-push:: pw::clock_tree::Element
 
@@ -77,32 +73,6 @@ Derived ``ClockDividerExample`` class template that overrides
    :start-after: [pw_clock_tree-examples-ClockDividerExampleDef]
    :end-before: [pw_clock_tree-examples-ClockDividerExampleDef]
 
-Derived ``ClockSelectorExample`` class template that overrides
-:cpp:func:`DoEnable` and :cpp:func:`DoDisable` methods,
-and defines the ``SetSource`` method to allow the clock selector to change from one dependent source to
-another source. If the dependent source of a clock selector doesn't change at any point, one doesn't
-need to implement a method like ``SetSource``.
-
-.. cpp:namespace-pop::
-
-.. literalinclude:: examples.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_clock_tree-examples-ClockSelectorExampleDef]
-   :end-before: [pw_clock_tree-examples-ClockSelectorExampleDef]
-
-.. cpp:namespace-push:: pw::clock_tree
-
-Derived ``ClockTreeSetSource`` class that provides ``SetSource`` method to allow to change the
-source a clock selector depends on. If ``ClockSelectorExample`` wouldn't provide the ``SetSource``
-method, one could use the :cpp:class:`ClockTree` class directly in the example below.
-
-.. literalinclude:: examples.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_clock_tree-examples-ClockTreeSetSourcesExampleDef]
-   :end-before: [pw_clock_tree-examples-ClockTreeSetSourcesExampleDef]
-
 Declare the :cpp:class:`ClockTree` class object.
 
 .. literalinclude:: examples.cc
@@ -112,7 +82,7 @@ Declare the :cpp:class:`ClockTree` class object.
    :end-before: [pw_clock_tree-examples-ClockTreeDec]
 
 Declare the clock tree elements.
-``clock_selector_c`` depends on ``clock_a``, and ``clock_divider_d`` depends on ``clock_b``.
+``clock_divider_d`` depends on ``clock_a``.
 
 .. literalinclude:: examples.cc
    :language: cpp
@@ -120,50 +90,22 @@ Declare the clock tree elements.
    :start-after: [pw_clock_tree-examples-ClockTreeElementsDec]
    :end-before: [pw_clock_tree-examples-ClockTreeElementsDec]
 
-Acquire a reference to ``clock_selector_c``, which will acquire a reference to the dependent source
+Acquire a reference to ``clock_divider_d``, which will acquire a reference to the dependent source
 ``clock_a``. When the reference to ``clock_a`` gets acquired, ``clock_a`` gets enabled. Once the
-reference to ``clock_a`` has been acquired and it is enabled, ``clock_selector_c`` gets enabled.
+reference to ``clock_a`` has been acquired and it is enabled, ``clock_divider_d`` gets enabled.
 
 .. mermaid::
 
     flowchart LR
-          A(clock_A) -->C(clock_selector_c)
-          B(clock_B)--> D(clock_divider_d)
-          D -..-> C
+          A(clock_a)--> D(clock_divider_d)
           style A fill:#0f0,stroke:#333,stroke-width:4px
-          style C fill:#0f0,stroke:#333,stroke-width:4px
-          style B fill:#f00,stroke:#333,stroke-width:4px
-          style D fill:#f00,stroke:#333,stroke-width:4px
-
-.. literalinclude:: examples.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_clock_tree-examples-AcquireClockSelectorC]
-   :end-before: [pw_clock_tree-examples-AcquireClockSelectorC]
-
-Change the dependent source of ``clock_selector_c`` from ``clock_a`` to ``clock_divider_d`` while
-the ``clock_selector_c`` is enabled. Before ``clock_divider_d`` can be configured as the new
-dependent source, a reference to ``clock_divider_d`` will need to get acquired, which will acquire
-a reference to ``clock_b`` and enable ``clock_b`` before ``clock_divider_d`` gets enabled.
-Once the dependent source has been changed from ``clock_a`` to ``clock_divider_d``, the reference to
-``clock_a`` will get released, which will disable ``clock_a``.
-
-.. mermaid::
-
-    flowchart LR
-          A(clock_A) -..->C(clock_selector_c)
-          B(clock_B)--> D(clock_divider_d)
-          D --> C
-          style A fill:#f00,stroke:#333,stroke-width:4px
-          style C fill:#0f0,stroke:#333,stroke-width:4px
-          style B fill:#0f0,stroke:#333,stroke-width:4px
           style D fill:#0f0,stroke:#333,stroke-width:4px
 
 .. literalinclude:: examples.cc
    :language: cpp
    :linenos:
-   :start-after: [pw_clock_tree-examples-ChangeClockSelectorCDependentSource]
-   :end-before: [pw_clock_tree-examples-ChangeClockSelectorCDependentSource]
+   :start-after: [pw_clock_tree-examples-AcquireClockDividerD]
+   :end-before: [pw_clock_tree-examples-AcquireClockDividerD]
 
 Set the clock divider value while the ``clock_divider_d`` is enabled.
 
@@ -173,8 +115,7 @@ Set the clock divider value while the ``clock_divider_d`` is enabled.
    :start-after: [pw_clock_tree-examples-SetClockDividerDValue]
    :end-before: [pw_clock_tree-examples-SetClockDividerDValue]
 
-Release the reference to the ``clock_selector_c``, which will disable ``clock_selector_c``, and
-then release the reference to ``clock_divider_d``. Then ``clock_divider_d`` will get disabled before
+Release the reference to the ``clock_divider_d``, which will disable ``clock_divider_d`` before
 it releases its reference to ``clock_b`` that gets disabled afterward. At this point all clock
 tree elements are disabled.
 

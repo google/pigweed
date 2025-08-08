@@ -211,63 +211,6 @@ class DependentElement : public ElementType {
   /// Create a dependent clock tree element that depends on `source`.
   constexpr DependentElement(ElementType& source) : source_(&source) {}
 
- protected:
-  /// Update source dependency.
-  ///
-  /// It is the responsibility of the derived class to ensure that the
-  /// source dependency can only be changed when permitted, i.e. only
-  /// if reference count is zero.
-  /// If the update is permitted while the reference count is greater than
-  /// zero, the caller of this function must make sure that the `DoEnable`
-  /// method has access to the updated configuration matching the new `source`
-  /// dependency. Only if the `UpdateSource` call succeeds, the new source has
-  /// been configured as the `source_` element for this element, otherwise the
-  /// old source element is still configured as `source_` element for this
-  /// element. If the `DoEnable` call of the new source fails, the current
-  /// element will be disabled, since the previous source got already released,
-  /// and the old source remains configured as the dependent element.
-  Status UpdateSource(ElementType& new_source, bool permit_change_if_in_use) {
-    // If the element is not enabled, we can update the `source_` directly.
-    if (this->ref_count() == 0) {
-      source_ = &new_source;
-      return OkStatus();
-    }
-
-    // The element is active, check whether we are allowed to change the source.
-    if (!permit_change_if_in_use) {
-      return Status::FailedPrecondition();
-    }
-
-    ElementType* old_source = source_;
-
-    // Acquire the dependent sources for the new_source element.
-    PW_TRY(new_source.Acquire());
-
-    // Disable this current element configuration.
-    if (Status status = this->DoDisable(); !status.ok()) {
-      new_source.Release().IgnoreError();
-      return status;
-    }
-
-    // Enable the new source element configuration.
-    Status status = this->DoEnable();
-
-    // Release the reference to the old dependent source regardless whether
-    // we have enabled the new source, since we have successfully disabled it.
-    old_source->Release().IgnoreError();
-
-    // Check whether the `DoEnable` method succeeded for the new source.
-    if (!status.ok()) {
-      new_source.Release().IgnoreError();
-      this->DecRef();
-      return status;
-    }
-
-    // Everything has succeeded, change the source_ element.
-    source_ = &new_source;
-    return OkStatus();
-  }
-
  private:
   /// Acquire a reference to the dependent clock tree element.
   ///
