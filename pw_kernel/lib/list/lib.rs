@@ -14,6 +14,7 @@
 #![no_std]
 #![cfg_attr(test, no_main)]
 
+use core::marker::PhantomData;
 use core::ptr::NonNull;
 
 use foreign_box::ForeignBox;
@@ -68,7 +69,7 @@ impl<T, A: Adapter> ForeignList<T, A> {
     }
 
     /// # Safety
-    /// Call ensures the element is a valid point to an instance of T.
+    /// Caller ensures the element is a valid pointer to an instance of T.
     pub unsafe fn remove_element(&mut self, element: NonNull<T>) -> Option<ForeignBox<T>> {
         unsafe {
             self.list
@@ -82,6 +83,111 @@ impl<T: Ord, A: Adapter> ForeignList<T, A> {
     pub fn sorted_insert(&mut self, element: ForeignBox<T>) {
         let element = element.consume();
         unsafe { self.list.sorted_insert_unchecked(element.as_ptr()) }
+    }
+}
+
+/// A key used to remove an element from a [`RandomAccessForeignList`]
+pub struct RandomAccessKey<T, A: Adapter> {
+    // `new()` ensure that this is a valid, well-aligned, pointer to a `T`.
+    ptr: NonNull<T>,
+    _phantom: PhantomData<A>,
+}
+
+impl<T, A: Adapter> RandomAccessKey<T, A> {
+    /// # Safety
+    /// Caller ensures the element is a valid pointer to an instance of T.
+    unsafe fn new(element: &mut ForeignBox<T>) -> Self {
+        Self {
+            ptr: unsafe { NonNull::new_unchecked(element.as_mut_ptr()) },
+            _phantom: PhantomData,
+        }
+    }
+}
+
+/// A variant of [`ForeignList`] that allows safely removal of arbitrary nodes
+/// in exchange no pop operations.
+///
+/// When a node is added to a [`RandomAccessForeignList`], a [`RandomAccessKey`]
+/// is returned.  The node may only be removed from this list by passing that
+/// key to [`RandomAccessForeignList::remove_element()`].
+///
+/// # Example
+/// ```
+/// use core::ptr::NonNull;
+///
+/// use foreign_box::ForeignBox;
+/// use list::{Link, RandomAccessForeignList, define_adapter};
+///
+/// struct Element {
+///     value: u32,
+///     link: Link,
+/// }
+///
+/// define_adapter!(Adapter => Element::link);
+///
+/// let mut element1 = Element {
+///     value: 1,
+///     link: Link::new(),
+/// };
+/// let mut element2 = Element {
+///     value: 2,
+///     link: Link::new(),
+/// };
+/// let mut element3 = Element {
+///     value: 3,
+///     link: Link::new(),
+/// };
+///
+/// let mut list = RandomAccessForeignList::<Element, Adapter>::new();
+/// let key3 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+/// let key2 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+/// let key1 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+///
+/// let removed_element = list.remove_element(key2);
+/// assert_eq!(removed_element.consume(), NonNull::new(&raw mut element2).unwrap());
+/// ```
+///
+pub struct RandomAccessForeignList<T, A: Adapter> {
+    list: ForeignList<T, A>,
+}
+
+impl<T, A: Adapter> RandomAccessForeignList<T, A> {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            list: ForeignList::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.list.is_empty()
+    }
+
+    #[must_use]
+    pub fn push_front(&mut self, mut element: ForeignBox<T>) -> RandomAccessKey<T, A> {
+        // SAFETY: Caller ensures the element is a valid pointer to an instance of T.
+        let key = unsafe { RandomAccessKey::new(&mut element) };
+        self.list.push_front(element);
+        key
+    }
+
+    #[must_use]
+    pub fn push_back(&mut self, mut element: ForeignBox<T>) -> RandomAccessKey<T, A> {
+        // SAFETY: Caller ensures the element is a valid pointer to an instance of T.
+        let key = unsafe { RandomAccessKey::new(&mut element) };
+        self.list.push_back(element);
+        key
+    }
+
+    pub fn for_each<E, F: FnMut(&T) -> Result<(), E>>(&self, callback: F) -> Result<(), E> {
+        self.list.for_each(callback)
+    }
+
+    #[must_use]
+    pub fn remove_element(&mut self, key: RandomAccessKey<T, A>) -> ForeignBox<T> {
+        // SAFETY: Caller ensures the element is a valid pointer to an instance of T.
+        unsafe { self.list.remove_element(key.ptr).unwrap_unchecked() }
     }
 }
 
@@ -417,6 +523,177 @@ mod tests {
         list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element2_2) });
         validate_list(&list, &[1, 2, 2, 3])?;
         drain_list(&mut list);
+        Ok(())
+    }
+
+    fn validate_random_access_list(
+        list: &RandomAccessForeignList<TestMember, TestAdapter>,
+        expected_values: &[u32],
+    ) -> unittest::Result<()> {
+        let mut index = 0;
+        list.for_each(|element| {
+            unittest::assert_eq!(element.value, expected_values[index]);
+            index += 1;
+            Ok(())
+        })?;
+
+        unittest::assert_eq!(index, expected_values.len());
+        Ok(())
+    }
+
+    #[test]
+    fn new_random_access_list_is_empty() -> unittest::Result<()> {
+        let list = RandomAccessForeignList::<TestMember, TestAdapter>::new();
+        unittest::assert_true!(list.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn random_access_push_front_adds_in_correct_order() -> unittest::Result<()> {
+        let mut element1 = TestMember {
+            value: 1,
+            link: Link::new(),
+        };
+        let mut element2 = TestMember {
+            value: 2,
+            link: Link::new(),
+        };
+
+        let mut list = RandomAccessForeignList::<TestMember, TestAdapter>::new();
+        let key2 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+        let key1 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+
+        unittest::assert_false!(list.is_empty());
+
+        validate_random_access_list(&list, &[1, 2])?;
+
+        for key in [key1, key2] {
+            let _ = list.remove_element(key).consume();
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn random_access_push_back_adds_in_correct_order() -> unittest::Result<()> {
+        let mut element1 = TestMember {
+            value: 1,
+            link: Link::new(),
+        };
+        let mut element2 = TestMember {
+            value: 2,
+            link: Link::new(),
+        };
+
+        let mut list = RandomAccessForeignList::<TestMember, TestAdapter>::new();
+        let key2 = list.push_back(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+        let key1 = list.push_back(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+
+        unittest::assert_false!(list.is_empty());
+
+        validate_random_access_list(&list, &[2, 1])?;
+
+        for key in [key1, key2] {
+            let _ = list.remove_element(key).consume();
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn random_access_remove_element_can_remove_head() -> unittest::Result<()> {
+        let mut element1 = TestMember {
+            value: 1,
+            link: Link::new(),
+        };
+        let mut element2 = TestMember {
+            value: 2,
+            link: Link::new(),
+        };
+        let mut element3 = TestMember {
+            value: 3,
+            link: Link::new(),
+        };
+
+        let mut list = RandomAccessForeignList::<TestMember, TestAdapter>::new();
+        let key3 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+        let key2 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+        let key1 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+
+        let removed_element = list.remove_element(key1);
+        unittest::assert_eq!(
+            removed_element.consume(),
+            NonNull::new(&raw mut element1).unwrap()
+        );
+
+        validate_random_access_list(&list, &[2, 3])?;
+        for key in [key2, key3] {
+            let _ = list.remove_element(key).consume();
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn random_access_remove_element_can_remove_middle() -> unittest::Result<()> {
+        let mut element1 = TestMember {
+            value: 1,
+            link: Link::new(),
+        };
+        let mut element2 = TestMember {
+            value: 2,
+            link: Link::new(),
+        };
+        let mut element3 = TestMember {
+            value: 3,
+            link: Link::new(),
+        };
+
+        let mut list = RandomAccessForeignList::<TestMember, TestAdapter>::new();
+        let key3 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+        let key2 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+        let key1 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+
+        let removed_element = list.remove_element(key2);
+        unittest::assert_eq!(
+            removed_element.consume(),
+            NonNull::new(&raw mut element2).unwrap()
+        );
+
+        validate_random_access_list(&list, &[1, 3])?;
+        for key in [key1, key3] {
+            let _ = list.remove_element(key).consume();
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn random_access_remove_element_can_remove_tail() -> unittest::Result<()> {
+        let mut element1 = TestMember {
+            value: 1,
+            link: Link::new(),
+        };
+        let mut element2 = TestMember {
+            value: 2,
+            link: Link::new(),
+        };
+        let mut element3 = TestMember {
+            value: 3,
+            link: Link::new(),
+        };
+
+        let mut list = RandomAccessForeignList::<TestMember, TestAdapter>::new();
+        let key3 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+        let key2 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+        let key1 = list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+
+        let removed_element = list.remove_element(key3);
+        unittest::assert_eq!(
+            removed_element.consume(),
+            NonNull::new(&raw mut element3).unwrap()
+        );
+
+        validate_random_access_list(&list, &[1, 2])?;
+        for key in [key1, key2] {
+            let _ = list.remove_element(key).consume();
+        }
         Ok(())
     }
 }
