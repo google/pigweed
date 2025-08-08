@@ -30,7 +30,8 @@ ALIASES                = "rst=^^\verbatim embed:rst:leading-asterisk^^" \
                          "cpp_func{1}=@crossref{cpp,func,\1}" \
                          "cpp_type{1}=@crossref{cpp,type,\1}" \
                          "cpp_enum{1}=@crossref{cpp,type,\1}" \
-                         "pw_status{1}=@crossref{c,enumerator,\1}"
+                         "pw_status{1}=@crossref{c,enumerator,\1}" \
+                         "module{2}=\defgroup \1 \1^^@brief \2: https://pigweed.dev/\1"
 
 # https://www.doxygen.nl/manual/config.html#cfg_case_sense_names
 CASE_SENSE_NAMES       = NO

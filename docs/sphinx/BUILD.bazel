@@ -82,6 +82,7 @@ sphinx_docs_library(
         "contributing/build.rst",
         "contributing/docs/build.rst",
         "contributing/docs/changelog.rst",
+        "contributing/docs/doxygen.rst",
         "contributing/docs/examples.rst",
         "contributing/docs/index.rst",
         "contributing/docs/modules.rst",

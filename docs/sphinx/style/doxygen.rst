@@ -3,6 +3,7 @@
 ===================
 Doxygen style guide
 ===================
+.. TODO: b/426012010 - Move upstream Pigweed content to //docs/sphinx/contributing/docs/doxygen.rst
 .. _Doxygen: https://www.doxygen.nl/index.html
 
 ``pigweed.dev`` uses `Doxygen`_ to auto-generate C and C++ API references

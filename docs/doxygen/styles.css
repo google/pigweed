@@ -500,6 +500,11 @@ a {
   color: var(--page-visited-link-color);
 }
 
+/* Hide the "More..." link that appears in the "Brief description" section. */
+.contents a[href='#details'] {
+  display: none;
+}
+
 a:hover {
   text-decoration: underline;
 }

@@ -71,6 +71,7 @@ Authoring guidelines and style guides for ``pigweed.dev`` contributors.
    :hidden:
 
    Build system <build>
+   Doxygen <doxygen>
    modules
    Code examples <examples>
    website

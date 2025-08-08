@@ -166,6 +166,15 @@ the License.
   <!-- Layout definition for a group page -->
   <group>
     <briefdescription visible="yes"/>
+    <!-- `detaileddescription` repeats the `@brief` content and then displays
+         the `@details` content, if any. We hide `detaileddescription` for a
+         couple reasons:
+
+         * Repeating the `@brief` is noisy
+         * We don't really want Pigweed contributors to use `@details` to provide
+           introductory explanation of a module. That content should go in the
+           module's docs.rst page on the main site. -->
+    <detaileddescription title="" visible="no"/>
     <groupgraph visible="$GROUP_GRAPHS"/>
     <memberdecl>
       <nestedgroups visible="yes" title=""/>
@@ -191,7 +200,6 @@ the License.
       <friends title=""/>
       <membergroups visible="yes"/>
     </memberdecl>
-    <detaileddescription title=""/>
     <memberdef>
       <pagedocs/>
       <inlineclasses title=""/>

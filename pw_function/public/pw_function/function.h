@@ -20,7 +20,7 @@
 
 namespace pw {
 
-/// @defgroup pw_function
+/// @module{pw_function, Embedded-friendly std::function}
 /// @{
 
 /// `pw::Function` is a wrapper for an arbitrary callable object. It can be used
