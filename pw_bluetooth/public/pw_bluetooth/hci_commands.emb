@@ -166,6 +166,7 @@ bits LEPeriodicAdvertisingCreateSyncOptions:
 
 bits LEPeriodicAdvertisingSyncCteType:
   -- Bit definitions for a |sync_cte_type| field in an LE Periodic Advertising Create Sync command
+
   0 [+1]  Flag  dont_sync_aoa
     -- Do not sync to packets with an AoA Constant Tone Extension
 
@@ -174,6 +175,8 @@ bits LEPeriodicAdvertisingSyncCteType:
 
   2 [+1]  Flag  dont_sync_aod_2us
     -- Do not sync to packets with an AoD Constant Tone Extension with 2 microsecond slots
+
+  # Bit 3 is reserved for future use.
 
   4 [+1]  Flag  dont_sync_without_cte
     -- Do not sync to packets without a Constant Tone Extension

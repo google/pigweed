@@ -2116,7 +2116,7 @@ struct LEPeriodicAdvertisingSyncEstablishedSubeventV2:
   $next [+1]                           UInt               response_slot_spacing
     -- Time = N * 0.125 ms
     -- Time Range: 0.25 ms to 31.875 ms
-    [requires: 0x02 <= this <= 0xFF]
+    [requires: this == 0x00 || 0x02 <= this <= 0xFF]
 
 
 struct LEPeriodicAdvertisingReportSubeventV1:
