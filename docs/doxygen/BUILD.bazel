@@ -26,6 +26,7 @@ filegroup(
     srcs = [
         "footer.html",
         "header.html",
+        "index.md",
         "layout.xml",
         "styles.css",
     ],

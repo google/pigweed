@@ -1500,7 +1500,7 @@ dl.section dd {
   padding: 0;
 }
 
-#projectname {
+#projectname a {
   font-size: 200%;
   font-family: var(--font-family-title);
   margin: 0px;

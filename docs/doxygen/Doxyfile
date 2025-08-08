@@ -177,6 +177,9 @@ SHOW_HEADERFILE        = NO
 # https://www.doxygen.nl/manual/config.html#cfg_tab_size
 TAB_SIZE               = 2
 
+# https://www.doxygen.nl/manual/config.html#cfg_use_mdfile_as_mainpage
+USE_MDFILE_AS_MAINPAGE = docs/doxygen/index.md
+
 # TODO: https://pwbug.dev/393634135 - Turn this on.
 #
 # https://www.doxygen.nl/manual/config.html#cfg_warn_if_doc_error
