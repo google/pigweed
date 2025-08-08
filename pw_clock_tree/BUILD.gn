@@ -23,7 +23,10 @@ config("default_config") {
 
 pw_source_set("pw_clock_tree") {
   public_configs = [ ":default_config" ]
-  public = [ "public/pw_clock_tree/clock_tree.h" ]
+  public = [
+    "public/pw_clock_tree/clock_tree.h",
+    "public/pw_clock_tree/internal/deferred_init.h",
+  ]
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_status",
