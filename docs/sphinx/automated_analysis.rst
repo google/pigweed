@@ -295,6 +295,19 @@ Known limitations
    about which imports are first- vs third-party. This seems hard to fix because
    pylint uses undocumented heuristics to categorize the imports.
 
+Mypy
+----
+We recommend using `rules_mypy <https://github.com/theoremlp/rules_mypy>`__ for
+running mypy from Bazel.
+
+Examples of enabling mypy in existing projects that may be helpful:
+
+*  `Sense <http://pwrev.dev/311099>`__, for a downstream project *without* pip
+   dependencies.
+*  `Upstream Pigweed <http://pwrev.dev/309473>`__, for a library *with* pip
+   dependencies.
+
+
 Fuzzers
 =======
 See the :ref:`module-pw_fuzzer` module documentation.
