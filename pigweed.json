@@ -22,6 +22,10 @@
           "module": "pigweed_upstream_build.main",
           "function": "pigweed_upstream_main"
         },
+        "change": {
+          "module": "pw_change.main",
+          "function": "main"
+        },
         "console": {
           "module": "pw_system.console",
           "function": "main"
@@ -43,7 +47,7 @@
           "function": "main"
         },
         "review": {
-          "module": "pw_review.review",
+          "module": "pw_change.review",
           "function": "main"
         },
         "heap-viewer": {

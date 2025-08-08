@@ -20,28 +20,34 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 py_library(
-    name = "pw_review",
+    name = "pw_change",
     srcs = [
-        "pw_review/__init__.py",
-        "pw_review/review.py",
+        "pw_change/__init__.py",
+        "pw_change/main.py",
+        "pw_change/review.py",
     ],
     imports = ["."],
     deps = [
         "//pw_cli/py:pw_cli",
-        "@pigweed_python_packages//prompt_toolkit",
-        "@pigweed_python_packages//psutil",
     ],
-)
-
-pw_py_binary(
-    name = "review",
-    srcs = ["pw_review/review.py"],
-    main = "pw_review/review.py",
-    deps = [":pw_review"],
 )
 
 pw_py_test(
     name = "review_test",
     srcs = ["review_test.py"],
-    deps = [":pw_review"],
+    deps = [":pw_change"],
+)
+
+pw_py_binary(
+    name = "review",
+    srcs = ["pw_change/review.py"],
+    main = "pw_change/review.py",
+    deps = [":pw_change"],
+)
+
+pw_py_binary(
+    name = "change",
+    srcs = ["pw_change/main.py"],
+    main = "pw_change/main.py",
+    deps = [":pw_change"],
 )

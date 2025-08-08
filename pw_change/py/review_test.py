@@ -19,7 +19,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from pw_review import review
+from pw_change import review
 
 
 class ReviewTest(unittest.TestCase):

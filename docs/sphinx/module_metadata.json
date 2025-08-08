@@ -224,6 +224,13 @@
     ],
     "size": "0 to 150 bytes"
   },
+  "pw_change": {
+    "tagline": "Commands that operate on Gerrit changes and Git commits",
+    "status": "experimental",
+    "languages": [
+      "Python"
+    ]
+  },
   "pw_channel": {
     "tagline": "Async, zero-copy API for sending and receiving bytes or datagrams",
     "status": "experimental",
@@ -682,13 +689,6 @@
     "status": "stable",
     "languages": [
       "C++17"
-    ]
-  },
-  "pw_review": {
-    "tagline": "AI code reviews",
-    "status": "experimental",
-    "languages": [
-      "Python"
     ]
   },
   "pw_ring_buffer": {

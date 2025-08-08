@@ -37,6 +37,7 @@ Modules
    pw_build_mcuxpresso/docs
    pw_bytes/docs
    pw_channel/docs
+   pw_change/docs
    pw_checksum/docs
    pw_chre/docs
    pw_chrono/docs
@@ -93,7 +94,6 @@ Modules
    pw_protobuf_compiler/docs
    pw_random/docs
    pw_result/docs
-   pw_review/docs
    pw_ring_buffer/docs
    pw_router/docs
    pw_rpc/docs

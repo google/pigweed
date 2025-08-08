@@ -64,6 +64,7 @@ declare_args() {
   dir_pw_build_info = get_path_info("../pw_build_info", "abspath")
   dir_pw_build_mcuxpresso = get_path_info("../pw_build_mcuxpresso", "abspath")
   dir_pw_bytes = get_path_info("../pw_bytes", "abspath")
+  dir_pw_change = get_path_info("../pw_change", "abspath")
   dir_pw_channel = get_path_info("../pw_channel", "abspath")
   dir_pw_checksum = get_path_info("../pw_checksum", "abspath")
   dir_pw_chre = get_path_info("../pw_chre", "abspath")
@@ -160,7 +161,6 @@ declare_args() {
   dir_pw_random = get_path_info("../pw_random", "abspath")
   dir_pw_random_fuchsia = get_path_info("../pw_random_fuchsia", "abspath")
   dir_pw_result = get_path_info("../pw_result", "abspath")
-  dir_pw_review = get_path_info("../pw_review", "abspath")
   dir_pw_ring_buffer = get_path_info("../pw_ring_buffer", "abspath")
   dir_pw_router = get_path_info("../pw_router", "abspath")
   dir_pw_rpc = get_path_info("../pw_rpc", "abspath")
@@ -273,6 +273,7 @@ declare_args() {
     dir_pw_build_info,
     dir_pw_build_mcuxpresso,
     dir_pw_bytes,
+    dir_pw_change,
     dir_pw_channel,
     dir_pw_checksum,
     dir_pw_chre,
@@ -361,7 +362,6 @@ declare_args() {
     dir_pw_random,
     dir_pw_random_fuchsia,
     dir_pw_result,
-    dir_pw_review,
     dir_pw_ring_buffer,
     dir_pw_router,
     dir_pw_rpc,
@@ -464,6 +464,7 @@ declare_args() {
     "$dir_pw_build_info:tests",
     "$dir_pw_build_mcuxpresso:tests",
     "$dir_pw_bytes:tests",
+    "$dir_pw_change:tests",
     "$dir_pw_channel:tests",
     "$dir_pw_checksum:tests",
     "$dir_pw_chre:tests",
@@ -552,7 +553,6 @@ declare_args() {
     "$dir_pw_random:tests",
     "$dir_pw_random_fuchsia:tests",
     "$dir_pw_result:tests",
-    "$dir_pw_review:tests",
     "$dir_pw_ring_buffer:tests",
     "$dir_pw_router:tests",
     "$dir_pw_rpc:tests",
@@ -655,6 +655,7 @@ declare_args() {
     "$dir_pw_build_info:docs",
     "$dir_pw_build_mcuxpresso:docs",
     "$dir_pw_bytes:docs",
+    "$dir_pw_change:docs",
     "$dir_pw_channel:docs",
     "$dir_pw_checksum:docs",
     "$dir_pw_chre:docs",
@@ -743,7 +744,6 @@ declare_args() {
     "$dir_pw_random:docs",
     "$dir_pw_random_fuchsia:docs",
     "$dir_pw_result:docs",
-    "$dir_pw_review:docs",
     "$dir_pw_ring_buffer:docs",
     "$dir_pw_router:docs",
     "$dir_pw_rpc:docs",

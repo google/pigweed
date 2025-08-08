@@ -50,6 +50,11 @@ native_binary(
 )
 
 alias(
+    name = "change",
+    actual = "//pw_change/py:change",
+)
+
+alias(
     name = "watch",
     actual = "//pw_watch/py:bazel",
 )
@@ -61,7 +66,7 @@ alias(
 
 alias(
     name = "review",
-    actual = "//pw_review/py:review",
+    actual = "//pw_change/py:review",
 )
 
 alias(

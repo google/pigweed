@@ -76,6 +76,13 @@
   ],
   "tools": [
     {
+      "name": "change",
+      "description": "Work with Gerrit changes and Git commits.",
+      "use_config": "bazel_default",
+      "target": "@pigweed//:change",
+      "type": "ANALYZER"
+    },
+    {
       "name": "format",
       "description": "Find and fix code formatting issues",
       "use_config": "bazel_default",

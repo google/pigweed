@@ -33,6 +33,7 @@ pw_build_android
 pw_build_info
 pw_build_mcuxpresso
 pw_bytes
+pw_change
 pw_channel
 pw_checksum
 pw_chre
@@ -121,7 +122,6 @@ pw_protobuf_compiler
 pw_random
 pw_random_fuchsia
 pw_result
-pw_review
 pw_ring_buffer
 pw_router
 pw_rpc

@@ -12,18 +12,24 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+import("//build_overrides/pigweed.gni")
 
-package(default_visibility = ["//visibility:public"])
+import("$dir_pw_build/python.gni")
 
-licenses(["notice"])
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "docs.rst",
-    ],
-    prefix = "pw_review/",
-    target_compatible_with = incompatible_with_mcu(),
-)
+pw_python_package("py") {
+  setup = [
+    "pyproject.toml",
+    "setup.cfg",
+  ]
+  sources = [
+    "pw_change/__init__.py",
+    "pw_change/main.py",
+    "pw_change/review.py",
+  ]
+  python_deps = [ "$dir_pw_cli/py" ]
+  inputs = []
+  tests = [ "review_test.py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
+  ruff_toml = "$dir_pigweed/.ruff.toml"
+}
