@@ -42,13 +42,20 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
     bool enable_open_drain_high;  // Enable Open-Drain High to be 1 PPBAUD count
                                   // for I3C messages, or 1 ODBAUD.
   };
+
+  [[deprecated("ClockTree is deprecated")]]
   I3cMcuxpressoInitiator(const Config& config,
-                         pw::clock_tree::ClockTree& clock_tree,
+                         pw::clock_tree::ClockTree& /*clock_tree*/,
+                         pw::clock_tree::Element& clock_tree_element)
+      : I3cMcuxpressoInitiator(config, clock_tree_element) {}
+
+  I3cMcuxpressoInitiator(const Config& config,
                          pw::clock_tree::Element& clock_tree_element)
       : Initiator(Initiator::Feature::kStandard),
         config_(config),
         base_(reinterpret_cast<I3C_Type*>(config.base_address)),
-        element_controller_(&clock_tree, &clock_tree_element) {}
+        clock_tree_element_(clock_tree_element) {}
+
   I3cMcuxpressoInitiator(const Config& config)
       : Initiator(Initiator::Feature::kStandard),
         config_(config),
@@ -196,7 +203,7 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
 
   const Config& config_;
   I3C_Type* base_;
-  pw::clock_tree::ElementController element_controller_;
+  pw::clock_tree::OptionalElement clock_tree_element_;
   i3c_device_info_t* device_list_ = nullptr;
   uint8_t device_count_ = 0;
   bool enabled_ PW_GUARDED_BY(mutex_) = false;
