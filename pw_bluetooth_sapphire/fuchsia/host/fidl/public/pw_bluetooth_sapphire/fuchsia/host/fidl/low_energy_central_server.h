@@ -154,6 +154,10 @@ class LowEnergyCentralServer
           request,
       CreateConnectedIsochronousGroupCallback callback) override {}
 
+  void SyncToPeriodicAdvertising(
+      ::fuchsia::bluetooth::le::CentralSyncToPeriodicAdvertisingRequest)
+      override {}
+
   // fuchsia::bluetooth::le::ChannelListenerRegistry overrides:
   void ListenL2cap(
       fuchsia::bluetooth::le::ChannelListenerRegistryListenL2capRequest request,

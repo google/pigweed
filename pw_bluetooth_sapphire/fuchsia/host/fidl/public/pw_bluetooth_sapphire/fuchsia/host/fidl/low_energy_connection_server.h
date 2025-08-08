@@ -67,6 +67,13 @@ class LowEnergyConnectionServer
       GetCodecLocalDelayRangeCallback callback) override;
   void ConnectL2cap(
       fuchsia::bluetooth::le::ConnectionConnectL2capRequest request) override;
+  void TransferPeriodicAdvertisingSync(
+      fuchsia::bluetooth::le::ConnectionTransferPeriodicAdvertisingSyncRequest,
+      TransferPeriodicAdvertisingSyncCallback) override {}
+  void AcceptPeriodicAdvertisingSyncTransfer(
+      fuchsia::bluetooth::le::
+          ConnectionAcceptPeriodicAdvertisingSyncTransferRequest,
+      AcceptPeriodicAdvertisingSyncTransferCallback) override {}
 
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_;
   fit::callback<void()> closed_handler_;
