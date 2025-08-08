@@ -2034,10 +2034,7 @@ code {
 }
 
 #nav-tree .selected {
-  background-image: url('tab_a.png');
-  background-repeat: repeat-x;
   color: var(--nav-text-active-color);
-  text-shadow: var(--nav-text-active-shadow);
 }
 
 #nav-tree .selected .arrow {
@@ -2090,6 +2087,11 @@ code {
   overflow: auto;
 }
 
+#nav-tree a:hover {
+  text-decoration: underline;
+  color: var(--nav-text-hover-color);
+}
+
 #doc-content {
   overflow: auto;
   display: block;
@@ -2112,10 +2114,6 @@ code {
 }
 
 .ui-resizable-e {
-  background-image: var(--nav-splitbar-image);
-  background-size: 100%;
-  background-repeat: repeat-y;
-  background-attachment: scroll;
   cursor: ew-resize;
   height: 100%;
   right: 0;
@@ -2135,24 +2133,12 @@ code {
 }
 
 #nav-tree {
-  background-repeat: repeat-x;
   background-color: var(--nav-background-color);
   -webkit-overflow-scrolling: touch; /* iOS 5+ */
 }
 
 #nav-sync {
-  position: absolute;
-  top: 5px;
-  right: 24px;
-  z-index: 0;
-}
-
-#nav-sync img {
-  opacity: 0.3;
-}
-
-#nav-sync img:hover {
-  opacity: 0.9;
+  display: none;
 }
 
 @media print {
