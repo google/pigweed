@@ -8,12 +8,6 @@ APIs
 
 .. _module-pw_clock_tree-references:
 
-ClockTree
-=========
-.. doxygenclass:: pw::clock_tree::ClockTree
-   :members:
-
-
 Element
 =======
 .. doxygenclass:: pw::clock_tree::Element

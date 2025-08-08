@@ -288,25 +288,24 @@ using ClockSourceFailureTestNonBlocking =
 
 template <typename ElementType>
 static void TestClock() {
-  ClockTree clock_tree;
   pw::Status status;
   ClockSourceTest<ElementType> clock_a;
 
   EXPECT_EQ(clock_a.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_a);
+  status = clock_a.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
 
-  status = clock_tree.Acquire(clock_a);
+  status = clock_a.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 2u);
 
-  status = clock_tree.Release(clock_a);
+  status = clock_a.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_a);
+  status = clock_a.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
 }
@@ -330,7 +329,6 @@ static void TestClockDivider() {
 
   struct clock_divider_test_data test_data;
   INIT_TEST_DATA(test_data, call_data);
-  ClockTree clock_tree;
 
   ClockSourceTest<ElementType> clock_a;
   ClockDividerNoDoDisableTest<ElementType> clock_divider_b(
@@ -345,25 +343,25 @@ static void TestClockDivider() {
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
   EXPECT_EQ(clock_divider_c.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_divider_b);
+  status = clock_divider_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 1u);
   EXPECT_EQ(clock_divider_c.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_divider_b_element);
+  status = clock_divider_b_element.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 2u);
   EXPECT_EQ(clock_divider_c.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_divider_c);
+  status = clock_divider_c.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 2u);
   EXPECT_EQ(clock_divider_b.ref_count(), 2u);
   EXPECT_EQ(clock_divider_c.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_divider_b);
+  status = clock_divider_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 2u);
   EXPECT_EQ(clock_divider_b.ref_count(), 1u);
@@ -371,13 +369,13 @@ static void TestClockDivider() {
 
   // Releasing `clock_divider_b` won't be tracked, since
   // only the base class `DoDisable` method will be called.
-  status = clock_tree.Release(clock_divider_b_element);
+  status = clock_divider_b_element.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
   EXPECT_EQ(clock_divider_c.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_divider_c);
+  status = clock_divider_c.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
@@ -406,7 +404,6 @@ static void TestClockDividerSet() {
 
   struct clock_divider_test_data test_data;
   INIT_TEST_DATA(test_data, call_data);
-  ClockTree clock_tree;
   pw::Status status;
 
   ClockSourceTest<ElementType> clock_a;
@@ -417,32 +414,32 @@ static void TestClockDividerSet() {
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_divider_b);
+  status = clock_divider_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 1u);
 
-  status = clock_tree.SetDividerValue(clock_divider_b_abstract, 4);
+  status = clock_divider_b_abstract.SetDivider(4);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_divider_b);
+  status = clock_divider_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  status = clock_tree.SetDividerValue(clock_divider_b, 6);
+  status = clock_divider_b.SetDivider(6);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_divider_b);
+  status = clock_divider_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_divider_b);
+  status = clock_divider_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
@@ -471,7 +468,6 @@ static void TestClockDividerSetFailure() {
 
   struct clock_divider_test_data test_data;
   INIT_TEST_DATA(test_data, call_data);
-  ClockTree clock_tree;
   pw::Status status;
 
   ClockSourceTest<ElementType> clock_a;
@@ -481,17 +477,17 @@ static void TestClockDividerSetFailure() {
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_divider_b);
+  status = clock_divider_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 1u);
 
-  status = clock_tree.SetDividerValue(clock_divider_b, 4);
+  status = clock_divider_b.SetDivider(4);
   EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_divider_b);
+  status = clock_divider_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
@@ -519,7 +515,6 @@ static void TestClockSelector() {
 
   struct clock_selector_test_data test_data;
   INIT_TEST_DATA(test_data, call_data);
-  ClockTree clock_tree;
   pw::Status status;
 
   ClockSourceTest<ElementType> clock_a;
@@ -530,32 +525,32 @@ static void TestClockSelector() {
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_selector_b);
+  status = clock_selector_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 1u);
 
-  status = clock_tree.Acquire(clock_selector_b_element);
+  status = clock_selector_b_element.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 2u);
 
-  status = clock_tree.Release(clock_selector_b);
+  status = clock_selector_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_selector_b_element);
+  status = clock_selector_b_element.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_selector_b);
+  status = clock_selector_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_selector_b);
+  status = clock_selector_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
@@ -584,7 +579,6 @@ static void TestClockSource() {
 
   struct clock_source_state_test_data test_data;
   INIT_TEST_DATA(test_data, call_data);
-  ClockTree clock_tree;
   pw::Status status;
 
   ClockSourceStateTest<ElementType> clock_a(1, &shared_clock_value, test_data);
@@ -599,7 +593,7 @@ static void TestClockSource() {
   EXPECT_EQ(shared_clock_value, 0u);
   EXPECT_EQ(exclusive_clock_value, 0u);
 
-  status = clock_tree.Acquire(clock_a);
+  status = clock_a.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_b.ref_count(), 0u);
@@ -607,7 +601,7 @@ static void TestClockSource() {
   EXPECT_EQ(shared_clock_value, 1u);
   EXPECT_EQ(exclusive_clock_value, 0u);
 
-  status = clock_tree.Acquire(clock_c_element);
+  status = clock_c_element.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_b.ref_count(), 0u);
@@ -615,7 +609,7 @@ static void TestClockSource() {
   EXPECT_EQ(shared_clock_value, 1u);
   EXPECT_EQ(exclusive_clock_value, 4u);
 
-  status = clock_tree.Acquire(clock_b);
+  status = clock_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_b.ref_count(), 1u);
@@ -623,7 +617,7 @@ static void TestClockSource() {
   EXPECT_EQ(shared_clock_value, 3u);
   EXPECT_EQ(exclusive_clock_value, 4u);
 
-  status = clock_tree.Release(clock_a);
+  status = clock_a.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_b.ref_count(), 1u);
@@ -631,7 +625,7 @@ static void TestClockSource() {
   EXPECT_EQ(shared_clock_value, 2u);
   EXPECT_EQ(exclusive_clock_value, 4u);
 
-  status = clock_tree.Release(clock_b);
+  status = clock_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_b.ref_count(), 0u);
@@ -639,7 +633,7 @@ static void TestClockSource() {
   EXPECT_EQ(shared_clock_value, 0u);
   EXPECT_EQ(exclusive_clock_value, 4u);
 
-  status = clock_tree.Release(clock_c_element);
+  status = clock_c_element.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_b.ref_count(), 0u);
@@ -672,13 +666,12 @@ static void TestFailureAcquire1() {
   ClockSelectorTest<ElementType> clock_selector_b(
       clock_a, kSelector, 1, 8, selector_test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_selector_b);
+  status = clock_selector_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
@@ -724,14 +717,13 @@ static void TestFailureAcquire2() {
   ClockDividerTest<ElementType> clock_divider_c(
       clock_selector_b, kClockDividerC, 4, divider_test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
   EXPECT_EQ(clock_divider_c.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_divider_c);
+  status = clock_divider_c.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
@@ -783,14 +775,13 @@ static void TestFailureAcquire3() {
   ClockDividerTest<ElementType> clock_divider_c(
       clock_selector_b, kClockDividerC, 4, divider_test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
   EXPECT_EQ(clock_divider_c.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_divider_c);
+  status = clock_divider_c.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
@@ -832,19 +823,18 @@ static void TestFailureRelease1() {
   ClockSelectorTest<ElementType> clock_selector_b(
       clock_a, kSelector, 1, 8, selector_test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
 
   // Acquire initial references
-  status = clock_tree.Acquire(clock_selector_b);
+  status = clock_selector_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_selector_b);
+  status = clock_selector_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
@@ -884,18 +874,17 @@ static void TestFailureRelease2() {
   ClockSelectorTest<ElementType> clock_selector_b(
       clock_a, kSelector, 1, 8, selector_test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_a.ref_count(), 0u);
   EXPECT_EQ(clock_selector_b.ref_count(), 0u);
 
-  status = clock_tree.Acquire(clock_selector_b);
+  status = clock_selector_b.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 1u);
 
-  status = clock_tree.Release(clock_selector_b);
+  status = clock_selector_b.Release();
   EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
   EXPECT_EQ(clock_a.ref_count(), 1u);
   EXPECT_EQ(clock_selector_b.ref_count(), 1u);
@@ -946,161 +935,6 @@ TEST(ClockTree, ClockDividerMayBlock) {
   EXPECT_TRUE(clock_divider_blocking.may_block());
 }
 
-// Validate that the ElementController performs the correct
-// clock operations and returns the expected status codes.
-template <typename ElementType>
-static void TestElementController() {
-  const uint32_t kSelector = 41;
-  struct clock_selector_test_call_data call_data[] = {
-      {kSelector, 2, ClockOperation::kAcquire, pw::Status::Internal()},
-      {kSelector, 2, ClockOperation::kAcquire, pw::OkStatus()},
-      {kSelector, 7, ClockOperation::kRelease, pw::Status::Internal()},
-      {kSelector, 7, ClockOperation::kRelease, pw::OkStatus()}};
-
-  struct clock_selector_test_data test_data;
-  INIT_TEST_DATA(test_data, call_data);
-  ClockTree clock_tree;
-  pw::Status status;
-
-  ClockSourceTest<ElementType> clock_a;
-  ClockSelectorTest<ElementType> clock_selector_b(
-      clock_a, kSelector, 2, 7, test_data);
-
-  EXPECT_EQ(clock_a.ref_count(), 0u);
-  EXPECT_EQ(clock_selector_b.ref_count(), 0u);
-
-  // Specify an element controller with valid pointers.
-  ElementController clock_tree_element_controller(&clock_tree,
-                                                  &clock_selector_b);
-
-  // First acquire call should fail.
-  status = clock_tree_element_controller.Acquire();
-  EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
-  EXPECT_EQ(clock_a.ref_count(), 0u);
-  EXPECT_EQ(clock_selector_b.ref_count(), 0u);
-
-  // Second acquire call should succeed
-  status = clock_tree_element_controller.Acquire();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 1u);
-  EXPECT_EQ(clock_selector_b.ref_count(), 1u);
-
-  // Third acquire call should succeed
-  status = clock_tree_element_controller.Acquire();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 1u);
-  EXPECT_EQ(clock_selector_b.ref_count(), 2u);
-
-  // First release call should succeed, since this only changes the reference
-  // count of `clock_selector_b`.
-  status = clock_tree_element_controller.Release();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 1u);
-  EXPECT_EQ(clock_selector_b.ref_count(), 1u);
-
-  // Second release call should fail and not change the reference counts.
-  status = clock_tree_element_controller.Release();
-  EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
-  EXPECT_EQ(clock_a.ref_count(), 1u);
-  EXPECT_EQ(clock_selector_b.ref_count(), 1u);
-
-  // Third release call should succeed.
-  status = clock_tree_element_controller.Release();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 0u);
-  EXPECT_EQ(clock_selector_b.ref_count(), 0u);
-
-  EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
-}
-
-TEST(ClockTree, ElementControllerBlocking) {
-  TestElementController<ElementBlocking>();
-}
-
-TEST(ClockTree, ElementControllerNonBlocking) {
-  TestElementController<ElementNonBlockingMightFail>();
-}
-
-// Validate that the ElementController performs clock operations
-// for ElementNonBlockingCannotFail elements.
-TEST(ClockTree, ElementControllerCannotFail) {
-  ClockTree clock_tree;
-  pw::Status status;
-
-  ClockSourceTest<ElementNonBlockingCannotFail> clock_a;
-
-  EXPECT_EQ(clock_a.ref_count(), 0u);
-
-  // Specify an element controller with valid pointers.
-  ElementController clock_tree_element_controller(&clock_tree, &clock_a);
-
-  // Acquire call should succeed
-  status = clock_tree_element_controller.Acquire();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 1u);
-
-  // Acquire call should succeed
-  status = clock_tree_element_controller.Acquire();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 2u);
-
-  // Release call should succeed.
-  status = clock_tree_element_controller.Release();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 1u);
-
-  // Release call should succeed.
-  status = clock_tree_element_controller.Release();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 0u);
-}
-
-// Validate that the ElementController performs no clock operations
-// if not both clock tree and element are specified.
-TEST(ClockTree, ElementControllerNoClockOperations) {
-  ClockTree clock_tree;
-  pw::Status status;
-
-  ClockSourceTest<ElementNonBlockingCannotFail> clock_a;
-
-  EXPECT_EQ(clock_a.ref_count(), 0u);
-
-  // Specify an element controller with no clock_tree pointer.
-  ElementController clock_tree_element_controller_no_clock_tree(nullptr,
-                                                                &clock_a);
-
-  // Acquire shouldn't acquire a reference to `clock_a`
-  // due to the missing `clock_tree`.
-  status = clock_tree_element_controller_no_clock_tree.Acquire();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 0u);
-
-  // Release shouldn't release a reference to `clock_a`
-  // due to the missing `clock_tree`.
-  status = clock_tree_element_controller_no_clock_tree.Release();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-  EXPECT_EQ(clock_a.ref_count(), 0u);
-
-  // Specify an element controller with no element pointer.
-  ElementController clock_tree_element_controller_no_element(&clock_tree,
-                                                             nullptr);
-
-  status = clock_tree_element_controller_no_element.Acquire();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-
-  status = clock_tree_element_controller_no_clock_tree.Release();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-
-  // Specify an element controller with two null pointers.
-  ElementController clock_tree_element_controller_nullptrs;
-
-  status = clock_tree_element_controller_nullptrs.Acquire();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-
-  status = clock_tree_element_controller_nullptrs.Release();
-  EXPECT_EQ(status.code(), PW_STATUS_OK);
-}
-
 // Validate the behavior of the ClockSourceNoOp class
 TEST(ClockTree, ClockSourceNoOp) {
   const uint32_t kClockDividerA = 23;
@@ -1115,8 +949,6 @@ TEST(ClockTree, ClockSourceNoOp) {
   struct clock_divider_test_data test_data;
   INIT_TEST_DATA(test_data, call_data);
 
-  ClockTree clock_tree;
-
   ClockSourceNoOp clock_source_no_op;
   ClockDividerTest<ElementNonBlockingCannotFail> clock_divider_a(
       clock_source_no_op, kClockDividerA, 2, test_data);
@@ -1127,32 +959,32 @@ TEST(ClockTree, ClockSourceNoOp) {
   EXPECT_EQ(clock_divider_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  clock_tree.Acquire(clock_divider_a);
+  clock_divider_a.Acquire();
   EXPECT_EQ(clock_source_no_op.ref_count(), 1u);
   EXPECT_EQ(clock_divider_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  clock_tree.Acquire(clock_divider_a);
+  clock_divider_a.Acquire();
   EXPECT_EQ(clock_source_no_op.ref_count(), 1u);
   EXPECT_EQ(clock_divider_a.ref_count(), 2u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  clock_tree.Acquire(clock_divider_b);
+  clock_divider_b.Acquire();
   EXPECT_EQ(clock_source_no_op.ref_count(), 2u);
   EXPECT_EQ(clock_divider_a.ref_count(), 2u);
   EXPECT_EQ(clock_divider_b.ref_count(), 1u);
 
-  clock_tree.Release(clock_divider_b);
+  clock_divider_b.Release();
   EXPECT_EQ(clock_source_no_op.ref_count(), 1u);
   EXPECT_EQ(clock_divider_a.ref_count(), 2u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  clock_tree.Release(clock_divider_a);
+  clock_divider_a.Release();
   EXPECT_EQ(clock_source_no_op.ref_count(), 1u);
   EXPECT_EQ(clock_divider_a.ref_count(), 1u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
 
-  clock_tree.Release(clock_divider_a);
+  clock_divider_a.Release();
   EXPECT_EQ(clock_source_no_op.ref_count(), 0u);
   EXPECT_EQ(clock_divider_a.ref_count(), 0u);
   EXPECT_EQ(clock_divider_b.ref_count(), 0u);
@@ -1188,34 +1020,33 @@ TEST(ClockTree, AcquireWith) {
       1, &element_with_value, test_data);
   ClockSourceStateTestBlocking clock_element(2, &element_value, test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_element.ref_count(), 0u);
   EXPECT_EQ(clock_element_with.ref_count(), 0u);
 
-  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  status = clock_element.AcquireWith(clock_element_with);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_element.ref_count(), 1u);
   EXPECT_EQ(clock_element_with.ref_count(), 0u);
   EXPECT_EQ(element_with_value, 0u);
   EXPECT_EQ(element_value, 2u);
 
-  status = clock_tree.Release(clock_element);
+  status = clock_element.Release();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_element.ref_count(), 0u);
   EXPECT_EQ(clock_element_with.ref_count(), 0u);
   EXPECT_EQ(element_with_value, 0u);
   EXPECT_EQ(element_value, 0u);
 
-  status = clock_tree.Acquire(clock_element_with);
+  status = clock_element_with.Acquire();
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_element.ref_count(), 0u);
   EXPECT_EQ(clock_element_with.ref_count(), 1u);
   EXPECT_EQ(element_with_value, 1u);
   EXPECT_EQ(element_value, 0u);
 
-  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  status = clock_element.AcquireWith(clock_element_with);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_element.ref_count(), 1u);
   EXPECT_EQ(clock_element_with.ref_count(), 1u);
@@ -1240,13 +1071,12 @@ TEST(ClockTree, AcquireWithFailure1) {
       1, &element_with_value, test_data);
   ClockSourceStateTestBlocking clock_element(2, &element_value, test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_element.ref_count(), 0u);
   EXPECT_EQ(clock_element_with.ref_count(), 0u);
 
-  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  status = clock_element.AcquireWith(clock_element_with);
   EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
   EXPECT_EQ(clock_element.ref_count(), 0u);
   EXPECT_EQ(clock_element_with.ref_count(), 0u);
@@ -1273,13 +1103,12 @@ TEST(ClockTree, AcquireWithFailure2) {
       1, &element_with_value, test_data);
   ClockSourceStateTestBlocking clock_element(2, &element_value, test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_element.ref_count(), 0u);
   EXPECT_EQ(clock_element_with.ref_count(), 0u);
 
-  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  status = clock_element.AcquireWith(clock_element_with);
   EXPECT_EQ(status.code(), PW_STATUS_INTERNAL);
   EXPECT_EQ(clock_element.ref_count(), 0u);
   EXPECT_EQ(clock_element_with.ref_count(), 0u);
@@ -1306,13 +1135,12 @@ TEST(ClockTree, AcquireWithFailure3) {
       1, &element_with_value, test_data);
   ClockSourceStateTestBlocking clock_element(2, &element_value, test_data);
 
-  ClockTree clock_tree;
   pw::Status status;
 
   EXPECT_EQ(clock_element.ref_count(), 0u);
   EXPECT_EQ(clock_element_with.ref_count(), 0u);
 
-  status = clock_tree.AcquireWith(clock_element, clock_element_with);
+  status = clock_element.AcquireWith(clock_element_with);
   EXPECT_EQ(status.code(), PW_STATUS_OK);
   EXPECT_EQ(clock_element.ref_count(), 1u);
   EXPECT_EQ(clock_element_with.ref_count(), 1u);

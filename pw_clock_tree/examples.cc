@@ -78,11 +78,6 @@ using ClockDividerExampleNonBlocking =
 // DOCSTAG: [pw_clock_tree-examples-ClockDividerExampleDef]
 
 TEST(ClockTree, ClockTreeElementExample) {
-  // DOCSTAG: [pw_clock_tree-examples-ClockTreeDec]
-  // Create the clock tree
-  pw::clock_tree::ClockTree clock_tree;
-  // DOCSTAG: [pw_clock_tree-examples-ClockTreeDec]
-
   // DOCSTAG: [pw_clock_tree-examples-ClockTreeElementsDec]
   // Define the clock tree
   ClockSourceExampleNonBlocking clock_a;
@@ -97,19 +92,19 @@ TEST(ClockTree, ClockTreeElementExample) {
   // DOCSTAG: [pw_clock_tree-examples-AcquireClockDividerD]
   // Acquire a reference to clock_divider_d, which will enable clock_divider_d
   // and its dependent clock_a.
-  clock_tree.Acquire(clock_divider_d);
+  clock_divider_d.Acquire();
   // DOCSTAG: [pw_clock_tree-examples-AcquireClockDividerD]
 
   // DOCSTAG: [pw_clock_tree-examples-SetClockDividerDValue]
   // Change the divider value for clock_divider_d.
   const uint32_t kDividerValue2 = 21;
-  clock_tree.SetDividerValue(clock_divider_d, kDividerValue2);
+  clock_divider_d.SetDivider(kDividerValue2);
   // DOCSTAG: [pw_clock_tree-examples-SetClockDividerDValue]
 
   // DOCSTAG: [pw_clock_tree-examples-ReleaseClockSelectorC]
   // Release reference to clock_divider_d, which will disable clock_divider_d,
   // and clock_a.
-  clock_tree.Release(clock_divider_d);
+  clock_divider_d.Release();
   // All clock tree elements are disabled now.
   // DOCSTAG: [pw_clock_tree-examples-ReleaseClockSelectorC]
 }
@@ -122,13 +117,19 @@ static void USART_RTOS_Deinit() {}
 
 class UartStreamMcuxpresso {
  public:
+  // Device constructor that optionally accepts `clock_tree_element` to manage
+  // clock lifecycle.
+  constexpr UartStreamMcuxpresso(pw::clock_tree::ElementNonBlockingCannotFail*
+                                     clock_tree_element = nullptr)
+      : clock_tree_element_(clock_tree_element) {}
+
   pw::Status Init() {
     // Acquire reference to clock before initializing device.
-    PW_TRY(clock_tree_element_controller_.Acquire());
+    PW_TRY(clock_tree_element_.Acquire());
     pw::Status status = USART_RTOS_Init();
     if (!status.ok()) {
       // Failed to initialize device, release the acquired clock.
-      clock_tree_element_controller_.Release().IgnoreError();
+      clock_tree_element_.Release().IgnoreError();
     }
     return status;
   }
@@ -137,19 +138,11 @@ class UartStreamMcuxpresso {
     // Deinitialize the device before we can release the reference
     // to the clock.
     USART_RTOS_Deinit();
-    clock_tree_element_controller_.Release().IgnoreError();
+    clock_tree_element_.Release().IgnoreError();
   }
 
-  // Device constructor that optionally accepts `clock_tree` and
-  // `clock_tree_element` to manage clock lifecycle.
-  constexpr UartStreamMcuxpresso(
-      pw::clock_tree::ClockTree* clock_tree = nullptr,
-      pw::clock_tree::ElementNonBlockingCannotFail* clock_tree_element =
-          nullptr)
-      : clock_tree_element_controller_(clock_tree, clock_tree_element) {}
-
  private:
-  pw::clock_tree::ElementController clock_tree_element_controller_;
+  pw::clock_tree::OptionalElement clock_tree_element_;
 };
 // DOCSTAG: [pw_clock_tree-examples-IntegrationIntoDeviceDriversClassDef]
 
@@ -159,11 +152,9 @@ using ClockSourceUart =
 pw::Status ClockTreeExample() {
   // DOCSTAG: [pw_clock_tree-examples-IntegrationIntoDeviceDriversUsage]
 
-  // Declare the clock tree
-  pw::clock_tree::ClockTree clock_tree;
   // Declare the uart clock source
   ClockSourceUart uart_clock_source;
-  UartStreamMcuxpresso uart(&clock_tree, &uart_clock_source);
+  UartStreamMcuxpresso uart(&uart_clock_source);
 
   // Initialize the uart which enables the uart clock source.
   PW_TRY(uart.Init());

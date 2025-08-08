@@ -73,14 +73,6 @@ Derived ``ClockDividerExample`` class template that overrides
    :start-after: [pw_clock_tree-examples-ClockDividerExampleDef]
    :end-before: [pw_clock_tree-examples-ClockDividerExampleDef]
 
-Declare the :cpp:class:`ClockTree` class object.
-
-.. literalinclude:: examples.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_clock_tree-examples-ClockTreeDec]
-   :end-before: [pw_clock_tree-examples-ClockTreeDec]
-
 Declare the clock tree elements.
 ``clock_divider_d`` depends on ``clock_a``.
 

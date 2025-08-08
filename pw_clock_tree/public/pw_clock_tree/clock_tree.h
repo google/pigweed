@@ -363,9 +363,9 @@ class DependentElement : public ElementType {
 /// Abstract class of the clock divider specific interface.
 ///
 /// The clock divider interface allows APIs to accept a `ClockDivider`
-/// element, if they want to use the `ClockTree`'s `SetDividerValue` method.
-/// They can use the `element` method to call the `ClockTree`'s `Acquire` and
-/// `Release` methods.
+/// element, if they want to use the `SetDivider` method.
+/// They can use the `element` method to call the `Acquire` and `Release`
+/// methods.
 class ClockDivider {
  public:
   constexpr ClockDivider(Element& element) : element_(element) {}

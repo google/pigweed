@@ -50,36 +50,28 @@ It could be initialized and used like this:
       :class-item: sales-pitch-cta-secondary
 
       API references for ``pw::clock_tree::Element``,
-      ``pw::clock_tree::DependentElement``, ``pw::clock_tree::ClockTree``,
-      and more.
+      ``pw::clock_tree::DependentElement``, and more.
 
 
 --------
 Overview
 --------
-.. cpp:namespace-push:: pw::clock_tree::ClockTree
+Pigweed's clock tree module provides the ability to represent the clock tree of an embedded device,
+and to manage the individual clocks and clock tree elements.
 
-Pigweed's clock tree module provides the ability to represent the clock tree of an embedded
-device, and to manage the individual clocks and clock tree elements.
+.. cpp:namespace-push:: pw::clock_tree::Element
 
-The :cpp:class:`ClockTree` implements two basic methods that apply to all clock tree elements:
+The :cpp:class:`Element` abstract base class is the root of the pw_clock_tree class hierarchy, and
+represents a single node in the clock tree.
+
+The public (consumer) API includes two basic methods which apply to all clock tree elements:
 
 * :cpp:func:`Acquire`
 * :cpp:func:`Release`
 
-In addition, clock divider elements can use the :cpp:func:`SetDividerValue` method to update the current
-clock divider value.
-
-.. cpp:namespace-pop::
-
-.. cpp:namespace-push:: pw::clock_tree::Element
-
-The clock tree module defines the :cpp:class:`Element` abstract class from which all
-other classes are derived from. The :cpp:class:`Element` abstract class implements basic reference
-counting methods :cpp:func:`IncRef` and :cpp:func:`DecRef`, but requires derived classes to use the
-reference counting methods to properly acquire and release references to clock
-tree elements. If an :cpp:class:`Element` reference is passed to a constructor of a
-derived :cpp:class:`Element`, the class object depends on the referenced :cpp:class:`Element` object.
+The :cpp:class:`Element` abstract class implements basic reference counting methods
+:cpp:func:`IncRef` and :cpp:func:`DecRef`, but requires derived classes to use the reference
+counting methods to properly acquire and release references to clock tree elements.
 
 Three derived abstract classes are defined for :cpp:class:`Element`:
 
@@ -106,9 +98,14 @@ class from :cpp:class:`ElementBlocking` or :cpp:class:`ElementNonBlockingCannotF
 
 .. cpp:namespace-pop::
 
-.. cpp:namespace-push:: pw::clock_tree::ElementController
+.. cpp:namespace-push:: pw::clock_tree::OptionalElement
 
-For ease of use :cpp:class:`ElementController` encapsulates :cpp:class:`ClockTree` and :cpp:class:`Element` into a single object and provides :cpp:func:`Acquire` and :cpp:func:`Release` methods that check whether both optional objects have been specified, and only if yes, call the respective :cpp:class:`ClockTree` methods, otherwise they return ``pw::OkStatus()``.
+For convenience, :cpp:class:`OptionalElement` represents a null-safe pointer to an
+::cpp:class:`Element`. This allows drivers to easily support an optional :cpp:class:`Element`
+pointer argument.
+
+If it does not point to an `Element`, then its :cpp:func:`Acquire` and :cpp:func:`Release` methods
+do nothing and return ``pw::OkStatus()``.
 
 .. cpp:namespace-pop::
 
@@ -117,13 +114,11 @@ Synchronization
 ---------------
 .. cpp:namespace-push:: pw::clock_tree
 
-The clock tree class uses a mutex to serialize access to :cpp:class:`ElementBlocking` clock tree
-elements, and uses an interrupt spin lock to serialize access to
-:cpp:class:`ElementNonBlockingCannotFail` and :cpp:class:`ElementNonBlockingMightFail` clock tree
-elements. :cpp:class:`ElementBlocking` clock tree elements and
-:cpp:class:`ElementNonBlockingCannotFail` / :cpp:class:`ElementNonBlockingMightFail` clock tree
-elements are not serialized with each other, while :cpp:class:`ElementNonBlockingCannotFail` and
-:cpp:class:`ElementNonBlockingMightFail` are serialized with each other.
+:cpp:class:`Element` objects are individually internally synchronized.
+
+* :cpp:class:`ElementBlocking` objects use a `Mutex`.
+* :cpp:class:`ElementNonBlockingCannotFail` and :cpp:class:`ElementNonBlockingMightFail` objects use
+  an `InterruptSpinLock`.
 
 .. cpp:namespace-pop::
 
