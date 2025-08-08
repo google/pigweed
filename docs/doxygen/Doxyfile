@@ -173,6 +173,11 @@ RECURSIVE              = YES
 # https://www.doxygen.nl/manual/config.html#cfg_show_headerfile
 SHOW_HEADERFILE        = NO
 
+# Alphabetically sort the modules index page.
+#
+# https://www.doxygen.nl/manual/config.html#cfg_sort_group_names
+SORT_GROUP_NAMES       = YES
+
 # https://google.github.io/styleguide/cppguide.html#Spaces_vs._Tabs
 #
 # https://www.doxygen.nl/manual/config.html#cfg_tab_size
