@@ -1321,5 +1321,67 @@ TEST(ClockTree, AcquireWithFailure3) {
 
   EXPECT_EQ(test_data.num_calls, test_data.num_expected_calls);
 }
+
+// OptionalElement
+
+class TestElement : public ElementBlocking {
+ public:
+  uint32_t acquire_count() const { return acquire_count_; }
+  uint32_t release_count() const { return release_count_; }
+
+  void set_acquire_status(Status status) { acquire_status_ = status; }
+  void set_release_status(Status status) { release_status_ = status; }
+
+ private:
+  Status DoAcquireLocked() final {
+    ++acquire_count_;
+    return acquire_status_;
+  }
+
+  Status DoReleaseLocked() final {
+    ++release_count_;
+    return release_status_;
+  }
+
+  Status DoEnable() final { return OkStatus(); }
+
+  uint32_t acquire_count_ = 0;
+  uint32_t release_count_ = 0;
+
+  Status acquire_status_ = OkStatus();
+  Status release_status_ = OkStatus();
+};
+
+TEST(OptionalElement, SuccessWhenEmpty) {
+  OptionalElement op;
+
+  PW_TEST_EXPECT_OK(op.Acquire());
+  PW_TEST_EXPECT_OK(op.Release());
+}
+
+TEST(OptionalElement, CallsAcquireRelease) {
+  TestElement element;
+  OptionalElement op(element);
+
+  PW_TEST_EXPECT_OK(op.Acquire());
+  EXPECT_EQ(element.acquire_count(), 1u);
+  EXPECT_EQ(element.release_count(), 0u);
+
+  PW_TEST_EXPECT_OK(op.Release());
+  EXPECT_EQ(element.acquire_count(), 1u);
+  EXPECT_EQ(element.release_count(), 1u);
+}
+
+TEST(OptionalElement, PassesThroughStatus) {
+  TestElement element;
+  OptionalElement op(element);
+
+  element.set_acquire_status(Status::Internal());
+  EXPECT_EQ(op.Acquire(), Status::Internal());
+
+  element.set_release_status(Status::Unavailable());
+  EXPECT_EQ(op.Release(), Status::Unavailable());
+}
+
 }  // namespace
 }  // namespace pw::clock_tree

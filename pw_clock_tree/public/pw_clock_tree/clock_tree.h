@@ -628,4 +628,43 @@ class ElementController {
   /// Pointer to optional `Element` object.
   Element* element_ = nullptr;
 };
+
+/// An optional reference to an Element which can be Acquired and Released.
+///
+/// This avoids the verbosity of checking if an element pointer is null in
+/// e.g. a driver which accepts an optional Element* argument.
+class OptionalElement {
+ public:
+  explicit constexpr OptionalElement(Element* element = nullptr)
+      : element_(element) {}
+
+  explicit constexpr OptionalElement(Element& element)
+      : OptionalElement(&element) {}
+
+  /// Acquire a reference to the optional clock tree element.
+  ///
+  /// If the optional element pointer is null, the function just returns
+  /// `pw::OkStatus()`.
+  Status Acquire() {
+    if (element_ != nullptr) {
+      return element_->Acquire();
+    }
+    return OkStatus();
+  }
+
+  /// Release a reference to the optional clock tree element.
+  ///
+  /// If the optional element pointer is null, the function just returns
+  /// `pw::OkStatus()`.
+  Status Release() {
+    if (element_ != nullptr) {
+      return element_->Release();
+    }
+    return OkStatus();
+  }
+
+ private:
+  Element* element_ = nullptr;
+};
+
 }  // namespace pw::clock_tree
