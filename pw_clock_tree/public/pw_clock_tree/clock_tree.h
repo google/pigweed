@@ -39,7 +39,7 @@ namespace pw::clock_tree {
 /// `ElementNonBlockingCannotFail` or `ElementNonBlockingMightFail` class.
 class Element {
  public:
-  constexpr Element(bool may_block = false) : may_block_(may_block) {}
+  constexpr Element(bool may_block) : may_block_(may_block) {}
   virtual ~Element() = default;
 
   /// Get reference count for this clock tree element.
@@ -117,16 +117,26 @@ class Element {
 /// element updates.
 class ElementBlocking : public Element {
  public:
-  constexpr ElementBlocking() : Element(/*may_block=*/true) {}
+  static constexpr bool kMayBlock = true;
+  static constexpr bool kMayFail = true;
+  constexpr ElementBlocking() : Element(kMayBlock) {}
+};
+
+/// Abstract class of a clock tree element that will not block to perform
+/// element updates and might fail when performing clock updates.
+class ElementNonBlockingMightFail : public Element {
+ public:
+  static constexpr bool kMayBlock = false;
+  static constexpr bool kMayFail = true;
+  constexpr ElementNonBlockingMightFail() : Element(kMayBlock) {}
 };
 
 /// Abstract class of a clock tree element that will not block to perform
 /// element updates and will not fail when performing clock updates.
-class ElementNonBlockingCannotFail : public Element {};
-
-/// Abstract class of a clock tree element that will not block to perform
-/// element updates and might fail when performing clock updates.
-class ElementNonBlockingMightFail : public Element {};
+class ElementNonBlockingCannotFail : public ElementNonBlockingMightFail {
+ public:
+  static constexpr bool kMayFail = false;
+};
 
 /// Abstract class template of a clock tree element that provides a clock
 /// source.
