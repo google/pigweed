@@ -121,7 +121,7 @@ _BAZEL_PROJECT_ROOT_ALLOW_LIST = [
     ),
     AllowedCaller(
         filename='pw_change/py/pw_change/review.py',
-        name='pw_change.review',
+        name='__main__',
         function='review',
     ),
     AllowedCaller(

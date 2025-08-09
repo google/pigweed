@@ -65,6 +65,11 @@ alias(
 )
 
 alias(
+    name = "push",
+    actual = "//pw_change/py:push",
+)
+
+alias(
     name = "review",
     actual = "//pw_change/py:review",
 )

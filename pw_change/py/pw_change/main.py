@@ -16,7 +16,7 @@
 import argparse
 import sys
 
-from pw_change import review
+from pw_change import push, review
 
 
 def _main(argv) -> int:
@@ -25,6 +25,11 @@ def _main(argv) -> int:
     subparsers = parser.add_subparsers(
         title='Subcommands', dest='subcommand', required=True
     )
+
+    push_parser = subparsers.add_parser(
+        'push', help='Upload the current change to Gerrit.'
+    )
+    push_parser.set_defaults(func=push.main)
 
     review_parser = subparsers.add_parser(
         'review', help='AI-based code review of the current change.'

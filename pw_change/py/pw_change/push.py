@@ -128,9 +128,8 @@ def _auto_submit_label(host):
     }.get(host, 'Auto-Submit')
 
 
-def push(argv=None):
+def push(args):
     """Push changes to Gerrit."""
-    args = parse(argv)
     remote, branch = _remote_dest()
 
     if not args.force:
@@ -198,5 +197,10 @@ def push(argv=None):
     return 0
 
 
+def main(argv=None):
+    args = parse(argv)
+    return push(args)
+
+
 if __name__ == '__main__':
-    sys.exit(push())
+    sys.exit(main())

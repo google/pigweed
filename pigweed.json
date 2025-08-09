@@ -67,8 +67,8 @@
           "function": "main"
         },
         "push": {
-          "module": "pw_cli.push",
-          "function": "push"
+          "module": "pw_change.push",
+          "function": "main"
         },
         "requires": {
           "module": "pw_cli.requires",

@@ -45,7 +45,6 @@ pw_python_package("py") {
     "pw_cli/plugins.py",
     "pw_cli/plural.py",
     "pw_cli/process.py",
-    "pw_cli/push.py",
     "pw_cli/pw_command_plugins.py",
     "pw_cli/requires.py",
     "pw_cli/shell_completion/__init__.py",

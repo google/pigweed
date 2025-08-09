@@ -99,6 +99,13 @@
       "type": "ANALYZER"
     },
     {
+      "name": "push",
+      "description": "Upload the current git branch to Gerrit for review.",
+      "use_config": "bazel_default",
+      "target": "@pigweed//:push",
+      "type": "ANALYZER"
+    },
+    {
       "name": "review",
       "description": "Review the commit at HEAD using Gemini",
       "use_config": "bazel_default",

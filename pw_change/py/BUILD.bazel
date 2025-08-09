@@ -24,6 +24,7 @@ py_library(
     srcs = [
         "pw_change/__init__.py",
         "pw_change/main.py",
+        "pw_change/push.py",
         "pw_change/review.py",
     ],
     imports = ["."],
@@ -35,6 +36,13 @@ py_library(
 pw_py_test(
     name = "review_test",
     srcs = ["review_test.py"],
+    deps = [":pw_change"],
+)
+
+pw_py_binary(
+    name = "push",
+    srcs = ["pw_change/push.py"],
+    main = "pw_change/push.py",
     deps = [":pw_change"],
 )
 
