@@ -15,9 +15,9 @@
 #include "pw_unit_test/framework.h"
 
 // DOCSTAG: [known_size_string]
-namespace examples {
-
 #include "pw_string/string.h"
+
+namespace examples {
 
 static constexpr pw::InlineString<64> kMyString = [] {
   pw::InlineString<64> string;
