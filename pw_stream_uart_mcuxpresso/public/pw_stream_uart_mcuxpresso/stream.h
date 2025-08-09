@@ -23,33 +23,37 @@ namespace pw::stream {
 
 class UartStreamMcuxpresso : public NonSeekableReaderWriter {
  public:
+  [[deprecated("ClockTree is deprecated")]]
   UartStreamMcuxpresso(USART_Type* base,
                        uint32_t baudrate,
                        usart_parity_mode_t parity,
                        usart_stop_bit_count_t stopbits,
                        ByteSpan buffer,
-                       pw::clock_tree::ClockTree& clock_tree,
+                       pw::clock_tree::ClockTree& /*clock_tree*/,
+                       pw::clock_tree::Element& clock_tree_element)
+      : UartStreamMcuxpresso(
+            base, baudrate, parity, stopbits, buffer, clock_tree_element) {}
+
+  UartStreamMcuxpresso(USART_Type* base,
+                       uint32_t baudrate,
+                       usart_parity_mode_t parity,
+                       usart_stop_bit_count_t stopbits,
+                       ByteSpan buffer,
                        pw::clock_tree::Element& clock_tree_element)
       : base_(base),
+        config_{
+            .base = base_,
+            .srcclk = 0,
+            .baudrate = baudrate,
+            .parity = parity,
+            .stopbits = stopbits,
+            .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
+            .buffer_size = buffer.size(),
 #if FSL_USART_FREERTOS_DRIVER_VERSION >= (MAKE_VERSION(2, 7, 0))
-        config_{.base = base_,
-                .srcclk = 0,
-                .baudrate = baudrate,
-                .parity = parity,
-                .stopbits = stopbits,
-                .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
-                .buffer_size = buffer.size(),
-                .enableHardwareFlowControl = false},
-#else
-        config_{.base = base_,
-                .srcclk = 0,
-                .baudrate = baudrate,
-                .parity = parity,
-                .stopbits = stopbits,
-                .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
-                .buffer_size = buffer.size()},
+            .enableHardwareFlowControl = false,
 #endif
-        element_controller_(&clock_tree, &clock_tree_element) {
+        },
+        clock_tree_element_(clock_tree_element) {
   }
 
   UartStreamMcuxpresso(USART_Type* base,
@@ -58,26 +62,19 @@ class UartStreamMcuxpresso : public NonSeekableReaderWriter {
                        usart_stop_bit_count_t stopbits,
                        ByteSpan buffer)
       : base_(base),
+        config_{
+            .base = base_,
+            .srcclk = 0,
+            .baudrate = baudrate,
+            .parity = parity,
+            .stopbits = stopbits,
+            .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
+            .buffer_size = buffer.size(),
 #if FSL_USART_FREERTOS_DRIVER_VERSION >= (MAKE_VERSION(2, 7, 0))
-        config_{.base = base_,
-                .srcclk = 0,
-                .baudrate = baudrate,
-                .parity = parity,
-                .stopbits = stopbits,
-                .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
-                .buffer_size = buffer.size(),
-                .enableHardwareFlowControl = false} {
-  }
-#else
-        config_{.base = base_,
-                .srcclk = 0,
-                .baudrate = baudrate,
-                .parity = parity,
-                .stopbits = stopbits,
-                .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
-                .buffer_size = buffer.size()} {
-  }
+            .enableHardwareFlowControl = false,
 #endif
+        } {
+  }
 
   ~UartStreamMcuxpresso() override;
 
@@ -91,7 +88,7 @@ class UartStreamMcuxpresso : public NonSeekableReaderWriter {
   struct rtos_usart_config config_;
   usart_rtos_handle_t handle_;
   usart_handle_t uart_handle_;
-  pw::clock_tree::ElementController element_controller_;
+  pw::clock_tree::OptionalElement clock_tree_element_;
 };
 
 }  // namespace pw::stream

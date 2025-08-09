@@ -24,11 +24,11 @@ pw::Status InterruptSafeUartWriterMcuxpresso::Enable() {
   usart_config.enableRx = false;
   usart_config.enableTx = true;
 
-  PW_TRY(element_controller_.Acquire());
+  PW_TRY(clock_tree_element_.Acquire());
 
   if (USART_Init(base(), &usart_config, CLOCK_GetFreq(clock_name_)) !=
       kStatus_Success) {
-    element_controller_.Release().IgnoreError();
+    clock_tree_element_.Release().IgnoreError();
     return pw::Status::Internal();
   }
 
