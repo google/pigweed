@@ -52,8 +52,7 @@ class DmaUartMcuxpresso final : public Uart {
   DmaUartMcuxpresso(const Config& config)
       : rx_data_{.ring_buffer = config.buffer},
         config_(config),
-        clock_tree_element_controller_(config.clock_tree,
-                                       config.clock_tree_element),
+        clock_tree_element_(config.clock_tree_element),
         initialized_(false) {}
 
   ~DmaUartMcuxpresso();
@@ -151,9 +150,7 @@ class DmaUartMcuxpresso final : public Uart {
   UsartDmaRxData rx_data_;                // RX data
 
   Config config_;  // USART DMA configuration
-  pw::clock_tree::ElementController
-      clock_tree_element_controller_;  // Element controller encapsulating
-                                       // optional clock tree information
+  pw::clock_tree::OptionalElement clock_tree_element_;
   bool
       initialized_;  // Whether the USART and DMA channels have been initialized
   uint32_t flexcomm_clock_freq_{};

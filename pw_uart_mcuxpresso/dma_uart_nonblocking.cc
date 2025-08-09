@@ -46,7 +46,7 @@ void DmaUartMcuxpressoNonBlocking::Deinit() {
   config_.rx_dma_ch.Disable();
 
   USART_Deinit(config_.usart_base);
-  clock_tree_element_controller_.Release().IgnoreError();
+  clock_tree_element_.Release().IgnoreError();
   initialized_ = false;
 }
 
@@ -78,13 +78,13 @@ Status DmaUartMcuxpressoNonBlocking::Init() {
   defconfig.enableTx = true;
   defconfig.enableRx = true;
 
-  PW_TRY(clock_tree_element_controller_.Acquire());
+  PW_TRY(clock_tree_element_.Acquire());
   flexcomm_clock_freq_ =
       CLOCK_GetFlexcommClkFreq(FLEXCOMM_GetInstance(config_.usart_base));
   status_t status =
       USART_Init(config_.usart_base, &defconfig, flexcomm_clock_freq_);
   if (status != kStatus_Success) {
-    clock_tree_element_controller_.Release().IgnoreError();
+    clock_tree_element_.Release().IgnoreError();
     return Status::Internal();
   }
 

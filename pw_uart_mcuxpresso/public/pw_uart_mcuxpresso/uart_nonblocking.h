@@ -40,9 +40,7 @@ class UartMcuxpressoNonBlocking final : public UartNonBlocking {
   };
 
   UartMcuxpressoNonBlocking(const Config& config)
-      : config_(config),
-        clock_tree_element_controller_(config.clock_tree,
-                                       config.clock_tree_element) {}
+      : config_(config), clock_tree_element_(config.clock_tree_element) {}
 
   ~UartMcuxpressoNonBlocking();
   UartMcuxpressoNonBlocking(const UartMcuxpressoNonBlocking& other) = delete;
@@ -136,10 +134,8 @@ class UartMcuxpressoNonBlocking final : public UartNonBlocking {
   struct UsartRxData rx_data_ PW_GUARDED_BY(interrupt_lock_);
 
   Config config_;  // USART configuration
-  pw::clock_tree::ElementController
-      clock_tree_element_controller_;  // Element controller encapsulating
-                                       // optional clock tree information
-  bool initialized_;                   // Whether the USART has been initialized
+  pw::clock_tree::OptionalElement clock_tree_element_;
+  bool initialized_;  // Whether the USART has been initialized
   uint32_t flexcomm_clock_freq_{};
 };
 
