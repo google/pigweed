@@ -36,13 +36,28 @@ pub trait AtomicLoad<T> {
     fn load(&self, order: Ordering) -> T;
 }
 
+pub trait AtomicStore<T> {
+    // Stores a value in the atomic.
+    //
+    // Behaves the same as [`core::atomic::AtomicUsize::store()`].
+    fn store(&self, val: T, order: Ordering);
+}
+
 pub trait AtomicNew<T> {
     // Returns a new atomic with `val`
     fn new(val: T) -> Self;
 }
 
-pub trait Atomic<T>: AtomicNew<T> + AtomicLoad<T> + AtomicAdd<T> + AtomicSub<T> {}
-pub trait AtomicUsize: Atomic<usize> {}
+pub trait AtomicZero {
+    const ZERO: Self;
+}
+
+pub trait Atomic<T>:
+    AtomicNew<T> + AtomicLoad<T> + AtomicStore<T> + AtomicAdd<T> + AtomicSub<T>
+{
+}
+
+pub trait AtomicUsize: Atomic<usize> + AtomicZero {}
 
 macro_rules! impl_for_type {
     ($atomic_type:ty, $primitive_type:ty) => {
@@ -64,10 +79,20 @@ macro_rules! impl_for_type {
             }
         }
 
+        impl AtomicStore<$primitive_type> for $atomic_type {
+            fn store(&self, val: $primitive_type, ordering: Ordering) {
+                self.store(val, ordering)
+            }
+        }
+
         impl AtomicNew<$primitive_type> for $atomic_type {
             fn new(val: $primitive_type) -> Self {
                 Self::new(val)
             }
+        }
+
+        impl AtomicZero for $atomic_type {
+            const ZERO: Self = Self::new(0);
         }
 
         impl Atomic<$primitive_type> for $atomic_type {}
