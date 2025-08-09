@@ -22,7 +22,8 @@ use crate::scheduler::Kernel;
 
 list::define_adapter!(pub TimerCallbackListAdapter<C: time::Clock> => TimerCallback<C>::link);
 
-pub type TimerCallbackFn<C> = dyn FnMut(ForeignBox<TimerCallback<C>>, Instant<C>);
+pub type TimerCallbackFn<C> =
+    dyn FnMut(ForeignBox<TimerCallback<C>>, Instant<C>) -> Option<ForeignBox<TimerCallback<C>>>;
 #[allow(dead_code)]
 pub struct TimerCallback<C: time::Clock> {
     deadline: Instant<C>,
@@ -99,7 +100,7 @@ impl<C: time::Clock> TimerQueue<C> {
 
 #[allow(dead_code)]
 pub fn schedule_timer<K: Kernel>(kernel: K, callback: ForeignBox<TimerCallback<K::Clock>>) {
-    let mut timer_queue = kernel.get_timer_queue().lock();
+    let mut timer_queue = kernel.get_timer_queue().lock(kernel);
     timer_queue.queue.sorted_insert(callback);
 }
 
@@ -111,7 +112,7 @@ pub unsafe fn cancel_timer<K: Kernel>(
     kernel: K,
     timer: NonNull<TimerCallback<K::Clock>>,
 ) -> Option<ForeignBox<TimerCallback<K::Clock>>> {
-    let mut timer_queue = kernel.get_timer_queue().lock();
+    let mut timer_queue = kernel.get_timer_queue().lock(kernel);
     unsafe { timer_queue.queue.remove_element(timer) }
 }
 
@@ -133,7 +134,7 @@ pub unsafe fn cancel_and_consume_timer<K: Kernel>(
 
 #[allow(dead_code)]
 pub fn process_queue<K: Kernel>(kernel: K, now: Instant<K::Clock>) {
-    let mut timer_queue = kernel.get_timer_queue().lock();
+    let mut timer_queue = kernel.get_timer_queue().lock(kernel);
     while let Some(mut callback) = timer_queue.get_next_exipred_callback(now) {
         // Drop the timer queue lock before processing callbacks.  This is
         // Safe to do because the callback is already removed from the queue.
@@ -142,10 +143,17 @@ pub fn process_queue<K: Kernel>(kernel: K, now: Instant<K::Clock>) {
         let Some(mut callback_fn) = callback.callback.take() else {
             pw_assert::panic!("Non callback function found on timer");
         };
-        (callback_fn)(callback, now);
-        let _ = callback_fn.consume();
+        match (callback_fn)(callback, now) {
+            Some(mut next_callback) => {
+                next_callback.callback = Some(callback_fn);
+                schedule_timer(kernel, next_callback);
+            }
+            None => {
+                let _ = callback_fn.consume();
+            }
+        }
 
         // Require timer queue lock.
-        timer_queue = kernel.get_timer_queue().lock();
+        timer_queue = kernel.get_timer_queue().lock(kernel);
     }
 }

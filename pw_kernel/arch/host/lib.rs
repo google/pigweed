@@ -34,14 +34,19 @@ impl Arch for HostArch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = Clock;
+    type AtomicUsize = core::sync::atomic::AtomicUsize;
 
     unsafe fn context_switch(
         self,
-        _sched_state: SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<Self>>,
+        _sched_state: SpinLockGuard<'_, Self, SchedulerState<Self>>,
         _old_thread_state: *mut ArchThreadState,
         _new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'_, spinlock::BareSpinLock, SchedulerState<Self>> {
+    ) -> SpinLockGuard<'_, Self, SchedulerState<Self>> {
         pw_assert::panic!("unimplemented");
+    }
+
+    fn thread_local_state(self) -> &'static kernel::scheduler::ThreadLocalState<Self> {
+        todo!("unimplemented");
     }
 
     fn now(self) -> time::Instant<Clock> {

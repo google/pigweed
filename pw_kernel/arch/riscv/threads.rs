@@ -14,10 +14,11 @@
 
 use core::arch::{asm, naked_asm};
 use core::mem;
+use core::ptr::NonNull;
 
 use kernel::Arch;
 use kernel::scheduler::thread::Stack;
-use kernel::scheduler::{self, SchedulerState};
+use kernel::scheduler::{self, SchedulerState, ThreadLocalState};
 use kernel::sync::spinlock::SpinLockGuard;
 use log_if::debug_if;
 use pw_status::Result;
@@ -29,6 +30,9 @@ use crate::spinlock::BareSpinLock;
 const LOG_CONTEXT_SWITCH: bool = false;
 const LOG_THREAD_CREATE: bool = false;
 
+static BOOT_THREAD_LOCAL_STATE: ThreadLocalState<crate::Arch> = ThreadLocalState::new();
+static mut THREAD_LOCAL_STATE: NonNull<ThreadLocalState<crate::Arch>> =
+    NonNull::from_ref(&BOOT_THREAD_LOCAL_STATE);
 #[repr(C)]
 struct ContextSwitchFrame {
     ra: usize,
@@ -50,6 +54,7 @@ pub struct ArchThreadState {
     frame: *mut ContextSwitchFrame,
     #[cfg(feature = "user_space")]
     memory_config: *const MemoryConfig,
+    local: ThreadLocalState<crate::Arch>,
 }
 
 impl ArchThreadState {
@@ -90,14 +95,15 @@ impl Arch for super::Arch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = BareSpinLock;
     type Clock = super::timer::Clock;
+    type AtomicUsize = core::sync::atomic::AtomicUsize;
 
     #[inline(never)]
     unsafe fn context_switch<'a>(
         self,
-        sched_state: SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>>,
+        sched_state: SpinLockGuard<'a, Self, SchedulerState<Self>>,
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>> {
+    ) -> SpinLockGuard<'a, Self, SchedulerState<Self>> {
         debug_if!(
             LOG_CONTEXT_SWITCH,
             "context switch from frame {:#08x} to frame {:#08x}",
@@ -118,6 +124,8 @@ impl Arch for super::Arch {
             unsafe { (*(*new_thread_state).memory_config).write() };
         }
 
+        unsafe { THREAD_LOCAL_STATE = NonNull::from_ref(&(*new_thread_state).local) }
+
         // Note: there is a small window of time where the new memory configuration
         // is active (above) and the new thread is active (below).  Since this code
         // always executes in M-Mode, it bypasses the memory config and by the
@@ -127,6 +135,13 @@ impl Arch for super::Arch {
         riscv_context_switch(old_thread_frame, new_thread_frame);
 
         sched_state
+    }
+
+    fn thread_local_state(self) -> &'static ThreadLocalState<Self> {
+        unsafe {
+            #[allow(static_mut_refs)]
+            THREAD_LOCAL_STATE.as_ref()
+        }
     }
 
     fn now(self) -> time::Instant<super::timer::Clock> {
@@ -182,6 +197,7 @@ impl kernel::scheduler::thread::ThreadState for ArchThreadState {
         frame: core::ptr::null_mut(),
         #[cfg(feature = "user_space")]
         memory_config: core::ptr::null(),
+        local: ThreadLocalState::new(),
     };
 
     #[inline(never)]

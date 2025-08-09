@@ -44,15 +44,15 @@ mod tests {
 
     #[test]
     fn try_lock_returns_correct_value() -> unittest::Result<()> {
-        let lock = SpinLock::<ConcreteBareSpinLock, _>::new(false);
+        let lock = SpinLock::<Arch, _>::new(false);
 
         {
-            let mut guard = lock.lock();
+            let mut guard = lock.lock(Arch);
             *guard = true;
-            unittest::assert_true!(lock.try_lock().is_none());
+            unittest::assert_true!(lock.try_lock(Arch).is_none());
         }
 
-        let guard = lock.lock();
+        let guard = lock.lock(Arch);
         unittest::assert_true!(*guard);
 
         Ok(())

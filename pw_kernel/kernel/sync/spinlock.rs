@@ -15,6 +15,9 @@
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 
+use crate::scheduler::PreemptDisableGuard;
+use crate::{Arch, Kernel};
+
 pub trait BareSpinLock {
     type Guard<'a>
     where
@@ -37,12 +40,13 @@ pub trait BareSpinLock {
     // atomic context (i.e. interrupt handlers).
 }
 
-pub struct SpinLockGuard<'lock, L: BareSpinLock, T> {
-    lock: &'lock SpinLock<L, T>,
-    _inner_guard: L::Guard<'lock>,
+pub struct SpinLockGuard<'lock, K: Kernel, T> {
+    lock: &'lock SpinLock<K, T>,
+    _preempt_guard: PreemptDisableGuard<K>,
+    _inner_guard: <<K as Arch>::BareSpinLock as BareSpinLock>::Guard<'lock>,
 }
 
-impl<L: BareSpinLock, T> Deref for SpinLockGuard<'_, L, T> {
+impl<K: Kernel, T> Deref for SpinLockGuard<'_, K, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -50,40 +54,41 @@ impl<L: BareSpinLock, T> Deref for SpinLockGuard<'_, L, T> {
     }
 }
 
-impl<L: BareSpinLock, T> DerefMut for SpinLockGuard<'_, L, T> {
+impl<K: Kernel, T> DerefMut for SpinLockGuard<'_, K, T> {
     fn deref_mut(&mut self) -> &mut T {
         unsafe { &mut *self.lock.data.get() }
     }
 }
 
-pub struct SpinLock<L, T> {
+pub struct SpinLock<K: Kernel, T> {
     data: UnsafeCell<T>,
-    inner: L,
+    inner: K::BareSpinLock,
 }
-
 // As long as the inner type is `Send` and the bare spinlock is `Sync`, the lock
 // can be shared between threads.
-unsafe impl<L: Sync, T: Send> Sync for SpinLock<L, T> {}
+unsafe impl<K: Sync + Kernel, T: Send> Sync for SpinLock<K, T> {}
 
-impl<L: BareSpinLock, T> SpinLock<L, T> {
+impl<K: Kernel, T> SpinLock<K, T> {
     pub const fn new(initial_value: T) -> Self {
         Self {
             data: UnsafeCell::new(initial_value),
-            inner: L::NEW,
+            inner: K::BareSpinLock::NEW,
         }
     }
 
-    pub fn try_lock(&self) -> Option<SpinLockGuard<'_, L, T>> {
+    pub fn try_lock(&self, kernel: K) -> Option<SpinLockGuard<'_, K, T>> {
         self.inner.try_lock().map(|guard| SpinLockGuard {
             lock: self,
+            _preempt_guard: PreemptDisableGuard::new(kernel),
             _inner_guard: guard,
         })
     }
 
-    pub fn lock(&self) -> SpinLockGuard<'_, L, T> {
+    pub fn lock(&self, kernel: K) -> SpinLockGuard<'_, K, T> {
         let inner_guard = self.inner.lock();
         SpinLockGuard {
             lock: self,
+            _preempt_guard: PreemptDisableGuard::new(kernel),
             _inner_guard: inner_guard,
         }
     }

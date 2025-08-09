@@ -33,7 +33,7 @@ impl<K: Kernel, T> SmuggledSchedLock<K, T> {
     /// The caller must guarantee that the underlying lock and it's enclosed data
     /// is still valid.
     pub unsafe fn lock(&self) -> SchedLockGuard<'_, K, T> {
-        let guard = self.kernel.get_scheduler().lock();
+        let guard = self.kernel.get_scheduler().lock(self.kernel);
         SchedLockGuard {
             guard,
             inner: unsafe { &mut *self.inner.as_ptr() },
@@ -43,19 +43,19 @@ impl<K: Kernel, T> SmuggledSchedLock<K, T> {
 }
 
 pub struct SchedLockGuard<'lock, K: Kernel, T> {
-    guard: SpinLockGuard<'lock, K::BareSpinLock, SchedulerState<K>>,
+    guard: SpinLockGuard<'lock, K, SchedulerState<K>>,
     inner: &'lock mut T,
     pub(super) kernel: K,
 }
 
 impl<'lock, K: Kernel, T> SchedLockGuard<'lock, K, T> {
     #[must_use]
-    pub fn sched(&self) -> &SpinLockGuard<'lock, K::BareSpinLock, SchedulerState<K>> {
+    pub fn sched(&self) -> &SpinLockGuard<'lock, K, SchedulerState<K>> {
         &self.guard
     }
 
     #[must_use]
-    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, K::BareSpinLock, SchedulerState<K>> {
+    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, K, SchedulerState<K>> {
         &mut self.guard
     }
 
@@ -140,7 +140,7 @@ impl<K: Kernel, T> SchedLock<K, T> {
         // Safety: The lock guarantees
         self.kernel
             .get_scheduler()
-            .try_lock()
+            .try_lock(self.kernel)
             .map(|guard| SchedLockGuard {
                 inner: unsafe { &mut *self.inner.get() },
                 guard,
@@ -149,7 +149,7 @@ impl<K: Kernel, T> SchedLock<K, T> {
     }
 
     pub fn lock(&self) -> SchedLockGuard<'_, K, T> {
-        let guard = self.kernel.get_scheduler().lock();
+        let guard = self.kernel.get_scheduler().lock(self.kernel);
         SchedLockGuard {
             inner: unsafe { &mut *self.inner.get() },
             guard,
@@ -192,12 +192,12 @@ pub struct WaitQueueLockGuard<'lock, K: Kernel, T> {
 }
 
 impl<'lock, K: Kernel, T> WaitQueueLockGuard<'lock, K, T> {
-    pub fn sched(&self) -> &SpinLockGuard<'lock, K::BareSpinLock, SchedulerState<K>> {
+    pub fn sched(&self) -> &SpinLockGuard<'lock, K, SchedulerState<K>> {
         &self.inner.guard
     }
 
     #[allow(dead_code)]
-    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, K::BareSpinLock, SchedulerState<K>> {
+    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, K, SchedulerState<K>> {
         &mut self.inner.guard
     }
 

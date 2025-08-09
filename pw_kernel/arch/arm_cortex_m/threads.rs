@@ -14,11 +14,12 @@
 
 use core::arch::asm;
 use core::mem::{self, MaybeUninit};
+use core::ptr::NonNull;
 
 use cortex_m::peripheral::{SCB, *};
 use kernel::memory::{MemoryConfig as _, MemoryRegionType};
 use kernel::scheduler::thread::Stack;
-use kernel::scheduler::{self, SchedulerState};
+use kernel::scheduler::{self, SchedulerState, ThreadLocalState};
 use kernel::sync::spinlock::SpinLockGuard;
 use kernel::{Arch, Kernel};
 use log_if::debug_if;
@@ -54,9 +55,14 @@ unsafe fn set_active_thread(t: *mut ArchThreadState) {
     }
 }
 
+static BOOT_THREAD_LOCAL_STATE: ThreadLocalState<crate::Arch> = ThreadLocalState::new();
+static mut THREAD_LOCAL_STATE: NonNull<ThreadLocalState<crate::Arch>> =
+    NonNull::from_ref(&BOOT_THREAD_LOCAL_STATE);
+
 pub struct ArchThreadState {
     frame: *mut KernelExceptionFrame,
     memory_config: *const MemoryConfig,
+    local: ThreadLocalState<crate::Arch>,
 }
 
 impl ArchThreadState {
@@ -101,23 +107,18 @@ impl Arch for crate::Arch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = BareSpinLock;
     type Clock = super::timer::Clock;
+    type AtomicUsize = core::sync::atomic::AtomicUsize;
 
     unsafe fn context_switch<'a>(
         self,
-        mut sched_state: SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>>,
+        mut sched_state: SpinLockGuard<'a, Self, SchedulerState<Self>>,
         old_thread_state: *mut ArchThreadState,
         new_thread_state: *mut ArchThreadState,
-    ) -> SpinLockGuard<'a, BareSpinLock, SchedulerState<Self>> {
+    ) -> SpinLockGuard<'a, Self, SchedulerState<Self>> {
         pw_assert::assert!(unsafe {
             new_thread_state == sched_state.get_current_arch_thread_state()
         });
         // TODO - konkers: Allow $expr to be tokenized.
-
-        // info!(
-        //     "context switch from thread {:#08x} to thread {:#08x}",
-        //     old_thread.id(),
-        //     new_thread.id(),
-        // );
 
         // Remember active_thread only if it wasn't already set and trigger
         // a pendsv only the first time
@@ -147,12 +148,19 @@ impl Arch for crate::Arch {
             // The next line of code is only executed in this context after the
             // old thread is context switched back to.
 
-            sched_state = crate::Arch::get_scheduler(crate::Arch).lock();
+            sched_state = crate::Arch::get_scheduler(crate::Arch).lock(crate::Arch);
         } else {
             // in interrupt context the pendsv should have already triggered it
             pw_assert::assert!(SCB::is_pendsv_pending());
         }
         sched_state
+    }
+
+    fn thread_local_state(self) -> &'static ThreadLocalState<Self> {
+        unsafe {
+            #[allow(static_mut_refs)]
+            THREAD_LOCAL_STATE.as_ref()
+        }
     }
 
     fn now(self) -> time::Instant<super::timer::Clock> {
@@ -277,6 +285,7 @@ impl kernel::scheduler::thread::ThreadState for ArchThreadState {
     const NEW: Self = Self {
         frame: core::ptr::null_mut(),
         memory_config: core::ptr::null(),
+        local: ThreadLocalState::new(),
     };
 
     fn initialize_kernel_frame(
@@ -430,7 +439,7 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     }
 
     // Return the arch frame for the current thread
-    let mut sched_state = crate::Arch.get_scheduler().lock();
+    let mut sched_state = crate::Arch.get_scheduler().lock(crate::Arch);
     let new_thread = unsafe { sched_state.get_current_arch_thread_state() };
     // info!(
     //     "new frame {:08x}: pc {:08x}",
@@ -447,6 +456,9 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
             (*(*new_thread).memory_config).write();
         }
     }
+    drop(sched_state);
+
+    unsafe { THREAD_LOCAL_STATE = NonNull::from_ref(&(*new_thread).local) }
 
     unsafe { (*new_thread).frame }
 }

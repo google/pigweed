@@ -13,6 +13,7 @@
 // the License.
 #![no_std]
 
+use pw_atomic::AtomicUsize;
 use pw_log::info;
 pub use time::{Duration, Instant};
 
@@ -33,10 +34,13 @@ use scheduler::{SchedulerState, thread};
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use sync::spinlock::{BareSpinLock, SpinLock, SpinLockGuard};
 
+use crate::scheduler::{PreemptDisableGuard, ThreadLocalState};
+
 pub trait Arch: 'static + Copy + thread::ThreadArg {
     type ThreadState: ThreadState;
     type BareSpinLock: BareSpinLock;
     type Clock: time::Clock;
+    type AtomicUsize: AtomicUsize;
 
     /// Switches to a new thread.
     ///
@@ -49,12 +53,14 @@ pub trait Arch: 'static + Copy + thread::ThreadArg {
     #[allow(clippy::missing_safety_doc)]
     unsafe fn context_switch(
         self,
-        sched_state: SpinLockGuard<'_, Self::BareSpinLock, SchedulerState<Self>>,
+        sched_state: SpinLockGuard<'_, Self, SchedulerState<Self>>,
         old_thread_state: *mut Self::ThreadState,
         new_thread_state: *mut Self::ThreadState,
-    ) -> SpinLockGuard<'_, Self::BareSpinLock, SchedulerState<Self>>
+    ) -> SpinLockGuard<'_, Self, SchedulerState<Self>>
     where
         Self: Kernel;
+
+    fn thread_local_state(self) -> &'static ThreadLocalState<Self>;
 
     fn now(self) -> Instant<Self::Clock>;
 
@@ -82,18 +88,18 @@ pub trait Arch: 'static + Copy + thread::ThreadArg {
 pub trait Kernel: Arch {
     fn get_state(self) -> &'static KernelState<Self>;
 
-    fn get_scheduler(self) -> &'static SpinLock<Self::BareSpinLock, SchedulerState<Self>> {
+    fn get_scheduler(self) -> &'static SpinLock<Self, SchedulerState<Self>> {
         &self.get_state().scheduler
     }
 
-    fn get_timer_queue(self) -> &'static SpinLock<Self::BareSpinLock, TimerQueue<Self::Clock>> {
+    fn get_timer_queue(self) -> &'static SpinLock<Self, TimerQueue<Self::Clock>> {
         &self.get_state().timer_queue
     }
 }
 
 pub struct KernelState<K: Kernel> {
-    scheduler: SpinLock<K::BareSpinLock, SchedulerState<K>>,
-    timer_queue: SpinLock<K::BareSpinLock, TimerQueue<K::Clock>>,
+    scheduler: SpinLock<K, SchedulerState<K>>,
+    timer_queue: SpinLock<K, TimerQueue<K::Clock>>,
 }
 
 impl<K: Kernel> KernelState<K> {
@@ -187,6 +193,8 @@ pub mod macro_exports {
 }
 
 pub fn main<K: Kernel>(kernel: K, init_state: &'static mut InitKernelState<K>) -> ! {
+    let preempt_guard = PreemptDisableGuard::new(kernel);
+
     target::console_init();
     info!("Welcome to Maize on {}!", target::name() as &str);
 
@@ -206,7 +214,7 @@ pub fn main<K: Kernel>(kernel: K, init_state: &'static mut InitKernelState<K>) -
     info!("created thread, bootstrapping");
 
     // special case where we bootstrap the system by half context switching to this thread
-    scheduler::bootstrap_scheduler(kernel, bootstrap_thread);
+    scheduler::bootstrap_scheduler(kernel, preempt_guard, bootstrap_thread);
 
     // never get to here
 }
@@ -221,7 +229,7 @@ fn bootstrap_thread_entry<K: Kernel>(
 
     kernel.init();
 
-    kernel.get_scheduler().lock().dump_all_threads();
+    kernel.get_scheduler().lock(kernel).dump_all_threads();
 
     let idle_thread = thread::init_thread_in(
         kernel,
@@ -232,7 +240,7 @@ fn bootstrap_thread_entry<K: Kernel>(
         0,
     );
 
-    kernel.get_scheduler().lock().dump_all_threads();
+    kernel.get_scheduler().lock(kernel).dump_all_threads();
 
     scheduler::start_thread(kernel, idle_thread);
 

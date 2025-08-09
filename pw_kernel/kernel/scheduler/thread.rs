@@ -209,7 +209,10 @@ impl<K: Kernel> Process<K> {
     /// Registers process with scheduler.
     pub fn register(&mut self, kernel: K) {
         unsafe {
-            kernel.get_scheduler().lock().add_process_to_list(self);
+            kernel
+                .get_scheduler()
+                .lock(kernel)
+                .add_process_to_list(self);
         }
     }
 
@@ -257,7 +260,6 @@ pub struct Thread<K: Kernel> {
     process: *mut Process<K>,
 
     pub(super) state: State,
-    pub(super) preempt_disable_count: u32,
     stack: Stack,
 
     // Architecturally specific thread state, saved on context switch
@@ -279,18 +281,13 @@ impl<K: Kernel> Thread<K> {
             active_link: Link::new(),
             process: core::ptr::null_mut(),
             state: State::New,
-            preempt_disable_count: 0,
             arch_thread_state: UnsafeCell::new(K::ThreadState::NEW),
             stack: Stack::new(),
             name,
         }
     }
 
-    extern "C" fn trampoline<A0: ThreadArg, A1: ThreadArg>(
-        entry_point: usize,
-        arg0: usize,
-        arg1: usize,
-    ) {
+    extern "C" fn trampoline<A1: ThreadArg>(entry_point: usize, arg0: usize, arg1: usize) {
         let entry_point = core::ptr::with_exposed_provenance::<()>(entry_point);
         // SAFETY: This function is only ever passed to the
         // architecture-specific call to `initialize_frame` below. It is
@@ -299,10 +296,10 @@ impl<K: Kernel> Thread<K> {
         // this transmute preserves validity, and the preceding
         // `with_exposed_provenance` ensures that the resulting `fn(usize)`
         // has valid provenance for its referent.
-        let entry_point: fn(A0, A1) = unsafe { core::mem::transmute(entry_point) };
-        let arg0 = unsafe { A0::from_usize(arg0) };
+        let entry_point: fn(K, A1) = unsafe { core::mem::transmute(entry_point) };
+        let kernel = unsafe { K::from_usize(arg0) };
         let arg1 = unsafe { A1::from_usize(arg1) };
-        entry_point(arg0, arg1);
+        entry_point(kernel, arg1);
     }
 
     pub fn initialize_kernel_thread<A: ThreadArg>(
@@ -313,13 +310,13 @@ impl<K: Kernel> Thread<K> {
         arg: A,
     ) -> &mut Thread<K> {
         pw_assert::assert!(self.state == State::New);
-        let process = kernel.get_scheduler().lock().kernel_process.get();
+        let process = kernel.get_scheduler().lock(kernel).kernel_process.get();
         let args = (entry_point as usize, kernel.into_usize(), arg.into_usize());
         unsafe {
             (*self.arch_thread_state.get()).initialize_kernel_frame(
                 kernel_stack,
                 &raw const (*process).memory_config,
-                Self::trampoline::<K, A>,
+                Self::trampoline::<A>,
                 args,
             );
         }
@@ -374,7 +371,7 @@ impl<K: Kernel> Thread<K> {
 
         self.state = State::Initial;
 
-        let _sched_state = kernel.get_scheduler().lock();
+        let _sched_state = kernel.get_scheduler().lock(kernel);
         unsafe {
             // Safety: *process is only accessed with the scheduler lock held.
 

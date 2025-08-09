@@ -20,7 +20,7 @@ use time::Clock as _;
 
 use crate::regs::Regs;
 
-static TICKS: SpinLock<crate::spinlock::BareSpinLock, u64> = SpinLock::new(0);
+static TICKS: SpinLock<crate::Arch, u64> = SpinLock::new(0);
 const SYSTICK_RELOAD_VALUE: u32 = KernelConfig::SYS_TICK_HZ / KernelConfig::SCHEDULER_TICK_HZ;
 
 pub struct Clock {}
@@ -29,7 +29,7 @@ impl time::Clock for Clock {
     const TICKS_PER_SEC: u64 = KernelConfig::SYS_TICK_HZ as u64;
 
     fn now() -> time::Instant<Self> {
-        let mut ticks = TICKS.lock();
+        let mut ticks = TICKS.lock(crate::Arch);
         let systick_regs = Regs::get().systick;
         let mut current = systick_regs.cvr.read().current();
         let reload = systick_regs.rvr.read().reload();
@@ -98,9 +98,10 @@ pub fn systick_init() {
 #[unsafe(no_mangle)]
 #[allow(non_snake_case)]
 pub unsafe extern "C" fn SysTick() {
-    let mut ticks = TICKS.lock();
-    *ticks += u64::from(SYSTICK_RELOAD_VALUE);
-
+    {
+        let mut ticks = TICKS.lock(crate::Arch);
+        *ticks += u64::from(SYSTICK_RELOAD_VALUE);
+    }
     //info!("SysTick {}", *ticks as u64);
 
     scheduler::tick(super::Arch, Clock::now());
