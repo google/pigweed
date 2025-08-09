@@ -15,11 +15,12 @@
 """pw change command group."""
 import argparse
 import sys
+from collections.abc import Sequence
 
 from pw_change import push, review
 
 
-def _main(argv) -> int:
+def _main(argv: Sequence[str]) -> int:
     """Parses arguments and dispatches to a pw change subcommand."""
     parser = argparse.ArgumentParser(prog='pw change', description=__doc__)
     subparsers = parser.add_subparsers(

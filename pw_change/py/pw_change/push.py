@@ -14,17 +14,17 @@
 # the License.
 """Simple command to push changes to Gerrit."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import annotations
 
 import argparse
 import re
 import subprocess
 import sys
+from collections.abc import Sequence
+from typing import NoReturn
 
 
-def _default_at_google_com(x):
+def _default_at_google_com(x: str) -> str:
     if '@' in x:
         return x
     return f'{x}@google.com'
@@ -32,13 +32,13 @@ def _default_at_google_com(x):
 
 # This looks like URL-encoding but it's different in which characters need to be
 # escaped and which do not.
-def _escaped_string(x):
-    for ch in '%^@.,~-+_:/!\'"[](){}':
+def _escaped_string(x: str) -> str:
+    for ch in r'%^@.,~-+_:/!\'"[](){}\\':
         x = x.replace(ch, f'%{ord(ch):02x}')
     return x.replace(' ', '_')
 
 
-def parse(argv=None):
+def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument('rev', nargs='?', default='HEAD')
@@ -81,7 +81,7 @@ def parse(argv=None):
         for name in 'topic wip ready reviewer'.split():
             value = getattr(args, name)
             if value:
-                parser.error('--force cannot be used with --{0}'.format(name))
+                parser.error(f'--force cannot be used with --{name}')
 
     if args.wip and args.ready:
         parser.error('--wip cannot be used with --ready')
@@ -89,11 +89,12 @@ def parse(argv=None):
     return args
 
 
-def _remote_dest():
+def _remote_dest() -> tuple[str, str]:
     remote_branch = (
         subprocess.run(
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
             capture_output=True,
+            check=True,
         )
         .stdout.decode()
         .strip()
@@ -110,6 +111,7 @@ def _remote_dest():
             subprocess.run(
                 cmd,
                 capture_output=True,
+                check=True,
             )
             .stdout.decode()
             .strip()
@@ -119,24 +121,24 @@ def _remote_dest():
     return remote, branch
 
 
-def _auto_submit_label(host):
+def _auto_submit_label(host: str | None) -> str:
     return {
         'pigweed': 'Pigweed-Auto-Submit',
         'pigweed-internal': 'Pigweed-Auto-Submit',
         'fuchsia': 'Fuchsia-Auto-Submit',
         'fuchsia-internal': 'Fuchsia-Auto-Submit',
-    }.get(host, 'Auto-Submit')
+    }.get(host or '', 'Auto-Submit')
 
 
-def push(args):
+def push(args: argparse.Namespace) -> int:
     """Push changes to Gerrit."""
     remote, branch = _remote_dest()
 
     if not args.force:
         branch = f'refs/for/{branch}'
 
-    options = []
-    push_args = []
+    options: list[str] = []
+    push_args: list[str] = []
 
     if args.topic:
         options.append(f'topic={args.topic}')
@@ -172,6 +174,7 @@ def push(args):
             subprocess.run(
                 ['git', 'config', '--get', f'remote.{remote}.url'],
                 capture_output=True,
+                check=True,
             )
             .stdout.decode()
             .strip()
@@ -183,8 +186,8 @@ def push(args):
     if args.no_verify:
         push_args.append('--no-verify')
 
-    options = ','.join(options)
-    branch = f'{branch}%{options}'
+    options_str = ','.join(options)
+    branch = f'{branch}%{options_str}'
 
     cmd = ['git', 'push', remote, f'+{args.rev}:{branch}']
     cmd.extend(push_args)
@@ -197,7 +200,7 @@ def push(args):
     return 0
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int | NoReturn:
     args = parse(argv)
     return push(args)
 

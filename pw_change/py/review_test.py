@@ -25,7 +25,7 @@ from pw_change import review
 class ReviewTest(unittest.TestCase):
     """Tests for the review script."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up mocks and a temporary directory."""
         self.temp_dir = tempfile.TemporaryDirectory()
         self.project_root = Path(self.temp_dir.name)
@@ -36,7 +36,7 @@ class ReviewTest(unittest.TestCase):
         self.prompt_file = self.gemini_dir / 'g-review_prompt.md'
         self.prompt_file.write_text('Test prompt')
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up the temporary directory."""
         self.temp_dir.cleanup()
 
@@ -46,11 +46,11 @@ class ReviewTest(unittest.TestCase):
     @patch('tempfile.NamedTemporaryFile')
     def test_review_success(
         self,
-        mock_named_temp_file,
-        mock_project_root,
-        mock_subprocess_run,
-        mock_git_repo,
-    ):
+        mock_named_temp_file: MagicMock,
+        mock_project_root: MagicMock,
+        mock_subprocess_run: MagicMock,
+        mock_git_repo: MagicMock,
+    ) -> None:
         """Test a successful review command."""
         # Mock project_root to return our temporary directory
         mock_project_root.return_value = self.project_root
