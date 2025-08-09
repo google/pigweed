@@ -27,6 +27,15 @@ pub struct ForeignList<T, A: Adapter> {
     list: UnsafeList<T, A>,
 }
 
+// Safety:
+// A given node can only be in a single [`ForeignList`] at a time. This list
+// logically owns the node for the duration of its membership in the list. All
+// mutation of the node's `Link` pointers are done while the node is in the
+// list. There is no API to get a mutable reference to a node while it is in the
+// list nor directly manipulate its membership or position in the list.
+unsafe impl<T: Send, A: Adapter> Send for ForeignList<T, A> {}
+unsafe impl<T: Sync, A: Adapter> Sync for ForeignList<T, A> {}
+
 impl<T, A: Adapter> Default for ForeignList<T, A> {
     fn default() -> Self {
         Self::new()

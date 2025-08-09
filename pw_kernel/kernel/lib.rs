@@ -85,7 +85,7 @@ pub trait Arch: 'static + Copy + thread::ThreadArg {
     }
 }
 
-pub trait Kernel: Arch {
+pub trait Kernel: Arch + Sync {
     fn get_state(self) -> &'static KernelState<Self>;
 
     fn get_scheduler(self) -> &'static SpinLock<Self, SchedulerState<Self>> {

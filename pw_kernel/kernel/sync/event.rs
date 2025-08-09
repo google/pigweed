@@ -75,6 +75,11 @@ pub struct EventSignaler<K: Kernel> {
     event: NonNull<Event<K>>,
 }
 
+// SAFETY: Event will panic if there are outstanding signalers referencing it
+// guaranteeing that the event pointer will always be valid.
+unsafe impl<K: Kernel> Send for EventSignaler<K> {}
+unsafe impl<K: Kernel> Sync for EventSignaler<K> {}
+
 impl<K: Kernel> Clone for EventSignaler<K> {
     fn clone(&self) -> Self {
         // Safety: Event will panic if there are outstanding signalers referencing it.

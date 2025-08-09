@@ -18,7 +18,7 @@ use core::ops::{Deref, DerefMut};
 use crate::scheduler::PreemptDisableGuard;
 use crate::{Arch, Kernel};
 
-pub trait BareSpinLock {
+pub trait BareSpinLock: Send + Sync {
     type Guard<'a>
     where
         Self: 'a;

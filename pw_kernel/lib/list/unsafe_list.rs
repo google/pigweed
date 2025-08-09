@@ -75,6 +75,22 @@ pub struct Link {
     inner: UnsafeCell<LinkInner>,
 }
 
+// SAFETY:
+//
+// When used with a ForeignList (or RandomAccessForeignList), a given node can
+// only be in a single list at a time.  This list logically owns the node for
+// the duration of its membership in the list.  All mutation of the node's
+// `Link` pointers are done while the node is in the list.  There is no API to
+// get a mutable reference to a node while it is in the list nor directly
+// manipulate its membership or position in the list.
+//
+// When used with an `UnsafeList` it is the users responsibility to ensure that
+// Rust's read-shared/write-exclusive semantics are upheld across all access
+// to a given node including when that node is also in a ForeignList
+// RandomAccessForeignList.
+unsafe impl Send for Link {}
+unsafe impl Sync for Link {}
+
 #[inline]
 unsafe fn get_element(inner: &UnsafeCell<LinkInner>, offset: usize) -> Option<NonNull<Link>> {
     let inner_ptr = inner.get().cast::<Option<NonNull<Link>>>();
