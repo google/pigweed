@@ -21,7 +21,10 @@ rust_library(
     name = "foreign_box",
     srcs = ["foreign_box.rs"],
     tags = ["kernel"],
-    deps = ["//pw_kernel/lib/pw_assert"],
+    deps = [
+        "//pw_kernel/lib/pw_assert",
+        "//pw_kernel/lib/pw_atomic",
+    ],
 )
 
 # foreign_box uses the std rust test harness to allow asserting that it panics
