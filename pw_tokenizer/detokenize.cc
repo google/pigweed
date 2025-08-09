@@ -416,10 +416,10 @@ DetokenizedString::DetokenizedString(
   std::vector<DecodingResult> results;
 
   for (const auto& [format, date_removed] : entries) {
-    results.push_back(DecodingResult{
+    results.emplace_back(
         format.Format(span(reinterpret_cast<const uint8_t*>(arguments.data()),
                            arguments.size())),
-        date_removed});
+        date_removed);
   }
 
   std::sort(results.begin(), results.end(), IsBetterResult);

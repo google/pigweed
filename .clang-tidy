@@ -57,6 +57,7 @@ Checks: >
     modernize-shrink-to-fit,
     modernize-unary-static-assert,
     modernize-use-bool-literals,
+    modernize-use-emplace,
     modernize-use-equals-delete,
     modernize-use-noexcept,
     modernize-use-nullptr,
