@@ -15,12 +15,13 @@
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 
-use foreign_box::ForeignBox;
+use foreign_box::{ForeignBox, ForeignRc};
 use list::*;
 use pw_log::info;
 use pw_status::Result;
 
 use crate::Kernel;
+use crate::object::{KernelObject, ObjectTable};
 
 /// The memory backing a thread's stack before it has been started.
 ///
@@ -186,6 +187,8 @@ pub struct Process<K: Kernel> {
 
     memory_config: <K::ThreadState as ThreadState>::MemoryConfig,
 
+    object_table: ForeignBox<dyn ObjectTable<K>>,
+
     thread_list: UnsafeList<Thread<K>, ProcessThreadListAdapter<K>>,
 }
 
@@ -197,13 +200,23 @@ impl<K: Kernel> Process<K> {
     pub const fn new(
         name: &'static str,
         memory_config: <K::ThreadState as ThreadState>::MemoryConfig,
+        object_table: ForeignBox<dyn ObjectTable<K>>,
     ) -> Self {
         Self {
             link: Link::new(),
             name,
             memory_config,
+            object_table,
             thread_list: UnsafeList::new(),
         }
+    }
+
+    pub fn get_object(
+        &self,
+        kernel: K,
+        handle: u32,
+    ) -> Option<ForeignRc<K::AtomicUsize, dyn KernelObject<K>>> {
+        self.object_table.get_object(kernel, handle)
     }
 
     /// Registers process with scheduler.
@@ -285,6 +298,15 @@ impl<K: Kernel> Thread<K> {
             stack: Stack::new(),
             name,
         }
+    }
+
+    pub fn get_object(
+        &self,
+        kernel: K,
+        handle: u32,
+    ) -> Option<ForeignRc<K::AtomicUsize, dyn KernelObject<K>>> {
+        // SAFETY: `self.process` will always outlive `self`.
+        unsafe { self.process.as_ref()? }.get_object(kernel, handle)
     }
 
     extern "C" fn trampoline<A1: ThreadArg>(entry_point: usize, arg0: usize, arg1: usize) {
@@ -576,7 +598,7 @@ macro_rules! init_thread {
 #[cfg(feature = "user_space")]
 #[macro_export]
 macro_rules! init_non_priv_process {
-    ($name:literal, $memory_config:expr) => {{
+    ($name:literal, $memory_config:expr, $object_table:expr $(,)?) => {{
         use $crate::scheduler::thread::Process;
 
         /// SAFETY: This must be executed at most once at run time.
@@ -590,8 +612,10 @@ macro_rules! init_non_priv_process {
             // SAFETY: The caller promises that this function will be executed
             // at most once.
             let proc =
-                unsafe { $crate::static_mut_ref!(Process<arch::Arch> = Process::new($name, $memory_config)) };
-            proc.register(arch::Arch);
+                unsafe {
+                    $crate::static_mut_ref!(Process<arch::Arch> =
+                         Process::new($name, $memory_config, $object_table))
+                };            proc.register(arch::Arch);
             proc
         }
 
@@ -608,7 +632,7 @@ macro_rules! init_non_priv_process {
 #[cfg(feature = "user_space")]
 #[macro_export]
 macro_rules! init_non_priv_thread {
-    ($name:literal, $process:expr, $entry:expr, $initial_sp:expr, $kernel_stack_size:expr) => {{
+    ($name:literal, $process:expr, $entry:expr, $initial_sp:expr, $kernel_stack_size:expr  $(,)?) => {{
         use $crate::static_mut_ref;
         use $crate::__private::foreign_box::ForeignBox;
         use $crate::scheduler::thread::{Process, Stack, StackStorage, StackStorageExt, Thread};

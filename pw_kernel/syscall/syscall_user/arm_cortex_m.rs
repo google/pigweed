@@ -42,11 +42,17 @@ macro_rules! syscall_veneer {
     };
 }
 
+syscall_veneer!(ObjectWait, object_wait(handle: u32, signals: u32, deadline: u64));
 syscall_veneer!(DebugNoOp, noop());
 syscall_veneer!(DebugAdd, add(a: u32, b: u32));
 syscall_veneer!(DebugPutc, putc(a: u32));
 
 impl SysCallInterface for SysCall {
+    #[inline(always)]
+    fn object_wait(handle: u32, signals: u32, deadline: u64) -> Result<()> {
+        SysCallReturnValue(unsafe { object_wait(handle, signals, deadline) }).to_result_unit()
+    }
+
     #[inline(always)]
     fn debug_noop() -> Result<()> {
         SysCallReturnValue(unsafe { noop() }).to_result_unit()

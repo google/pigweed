@@ -14,12 +14,18 @@
 
 {% if apps.len() > 0 %}
 pub fn start() {
+    use core::ptr::NonNull;
+
     use {{ arch_crate_name }} as arch;
+    use kernel::NullObjectTable;
+    use kernel::macro_exports::foreign_box::ForeignBox;
 
     type MemoryConfig = arch::MemoryConfig;
 
 {%- for (app_name, app) in apps %}
     let start_fn_{{app_name}} = {{app.start_fn_address | to_hex}}_usize;
+
+    static KERNEL_OBJECT_TABLE_{{app_name | uppercase}}: NullObjectTable = NullObjectTable::new();
     const MEMORY_CONFIG_{{app_name | uppercase }}: MemoryConfig = MemoryConfig::const_new(&[
         kernel::MemoryRegion {
             ty: kernel::MemoryRegionType::ReadOnlyExecutable,
@@ -33,7 +39,15 @@ pub fn start() {
         },
     ]);
 
-    let process_{{app_name}} = unsafe { kernel::init_non_priv_process!("{{app.process.name}}", MEMORY_CONFIG_{{app_name | uppercase}}) };
+    let process_{{app_name}} = unsafe { kernel::init_non_priv_process!(
+        "{{app.process.name}}",
+        MEMORY_CONFIG_{{app_name | uppercase}},
+        // SAFETY: Object table is static lifetime and will always outlive the
+        // foreign box.  Additionally it is never outside of this scope aside from.
+        // within the box.
+        unsafe { ForeignBox::new(NonNull::from_ref(&KERNEL_OBJECT_TABLE_{{app_name | uppercase}})) },
+    )};
+
 {%- for thread in app.process.threads -%}
 {% set thread_index = loop.index0 %}
     let thread_{{app_name}}_{{thread_index}} = unsafe {

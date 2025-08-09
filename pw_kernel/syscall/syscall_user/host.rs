@@ -18,6 +18,11 @@ pub struct SysCall {}
 
 impl SysCallInterface for SysCall {
     #[inline(always)]
+    fn object_wait(_: u32, _: u32, _: u64) -> Result<()> {
+        Err(pw_status::Error::Unimplemented)
+    }
+
+    #[inline(always)]
     fn debug_noop() -> Result<()> {
         Err(pw_status::Error::Unimplemented)
     }

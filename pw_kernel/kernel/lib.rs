@@ -13,11 +13,17 @@
 // the License.
 #![no_std]
 
+use core::any::Any;
+use core::ops::Deref;
+use core::ptr::NonNull;
+
+use foreign_box::{ForeignBox, ForeignRcBox};
 use pw_atomic::AtomicUsize;
 use pw_log::info;
 pub use time::{Duration, Instant};
 
 pub mod memory;
+pub mod object;
 #[cfg(not(feature = "std_panic_handler"))]
 mod panic;
 pub mod scheduler;
@@ -27,6 +33,7 @@ mod target;
 
 use kernel_config::{KernelConfig, KernelConfigInterface};
 pub use memory::{MemoryRegion, MemoryRegionType};
+pub use object::NullObjectTable;
 #[doc(hidden)]
 pub use scheduler::thread::{Process, Stack, StackStorage, StackStorageExt, Thread, ThreadState};
 use scheduler::timer::TimerQueue;
@@ -34,6 +41,8 @@ use scheduler::{SchedulerState, thread};
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use sync::spinlock::{BareSpinLock, SpinLock, SpinLockGuard};
 
+use crate::object::{KernelObject, TickerObject};
+use crate::scheduler::timer::TimerCallback;
 use crate::scheduler::{PreemptDisableGuard, ThreadLocalState};
 
 pub trait Arch: 'static + Copy + thread::ThreadArg {
@@ -97,9 +106,13 @@ pub trait Kernel: Arch + Sync {
     }
 }
 
+type ObjectRef<K> = ForeignRcBox<<K as Arch>::AtomicUsize, dyn KernelObject<K>>;
 pub struct KernelState<K: Kernel> {
     scheduler: SpinLock<K, SchedulerState<K>>,
     timer_queue: SpinLock<K, TimerQueue<K::Clock>>,
+    // HACK: A global ticker reference that is hard coded into every object
+    // table to allow testing of waiting.
+    ticker: SpinLock<K, Option<ObjectRef<K>>>,
 }
 
 impl<K: Kernel> KernelState<K> {
@@ -108,6 +121,7 @@ impl<K: Kernel> KernelState<K> {
         Self {
             scheduler: SpinLock::new(SchedulerState::new()),
             timer_queue: SpinLock::new(TimerQueue::new()),
+            ticker: SpinLock::new(None),
         }
     }
 }
@@ -157,6 +171,7 @@ macro_rules! static_init_state {
                     // which is only executed once.
                     stack: unsafe { &mut IDLE_STACK },
                 },
+                ticker: $crate::object::TickerObject::new(),
             }
         };
     };
@@ -183,13 +198,15 @@ pub struct InitKernelState<K: Kernel> {
     pub bootstrap_thread: ThreadStorage<K>,
     #[doc(hidden)]
     pub idle_thread: ThreadStorage<K>,
+    #[doc(hidden)]
+    pub ticker: TickerObject<K>,
 }
 
 // Module re-exporting modules into a scope that can be referenced by macros
 // in this crate.
 #[doc(hidden)]
 pub mod macro_exports {
-    pub use pw_assert;
+    pub use {foreign_box, pw_assert};
 }
 
 pub fn main<K: Kernel>(kernel: K, init_state: &'static mut InitKernelState<K>) -> ! {
@@ -197,6 +214,10 @@ pub fn main<K: Kernel>(kernel: K, init_state: &'static mut InitKernelState<K>) -
 
     target::console_init();
     info!("Welcome to Maize on {}!", target::name() as &str);
+
+    let ticker =
+        unsafe { ForeignRcBox::new(NonNull::<dyn KernelObject<K>>::from_ref(&init_state.ticker)) };
+    *kernel.get_state().ticker.lock(kernel) = Some(ticker);
 
     kernel.early_init();
 
@@ -243,6 +264,31 @@ fn bootstrap_thread_entry<K: Kernel>(
     kernel.get_scheduler().lock(kernel).dump_all_threads();
 
     scheduler::start_thread(kernel, idle_thread);
+
+    // HACK: Setup up a timer to signal the ticker object every second.
+    let mut ticker_closure = move |mut callback: ForeignBox<TimerCallback<K::Clock>>,
+                                   now|
+          -> Option<ForeignBox<TimerCallback<K::Clock>>> {
+        let ticker = kernel.get_state().ticker.lock(kernel);
+        let Some(ticker) = ticker.as_ref() else {
+            pw_assert::panic!("no ticker object");
+        };
+        let ticker_rc = ticker.get_ref();
+        let Some(ticker) = (ticker_rc.deref() as &dyn Any).downcast_ref::<TickerObject<K>>() else {
+            pw_assert::panic!("ticker not a TickerObject");
+        };
+        ticker.tick(kernel);
+        callback.set(now + Duration::<K::Clock>::from_secs(1));
+        Some(callback)
+    };
+
+    let mut ticker_callback =
+        TimerCallback::new(kernel.now() + Duration::<K::Clock>::from_secs(1), unsafe {
+            ForeignBox::new_from_ptr(&raw mut ticker_closure)
+        });
+    scheduler::timer::schedule_timer(kernel, unsafe {
+        ForeignBox::new_from_ptr(&raw mut ticker_callback)
+    });
 
     target::main()
 }

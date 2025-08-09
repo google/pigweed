@@ -137,19 +137,18 @@ impl<K: Kernel> Event<K> {
     /// Returns the new `Event` long with an [`EventSignaler`] which can be
     /// used to signal the event.
     #[must_use]
-    pub const fn new(kernel: K, config: EventConfig) -> (Self, EventSignaler<K>) {
-        let event = Self {
+    pub const fn new(kernel: K, config: EventConfig) -> Self {
+        Self {
             config,
             state: WaitQueueLock::new(kernel, EventState { signaled: false }),
             signalers: AtomicUsize::new(1),
-        };
+        }
+    }
 
-        // SAFETY: Event will panic if there are outstanding signalers referencing it.
-        let signaler = EventSignaler {
-            event: NonNull::from_ref(&event),
-        };
-
-        (event, signaler)
+    pub fn get_signaler(event: &Event<K>) -> EventSignaler<K> {
+        EventSignaler {
+            event: NonNull::from_ref(event),
+        }
     }
 
     /// Waits until the `Event` is in the signaled state.

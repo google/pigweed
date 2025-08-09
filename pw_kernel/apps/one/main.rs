@@ -24,7 +24,14 @@ fn entry() -> ! {
     let mut buffer = [0u8; 1024];
     let _ = tokenize_core_fmt_to_buffer!(&mut buffer, "App one tokenized string {}", 1 as i32);
     loop {
-        let _ = SysCall::debug_putc(u32::from('a'));
+        for c in 'a'..'z' {
+            const OBJECT_HANDLE: u32 = 0x0;
+            const SIGNAL_MASK: u32 = 0x1;
+            const DEADLINE: u64 = u64::MAX;
+
+            let _ = SysCall::object_wait(OBJECT_HANDLE, SIGNAL_MASK, DEADLINE);
+            let _ = SysCall::debug_putc(u32::from(c));
+        }
     }
 }
 

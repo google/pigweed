@@ -24,6 +24,7 @@ use pw_status::{Error, Result};
 use time::Instant;
 
 use crate::memory::MemoryConfig as _;
+use crate::object::NullObjectTable;
 use crate::scheduler::timer::TimerCallback;
 use crate::sync::spinlock::SpinLockGuard;
 use crate::{Arch, Kernel};
@@ -175,10 +176,14 @@ impl<K: Kernel> SchedulerState<K> {
     #[allow(dead_code)]
     #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
+        static KERNEL_OBJECT_TABLE: NullObjectTable = NullObjectTable::new();
         Self {
             kernel_process: UnsafeCell::new(Process::new(
                 "kernel",
                 <K::ThreadState as ThreadState>::MemoryConfig::KERNEL_THREAD_MEMORY_CONFIG,
+                // SAFETY: In the event of multiple scheduler objects, they will
+                // refer to the same, immutable, instance of a zero sized type.
+                unsafe { ForeignBox::new(NonNull::from_ref(&KERNEL_OBJECT_TABLE)) },
             )),
             current_thread: None,
             current_arch_thread_state: core::ptr::null_mut(),

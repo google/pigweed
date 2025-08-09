@@ -19,7 +19,7 @@ use userspace::entry;
 
 #[entry]
 fn entry() -> ! {
-    for i in 0..4 {
+    for i in 0..20 {
         let _ = SysCall::debug_putc(u32::from('B') + i);
     }
 

@@ -42,6 +42,10 @@ impl<C: time::Clock> TimerCallback<C> {
             link: Link::new(),
         }
     }
+
+    pub fn set(&mut self, deadline: Instant<C>) {
+        self.deadline = deadline
+    }
 }
 
 impl<C: time::Clock> PartialEq for TimerCallback<C> {

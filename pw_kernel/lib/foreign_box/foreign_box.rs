@@ -214,7 +214,7 @@ impl<A: AtomicUsize, T: ?Sized> Drop for ForeignRc<A, T> {
     }
 }
 
-impl<A: AtomicUsize, T> ForeignRcBox<A, T> {
+impl<A: AtomicUsize, T: ?Sized> ForeignRcBox<A, T> {
     /// # Safety
     /// This method has the same safety preconditions as
     /// [`ForeignBox::new`].
@@ -227,7 +227,7 @@ impl<A: AtomicUsize, T> ForeignRcBox<A, T> {
     }
 }
 
-impl<A: AtomicUsize, T> ForeignRcBox<A, T> {
+impl<A: AtomicUsize, T: ?Sized> ForeignRcBox<A, T> {
     pub fn get_ref(&self) -> ForeignRc<A, T> {
         self.ref_count.fetch_add(1, Ordering::SeqCst);
         ForeignRc {
