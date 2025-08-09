@@ -278,3 +278,8 @@ import %workspace%/pw_kernel/kernel.bazelrc
 # options override anything in this file
 # (https://bazel.build/run/bazelrc#imports)
 try-import %workspace%/user.bazelrc
+
+# (Experimental) Configuration to automatically generate compile_commands.json for IDEs.
+# Usage: bazel build --config=ide //your/target/...
+build:ide --aspects=//pw_ide/bazel/compile_commands:defs.bzl%compile_commands_aspect
+build:ide --output_groups=+compile_commands_fragments
