@@ -342,7 +342,6 @@
   },
   "extensionDependencies": [
     "BazelBuild.vscode-bazel",
-    "llvm-vs-code-extensions.vscode-clangd",
-    "zxh404.vscode-proto3"
+    "llvm-vs-code-extensions.vscode-clangd"
   ]
 }
