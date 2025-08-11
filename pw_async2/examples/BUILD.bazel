@@ -90,6 +90,19 @@ pw_cc_test(
     ],
 )
 
+pw_cc_binary(
+    name = "interrupt",
+    srcs = ["interrupt.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        "//pw_async2:dispatcher",
+        "//pw_async2:pend_func_task",
+        "//pw_containers:inline_queue",
+        "//pw_log",
+        "//pw_sync:interrupt_spin_lock",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
@@ -98,6 +111,7 @@ sphinx_docs_library(
         "basic.cc",
         "coro_blinky_loop.cc",
         "count.cc",
+        "interrupt.cc",
         "once_send_recv.cc",
     ],
     target_compatible_with = incompatible_with_mcu(),

@@ -44,3 +44,16 @@ if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
       pw_async2.once_sender
   )
 endif()
+
+add_executable(pw_async2.interrupt EXCLUDE_FROM_ALL
+  interrupt.cc
+)
+
+target_link_libraries(pw_async2.interrupt
+  PRIVATE
+    pw_async2.dispatcher
+    pw_async2.pend_func_task
+    pw_containers.inline_queue
+    pw_log
+    pw_sync.interrupt_spin_lock
+)

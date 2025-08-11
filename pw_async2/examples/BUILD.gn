@@ -71,6 +71,17 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     ]
     sources = [ "once_send_recv.cc" ]
   }
+
+  pw_executable("interrupt") {
+    deps = [
+      "$dir_pw_async2:dispatcher",
+      "$dir_pw_async2:pend_func_task",
+      "$dir_pw_containers:inline_queue",
+      "$dir_pw_log",
+      "$dir_pw_sync:interrupt_spin_lock",
+    ]
+    sources = [ "interrupt.cc" ]
+  }
 }
 
 pw_test_group("examples") {
