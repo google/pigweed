@@ -43,12 +43,6 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
                                   // for I3C messages, or 1 ODBAUD.
   };
 
-  [[deprecated("ClockTree is deprecated")]]
-  I3cMcuxpressoInitiator(const Config& config,
-                         pw::clock_tree::ClockTree& /*clock_tree*/,
-                         pw::clock_tree::Element& clock_tree_element)
-      : I3cMcuxpressoInitiator(config, clock_tree_element) {}
-
   I3cMcuxpressoInitiator(const Config& config,
                          pw::clock_tree::Element& clock_tree_element)
       : Initiator(Initiator::Feature::kStandard),

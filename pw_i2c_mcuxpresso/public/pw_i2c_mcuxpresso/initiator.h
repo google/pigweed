@@ -34,12 +34,6 @@ class McuxpressoInitiator final : public Initiator {
     uint32_t baud_rate_bps;
   };
 
-  [[deprecated("ClockTree is deprecated")]]
-  McuxpressoInitiator(const Config& config,
-                      pw::clock_tree::ClockTree& /*clock_tree*/,
-                      pw::clock_tree::Element& clock_tree_element)
-      : McuxpressoInitiator(config, clock_tree_element) {}
-
   McuxpressoInitiator(const Config& config,
                       pw::clock_tree::Element& clock_tree_element)
       : Initiator(Initiator::Feature::kStandard),
