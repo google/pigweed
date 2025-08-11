@@ -23,8 +23,10 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_change/__init__.py",
+    "pw_change/comments.py",
     "pw_change/main.py",
     "pw_change/push.py",
+    "pw_change/remote_dest.py",
     "pw_change/review.py",
   ]
   python_deps = [ "$dir_pw_cli/py" ]

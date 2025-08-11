@@ -23,8 +23,10 @@ py_library(
     name = "pw_change",
     srcs = [
         "pw_change/__init__.py",
+        "pw_change/comments.py",
         "pw_change/main.py",
         "pw_change/push.py",
+        "pw_change/remote_dest.py",
         "pw_change/review.py",
     ],
     imports = ["."],

@@ -23,6 +23,8 @@ import sys
 from collections.abc import Sequence
 from typing import NoReturn
 
+from pw_change.remote_dest import remote_dest
+
 
 def _default_at_google_com(x: str) -> str:
     if '@' in x:
@@ -89,38 +91,6 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return args
 
 
-def _remote_dest() -> tuple[str, str]:
-    remote_branch = (
-        subprocess.run(
-            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
-            capture_output=True,
-            check=True,
-        )
-        .stdout.decode()
-        .strip()
-    )
-    while '/' not in remote_branch:
-        cmd = [
-            'git',
-            'rev-parse',
-            '--abbrev-ref',
-            '--symbolic-full-name',
-            f'{remote_branch}@{{upstream}}',
-        ]
-        remote_branch = (
-            subprocess.run(
-                cmd,
-                capture_output=True,
-                check=True,
-            )
-            .stdout.decode()
-            .strip()
-        )
-
-    remote, branch = remote_branch.split('/', 1)
-    return remote, branch
-
-
 def _auto_submit_label(host: str | None) -> str:
     return {
         'pigweed': 'Pigweed-Auto-Submit',
@@ -132,7 +102,7 @@ def _auto_submit_label(host: str | None) -> str:
 
 def push(args: argparse.Namespace) -> int:
     """Push changes to Gerrit."""
-    remote, branch = _remote_dest()
+    remote, branch = remote_dest()
 
     if not args.force:
         branch = f'refs/for/{branch}'

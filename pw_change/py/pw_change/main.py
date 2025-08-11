@@ -17,7 +17,7 @@ import argparse
 import sys
 from collections.abc import Sequence
 
-from pw_change import push, review
+from pw_change import comments, push, review
 
 
 def _main(argv: Sequence[str]) -> int:
@@ -36,6 +36,11 @@ def _main(argv: Sequence[str]) -> int:
         'review', help='AI-based code review of the current change.'
     )
     review_parser.set_defaults(func=review.main)
+
+    comments_parser = subparsers.add_parser(
+        'comments', help='Get comments from a Gerrit change.'
+    )
+    comments_parser.set_defaults(func=comments.main)
 
     args, remaining_args = parser.parse_known_args(argv)
     return args.func(remaining_args)
