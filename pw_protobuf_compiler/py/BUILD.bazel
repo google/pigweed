@@ -28,9 +28,12 @@ py_library(
         "pw_protobuf_compiler/python_protos.py",
     ],
     imports = ["."],
+    # TODO: b/437916275 - This target requires a dependency on
+    # "@pigweed_python_packages//black", but we can't add it yet because it
+    # breaks downstream.
+    tags = ["nomypy"],
     deps = [
         "//pw_cli/py:pw_cli",
-        "@pigweed_python_packages//black",
     ],
 )
 
