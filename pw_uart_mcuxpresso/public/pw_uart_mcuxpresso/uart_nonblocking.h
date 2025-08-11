@@ -32,9 +32,8 @@ class UartMcuxpressoNonBlocking final : public UartNonBlocking {
     bool flow_control = false;  // Hardware flow control setting
     usart_parity_mode_t parity = kUSART_ParityDisabled;  // Parity setting
     usart_stop_bit_count_t stop_bits =
-        kUSART_OneStopBit;                    // Number of stop bits to use
-    ByteSpan buffer;                          // Receive ring buffer
-    pw::clock_tree::ClockTree* clock_tree{};  // Optional clock Tree
+        kUSART_OneStopBit;  // Number of stop bits to use
+    ByteSpan buffer;        // Receive ring buffer
     pw::clock_tree::Element*
         clock_tree_element{};  // Optional clock tree element
   };

@@ -44,7 +44,6 @@ class DmaUartMcuxpresso final : public Uart {
     inputmux_signal_t rx_input_mux_dmac_ch_request_en;  // Rx input mux signal
     inputmux_signal_t tx_input_mux_dmac_ch_request_en;  // Tx input mux signal
     ByteSpan buffer;                                    // Receive ring buffer
-    pw::clock_tree::ClockTree* clock_tree{};            // Optional clock Tree
     pw::clock_tree::Element*
         clock_tree_element{};  // Optional clock tree element
   };
