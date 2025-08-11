@@ -30,16 +30,6 @@ class InterruptSafeUartWriterMcuxpresso : public pw::stream::NonSeekableWriter {
   // having been executed.
   // Doing so requires passing in the uart base pointer as a uintptr_t instead
   // of USART_Type* to avoid needing a reinterpret_cast.
-  [[deprecated("ClockTree is deprecated")]]
-  constexpr InterruptSafeUartWriterMcuxpresso(
-      uintptr_t base,
-      clock_name_t clock_name,
-      unsigned int baudrate,
-      pw::clock_tree::ClockTree& /*clock_tree*/,
-      pw::clock_tree::Element& clock_tree_element)
-      : InterruptSafeUartWriterMcuxpresso(
-            base, clock_name, baudrate, clock_tree_element) {}
-
   constexpr InterruptSafeUartWriterMcuxpresso(
       uintptr_t base,
       clock_name_t clock_name,

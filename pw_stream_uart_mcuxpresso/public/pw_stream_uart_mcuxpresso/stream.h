@@ -23,17 +23,6 @@ namespace pw::stream {
 
 class UartStreamMcuxpresso : public NonSeekableReaderWriter {
  public:
-  [[deprecated("ClockTree is deprecated")]]
-  UartStreamMcuxpresso(USART_Type* base,
-                       uint32_t baudrate,
-                       usart_parity_mode_t parity,
-                       usart_stop_bit_count_t stopbits,
-                       ByteSpan buffer,
-                       pw::clock_tree::ClockTree& /*clock_tree*/,
-                       pw::clock_tree::Element& clock_tree_element)
-      : UartStreamMcuxpresso(
-            base, baudrate, parity, stopbits, buffer, clock_tree_element) {}
-
   UartStreamMcuxpresso(USART_Type* base,
                        uint32_t baudrate,
                        usart_parity_mode_t parity,
