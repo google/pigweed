@@ -662,7 +662,8 @@ bool AclDataChannel::HandleAclData(Direction direction,
         // field so we know how much data to recombine, and we need the
         // channel_id field so we know whether or not this is a recognized L2CAP
         // channel and therefore whether or not we should recombine it.
-        // TODO: https://pwbug.dev/392652874 - Handle fragmented L2CAP header.
+        // TODO: https://pwbug.dev/437958454 - Handle fragments that are too
+        // small to contain the L2CAP header.
         emboss::BasicL2capHeaderView l2cap_header =
             emboss::MakeBasicL2capHeaderView(acl_payload.data(),
                                              acl_payload.size());
