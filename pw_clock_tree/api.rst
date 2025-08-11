@@ -55,11 +55,6 @@ ClockDividerElement
    :members:
    :protected-members:
 
-ElementController
-=================
-.. doxygenclass:: pw::clock_tree::ElementController
-   :members:
-
 OptionalElement
 ===============
 .. doxygenclass:: pw::clock_tree::OptionalElement
