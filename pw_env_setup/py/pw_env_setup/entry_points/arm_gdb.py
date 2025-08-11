@@ -11,7 +11,13 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Wrapper script to run arm-none-eabi-gdb with Python 3.8."""
+"""Wrapper script to run arm-none-eabi-gdb with Python 3.8.
+
+This is a relatively bespoke wrapper that operates on two key assumptions:
+1. pw_env_setup has placed a compatible Python distribution in a `python`
+   directory adjacent to the `bin` directory of the active ARM GCC toolchain.
+2. The current version of arm-none-eabi-gdb requires Python 3.8.
+"""
 
 import os
 from pathlib import Path
@@ -24,30 +30,25 @@ import subprocess
 def main() -> int:
     """arm-gdb wrapper that sets up the Python environment for gdb"""
 
-    # Find 'arm-none-eabi-gdb' as long as it isn't in the current Python
-    # virtualenv entry point. In other words: not this script.
-    exclude_paths = sys.path
-    venv = os.environ.get('VIRTUAL_ENV')
-    if venv:
-        venv_path = Path(venv).resolve()
-        exclude_paths.append(os.path.join(venv_path, 'Scripts'))
-    arm_gdb_binary = shutil.which(
-        'arm-none-eabi-gdb',
-        path=os.pathsep.join(
-            [
-                path_entry
-                for path_entry in os.environ.get('PATH', '').split(os.pathsep)
-                if str(Path(path_entry).resolve()) not in exclude_paths
-            ]
-        ),
+    # Find 'arm-none-eabi-gcc', as Pigweed places a compatible distribution of
+    # Python in the ARM GCC toolchain install base. DO NOT look for
+    # `arm-none-eabi-gdb` as it can cause flakes since this script is aliased to
+    # the same name (see https://pwbug.dev/326666018).
+    arm_gcc_binary = shutil.which('arm-none-eabi-gcc')
+    assert arm_gcc_binary, (
+        'Failed to find arm-none-eabi-gcc on the PATH, perhaps it is missing '
+        'from your CIPD package install list?'
     )
-    assert arm_gdb_binary
 
-    arm_gdb_path = Path(arm_gdb_binary)
+    arm_gdb_path = Path(arm_gcc_binary).parent / 'arm-none-eabi-gdb'
+    assert arm_gdb_path.is_file(), (
+        'arm-none-eabi-gdb appears to be missing from the located ARM '
+        f'toolchain distribution at {arm_gdb_path.parent}'
+    )
+
     arm_install_prefix = arm_gdb_path.parent.parent
-    python_home = arm_install_prefix / 'python/bin/python3'
-    python_path = arm_install_prefix / 'python/lib/python3.8'
-    assert arm_gdb_path.is_file()
+    python_home = arm_install_prefix / 'python' / 'bin' / 'python3.8'
+    python_path = arm_install_prefix / 'python' / 'lib' / 'python3.8'
 
     env = os.environ.copy()
     # Only set Python if it's in the expected location.
