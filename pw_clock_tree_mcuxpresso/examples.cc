@@ -149,30 +149,23 @@ PW_CONSTINIT pw::clock_tree::ClockMcuxpressoSysPllNonBlocking sys_pll(
 PW_CONSTINIT pw::clock_tree::ClockMcuxpressoRtcNonBlocking rtc(
     clock_source_no_op);
 
-// DOCSTAG: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
-
-// Create the clock tree
-pw::clock_tree::ClockTree clock_tree;
-
-// DOCSTAG: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
-
 TEST(ClockTreeMcuxpresso, UseExample) {
   // DOCSTAG: [pw_clock_tree_mcuxpresso-examples-UseExample]
 
   // Enable the low-power oscillator
-  clock_tree.Acquire(lp_osc_clk);
+  lp_osc_clk.Acquire();
 
   // Enable the i3c0
-  clock_tree.Acquire(i3c0);
+  i3c0.Acquire();
 
   // Change the i3c0_divider value
-  clock_tree.SetDividerValue(i3c0_divider, 24);
+  i3c0_divider.SetDivider(24);
 
   // Enable the flexcomm0 interface
-  clock_tree.Acquire(flexcomm_0);
+  flexcomm_0.Acquire();
 
   // Disable the low-power oscillator
-  clock_tree.Release(lp_osc_clk);
+  lp_osc_clk.Release();
 
   // DOCSTAG: [pw_clock_tree_mcuxpresso-examples-UseExample]
 }
@@ -184,12 +177,12 @@ TEST(ClockTreeMcuxpresso, AudioPll) {
   // is enabled while enabling the audio PLL. If FRO_DIV8 wasn't enabled
   // before, it will only be enabled while configuring the audio PLL
   // and be disabled afterward to save power.
-  PW_TEST_EXPECT_OK(clock_tree.AcquireWith(audio_pll, fro_div8));
+  PW_TEST_EXPECT_OK(audio_pll.AcquireWith(fro_div8));
 
   // Do something while audio PLL is enabled.
 
   // Release audio PLL to save power.
-  clock_tree.Release(audio_pll);
+  audio_pll.Release();
   // DOCSTAG:[pw_clock_tree_mcuxpresso-examples-Use-AudioPll]
 }
 
@@ -197,21 +190,21 @@ TEST(ClockTreeMcuxpresso, SysPll) {
   // DOCSTAG:[pw_clock_tree_mcuxpresso-examples-Use-SysPll]
 
   // Enable sys PLL.
-  clock_tree.Acquire(sys_pll);
+  sys_pll.Acquire();
 
   // Do something while sys PLL is enabled.
 
   // Release audio PLL to save power.
-  clock_tree.Release(sys_pll);
+  sys_pll.Release();
   // DOCSTAG:[pw_clock_tree_mcuxpresso-examples-Use-sysPll]
 }
 
 TEST(ClockTreeMcuxpresso, AudioPllBypass) {
-  clock_tree.Acquire(audio_pll_bypass);
-  clock_tree.Release(audio_pll_bypass);
+  audio_pll_bypass.Acquire();
+  audio_pll_bypass.Release();
 }
 
 TEST(ClockTreeMcuxpresso, Rtc) {
-  clock_tree.Acquire(rtc);
-  clock_tree.Release(rtc);
+  rtc.Acquire();
+  rtc.Release();
 }

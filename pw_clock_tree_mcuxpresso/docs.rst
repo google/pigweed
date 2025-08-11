@@ -35,7 +35,7 @@ from the abstract class :cpp:class:`DependentElement` and overwriting :cpp:func:
 
 .. cpp:namespace-pop::
 
-.. cpp:namespace-push:: pw::clock_tree::ClockTree
+.. cpp:namespace-push:: pw::clock_tree::Element
 
 When enabling clock tree elements sourced from the audio PLL or the SYS PLL it is necessary
 to use the :cpp:func:`AcquireWith` method.
@@ -62,7 +62,7 @@ Definition of clock tree elements:
           style C fill:#0f0,stroke:#333,stroke-width:2px
           style D fill:#0f0,stroke:#333,stroke-width:2px
 
-.. cpp:namespace-push:: pw::clock_tree::ClockTree
+.. cpp:namespace-push:: pw::clock_tree
 
 Please note that the clock tree element ``flexcomm_0`` is only required if the SDK is compiled with
 the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set, and that the connection between
@@ -92,7 +92,7 @@ so that enabling ``flexcomm_0`` enabled the ``Flexcomm 0`` IP block and clock so
           style F fill:#f0f,stroke:#333,stroke-width:2px
           style G fill:#f0f,stroke:#333,stroke-width:2px
 
-.. cpp:namespace-push:: pw::clock_tree::ClockTree
+.. cpp:namespace-push:: pw::clock_tree
 
 Please note that the clock tree element ``i3c0`` is only required if the SDK is compiled with
 the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set, and that the connection between
@@ -126,7 +126,7 @@ so that enabling ``i3c0`` enabled the ``I3C`` IP block and clock source.
           style H fill:#0ff,stroke:#333,stroke-width:2px
           style I fill:#0ff,stroke:#333,stroke-width:2px
 
-.. cpp:namespace-push:: pw::clock_tree::ClockTree
+.. cpp:namespace-push:: pw::clock_tree
 
 Please note that the clock tree element ``ctimer_0`` is only required if the SDK is compiled with
 the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set, and that the connection between
@@ -163,14 +163,6 @@ so that enabling ``ctimer_0`` enabled the ``CTimer 0`` IP block and clock source
    :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-LpOsc]
    :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-LpOsc]
 
-Definition of clock tree:
-
-.. literalinclude:: examples.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
-   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
-
 Example usage of ``clock_tree`` APIs:
 
 .. literalinclude:: examples.cc
@@ -183,7 +175,7 @@ Example usage of ``clock_tree`` APIs:
 Audio PLL examples
 ------------------
 
-.. cpp:namespace-push:: pw::clock_tree::ClockTree
+.. cpp:namespace-push:: pw::clock_tree::Element
 
 The :cpp:class:`ClockMcuxpressoAudioPll` can be configured in two different ways,
 either it can be configured where the audio PLL gets enabled, or it can be
@@ -207,14 +199,6 @@ that the ``FRO_DIV8`` clock is enabled when enabling the audio PLL.
 
           style A fill:#f0f,stroke:#333,stroke-width:2px
           style E fill:#f0f,stroke:#333,stroke-width:2px
-
-Definition of clock tree:
-
-.. literalinclude:: examples.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
-   :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeDef]
 
 Definition of audio PLL related clock tree elements:
 
