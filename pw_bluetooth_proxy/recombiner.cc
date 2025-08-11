@@ -29,18 +29,7 @@ pw::Status Recombiner::StartRecombination(LockedL2capChannel& channel,
     return Status::FailedPrecondition();
   }
 
-  pw::Status status = channel.channel().StartRecombinationBuf(direction_, size);
-
-  if (status.IsResourceExhausted()) {
-    PW_LOG_ERROR(
-        "Channel %#x can not store recombination buffer %s of size %zu.",
-        channel.channel().local_cid(),
-        status.str(),
-        size);
-    return status;
-  }
-  // We only expect OK or ResourceExhausted from StartRecombinationBuf.
-  PW_CHECK(status.ok());
+  PW_TRY(channel.channel().StartRecombinationBuf(direction_, size));
 
   is_active_ = true;
   local_cid_ = channel.channel().local_cid();

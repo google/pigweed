@@ -3952,6 +3952,114 @@ TEST_F(AclFragTest, ChannelCantAllocateMultibuf) {
   ExpectClientReceivedPayloadsAndClear({});
 }
 
+// When an ACL fragmented payload is received for a channel with no rx allocator
+// the original ACL packets are passed to the host.
+// This currently can happen for signal and GATT channels.
+// TODO: https://pwbug.dev/423695410 - In future we should always support
+// recombination so the client has the option to reject.
+TEST_F(AclFragTest, ChannelHasNoRxAllocator) {
+  uint16_t handle = 334;
+  // GATT fixed CID is 0x04.
+  uint16_t local_cid = 0x0004;
+
+  std::array<uint8_t,
+             emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
+                 emboss::BasicL2capHeader::IntrinsicSizeInBytes() + 3>
+      hci_first{};
+  std::array<uint8_t,
+             emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
+                 emboss::BasicL2capHeader::IntrinsicSizeInBytes() + 3>
+      hci_cont{};
+
+  struct {
+    int sends_called = 0;
+    int to_host_called = 0;
+    std::array<uint8_t, 3> expected_payload = {0xAB, 0xCD, 0xEF};
+    std::array<H4PacketWithHci, 2> h4s;
+  } capture{.h4s = {H4PacketWithHci{emboss::H4PacketType::ACL_DATA, hci_first},
+                    H4PacketWithHci{emboss::H4PacketType::ACL_DATA, hci_cont}}};
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&capture](H4PacketWithHci&& packet) {
+        auto expected_hci = capture.h4s[capture.to_host_called].GetHciSpan();
+        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
+                               packet.GetHciSpan().end(),
+                               expected_hci.begin(),
+                               expected_hci.end()));
+        ++capture.to_host_called;
+      });
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  GattNotifyChannel channel = BuildGattNotifyChannel(proxy,
+                                                     {
+                                                         .handle = handle,
+                                                     });
+
+  {
+    // Define and send first fragment.
+    Result<emboss::AclDataFrameWriter> acl =
+        MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_first);
+    acl->header().handle().Write(handle);
+    acl->header().packet_boundary_flag().Write(
+        emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+    acl->data_total_length().Write(
+        emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+        capture.expected_payload.size());
+
+    emboss::BFrameWriter bframe = emboss::MakeBFrameView(
+        acl->payload().BackingStorage().data(), acl->payload().SizeInBytes());
+    // We are going to send twice the expected payload (over two fragments).
+    bframe.pdu_length().Write(capture.expected_payload.size() * 2);
+    bframe.channel_id().Write(local_cid);
+    std::copy(capture.expected_payload.begin(),
+              capture.expected_payload.end(),
+              bframe.payload().BackingStorage().begin());
+
+    std::array<uint8_t, hci_first.size()> hci_first_send{};
+    std::copy(hci_first.begin(), hci_first.end(), hci_first_send.begin());
+
+    H4PacketWithHci h4_send{emboss::H4PacketType::ACL_DATA, hci_first_send};
+    proxy.HandleH4HciFromController(std::move(h4_send));
+
+    // ACL fragment should be delivered to host since channel can't recombine.
+    // An error should be logged also, but we don't have way in Pigweed to test
+    // that.
+    EXPECT_EQ(capture.to_host_called, 1);
+  }
+
+  {
+    // Define and send 2nd fragment.
+    Result<emboss::AclDataFrameWriter> acl =
+        MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_first);
+    acl->header().handle().Write(handle);
+    acl->header().packet_boundary_flag().Write(
+        emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+    // Just contains the 2nd payload with no l2cap headers.
+    acl->data_total_length().Write(capture.expected_payload.size());
+
+    // Entire ACL payload is just the fragment.
+    std::copy(capture.expected_payload.begin(),
+              capture.expected_payload.end(),
+              acl->payload().BackingStorage().begin());
+
+    std::array<uint8_t, hci_cont.size()> hci_cont_send{};
+    std::copy(hci_cont.begin(), hci_cont.end(), hci_cont_send.begin());
+
+    H4PacketWithHci h4_send{emboss::H4PacketType::ACL_DATA, hci_cont_send};
+    proxy.HandleH4HciFromController(std::move(h4_send));
+
+    // ACL fragment should be delivered to host since channel can't recombine.
+    // The fact there were two fragments also verifies that recombination didn't
+    // happen.
+    EXPECT_EQ(capture.to_host_called, 2);
+  }
+}
+
 TEST_F(AclFragTest, RecombinationWorksWithSplitPayloads) {
   ProxyHost proxy = GetProxy();
   BasicL2capChannel channel = GetL2capChannel(proxy);

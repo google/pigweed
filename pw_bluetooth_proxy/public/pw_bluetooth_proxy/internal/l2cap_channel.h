@@ -525,7 +525,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   ChannelEventCallback event_fn_;
 
   // Optional client-provided multibuf allocator.
-  multibuf::MultiBufAllocator* rx_multibuf_allocator_;
+  multibuf::MultiBufAllocator* rx_multibuf_allocator_ = nullptr;
 
   // Client-provided controller read callback.
   OptionalPayloadReceiveCallback payload_from_controller_fn_;

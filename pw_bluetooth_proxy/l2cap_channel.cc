@@ -395,14 +395,25 @@ bool L2capChannel::SendPayloadToClient(
     return false;
   }
 
+  if (!rx_multibuf_allocator_) {
+    PW_LOG_ERROR(
+        "btproxy: rx_multibuf_allocator_ is null so unable to create multibuf "
+        "to pass to client. Will passthrough instead. "
+        "connection: %#x, local_cid: %#x ",
+        connection_handle(),
+        local_cid());
+    return false;
+  }
+
   std::optional<multibuf::MultiBuf> buffer =
       rx_multibuf_allocator()->AllocateContiguous(payload.size());
 
   if (!buffer) {
     PW_LOG_ERROR(
-        "(CID %#x) Rx MultiBuf allocator out of memory. So stopping "
-        "channel "
-        "and reporting it needs to be closed.",
+        "btproxy: rx_multibuf_allocator_ is out of memory. So stopping "
+        "channel and reporting it needs to be closed."
+        "connection: %#x, local_cid: %#x ",
+        connection_handle(),
         local_cid());
     StopAndSendEvent(L2capChannelEvent::kRxOutOfMemory);
     return true;
@@ -425,6 +436,17 @@ pw::Status L2capChannel::StartRecombinationBuf(Direction direction,
   std::optional<multibuf::MultiBuf>& buf_optref =
       GetRecombinationBufOptRef(direction);
   PW_CHECK(!buf_optref.has_value());
+
+  if (!rx_multibuf_allocator_) {
+    // TODO: https://pwbug.dev/423695410 - Should eventually recombine for these
+    // cases to allow channel to make handle/unhandle decision.
+    PW_LOG_WARN(
+        "Cannot start recombination without an rx_multibuf_allocator."
+        "connection: %#x, local_cid: %#x ",
+        connection_handle(),
+        local_cid());
+    return Status::FailedPrecondition();
+  }
 
   buf_optref = rx_multibuf_allocator_->AllocateContiguous(payload_size);
   if (!buf_optref.has_value()) {

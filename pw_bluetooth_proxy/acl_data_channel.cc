@@ -718,8 +718,10 @@ bool AclDataChannel::HandleAclData(Direction direction,
             // TODO: https://pwbug.dev/404275508 - This is an acquired channel,
             // so need to do something different than just pass on to AP.
             PW_LOG_ERROR(
-                "Cannot start recombination for L2capChannel %#x: "
-                "%s. Passing on.",
+                "Cannot start recombination for L2capChannel connection. Will "
+                "passthrough."
+                "channel: %#x, local_cid: %#x, status:%s",
+                channel->channel().connection_handle(),
                 channel->channel().local_cid(),
                 status.str());
             return kUnhandled;
