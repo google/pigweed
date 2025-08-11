@@ -26,7 +26,8 @@ namespace pw::protobuf::internal {
 template <typename Integer>
 class ProtoIntegerBase {
  public:
-  constexpr ProtoIntegerBase(Result<Integer> value) : value_(value) {}
+  constexpr ProtoIntegerBase(Result<Integer> value)
+      : value_(std::move(value)) {}
   constexpr ProtoIntegerBase(Status status) : value_(status) {}
 
   bool ok() { return value_.ok(); }

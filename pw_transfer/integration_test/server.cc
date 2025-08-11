@@ -75,8 +75,8 @@ class FileTransferHandler final : public ReadWriteHandler {
       : ReadWriteHandler(resource_id),
         sources_(sources),
         destinations_(destinations),
-        default_source_path_(default_source_path),
-        default_destination_path_(default_destination_path),
+        default_source_path_(std::move(default_source_path)),
+        default_destination_path_(std::move(default_destination_path)),
         offsettable(offsettable) {}
 
   ~FileTransferHandler() override = default;

@@ -86,8 +86,8 @@ class DecodedArg {
 
   // Constructs a DecodedArg that represents a string literal in the format
   // string (plain text or % character).
-  DecodedArg(const std::string& literal)
-      : value_(literal), raw_data_size_bytes_(0) {}
+  DecodedArg(std::string literal)
+      : value_(std::move(literal)), raw_data_size_bytes_(0) {}
 
   // Constructs a DecodedArg that encountered an error during decoding.
   DecodedArg(ArgStatus error,

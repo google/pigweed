@@ -30,8 +30,8 @@ class MockVfs;
 // custom test file behaviors.
 class MockFile {
  public:
-  MockFile(MockVfs& vfs, int eventfd, const std::string& name)
-      : vfs_(vfs), eventfd_(eventfd), name_(name) {}
+  MockFile(MockVfs& vfs, int eventfd, std::string name)
+      : vfs_(vfs), eventfd_(eventfd), name_(std::move(name)) {}
   virtual ~MockFile() = default;
 
   MockVfs& vfs() const { return vfs_; }

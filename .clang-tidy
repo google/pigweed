@@ -51,6 +51,7 @@ Checks: >
     modernize-deprecated-ios-base-aliases,
     modernize-make-shared,
     modernize-make-unique,
+    modernize-pass-by-value,
     modernize-replace-auto-ptr,
     modernize-replace-disallow-copy-and-assign-macro,
     modernize-replace-random-shuffle,
