@@ -18,8 +18,8 @@ load("@pip_types//:types.bzl", "types")
 load("@rules_mypy//mypy:mypy.bzl", "mypy")
 
 mypy_aspect = mypy(
-    mypy_ini = "@@//pw_build/mypy:mypy_ini",
-    mypy_cli = "@@//pw_build/mypy:mypy_cli",
+    mypy_ini = Label("//pw_build/mypy:mypy_ini"),
+    mypy_cli = Label("//pw_build/mypy:mypy_cli"),
     suppression_tags = ["nomypy"],
     types = types,
 )
