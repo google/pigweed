@@ -222,6 +222,12 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action='store_true',
         help='Insert comments into files.',
     )
+    parser.add_argument(
+        '--json',
+        dest='json_',
+        action='store_true',
+        help='Outputs raw json comments as-is.',
+    )
     return parser.parse_args(argv)
 
 
@@ -229,6 +235,7 @@ def get_comments(
     change_id: str,
     unresolved_only: bool = True,
     inline: bool = False,
+    json_: bool = False,
 ) -> int:
     """Retrieve comments from Gerrit and show or inline them."""
     if not change_id:
@@ -244,7 +251,12 @@ def get_comments(
             return 1
         change_id = match.group(1)
 
-    threads = thread_comments(fetch_comments(change_id))
+    comments = fetch_comments(change_id)
+    if json_:
+        print(json.dumps(comments, indent=2))
+        return 0
+
+    threads = thread_comments(comments)
 
     if inline:
         _inline_threads(threads=threads, unresolved_only=unresolved_only)
