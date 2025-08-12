@@ -81,7 +81,11 @@ pw_cc_test(
 pw_cc_binary(
     name = "interrupt",
     srcs = ["interrupt.cc"],
-    target_compatible_with = incompatible_with_mcu(),
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "//pw_async2:dispatcher",
         "//pw_async2:pend_func_task",

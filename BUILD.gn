@@ -626,6 +626,10 @@ if (current_toolchain != default_toolchain) {
         "$dir_pw_spi_linux:pw_spi_linux_cli",
       ]
     }
+
+    if (current_os == "linux" || current_os == "mac") {
+      deps += [ "$dir_pw_async2/examples:interrupt" ]
+    }
   }
 
   # All Pigweed modules that can be built using gn. Not built by default.

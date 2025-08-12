@@ -71,7 +71,9 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     ]
     sources = [ "once_send_recv.cc" ]
   }
+}
 
+if (current_os != "win") {
   pw_executable("interrupt") {
     deps = [
       "$dir_pw_async2:dispatcher",
