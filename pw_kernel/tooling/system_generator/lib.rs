@@ -18,7 +18,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::{Error, Result, anyhow};
+use anyhow::{Context, Error, Result, anyhow};
 use askama::Template;
 use clap::{Args, Parser, Subcommand};
 use serde::Deserialize;
@@ -67,9 +67,7 @@ pub trait SystemGenerator {
 
     fn render_system(&mut self) -> Result<String> {
         self.populate_addresses();
-        self.config()
-            .render()
-            .map_err(|e| anyhow!("Failed to render system: {e}"))
+        self.config().render().context("Failed to render system")
     }
 
     fn render_app_linker_script(&mut self, app_name: &String) -> Result<String> {
@@ -78,7 +76,7 @@ pub trait SystemGenerator {
             .config()
             .apps
             .get(app_name)
-            .expect("'{app_name}' does not exist in the config file.")
+            .with_context(|| format!("'{app_name}' does not exist in the config file."))?
             .clone();
 
         self.render_arch_app_linker_script(&app_config)
@@ -92,8 +90,9 @@ pub trait SystemGenerator {
 }
 
 pub fn parse_config(cli: &Cli) -> Result<system_config::SystemConfig> {
-    let toml_str = fs::read_to_string(&cli.common_args.config).expect("config file exists");
-    Ok(toml::from_str(&toml_str).expect("config parses"))
+    let toml_str =
+        fs::read_to_string(&cli.common_args.config).context("Failed to read config file")?;
+    toml::from_str(&toml_str).context("Failed to parse config file")
 }
 
 pub fn generate<T: SystemGenerator>(cli: &Cli, system_generator: &mut T) -> Result<()> {
@@ -107,7 +106,7 @@ pub fn generate<T: SystemGenerator>(cli: &Cli, system_generator: &mut T) -> Resu
 
     let mut file = File::create(&cli.common_args.output)?;
     file.write_all(out_str.as_bytes())
-        .map_err(|e| anyhow!("Failed to write output: {e}"))
+        .context("Failed to write output")
 }
 
 // The DefaultSystemGenerator below supports Armv7m and RiscV.
@@ -215,6 +214,6 @@ impl SystemGenerator for DefaultSystemGenerator {
             }
             .render(),
         }
-        .map_err(|e| anyhow!("Failed to render app linker script: {e}"))
+        .context("Failed to render app linker script")
     }
 }
