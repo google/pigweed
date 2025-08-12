@@ -96,7 +96,7 @@ Create a Pigweed-based project
       demonstrates complex Pigweed usage. This project also uses GN.
 
 ------------------------------------------
-Use Pigweed modules in an existing project
+Integrate Pigweed into an existing project
 ------------------------------------------
 Pigweed is modular: you can use as much or as little of it as you need.
 
@@ -107,25 +107,27 @@ Pigweed is modular: you can use as much or as little of it as you need.
       :link-type: ref
       :class-item: sales-pitch-cta-primary
 
-      Instructions for how to use a Pigweed module in an existing Bazel
-      project.
+      Learn how to use Pigweed in an existing Bazel project: add Pigweed
+      as a dependency, start using Pigweed modules, and set up static and
+      runtime analysis.
 
    .. grid-item-card:: :octicon:`list-ordered` GitHub Actions
       :link: docs-github-actions
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 
-      How to set up GitHub Actions to build and test your Bazel-based
+      Learn how to set up GitHub Actions to build and test your Bazel-based
       Pigweed project.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    self
    First-time setup <first_time_setup>
    Install Bazel <install_bazel>
    Bazel quickstart <bazel>
-   Bazel integration <bazel_integration>
+   Bazel integration <bazel_integration/index>
+   Static and runtime analysis <analysis>
    GitHub Actions <github_actions>
    Zephyr quickstart <zephyr>

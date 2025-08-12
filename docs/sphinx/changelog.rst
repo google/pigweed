@@ -7272,7 +7272,7 @@ Build
 Bazel
 -----
 Clang's ``AddressSanitizer`` is now supported. See
-:ref:`docs-automated-analysis-clang-sanitizers`.
+:ref:`docs-automatic-analysis-sanitizers`.
 
 * `Support asan in Bazel
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/211369>`__

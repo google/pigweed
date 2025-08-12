@@ -195,7 +195,6 @@ Talk to us
    targets
    Toolchain <toolchain>
    size_optimizations
-   automated_analysis
    os/index
    third_party_support
    showcases/index

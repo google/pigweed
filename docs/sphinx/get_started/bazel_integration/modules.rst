@@ -1,68 +1,12 @@
-.. _docs-bazel-integration:
+.. _docs-bazel-integration-modules:
 
-===================================================
-Using a Pigweed module in an existing Bazel project
-===================================================
-This guide explains how to start using a Pigweed module in your existing
-Bazel-based C or C++ project. We'll assume you're familiar with the build
-system at the level of the `Bazel tutorial <https://bazel.build/start/cpp>`__.
+===================================
+Use Pigweed modules in your project
+===================================
+If you're integrating Pigweed into an existing project using Bazel, you can get
+started on this as soon as you've completed
+:ref:`docs-bazel-integration-add-pigweed-as-a-dependency`.
 
-------------------------
-Supported Bazel versions
-------------------------
-Pigweed uses Bazel 8 features like platform-based flags, and so not all of
-Pigweed works with Bazel 7. We strongly recommend mirroring Pigweed's current
-Bazel version pin:
-
-.. literalinclude:: ../.bazelversion
-   :language: text
-
-.. _docs-bazel-integration-add-pigweed-as-a-dependency:
-
--------------------------------------
-Add Pigweed as an external dependency
--------------------------------------
-Pigweed only supports `bzlmod
-<https://bazel.build/external/overview#bzlmod>`__ based projects. `WORKSPACE
-<https://bazel.build/external/overview#workspace-system>`__ based projects are
-no longer supported.
-
-Add Pigweed as a ``bazel_dep`` with a ``git_override``:
-
-.. code-block:: python
-
-   bazel_dep(name = "pigweed")
-
-   git_override(
-         module_name = "pigweed",
-         commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
-         remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
-   )
-
-You can find the latest tip-of-tree commit in the **History** tab in
-`CodeSearch <https://cs.opensource.google/pigweed/pigweed>`__.
-
-Add Pigweed as Git submodule
-============================
-If you manage your dependencies as submodules, you can add Pigweed as a
-submodule, too, and then add it to your ``MODULE.bazel`` as a
-`local_path_override
-<https://bazel.build/rules/lib/globals/module#local_path_override>`__:
-
-.. code-block:: python
-
-   local_path_override(
-         module_name = "pigweed",
-         path = "third_party/pigweed",
-   )
-
-Pigweed is not yet published to the `Bazel Central Registry
-<https://registry.bazel.build/>`__. If this is a pain point for you,
-please reach out to us on `chat <https://discord.gg/M9NSeTA>`__.
-
----------------------------
-Use Pigweed in your project
----------------------------
 Let's say you want to use ``pw::Vector`` from :ref:`module-pw_containers`, our
 embedded-friendly replacement for ``std::vector``.
 
@@ -108,27 +52,6 @@ embedded-friendly replacement for ``std::vector``.
           ],
       )
 
-----------------------------
-Set the required Bazel flags
-----------------------------
-Pigweed projects need to set certain flags in their ``.bazelrc``. These
-generally pre-adopt Bazel features that will become default in the future and
-improve cache performance, disambiguate Python imports, etc. These flags are
-listed below.  Unfortunately there's no way to automatically import them, see
-:bug:`353750350`.
-
-.. literalinclude:: ../pw_build/pigweed.bazelrc
-
--------------------------------
-Set the recommended Bazel flags
--------------------------------
-While these flags are not required to use Pigweed, they significantly improve
-Bazel's usability. Turn these on, selectively tuning them to your needs.
-Unfortunately there's no way to automatically import them, see
-:bug:`353750350`.
-
-.. literalinclude:: ../pw_build/pigweed_recommended.bazelrc
-
 --------------------------------------------
 Configure backends for facades you depend on
 --------------------------------------------
@@ -164,3 +87,9 @@ include a :ref:`module-pw_sys_io` backend suitable for your embedded platform,
 that's what you should do now.) See
 :ref:`docs-build_system-bazel_configuration` for a tutorial that dives deeper
 into facade configuration with Bazel.
+
+----------
+Next steps
+----------
+To ensure the correctness of your project's code, set up
+:ref:`docs-automated-analysis`.

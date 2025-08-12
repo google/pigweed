@@ -121,7 +121,7 @@ def _pylint_aspect_impl(target, ctx):
         args.add("--output-format", "text:" + output_file.path + ",colorized")
 
         # TODO: b/248343713 - See
-        # https://pigweed.dev/automated_analysis.html#known-limitations.
+        # https://pigweed.dev/get_started/analysis.html#known-limitations
         args.add("--disable=wrong-import-order")
         args.add(src)
 

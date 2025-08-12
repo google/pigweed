@@ -236,7 +236,6 @@ html_baseurl = 'https://pigweed.dev/'
 
 # The lefthand "Section Navigation" section is empty for these docs. Hide it.
 html_sidebars = {
-    'automated_analysis': [],
     'changelog': [],
     'size_optimizations': [],
     'index': [],

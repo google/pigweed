@@ -1,4 +1,5 @@
 {
+  "automated_analysis": "./get_started/analysis.html",
   "docs/3p/index": "../../index.html",
   "docs/blog/index": "../../blog/index.html",
   "docs/blog/01-kudzu": "../../blog/01-kudzu.html",
@@ -29,7 +30,7 @@
   "docs/faq": "../faq.html",
   "docs/get_started/index": "../../get_started/index.html",
   "docs/get_started/bazel": "../../get_started/bazel.html",
-  "docs/get_started/bazel_integration": "../../get_started/bazel_integration.html",
+  "docs/get_started/bazel_integration": "../../get_started/bazel_integration/index.html",
   "docs/get_started/first_time_setup": "../../get_started/first_time_setup.html",
   "docs/get_started/github_actions": "../../get_started/github_actions.html",
   "docs/get_started/install_bazel": "../../get_started/install_bazel.html",
@@ -99,6 +100,7 @@
   "docs/style/rest": "../../style/rest.html",
   "docs/style/writing": "../../style/writing.html",
   "docs/style_guide": "../../style_guide.html",
+  "get_started/bazel_integration": "./bazel_integration/index.html",
   "live/index": "https://docs.google.com/document/d/1zcXQoMX6NDSe4cdxzt8afLbDcs8GSmI_Bsy5hTF_RVM/edit",
   "module_guides": "./modules.html",
   "pw_sys_io_pico/docs": "../pw_sys_io_rp2040/docs.html",
