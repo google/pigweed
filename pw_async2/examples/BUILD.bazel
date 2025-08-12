@@ -27,10 +27,6 @@ licenses(["notice"])
 pw_cc_test(
     name = "basic",
     srcs = ["basic.cc"],
-    features = [
-        "-conversion_warnings",
-        "-ctad_warnings",
-    ],
     deps = [
         "//pw_allocator:testing",
         "//pw_async2:coro",
@@ -61,10 +57,6 @@ pw_cc_binary(
 pw_cc_test(
     name = "coro_blinky_loop",
     srcs = ["coro_blinky_loop.cc"],
-    features = [
-        "-conversion_warnings",
-        "-ctad_warnings",
-    ],
     deps = [
         "//pw_allocator:testing",
         "//pw_async2:coro",
@@ -78,10 +70,6 @@ pw_cc_test(
 pw_cc_test(
     name = "once_send_recv",
     srcs = ["once_send_recv.cc"],
-    features = [
-        "-conversion_warnings",
-        "-ctad_warnings",
-    ],
     deps = [
         "//pw_allocator:testing",
         "//pw_async2:coro",
@@ -103,6 +91,16 @@ pw_cc_binary(
     ],
 )
 
+pw_cc_test(
+    name = "unit_test",
+    srcs = ["unit_test.cc"],
+    deps = [
+        "//pw_allocator:testing",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pend_func_task",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
@@ -113,6 +111,7 @@ sphinx_docs_library(
         "count.cc",
         "interrupt.cc",
         "once_send_recv.cc",
+        "unit_test.cc",
     ],
     target_compatible_with = incompatible_with_mcu(),
 )

@@ -84,8 +84,18 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
   }
 }
 
+pw_test("unit_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  sources = [ "unit_test.cc" ]
+  deps = [
+    "$dir_pw_allocator:testing",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:pend_func_task",
+  ]
+}
+
 pw_test_group("examples") {
-  tests = []
+  tests = [ ":unit_test" ]
   if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     tests += [
       ":basic",

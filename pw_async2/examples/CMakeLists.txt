@@ -57,3 +57,12 @@ target_link_libraries(pw_async2.interrupt
     pw_log
     pw_sync.interrupt_spin_lock
 )
+
+pw_add_test(pw_async2.examples.unit_test
+  SOURCES
+    unit_test.cc
+  PRIVATE_DEPS
+    pw_allocator.testing
+    pw_async2.dispatcher
+    pw_async2.pend_func_task
+)

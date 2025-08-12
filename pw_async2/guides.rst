@@ -461,6 +461,49 @@ A reader task polls the fake UART until it receives data.
 This example shows how to bridge the gap between low-level, interrupt-driven
 hardware and the high-level, cooperative multitasking model of ``pw_async2``.
 
+Unit testing
+============
+Unit testing ``pw_async2`` code is different from testing non-async code. Async
+code must be run from a :doxylink:`task <pw::async2::Task>` on a
+:doxylink:`dispatcher <pw::async2::Dispatcher>`.
+
+To test ``pw_async2`` code:
+
+#. Declare a dispatcher.
+#. Create a task to run the async code under test. Either implement
+   :doxylink:`pw::async2::Task` or use :doxylink:`pw::async2::PendFuncTask` to
+   wrap a lambda.
+#. Post the task to the dispatcher.
+#. Call :doxylink:`pw::async2::Dispatcher::RunUntilStalled` to execute the task.
+
+The following example shows the basic structure of a ``pw_async2`` unit test.
+
+.. literalinclude:: examples/unit_test.cc
+   :language: c++
+   :start-after: pw_async2-minimal-test
+   :end-before: pw_async2-minimal-test
+
+It is usually necessary to run the test task multiple times to advance async
+code through its states. This improves coverage and ensures that wakers are
+stored and woken properly. To run the test task multiple times:
+
+#. Post the task to the dispatcher.
+#. Call :doxylink:`pw::async2::Dispatcher::RunUntilStalled`, which returns
+   :doxylink:`pw::async2::Pending`.
+#. Perform actions to allow the task to advance.
+#. Call :doxylink:`RunUntilStalled() <pw::async2::Dispatcher::RunUntilStalled>`
+   again.
+#. Repeat until the task runs to completion and :doxylink:`RunUntilStalled()
+   <pw::async2::Dispatcher::RunUntilStalled>` returns
+   :doxylink:`pw::async2::Ready`.
+
+The example below runs a task multiple times to test waiting for a
+``FortuneTeller`` class to produce a fortune.
+
+.. literalinclude:: examples/unit_test.cc
+   :language: c++
+   :start-after: pw_async2-multi-step-test
+   :end-before: pw_async2-multi-step-test
 
 .. _module-pw_async2-guides-faqs:
 
