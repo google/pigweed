@@ -84,27 +84,28 @@ constexpr void CopyLittleEndian(T value, U* dest) {
 
 template <typename T>
 constexpr T ReverseBytes(T value) {
-  EquivalentUint<T> uint = static_cast<EquivalentUint<T>>(value);
+  EquivalentUint<T> unsigned_int = static_cast<EquivalentUint<T>>(value);
 
-  if constexpr (sizeof(uint) == 1) {
-    return static_cast<T>(uint);
-  } else if constexpr (sizeof(uint) == 2) {
-    return static_cast<T>(((uint & 0x00FF) << 8) | ((uint & 0xFF00) >> 8));
-  } else if constexpr (sizeof(uint) == 4) {
-    return static_cast<T>(((uint & 0x000000FF) << 3 * 8) |  //
-                          ((uint & 0x0000FF00) << 1 * 8) |  //
-                          ((uint & 0x00FF0000) >> 1 * 8) |  //
-                          ((uint & 0xFF000000) >> 3 * 8));
+  if constexpr (sizeof(unsigned_int) == 1) {
+    return static_cast<T>(unsigned_int);
+  } else if constexpr (sizeof(unsigned_int) == 2) {
+    return static_cast<T>(((unsigned_int & 0x00FF) << 8) |
+                          ((unsigned_int & 0xFF00) >> 8));
+  } else if constexpr (sizeof(unsigned_int) == 4) {
+    return static_cast<T>(((unsigned_int & 0x000000FF) << 3 * 8) |  //
+                          ((unsigned_int & 0x0000FF00) << 1 * 8) |  //
+                          ((unsigned_int & 0x00FF0000) >> 1 * 8) |  //
+                          ((unsigned_int & 0xFF000000) >> 3 * 8));
   } else {
-    static_assert(sizeof(uint) == 8);
-    return static_cast<T>(((uint & 0x00000000000000FF) << 7 * 8) |  //
-                          ((uint & 0x000000000000FF00) << 5 * 8) |  //
-                          ((uint & 0x0000000000FF0000) << 3 * 8) |  //
-                          ((uint & 0x00000000FF000000) << 1 * 8) |  //
-                          ((uint & 0x000000FF00000000) >> 1 * 8) |  //
-                          ((uint & 0x0000FF0000000000) >> 3 * 8) |  //
-                          ((uint & 0x00FF000000000000) >> 5 * 8) |  //
-                          ((uint & 0xFF00000000000000) >> 7 * 8));
+    static_assert(sizeof(unsigned_int) == 8);
+    return static_cast<T>(((unsigned_int & 0x00000000000000FF) << 7 * 8) |  //
+                          ((unsigned_int & 0x000000000000FF00) << 5 * 8) |  //
+                          ((unsigned_int & 0x0000000000FF0000) << 3 * 8) |  //
+                          ((unsigned_int & 0x00000000FF000000) << 1 * 8) |  //
+                          ((unsigned_int & 0x000000FF00000000) >> 1 * 8) |  //
+                          ((unsigned_int & 0x0000FF0000000000) >> 3 * 8) |  //
+                          ((unsigned_int & 0x00FF000000000000) >> 5 * 8) |  //
+                          ((unsigned_int & 0xFF00000000000000) >> 7 * 8));
   }
 }
 
