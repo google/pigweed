@@ -441,3 +441,10 @@ operations:
 
 * :cpp:class:`pw_async2::Select`: Waits for the *first* of a set of pendable
   operations to complete, returning its result.
+
+Poll aliases
+============
+Fallible pendable functions often return ``Poll<pw::Result<T>>`` or
+``Poll<std::optional<T>>``. The :doxylink:`pw::async2::PollResult` and
+:doxylink:`pw::async2::PollOptional` aliases are provided to simplify these
+cases.

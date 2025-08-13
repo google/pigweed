@@ -14,6 +14,7 @@
 
 #include "pw_async2/poll.h"
 
+#include <optional>
 #include <type_traits>
 
 #include "pw_async2/try.h"
@@ -22,6 +23,9 @@
 
 namespace pw::async2 {
 namespace {
+
+static_assert(std::is_same_v<Poll<Result<int>>, PollResult<int>>);
+static_assert(std::is_same_v<Poll<std::optional<int>>, PollOptional<int>>);
 
 class MoveOnly {
  public:

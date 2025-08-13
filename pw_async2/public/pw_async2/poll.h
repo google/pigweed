@@ -20,6 +20,10 @@
 #include "pw_string/to_string.h"
 
 namespace pw {
+
+template <typename>
+class Result;
+
 namespace async2 {
 
 /// A type whose value indicates that an operation was able to complete (or
@@ -176,6 +180,14 @@ class PW_NODISCARD_STR(
 // Deduction guide to allow ``Poll(v)`` rather than ``Poll<T>(v)``.
 template <typename T>
 Poll(T value) -> Poll<T>;
+
+/// Convenience alias for `pw::async2::Poll<pw::Result<T>>`.
+template <typename T>
+using PollResult = Poll<Result<T>>;
+
+/// Convenience alias for Poll<std::optional>.
+template <typename T>
+using PollOptional = Poll<std::optional<T>>;
 
 /// Returns whether two instances of ``Poll<T>`` are equal.
 ///
