@@ -15,7 +15,8 @@
 
 use core::arch::asm;
 
-use kernel::memory::{MemoryRegion, MemoryRegionType};
+use kernel::MemoryRegionType;
+use kernel::memory::MemoryRegion;
 use pw_status::{Error, Result};
 use regs::*;
 
@@ -46,28 +47,11 @@ impl PmpCfgVal {
 
 impl PmpCfgVal {
     pub const fn from_region_type(ty: MemoryRegionType, address_mode: PmpCfgAddressMode) -> Self {
-        match ty {
-            MemoryRegionType::ReadOnlyData => Self(0)
-                .with_r(true)
-                .with_w(false)
-                .with_x(false)
-                .with_a(address_mode),
-            MemoryRegionType::Device | MemoryRegionType::ReadWriteData => Self(0)
-                .with_r(true)
-                .with_w(true)
-                .with_x(false)
-                .with_a(address_mode),
-            MemoryRegionType::ReadOnlyExecutable => Self(0)
-                .with_r(true)
-                .with_w(false)
-                .with_x(true)
-                .with_a(address_mode),
-            MemoryRegionType::ReadWriteExecutable => Self(0)
-                .with_r(true)
-                .with_w(true)
-                .with_x(true)
-                .with_a(address_mode),
-        }
+        Self(0)
+            .with_r(ty.is_readable())
+            .with_w(ty.is_writeable())
+            .with_x(ty.is_executable())
+            .with_a(address_mode)
     }
 }
 

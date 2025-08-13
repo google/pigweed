@@ -17,6 +17,9 @@ load("//pw_kernel:flags.bzl", "KERNEL_TEST_DEPS", "KERNEL_TEST_RUSTC_FLAGS")
 rust_library(
     name = "integration_tests",
     srcs = [
+        "lib.rs",
+        "memory.rs",
+        "sync.rs",
         "sync/spinlock.rs",
     ],
     crate_features = select({

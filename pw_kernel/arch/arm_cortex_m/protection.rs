@@ -15,8 +15,8 @@
 use kernel::memory::{MemoryRegion, MemoryRegionType};
 use kernel_config::{CortexMKernelConfigInterface as _, KernelConfig};
 
-use crate::regs::mpu::*;
 use crate::regs::Regs;
+use crate::regs::mpu::*;
 
 #[derive(Copy, Clone)]
 struct MpuRegion {
@@ -105,8 +105,8 @@ impl MpuRegion {
 /// Represents the full configuration of the Cortex-M memory configuration
 /// through the MPU block.
 pub struct MemoryConfig {
-    #[allow(dead_code)]
-    regions: [MpuRegion; KernelConfig::NUM_MPU_REGIONS],
+    mpu_regions: [MpuRegion; KernelConfig::NUM_MPU_REGIONS],
+    generic_regions: &'static [MemoryRegion],
 }
 
 impl MemoryConfig {
@@ -115,7 +115,7 @@ impl MemoryConfig {
     /// # Panics
     /// Will panic if the current target's MPU does not support enough regions
     /// to represent `regions`.
-    pub const fn const_new(regions: &[MemoryRegion]) -> Self {
+    pub const fn const_new(regions: &'static [MemoryRegion]) -> Self {
         let mut mpu_regions = [MpuRegion::const_default(); KernelConfig::NUM_MPU_REGIONS];
         let mut i = 0;
         while i < regions.len() {
@@ -123,7 +123,8 @@ impl MemoryConfig {
             i += 1;
         }
         Self {
-            regions: mpu_regions,
+            mpu_regions,
+            generic_regions: regions,
         }
     }
 
@@ -137,7 +138,7 @@ impl MemoryConfig {
                 .with_hfnmiena(false)
                 .with_privdefena(true),
         );
-        for (index, region) in self.regions.iter().enumerate() {
+        for (index, region) in self.mpu_regions.iter().enumerate() {
             mpu.rnr.write(RnrVal::default().with_region(index as u8));
             mpu.rbar.write(region.rbar);
             mpu.rlar.write(region.rlar);
@@ -147,7 +148,7 @@ impl MemoryConfig {
 
     /// Log the details of the memory configuration.
     pub fn dump(&self) {
-        for (index, region) in self.regions.iter().enumerate() {
+        for (index, region) in self.mpu_regions.iter().enumerate() {
             pw_log::debug!(
                 "{}: {:#010x} {:#010x}",
                 index as usize,
@@ -181,19 +182,19 @@ pub fn init() {
 }
 
 impl kernel::memory::MemoryConfig for MemoryConfig {
-    const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion {
-        ty: MemoryRegionType::ReadWriteExecutable,
-        start: 0x0000_0000,
-        end: 0xffff_ffff,
-    }]);
+    const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion::new(
+        MemoryRegionType::ReadWriteExecutable,
+        0x0000_0000,
+        0xffff_ffff,
+    )]);
 
     fn range_has_access(
         &self,
-        _access_type: MemoryRegionType,
-        _start_addr: usize,
-        _end_addr: usize,
+        access_type: MemoryRegionType,
+        start_addr: usize,
+        end_addr: usize,
     ) -> bool {
-        // TODO: konkers - Implement
-        true
+        let validation_region = MemoryRegion::new(access_type, start_addr, end_addr);
+        MemoryRegion::regions_have_access(&self.generic_regions, &validation_region)
     }
 }

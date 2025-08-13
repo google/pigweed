@@ -22,9 +22,10 @@ use crate::regs::pmp::*;
 /// Represents the full configuration of RISC-V memory configuration through
 /// the PMP block.
 #[derive(Clone)]
-pub struct MemoryConfig(
-    PmpConfig<{ KernelConfig::PMP_CFG_REGISTERS }, { KernelConfig::PMP_ENTRIES }>,
-);
+pub struct MemoryConfig {
+    pmp_config: PmpConfig<{ KernelConfig::PMP_CFG_REGISTERS }, { KernelConfig::PMP_ENTRIES }>,
+    regions: &'static [MemoryRegion],
+}
 
 impl MemoryConfig {
     /// Create a new `MemoryConfig` in a `const` context
@@ -32,38 +33,41 @@ impl MemoryConfig {
     /// # Panics
     /// Will panic if the current target's PMP will does not have enough entries
     /// to represent the provided `regions`.
-    pub const fn const_new(regions: &[MemoryRegion]) -> Self {
+    pub const fn const_new(regions: &'static [MemoryRegion]) -> Self {
         match PmpConfig::new(regions) {
-            Ok(cfg) => Self(cfg),
+            Ok(cfg) => Self {
+                pmp_config: cfg,
+                regions,
+            },
             Err(_) => panic!("Can't create Memory config"),
         }
     }
 
     /// Write this memory configuration to the PMP registers.
     pub unsafe fn write(&self) {
-        unsafe { self.0.write() }
+        unsafe { self.pmp_config.write() }
     }
 
     /// Log the details of the memory configuration.
     pub fn dump(&self) {
-        self.0.dump()
+        self.pmp_config.dump()
     }
 }
 
 impl kernel::memory::MemoryConfig for MemoryConfig {
-    const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion {
-        ty: MemoryRegionType::ReadWriteExecutable,
-        start: 0x0000_0000,
-        end: 0xffff_ffff,
-    }]);
+    const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion::new(
+        MemoryRegionType::ReadWriteExecutable,
+        0x0000_0000,
+        0xffff_ffff,
+    )]);
 
     fn range_has_access(
         &self,
-        _access_type: MemoryRegionType,
-        _start_addr: usize,
-        _end_addr: usize,
+        access_type: MemoryRegionType,
+        start_addr: usize,
+        end_addr: usize,
     ) -> bool {
-        // TODO: konkers - Implement
-        true
+        let validation_region = MemoryRegion::new(access_type, start_addr, end_addr);
+        MemoryRegion::regions_have_access(&self.regions, &validation_region)
     }
 }

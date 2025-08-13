@@ -12,23 +12,58 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+const READABLE: usize = 1 << 0;
+const WRITEABLE: usize = 1 << 1;
+const EXECUTABLE: usize = 1 << 2;
+const DEVICE: usize = 1 << 3;
+
 #[derive(Clone, Copy)]
 #[allow(dead_code)]
+#[repr(usize)]
 pub enum MemoryRegionType {
     /// Read Only, Non-Executable data.
-    ReadOnlyData,
+    ReadOnlyData = READABLE,
 
     /// Mode Read/Write, Non-Executable data.
-    ReadWriteData,
+    ReadWriteData = READABLE | WRITEABLE,
 
     /// Mode Read Only, Executable data.
-    ReadOnlyExecutable,
+    ReadOnlyExecutable = READABLE | EXECUTABLE,
 
     /// Mode Read/Write, Executable data.
-    ReadWriteExecutable,
+    ReadWriteExecutable = READABLE | WRITEABLE | EXECUTABLE,
 
     /// Device MMIO memory.
-    Device,
+    Device = READABLE | WRITEABLE | DEVICE,
+}
+
+impl MemoryRegionType {
+    #[must_use]
+    pub fn has_access(&self, request: Self) -> bool {
+        let request_bits = request as usize;
+        let self_bits = *self as usize;
+        request_bits & self_bits == request_bits
+    }
+
+    #[must_use]
+    const fn is_mask_set(&self, mask: usize) -> bool {
+        *self as usize & mask == mask
+    }
+
+    #[must_use]
+    pub const fn is_readable(&self) -> bool {
+        self.is_mask_set(READABLE)
+    }
+
+    #[must_use]
+    pub const fn is_writeable(&self) -> bool {
+        self.is_mask_set(WRITEABLE)
+    }
+
+    #[must_use]
+    pub const fn is_executable(&self) -> bool {
+        self.is_mask_set(EXECUTABLE)
+    }
 }
 
 /// Architecture independent memory region description.
@@ -47,6 +82,30 @@ pub struct MemoryRegion {
     pub end: usize,
 }
 
+impl MemoryRegion {
+    #[must_use]
+    pub const fn new(ty: MemoryRegionType, start: usize, end: usize) -> Self {
+        Self { ty, start, end }
+    }
+
+    #[must_use]
+    pub fn has_access(&self, region: &Self) -> bool {
+        if !(self.start..self.end).contains(&region.start)
+            || !(self.start..self.end).contains(&(region.end - 1))
+        {
+            return false;
+        }
+
+        self.ty.has_access(region.ty)
+    }
+
+    #[must_use]
+    pub fn regions_have_access(regions: &[Self], validation_region: &Self) -> bool {
+        regions.iter().fold(false, |acc, region| {
+            acc | region.has_access(validation_region)
+        })
+    }
+}
 /// Architecture agnostic operation on memory configuration
 pub trait MemoryConfig {
     const KERNEL_THREAD_MEMORY_CONFIG: Self;

@@ -27,16 +27,16 @@ pub fn start() {
 
     static KERNEL_OBJECT_TABLE_{{app_name | uppercase}}: NullObjectTable = NullObjectTable::new();
     const MEMORY_CONFIG_{{app_name | uppercase }}: MemoryConfig = MemoryConfig::const_new(&[
-        kernel::MemoryRegion {
-            ty: kernel::MemoryRegionType::ReadOnlyExecutable,
-            start: {{app.flash_start_address | to_hex}},
-            end: {{app.flash_end_address | to_hex}},
-        },
-        kernel::MemoryRegion {
-            ty: kernel::MemoryRegionType::ReadWriteData,
-            start: {{app.ram_start_address | to_hex}},
-            end: {{app.ram_end_address | to_hex}},
-        },
+        kernel::MemoryRegion::new(
+            kernel::MemoryRegionType::ReadOnlyExecutable,
+            {{app.flash_start_address | to_hex}},
+            {{app.flash_end_address | to_hex}},
+        ),
+        kernel::MemoryRegion::new(
+            kernel::MemoryRegionType::ReadWriteData,
+            {{app.ram_start_address | to_hex}},
+            {{app.ram_end_address | to_hex}},
+        ),
     ]);
 
     let process_{{app_name}} = unsafe { kernel::init_non_priv_process!(
