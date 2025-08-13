@@ -110,7 +110,7 @@ label_flag(
 
 constraint_setting(
     name = "debug_wait_reason",
-    default_constraint_value = "debug_wait_reason_disabled",
+    default_constraint_value = "debug_wait_reason_enabled",
 )
 
 constraint_value(

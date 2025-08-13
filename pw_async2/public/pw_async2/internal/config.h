@@ -30,6 +30,8 @@
 /// If enabled, wait reasons are stored within their wakers, allowing easier
 /// debugging of sleeping tasks.
 ///
+/// Enabled by default.
+///
 /// Note: The module dependencies of ``pw_async2`` vary based on on the value of
 /// ``PW_ASYNC2_DEBUG_WAIT_REASON``.
 /// When building pw_async2 with Bazel, you should NOT set this module config
@@ -39,5 +41,5 @@
 ///   - ``@pigweed//pw_async2:debug_wait_reason_disabled`` (default)
 ///   - ``@pigweed//pw_async2:debug_wait_reason_enabled``
 #ifndef PW_ASYNC2_DEBUG_WAIT_REASON
-#define PW_ASYNC2_DEBUG_WAIT_REASON 0
+#define PW_ASYNC2_DEBUG_WAIT_REASON 1
 #endif  // PW_ASYNC2_DEBUG_WAIT_REASON

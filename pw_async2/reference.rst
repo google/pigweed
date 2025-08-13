@@ -145,8 +145,10 @@ Tasks registered to a dispatcher can be inspected by calling
 ``Dispatcher::LogRegisteredTasks()``, which outputs logs for each task in the
 dispatcher's pending and sleeping queues.
 
-Sleeping tasks will log information about their assigned wakers. By default,
-only a task's number of wakers is shown. However, if the module configuration
-option ``PW_ASYNC2_DEBUG_WAIT_REASON`` is set, sleeping tasks will list each of
-their wakers with its specified wait reason, making it easier to identify why a
-task is blocked.
+Sleeping tasks will log information about their assigned wakers, with the
+wait reason provided for each.
+
+If space is a concern, the module configuration option
+``PW_ASYNC2_DEBUG_WAIT_REASON`` can be set to ``0``, disabling wait reason
+storage and logging. Under this configuration, only the waker count of a
+sleeping task is logged.
