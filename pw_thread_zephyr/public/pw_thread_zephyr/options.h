@@ -64,7 +64,7 @@ class NativeOptions : public thread::Options {
   ///
   /// @arg name The name of the thread (null terminated)
   /// @return Reference to this object
-  constexpr Options& set_name(const char* name) {
+  constexpr NativeOptions& set_name(const char* name) {
     name_ = name;
     return *this;
   }
