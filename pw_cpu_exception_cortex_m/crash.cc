@@ -38,7 +38,8 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
                              const char* optional_thread_name) {
   const char* thread_name =
       optional_thread_name == nullptr ? "?" : optional_thread_name;
-  const bool is_nested_fault = cpu_state.extended.hfsr & kHfsrForcedMask;
+  const bool is_nested_fault =
+      cpu_state.extended.hfsr & (kHfsrForcedMask | kHfsrDebugEvtMask);
   const uint32_t active_faults =
       cpu_state.extended.cfsr &
       (kCfsrMemAllErrorsMask | kCfsrBusAllErrorsMask | kCfsrUsageAllErrorsMask);
@@ -50,6 +51,23 @@ void AnalyzeCpuStateAndCrash(const pw_cpu_exception_State& cpu_state,
   // These conditionals are ordered by priority to ensure the most critical
   // issues are highlighted first. These are not mutually exclusive; a bus fault
   // could occur during the handling of a MPU violation, causing a nested fault.
+
+  // Debug monitor exception.
+  if ((cpu_state.extended.icsr & kIcsrVectactiveMask) == kDebugMonIsrNum) {
+    PW_CPU_EXCEPTION_CORTEX_M_CRASH(
+        cpu_state,
+        "Debug Monitor exception triggered."
+        " Thread=%s" _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_STRING
+        " CFSR=0x%08" PRIx32 " Nested=%d Multiple=%d",
+        thread_name,
+        // clang-format off
+        _PW_CPU_EXCEPTION_CORTEX_M_PC_LR_ARGS
+        cpu_state.extended.cfsr,
+        // clang-format on
+        is_nested_fault,
+        has_multiple_faults);
+    return;
+  }
 #if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   if (cpu_state.extended.cfsr & kCfsrStkofMask) {
     if (ProcessStackActive(cpu_state)) {

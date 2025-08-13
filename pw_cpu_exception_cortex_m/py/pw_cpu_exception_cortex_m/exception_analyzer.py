@@ -89,10 +89,9 @@ class CortexMExceptionAnalyzer:
         """Returns true if the current CPU state indicates a nested fault."""
         if not self.is_fault_active():
             return False
-        if (
-            self._cpu_state.HasField('hfsr')
-            and self._cpu_state.hfsr
-            & cortex_m_constants.PW_CORTEX_M_HFSR_FORCED_MASK
+        if self._cpu_state.HasField('hfsr') and self._cpu_state.hfsr & (
+            cortex_m_constants.PW_CORTEX_M_HFSR_FORCED_MASK
+            | cortex_m_constants.PW_CORTEX_M_HFSR_DEBUG_EVT_MASK
         ):
             return True
         return False

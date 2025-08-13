@@ -114,6 +114,9 @@ void LogExceptionAnalysis(const pw_cpu_exception_State& cpu_state) {
   if (cpu_state.extended.hfsr & kHfsrForcedMask) {
     PW_LOG_CRITICAL("Encountered a nested CPU fault (See active CFSR fields)");
   }
+  if (cpu_state.extended.hfsr & kHfsrDebugEvtMask) {
+    PW_LOG_CRITICAL("Encountered an forced Debug Monitor exception");
+  }
 #endif  // !_PW_ARCH_ARM_V6M
 #if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   if (cpu_state.extended.cfsr & kCfsrStkofMask) {

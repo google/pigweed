@@ -36,6 +36,7 @@ PW_CORTEX_M_ICSR_VECTACTIVE_MASK = (1 << 9) - 1
 
 # Masks for individual bits of HFSR. (ARMv7-M Section B3.2.16)
 PW_CORTEX_M_HFSR_FORCED_MASK = 0x1 << 30
+PW_CORTEX_M_HFSR_DEBUG_EVT_MASK = 0x1 << 31
 
 # Masks for different sections of CFSR. (ARMv7-M Section B3.2.15)
 PW_CORTEX_M_CFSR_MEM_FAULT_MASK = 0x000000FF
