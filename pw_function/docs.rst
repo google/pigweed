@@ -365,25 +365,7 @@ layer for a :cpp:class:`pw::Function` automatically.
 -------------
 API reference
 -------------
-.. doxygengroup:: pw_function
-   :content-only:
-
-``pw::function::GetFunctionPointer()``
-======================================
-.. doxygenfile:: pw_function/pointer.h
-   :sections: detaileddescription
-.. doxygenfunction:: GetFunctionPointer()
-.. doxygenfunction:: GetFunctionPointer(const FunctionType&)
-
-``pw::function::GetFunctionPointerContextFirst()``
-==================================================
-.. doxygenfunction:: GetFunctionPointerContextFirst()
-.. doxygenfunction:: GetFunctionPointerContextFirst(const FunctionType&)
-
-``pw::ScopeGuard``
-==================
-.. doxygenclass:: pw::ScopeGuard
-   :members:
+Moved: :doxylink:`pw_function`
 
 .. _module-pw_function-design:
 

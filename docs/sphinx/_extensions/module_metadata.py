@@ -229,6 +229,12 @@ def rustdoc_url(module_name: str) -> str:
     return f'https://pigweed.dev/rustdoc/{module_name}'
 
 
+def doxygen_url(module_name: str) -> str:
+    """Returns the Doxygen URL for a given module."""
+    module_name = module_name.replace("pw_", "pw__")
+    return f'https://pigweed.dev/doxygen/group__{module_name}.html'
+
+
 def concat_tags(*tag_lists: list[str]) -> list[str]:
     """Given a list of tag lists, return them concat'ed and ready for render."""
 
@@ -523,6 +529,13 @@ def should_add_rust_link(module_name: str, languages: list[str] | None) -> bool:
     return True
 
 
+# TODO: https://pwbug.dev/426012010 - Make this logic general,
+# like how `should_add_rust_link` does it.
+def should_add_doxygen_link(module_name) -> bool:
+    ok = ['pw_function']
+    return module_name in ok
+
+
 def add_links(module_name: str, toctree: Element) -> None:
     """Adds source code and issues URLs to a module's table of contents tree.
 
@@ -547,6 +560,10 @@ def add_links(module_name: str, toctree: Element) -> None:
         rustdoc = ('Rust API reference', rustdoc_url(module_name))
         toctree['entries'] += [rustdoc]
         toctree['rawentries'] += [rustdoc[0]]
+    if should_add_doxygen_link(module_name):
+        doxygen = ('C/C++ API reference', doxygen_url(module_name))
+        toctree['entries'] += [doxygen]
+        toctree['rawentries'] += [doxygen[0]]
     src = ('Source code', cs_url(module_name))
     issues = ('Issues', issues_url(module_name))
     # Maintenance tip: the trick here is to create the `toctree` the same way

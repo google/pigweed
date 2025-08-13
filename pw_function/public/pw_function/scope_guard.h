@@ -17,6 +17,8 @@
 
 namespace pw {
 
+/// @module{pw_function}
+
 /// `ScopeGuard` ensures that the specified functor is executed no matter how
 /// the current scope exits, unless it is dismissed.
 ///

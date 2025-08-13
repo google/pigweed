@@ -601,7 +601,7 @@ pre.fragment {
 }
 
 div.fragment {
-  padding: 0 0 1px 0; /*Fixed: last line underline overlap border*/
+  padding: 1em;
   margin: 4px 8px 4px 2px;
   color: var(--fragment-foreground-color);
   background-color: var(--fragment-background-color);

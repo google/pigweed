@@ -20,8 +20,7 @@
 
 namespace pw {
 
-/// @module{pw_function, Embedded-friendly std::function}
-/// @{
+/// @module{pw_function}
 
 /// `pw::Function` is a wrapper for an arbitrary callable object. It can be used
 /// by callback-based APIs to allow callers to provide any type of callable.
@@ -111,7 +110,7 @@ using DynamicFunction = fit::function_impl<inline_target_size,
 /// `void`-returning `pw::Function` that takes no arguments.
 using Closure = Function<void()>;
 
-/// `pw::Callback` is identical to @cpp_type{pw::Function} except:
+/// `pw::Callback` is identical to `pw::Function` except:
 ///
 /// 1. On the first call to invoke a `pw::Callback`, the target function held
 ///    by the `pw::Callback` cannot be called again.
@@ -156,7 +155,5 @@ template <auto method, typename T>
 auto bind_member(T* instance) {
   return fit::bind_member<method, T>(instance);
 }
-
-/// @}
 
 }  // namespace pw

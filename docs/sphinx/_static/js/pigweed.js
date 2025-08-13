@@ -133,6 +133,47 @@ window.pw.resetSearchResults = () => {
   resultsObserver.observe(results, { childList: true });
 };
 
+// Miscellaneous fixes that are only applied when someone is locally
+// previewing the site or viewing the staging site.
+window.pw.dev = () => {
+  if (window.location.host === 'pigweed.dev') {
+    return;
+  }
+  // Fix the hard-coded C/C++ API reference links. By default they point
+  // to the production site. We want to update them to point to the local
+  // or staging site.
+  const selector = 'ul.nav a.reference.external';
+  const links = Array.from(document.querySelectorAll(selector));
+  const prefix = 'https://pigweed.dev/doxygen/';
+  links.forEach((link) => {
+    if (!link.href.startsWith(prefix)) {
+      return;
+    }
+    const target = link.href.replace(prefix, '');
+    let tokens = window.location.href.split('/');
+    switch (window.location.hostname) {
+      case 'localhost':
+      case '0.0.0.0':
+        link.href = link.href.replace(
+          'https://pigweed.dev',
+          window.location.origin,
+        );
+        break;
+      case 'storage.googleapis.com':
+        // Staging URLs look like this:
+        // https://storage.googleapis.com/pigweed-docs-try/8706711556001999761/index.html
+        // `tokens` already holds an array like this:
+        // ['https:', '', 'storage.googleapis.com', 'pigweed-docs-try', '8706711556001999761', 'index.html']
+        // We only need the first 5 tokens.
+        tokens.length = 5;
+        tokens.push('doxygen');
+        tokens = tokens.concat(target.split('/'));
+        link.href = tokens.join('/');
+        break;
+    }
+  });
+};
+
 window.addEventListener('DOMContentLoaded', () => {
   // Manually control when Mermaid diagrams render to prevent scrolling issues.
   // Context: https://pigweed.dev/docs/style_guide.html#site-nav-scrolling
@@ -141,4 +182,5 @@ window.addEventListener('DOMContentLoaded', () => {
     window.mermaid.run();
   }
   window.pw.initSearch();
+  window.pw.dev();
 });

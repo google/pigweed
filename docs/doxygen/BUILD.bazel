@@ -35,6 +35,7 @@ filegroup(
 filegroup(
     name = "srcs",
     srcs = [
+        ":modules.h",
         "//pw_alignment:doxygen",
         "//pw_allocator:doxygen",
         "//pw_analog:doxygen",

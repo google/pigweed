@@ -124,6 +124,7 @@ cc_library(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_function/config.h",
         "public/pw_function/function.h",
         "public/pw_function/pointer.h",
         "public/pw_function/scope_guard.h",

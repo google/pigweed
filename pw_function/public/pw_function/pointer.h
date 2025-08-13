@@ -13,25 +13,25 @@
 // the License.
 #pragma once
 
-/// @file pw_function/pointer.h
-///
-/// Traditional callback APIs often use a function pointer and `void*` context
-/// argument. The context argument makes it possible to use the callback
-/// function with non-global data. For example, the `qsort_s` and `bsearch_s`
-/// functions take a pointer to a comparison function that has `void*` context
-/// as its last parameter. @cpp_type{pw::Function} does not naturally work with
-/// these kinds of APIs.
-///
-/// The functions below make it simple to adapt a @cpp_type{pw::Function} for
-/// use with APIs that accept a function pointer and `void*` context argument.
-
 #include <utility>
 
 #include "pw_function/internal/static_invoker.h"
 
-/// Embedded-friendly std::function
 namespace pw::function {
 
+/// @module{pw_function}
+
+/// Traditional callback APIs often use a function pointer and `void*` context
+/// argument. The context argument makes it possible to use the callback
+/// function with non-global data. For example, the `qsort_s` and `bsearch_s`
+/// functions take a pointer to a comparison function that has `void*` context
+/// as its last parameter. `pw::Function` does not naturally work with
+/// these kinds of APIs.
+///
+/// `GetFunctionPointer` and `GetFunctionPointerContextFirst` make it simple
+/// to adapt a `pw::Function` for use with APIs that accept a function pointer
+/// and `void*` context argument.
+///
 /// Returns a function pointer that invokes a `pw::Function`, lambda, or other
 /// callable object from a `void*` context argument. This makes it possible to
 /// use C++ callables with C-style APIs that take a function pointer and `void*`

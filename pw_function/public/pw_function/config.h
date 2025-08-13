@@ -19,6 +19,8 @@
 
 #include "lib/fit/function.h"
 
+/// @module{pw_function}
+
 // The maximum size of a callable that can be inlined within a function.
 // Callables larger than this are stored externally to the function (if dynamic
 // allocation is enabled).
@@ -56,6 +58,8 @@ static_assert(PW_FUNCTION_INLINE_CALLABLE_SIZE > 0 &&
 #ifndef PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE
 #define PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE fit::default_callable_allocator
 #endif  // PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE
+
+/// @}
 
 namespace pw::function_internal::config {
 
