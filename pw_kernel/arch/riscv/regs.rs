@@ -128,6 +128,12 @@ impl MCauseVal {
 
 rw_csr_reg!(MCause, MCauseVal, mcause, "Machine Cause Register");
 
+#[derive(Copy, Clone, Default)]
+#[repr(transparent)]
+pub struct MtValVal(pub usize);
+
+rw_csr_reg!(MtVal, MtValVal, mtval, "Machine Trap Value Register");
+
 /// Execution Privilege Level
 ///
 /// Only Machine mode is guaranteed to be implemented.

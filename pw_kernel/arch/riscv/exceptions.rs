@@ -21,7 +21,9 @@ pub(crate) use riscv_macro::kernel_only_exception as exception;
 #[cfg(feature = "user_space")]
 pub(crate) use riscv_macro::user_space_exception as exception;
 
-use crate::regs::{Cause, Exception, Interrupt, MCause, MCauseVal, MStatus, MtVec, MtVecMode};
+use crate::regs::{
+    Cause, Exception, Interrupt, MCause, MCauseVal, MStatus, MtVal, MtVec, MtVecMode,
+};
 use crate::timer;
 
 const LOG_EXCEPTIONS: bool = false;
@@ -70,6 +72,7 @@ fn dump_exception_frame(frame: &TrapFrame) {
     );
     info!("mstatus {:#010x}", frame.status as u32);
     info!("mcause {:#010x}", MCause::read().0 as u32);
+    info!("mtval {:#010x}", MtVal::read().0 as u32);
     info!("epc {:#010x}", frame.epc as u32);
 }
 
