@@ -356,6 +356,17 @@ def make_crate_aliases(name):
         visibility = ["//visibility:public"],
     )
     native.alias(
+        name = "serde_json5",
+        target_compatible_with = select({
+            "@pigweed//pw_build/constraints/rust:std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            "@pigweed//pw_build/constraints/rust:std": "@crates_std//:serde_json5",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
         name = "syn",
         target_compatible_with = select({
             "@pigweed//pw_build/constraints/rust:std": [],

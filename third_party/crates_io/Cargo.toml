@@ -20,7 +20,7 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cargo_toml = "0.15.2"
+cargo_toml = "0.22.3"
 clap = { version = "4.1.8", features = ["derive"] }
 handlebars = "4.3.6"
 serde = { version = "1", features = ["derive"] }
