@@ -95,6 +95,13 @@ cc_library(
 )
 
 cc_library(
+    name = "no_lock",
+    hdrs = ["public/pw_sync/no_lock.h"],
+    strip_include_prefix = "public",
+    deps = [":lock_annotations"],
+)
+
+cc_library(
     name = "lock_traits",
     hdrs = [
         "public/pw_sync/lock_traits.h",
@@ -592,6 +599,15 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "no_lock_test",
+    srcs = ["no_lock_test.cc"],
+    deps = [
+        ":mutex",
+        ":no_lock",
+    ],
+)
+
 filegroup(
     name = "doxygen",
     srcs = [
@@ -602,6 +618,7 @@ filegroup(
         "public/pw_sync/interrupt_spin_lock.h",
         "public/pw_sync/lock_annotations.h",
         "public/pw_sync/mutex.h",
+        "public/pw_sync/no_lock.h",
         "public/pw_sync/thread_notification.h",
         "public/pw_sync/timed_borrow.h",
         "public/pw_sync/timed_mutex.h",

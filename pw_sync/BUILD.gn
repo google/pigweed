@@ -59,6 +59,12 @@ pw_source_set("lock_annotations") {
   public_deps = [ "$dir_pw_preprocessor" ]
 }
 
+pw_source_set("no_lock") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/no_lock.h" ]
+  public_deps = [ ":lock_annotations" ]
+}
+
 pw_source_set("lock_traits") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/lock_traits.h" ]
@@ -451,5 +457,13 @@ pw_source_set("condition_variable_test") {
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
     "$dir_pw_unit_test",
+  ]
+}
+
+pw_test("no_lock_test") {
+  sources = [ "no_lock_test.cc" ]
+  deps = [
+    ":mutex",
+    ":no_lock",
   ]
 }

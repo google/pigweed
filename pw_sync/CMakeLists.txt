@@ -52,6 +52,15 @@ pw_add_library(pw_sync.lock_annotations INTERFACE
     pw_preprocessor
 )
 
+pw_add_library(pw_sync.no_lock INTERFACE
+  HEADERS
+    public/pw_sync/no_lock.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_sync.lock_annotations
+)
+
 pw_add_library(pw_sync.lock_traits INTERFACE
   HEADERS
     public/pw_sync/lock_traits.h
@@ -437,4 +446,12 @@ pw_add_library(pw_sync.condition_variable_test STATIC
     pw_unit_test
   SOURCES
     condition_variable_test.cc
+)
+
+pw_add_test(pw_sync.no_lock_test
+  SOURCES
+    no_lock_test.cc
+  PRIVATE_DEPS
+    pw_sync.mutex
+    pw_sync.no_lock
 )

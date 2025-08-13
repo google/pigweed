@@ -532,6 +532,18 @@ Example in C
      pw_sync_InterruptSpinLock_Unlock(&interrupt_spin_lock);
    }
 
+Optional locking
+================
+:doxylink:`pw::sync::NoLock` is a no-op lock that can be used to satisfy a lock
+interface without providing any synchronization. This can be useful for
+templated code that is lock-agnostic, but may be used in a context that does not
+require any synchronization. ``NoLock`` is a `BasicLockable
+<https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_.
+
+:doxylink:`pw::sync::MaybeLock` selects between a real lock type and ``NoLock``
+based on a boolean template parameter. This may be helpful when locking is
+conditionally enabled by a config macro.
+
 Thread Safety Lock Annotations
 ==============================
 Pigweed's critical section lock primitives support Clang's thread safety

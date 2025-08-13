@@ -411,6 +411,7 @@ cc_library(
         ":pw_allocator",
         "//pw_sync:borrow",
         "//pw_sync:lock_annotations",
+        "//pw_sync:no_lock",
     ],
 )
 

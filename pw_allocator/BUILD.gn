@@ -382,6 +382,7 @@ pw_source_set("synchronized_allocator") {
     ":pw_allocator",
     "$dir_pw_sync:borrow",
     "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:no_lock",
   ]
 }
 

@@ -21,6 +21,10 @@
 
 #include "pw_sync/mutex.h"  // nogncheck
 
+#else
+
+#include "pw_sync/no_lock.h"
+
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
 
 namespace pw::rpc::internal {
@@ -31,11 +35,7 @@ using RpcLock = sync::Mutex;
 
 #else
 
-class PW_LOCKABLE("pw::rpc::internal::RpcLock") RpcLock {
- public:
-  constexpr void lock() PW_EXCLUSIVE_LOCK_FUNCTION() {}
-  constexpr void unlock() PW_UNLOCK_FUNCTION() {}
-};
+using RpcLock = sync::NoLock;
 
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
 

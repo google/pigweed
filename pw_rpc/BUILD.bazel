@@ -225,7 +225,7 @@ cc_library(
         ":yield_mode_sleep": ["//pw_thread:sleep"],
         ":yield_mode_yield": ["//pw_thread:yield"],
     }) + select({
-        ":use_global_mutex_false": [],
+        ":use_global_mutex_false": ["//pw_sync:no_lock"],
         ":use_global_mutex_true": ["//pw_sync:mutex"],
     }),
 )

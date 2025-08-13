@@ -428,6 +428,7 @@ pw_add_library(pw_allocator.synchronized_allocator INTERFACE
     pw_allocator
     pw_sync.borrow
     pw_sync.lock_annotations
+    pw_sync.no_lock
 )
 
 pw_add_library(pw_allocator.tlsf_allocator INTERFACE
