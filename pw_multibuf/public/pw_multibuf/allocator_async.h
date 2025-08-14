@@ -114,7 +114,7 @@ class PW_MULTIBUF_DEPRECATED MultiBufAllocationFuture
   void SetDesiredSizes(size_t min_size,
                        size_t desired_size,
                        ContiguityRequirement contiguity_requirement);
-  async2::Poll<std::optional<MultiBuf>> Pend(async2::Context& cx);
+  async2::PollOptional<MultiBuf> Pend(async2::Context& cx);
 
   /// Returns the ``allocator`` associated with this future.
   MultiBufAllocator& allocator() { return *allocator_; }
@@ -134,7 +134,7 @@ class PW_MULTIBUF_DEPRECATED MultiBufAllocationFuture
                              size_t contiguous_size_available) const override;
 
   /// Attempts to allocate with the stored parameters.
-  async2::Poll<std::optional<MultiBuf>> TryAllocate();
+  async2::PollOptional<MultiBuf> TryAllocate();
 
   // The allocator this future is tied to.
   MultiBufAllocator* allocator_;

@@ -115,12 +115,12 @@ class ForwardingChannel<DataType::kDatagram>
                               multibuf::MultiBufAllocator& write_alloc)
       : pair_(pair), sibling_(*sibling), write_alloc_future_(write_alloc) {}
 
-  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
+  async2::PollResult<multibuf::MultiBuf> DoPendRead(
       async2::Context& cx) override;
 
   async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) override;
 
-  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer(
+  async2::PollOptional<multibuf::MultiBuf> DoPendAllocateWriteBuffer(
       async2::Context& cx, size_t min_bytes) override {
     write_alloc_future_.SetDesiredSize(min_bytes);
     return write_alloc_future_.Pend(cx);
@@ -163,14 +163,14 @@ class ForwardingChannel<DataType::kByte>
                               multibuf::MultiBufAllocator& write_alloc)
       : pair_(pair), sibling_(*sibling), write_alloc_future_(write_alloc) {}
 
-  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
+  async2::PollResult<multibuf::MultiBuf> DoPendRead(
       async2::Context& cx) override;
 
   async2::Poll<Status> DoPendReadyToWrite(async2::Context&) override {
     return async2::Ready(OkStatus());
   }
 
-  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer(
+  async2::PollOptional<multibuf::MultiBuf> DoPendAllocateWriteBuffer(
       async2::Context& cx, size_t min_bytes) override {
     write_alloc_future_.SetDesiredSize(min_bytes);
     return write_alloc_future_.Pend(cx);

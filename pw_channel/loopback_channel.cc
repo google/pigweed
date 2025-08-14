@@ -21,10 +21,11 @@ namespace pw::channel {
 using ::pw::async2::Context;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollResult;
 using ::pw::async2::Ready;
 using ::pw::multibuf::MultiBuf;
 
-Poll<Result<MultiBuf>> LoopbackChannel<DataType::kDatagram>::DoPendRead(
+PollResult<MultiBuf> LoopbackChannel<DataType::kDatagram>::DoPendRead(
     Context& cx) {
   if (!queue_.has_value()) {
     PW_ASYNC_STORE_WAKER(
@@ -67,8 +68,7 @@ async2::Poll<Status> LoopbackChannel<DataType::kDatagram>::DoPendClose(
   return OkStatus();
 }
 
-Poll<Result<MultiBuf>> LoopbackChannel<DataType::kByte>::DoPendRead(
-    Context& cx) {
+PollResult<MultiBuf> LoopbackChannel<DataType::kByte>::DoPendRead(Context& cx) {
   if (queue_.empty()) {
     PW_ASYNC_STORE_WAKER(
         cx, read_waker_, "LoopbackChannel is waiting for incoming data");

@@ -34,6 +34,7 @@ using pw::async2::Context;
 using pw::async2::Dispatcher;
 using pw::async2::Pending;
 using pw::async2::Poll;
+using pw::async2::PollResult;
 using pw::async2::Ready;
 using pw::async2::Task;
 using pw::async2::Waker;
@@ -77,7 +78,7 @@ class PacketReaderWriterStub
   constexpr PacketReaderWriterStub() = default;
 
  private:
-  Poll<Result<TestPacket>> DoPendRead(Context&) override { return Pending(); }
+  PollResult<TestPacket> DoPendRead(Context&) override { return Pending(); }
 
   Poll<Status> DoPendReadyToWrite(Context&, size_t) override {
     return Pending();
@@ -98,7 +99,7 @@ class ReadOnlyPacketStub
   constexpr ReadOnlyPacketStub() = default;
 
  private:
-  Poll<Result<TestPacket>> DoPendRead(Context&) override { return Pending(); }
+  PollResult<TestPacket> DoPendRead(Context&) override { return Pending(); }
 
   pw::async2::Poll<pw::Status> DoPendClose(pw::async2::Context&) override {
     return Pending();
@@ -178,7 +179,7 @@ class TestPacketReader
   size_t queue_size() const { return packet_queue_.size(); }
 
  private:
-  Poll<Result<TestPacket>> DoPendRead(Context& cx) override {
+  PollResult<TestPacket> DoPendRead(Context& cx) override {
     if (!packet_queue_.empty()) {
       TestPacket packet = std::move(packet_queue_.front());
       packet_queue_.pop_front();
@@ -216,7 +217,7 @@ class ReadPacketsTask : public Task {
  private:
   Poll<> DoPend(Context& cx) override {
     while (received_packets.size() < packets_to_read_) {
-      Poll<Result<TestPacket>> poll_result = reader_.PendRead(cx);
+      PollResult<TestPacket> poll_result = reader_.PendRead(cx);
       if (poll_result.IsPending()) {
         return Pending();
       }

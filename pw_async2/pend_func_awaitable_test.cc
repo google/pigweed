@@ -41,13 +41,14 @@ using ::pw::async2::Dispatcher;
 using ::pw::async2::PendFuncAwaitable;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollResult;
 using ::pw::async2::Ready;
 using ::pw::async2::Waker;
 
 template <typename T>
 class Mailbox {
  public:
-  Poll<Result<T>> PendGetValue(Context& cx) {
+  PollResult<T> PendGetValue(Context& cx) {
     ++poll_count_;
     if (value_) {
       auto v = *value_;

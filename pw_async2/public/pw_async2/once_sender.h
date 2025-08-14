@@ -71,7 +71,7 @@ class OnceReceiver final {
   /// Returns `Ready` with a result containing the value once the value has been
   /// assigned. If the sender is destroyed before sending a value, a `Cancelled`
   /// result will be returned.
-  Poll<Result<T>> Pend(Context& cx) {
+  PollResult<T> Pend(Context& cx) {
     std::lock_guard lock(sender_receiver_lock());
     if (value_.has_value()) {
       return Ready(std::move(*value_));

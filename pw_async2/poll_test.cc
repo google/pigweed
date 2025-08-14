@@ -148,7 +148,7 @@ TEST(ReadyFunction, ConstructsReadyFromValueType) {
   EXPECT_EQ(mr->value(), 5);
 }
 
-Poll<Result<int>> EndToEndTest(int input) {
+PollResult<int> EndToEndTest(int input) {
   if (input == 0) {
     // Check that returning plain ``Status`` works.
     return Status::PermissionDenied();
@@ -178,32 +178,32 @@ Poll<Result<int>> EndToEndTest(int input) {
 }
 
 TEST(EndToEndTest, ReturnsStatus) {
-  Poll<Result<int>> result = EndToEndTest(0);
+  PollResult<int> result = EndToEndTest(0);
   ASSERT_TRUE(result.IsReady());
   EXPECT_EQ(result->status(), Status::PermissionDenied());
 }
 
 TEST(EndToEndTest, ReturnsPending) {
-  Poll<Result<int>> result = EndToEndTest(1);
+  PollResult<int> result = EndToEndTest(1);
   EXPECT_FALSE(result.IsReady());
 }
 
 TEST(EndToEndTest, ReturnsValue) {
-  Poll<Result<int>> result = EndToEndTest(3);
+  PollResult<int> result = EndToEndTest(3);
   ASSERT_TRUE(result.IsReady());
   ASSERT_TRUE(result->ok());
   EXPECT_EQ(**result, 3);
 }
 
 TEST(EndToEndTest, ReturnsReady) {
-  Poll<Result<int>> result = EndToEndTest(4);
+  PollResult<int> result = EndToEndTest(4);
   ASSERT_TRUE(result.IsReady());
   ASSERT_TRUE(result->ok());
   EXPECT_EQ(**result, 4);
 }
 
 TEST(EndToEndTest, ReturnsPollStatus) {
-  Poll<Result<int>> result = EndToEndTest(5);
+  PollResult<int> result = EndToEndTest(5);
   ASSERT_TRUE(result.IsReady());
   EXPECT_EQ(result->status(), Status::DataLoss());
 }

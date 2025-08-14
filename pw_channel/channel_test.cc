@@ -31,6 +31,8 @@ using ::pw::async2::Context;
 using ::pw::async2::Dispatcher;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollOptional;
+using ::pw::async2::PollResult;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 using ::pw::async2::Waker;
@@ -55,7 +57,7 @@ class ReliableByteReaderWriterStub
  private:
   // Read functions
 
-  Poll<pw::Result<pw::multibuf::MultiBuf>> DoPendRead(Context&) override {
+  PollResult<pw::multibuf::MultiBuf> DoPendRead(Context&) override {
     return Pending();
   }
 
@@ -67,8 +69,7 @@ class ReliableByteReaderWriterStub
   Poll<pw::Status> DoPendReadyToWrite(Context&) override { return Pending(); }
   PW_MODIFY_DIAGNOSTICS_POP();
 
-  Poll<std::optional<MultiBuf>> DoPendAllocateWriteBuffer(Context&,
-                                                          size_t) override {
+  PollOptional<MultiBuf> DoPendAllocateWriteBuffer(Context&, size_t) override {
     return std::nullopt;
   }
 
@@ -90,7 +91,7 @@ class ReadOnlyStub : public pw::channel::Implement<pw::channel::ByteReader> {
 
  private:
   // Read functions
-  Poll<pw::Result<pw::multibuf::MultiBuf>> DoPendRead(Context&) override {
+  PollResult<pw::multibuf::MultiBuf> DoPendRead(Context&) override {
     return Pending();
   }
 
@@ -103,8 +104,7 @@ class WriteOnlyStub : public pw::channel::Implement<pw::channel::ByteWriter> {
 
   Poll<pw::Status> DoPendReadyToWrite(Context&) override { return Pending(); }
 
-  Poll<std::optional<MultiBuf>> DoPendAllocateWriteBuffer(Context&,
-                                                          size_t) override {
+  PollOptional<MultiBuf> DoPendAllocateWriteBuffer(Context&, size_t) override {
     return std::nullopt;
   }
 
@@ -219,7 +219,7 @@ class TestByteReader
   }
 
  private:
-  Poll<pw::Result<MultiBuf>> DoPendRead(Context& cx) override {
+  PollResult<MultiBuf> DoPendRead(Context& cx) override {
     if (data_.empty()) {
       PW_ASYNC_STORE_WAKER(
           cx, read_waker_, "TestByteReader is waiting for a call to PushData");
@@ -284,8 +284,8 @@ class TestDatagramWriter : public pw::channel::Implement<DatagramWriter> {
     return pw::OkStatus();
   }
 
-  Poll<std::optional<MultiBuf>> DoPendAllocateWriteBuffer(
-      Context& cx, size_t min_bytes) override {
+  PollOptional<MultiBuf> DoPendAllocateWriteBuffer(Context& cx,
+                                                   size_t min_bytes) override {
     alloc_fut_.SetDesiredSize(min_bytes);
     return alloc_fut_.Pend(cx);
   }
@@ -393,7 +393,7 @@ TEST(Channel, TestDatagramWriter) {
           if (channel_.PendReadyToWrite(cx).IsPending()) {
             return Pending();
           }
-          Poll<std::optional<MultiBuf>> buffer =
+          PollOptional<MultiBuf> buffer =
               channel_.PendAllocateWriteBuffer(cx, sizeof(kWriteData));
           if (buffer.IsPending()) {
             return Pending();

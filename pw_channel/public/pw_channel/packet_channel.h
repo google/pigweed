@@ -130,13 +130,13 @@ class PacketChannel {
   // Read API
 
   // @copydoc AnyPacketChannel::PendRead
-  async2::Poll<Result<Packet>> PendRead(async2::Context& cx);
+  async2::PollResult<Packet> PendRead(async2::Context& cx);
 
   // Write API
 
   // @copydoc AnyPacketChannel::PendReadyToWrite
-  async2::Poll<Result<PendingWrite<Packet>>> PendReadyToWrite(
-      async2::Context& cx, size_t num = 1);
+  async2::PollResult<PendingWrite<Packet>> PendReadyToWrite(async2::Context& cx,
+                                                            size_t num = 1);
   // @copydoc AnyPacketChannel::PendWrite
   async2::Poll<> PendWrite(async2::Context& cx);
 
@@ -265,7 +265,7 @@ class AnyPacketChannel : private PacketChannel<T, kReadable>,
   ///    will succeed.
   ///
   /// @endrst
-  async2::Poll<Result<Packet>> PendRead(async2::Context& cx) {
+  async2::PollResult<Packet> PendRead(async2::Context& cx) {
     // TODO: b/421962771 - if not readable, what to return (when called from
     // Any*)? The is_read_open() prevents you from getting to the DoPendRead()
     // that returns UNIMPLEMENTED.
@@ -293,8 +293,8 @@ class AnyPacketChannel : private PacketChannel<T, kReadable>,
   ///    FAILED_PRECONDITION: The channel is closed for writing.
   ///
   /// @endrst
-  async2::Poll<Result<PendingWrite<Packet>>> PendReadyToWrite(
-      async2::Context& cx, size_t num = 1);
+  async2::PollResult<PendingWrite<Packet>> PendReadyToWrite(async2::Context& cx,
+                                                            size_t num = 1);
 
   /// Processes staged write packets. `PendWrite` must be called after a write
   /// is staged so the channel can complete the write. This could involve
@@ -384,7 +384,7 @@ class AnyPacketChannel : private PacketChannel<T, kReadable>,
         properties_(properties),
         read_write_open_{uint8_t{kReadable} | uint8_t{kWritable}} {}
 
-  virtual async2::Poll<Result<Packet>> DoPendRead(async2::Context& cx) = 0;
+  virtual async2::PollResult<Packet> DoPendRead(async2::Context& cx) = 0;
 
   virtual async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx,
                                                   size_t num) = 0;
@@ -436,7 +436,7 @@ class Implement<PacketChannel<Packet, kProperties...>>
 // Function implementations
 
 template <typename Packet>
-async2::Poll<Result<PendingWrite<Packet>>>
+async2::PollResult<PendingWrite<Packet>>
 AnyPacketChannel<Packet>::PendReadyToWrite(async2::Context& cx, size_t num) {
   PW_DASSERT(num > 0u);
 
@@ -525,14 +525,14 @@ constexpr bool PacketChannel<Packet, kProperties...>::is_write_open() const {
 }
 
 template <typename Packet, Property... kProperties>
-async2::Poll<Result<Packet>> PacketChannel<Packet, kProperties...>::PendRead(
+async2::PollResult<Packet> PacketChannel<Packet, kProperties...>::PendRead(
     async2::Context& cx) {
   static_assert(readable(), "PendRead may only be called on readable channels");
   return static_cast<AnyPacketChannel<Packet>*>(this)->PendRead(cx);
 }
 
 template <typename Packet, Property... kProperties>
-async2::Poll<Result<PendingWrite<Packet>>>
+async2::PollResult<PendingWrite<Packet>>
 PacketChannel<Packet, kProperties...>::PendReadyToWrite(async2::Context& cx,
                                                         size_t num) {
   static_assert(writable(),
@@ -632,7 +632,7 @@ template <typename Packet>
 class PacketChannelImpl<Packet, kWritable>
     : public internal::BasePacketChannelImpl<Packet, kWritable> {
  private:
-  async2::Poll<Result<Packet>> DoPendRead(async2::Context&) final {
+  async2::PollResult<Packet> DoPendRead(async2::Context&) final {
     return async2::Ready(Status::Unimplemented());
   }
 };

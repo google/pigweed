@@ -53,12 +53,12 @@ class LoopbackChannel<DataType::kDatagram>
   LoopbackChannel& operator=(LoopbackChannel&&) = default;
 
  private:
-  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
+  async2::PollResult<multibuf::MultiBuf> DoPendRead(
       async2::Context& cx) override;
 
   async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) final;
 
-  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer(
+  async2::PollOptional<multibuf::MultiBuf> DoPendAllocateWriteBuffer(
       async2::Context& cx, size_t min_bytes) final {
     write_alloc_future_.SetDesiredSize(min_bytes);
     return write_alloc_future_.Pend(cx);
@@ -89,14 +89,14 @@ class LoopbackChannel<DataType::kByte>
   LoopbackChannel& operator=(LoopbackChannel&&) = default;
 
  private:
-  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
+  async2::PollResult<multibuf::MultiBuf> DoPendRead(
       async2::Context& cx) override;
 
   async2::Poll<Status> DoPendReadyToWrite(async2::Context&) final {
     return async2::Ready(OkStatus());
   }
 
-  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer(
+  async2::PollOptional<multibuf::MultiBuf> DoPendAllocateWriteBuffer(
       async2::Context& cx, size_t min_bytes) final {
     write_alloc_future_.SetDesiredSize(min_bytes);
     return write_alloc_future_.Pend(cx);

@@ -32,6 +32,7 @@ using ::pw::async2::Dispatcher;
 using ::pw::async2::PendFuncTask;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollResult;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 using ::pw::async2::Waker;
@@ -90,7 +91,7 @@ class ReceiveDatagramsUntilClosed : public Task {
  private:
   Poll<> DoPend(Context& cx) final {
     while (true) {
-      Poll<Result<MultiBuf>> result = channel_.PendRead(cx);
+      PollResult<MultiBuf> result = channel_.PendRead(cx);
       if (result.IsPending()) {
         return Pending();
       }

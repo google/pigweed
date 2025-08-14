@@ -39,6 +39,7 @@ using ::pw::async2::Context;
 using ::pw::async2::Dispatcher;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollOptional;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 using ::pw::channel::ByteReader;
@@ -211,7 +212,7 @@ class WriterTask : public Task {
       }
       ++write_count;
 
-      Poll<std::optional<MultiBuf>> multibuf_result =
+      PollOptional<MultiBuf> multibuf_result =
           channel_.PendAllocateWriteBuffer(cx, data_to_write_.size());
       PW_CHECK(multibuf_result.IsReady());
       PW_CHECK(multibuf_result->has_value());

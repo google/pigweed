@@ -48,7 +48,7 @@ class FakeUart {
   // `Ready(Status::Unavailable())`.
   // Otherwise, it returns `Pending` and arranges for the task to be woken up
   // when a byte arrives.
-  pw::async2::Poll<pw::Result<char>> ReadByte(pw::async2::Context& cx) {
+  pw::async2::PollResult<char> ReadByte(pw::async2::Context& cx) {
     // Blocking inside an async function is generally an anti-pattern because it
     // prevents the single-threaded dispatcher from making progress on other
     // tasks. However, using `pw::sync::InterruptSpinLock` here is acceptable

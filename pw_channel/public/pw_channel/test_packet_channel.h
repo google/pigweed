@@ -45,13 +45,13 @@ class TestPacketReaderWriter final
  private:
   using AnyPacketChannel<Packet>::write_waker;
 
-  async2::Poll<Result<Packet>> DoPendRead(async2::Context& cx) override {
+  async2::PollResult<Packet> DoPendRead(async2::Context& cx) override {
     if (read_queue_.empty()) {
       PW_ASYNC_STORE_WAKER(
           cx, read_waker_, "TestPacketReaderWriter::DoPendRead");
       return async2::Pending();
     }
-    async2::Poll<Result<Packet>> result =
+    async2::PollResult<Packet> result =
         async2::Ready(std::move(read_queue_.front()));
     read_queue_.pop_front();
     return result;

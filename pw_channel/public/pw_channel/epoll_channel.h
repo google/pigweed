@@ -63,12 +63,12 @@ class EpollChannel : public Implement<ByteReaderWriter> {
 
   void Register();
 
-  async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
+  async2::PollResult<multibuf::MultiBuf> DoPendRead(
       async2::Context& cx) override;
 
   async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) final;
 
-  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer(
+  async2::PollOptional<multibuf::MultiBuf> DoPendAllocateWriteBuffer(
       async2::Context& cx, size_t min_bytes) final {
     write_alloc_future_.SetDesiredSize(min_bytes);
     return write_alloc_future_.Pend(cx);

@@ -40,6 +40,8 @@ namespace pw::hdlc {
 using ::pw::async2::Context;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollOptional;
+using ::pw::async2::PollResult;
 using ::pw::async2::Ready;
 using ::pw::channel::ByteReaderWriter;
 using ::pw::channel::DatagramReaderWriter;
@@ -172,7 +174,7 @@ Poll<> Router::PollDeliverIncomingFrame(Context& cx, const Frame& frame) {
                  ready_to_write->code());
     return Ready();
   }
-  Poll<std::optional<MultiBuf>> buffer =
+  PollOptional<MultiBuf> buffer =
       channel->channel->PendAllocateWriteBuffer(cx, data.size());
   if (buffer.IsPending()) {
     return Pending();
@@ -209,7 +211,7 @@ void Router::DecodeAndWriteIncoming(Context& cx) {
     }
 
     while (incoming_data_.empty()) {
-      Poll<Result<MultiBuf>> incoming = io_channel_.PendRead(cx);
+      PollResult<MultiBuf> incoming = io_channel_.PendRead(cx);
       if (incoming.IsPending()) {
         return;
       }
@@ -236,7 +238,7 @@ void Router::TryFillBufferToEncodeAndSend(Context& cx) {
   for (size_t i = 0; i < channel_datas_.size(); ++i) {
     ChannelData& cd =
         channel_datas_[(next_first_read_index_ + i) % channel_datas_.size()];
-    Poll<Result<MultiBuf>> buf_result = cd.channel->PendRead(cx);
+    PollResult<MultiBuf> buf_result = cd.channel->PendRead(cx);
     if (buf_result.IsPending()) {
       continue;
     }
@@ -288,7 +290,7 @@ void Router::WriteOutgoingMessages(Context& cx) {
     }
     uint64_t target_address = buffer_to_encode_and_send_->target_address;
     size_t hdlc_encoded_size = buffer_to_encode_and_send_->hdlc_encoded_size;
-    Poll<std::optional<MultiBuf>> maybe_write_buffer =
+    PollOptional<MultiBuf> maybe_write_buffer =
         io_channel_.PendAllocateWriteBuffer(cx, hdlc_encoded_size);
     if (maybe_write_buffer.IsPending()) {
       // Channel cannot write any further messages until we can allocate.

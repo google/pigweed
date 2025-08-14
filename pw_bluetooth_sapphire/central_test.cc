@@ -38,6 +38,7 @@ using ScanHandle = Central::ScanHandle;
 using ScanResult = Central::ScanResult;
 using pw::async2::PendFuncTask;
 using pw::async2::Poll;
+using pw::async2::PollResult;
 using pw::bluetooth_sapphire::internal::UuidFrom;
 using pw::chrono::SystemClock;
 using ScanFilter = Central::ScanFilter;
@@ -56,7 +57,7 @@ auto MakePendResultTask(
     ScanHandle::Ptr& scan_handle,
     std::optional<pw::Result<ScanResult>>& scan_result_out) {
   return PendFuncTask([&scan_handle, &scan_result_out](Context& cx) -> Poll<> {
-    Poll<pw::Result<ScanResult>> pend = scan_handle->PendResult(cx);
+    PollResult<ScanResult> pend = scan_handle->PendResult(cx);
     if (pend.IsPending()) {
       return Pending();
     }
@@ -79,7 +80,7 @@ class CentralTest : public ::testing::Test {
     std::optional<pw::Result<ScanStartResult>> scan_pend_result;
     PendFuncTask scan_receiver_task(
         [&scan_receiver, &scan_pend_result](Context& cx) -> Poll<> {
-          Poll<pw::Result<ScanStartResult>> scan_pend = scan_receiver.Pend(cx);
+          PollResult<ScanStartResult> scan_pend = scan_receiver.Pend(cx);
           if (scan_pend.IsPending()) {
             return Pending();
           }
@@ -258,7 +259,7 @@ TEST_F(CentralTest, ScanWithoutFiltersFails) {
   std::optional<pw::Result<ScanStartResult>> scan_pend_result;
   PendFuncTask scan_receiver_task(
       [&scan_receiver, &scan_pend_result](Context& cx) -> Poll<> {
-        Poll<pw::Result<ScanStartResult>> scan_pend = scan_receiver.Pend(cx);
+        PollResult<ScanStartResult> scan_pend = scan_receiver.Pend(cx);
         if (scan_pend.IsPending()) {
           return Pending();
         }
@@ -292,7 +293,7 @@ TEST_F(CentralTest, QueueMoreThanMaxScanResultsInScanHandleDropsOldest) {
   PendFuncTask scan_handle_task =
       PendFuncTask([&scan_handle, &scan_result_results](Context& cx) -> Poll<> {
         while (true) {
-          Poll<pw::Result<ScanResult>> pend = scan_handle->PendResult(cx);
+          PollResult<ScanResult> pend = scan_handle->PendResult(cx);
           if (pend.IsPending()) {
             return Pending();
           }
@@ -358,7 +359,7 @@ TEST_F(CentralTest, ConnectAndDisconnectSuccess) {
       central().Connect(peer->identifier().value(), options);
   PendFuncTask connect_task =
       PendFuncTask([&connect_result, &receiver](Context& cx) -> Poll<> {
-        Poll<pw::Result<Central::ConnectResult>> poll = receiver.Pend(cx);
+        PollResult<Central::ConnectResult> poll = receiver.Pend(cx);
         if (poll.IsPending()) {
           return Pending();
         }
@@ -391,7 +392,7 @@ TEST_F(CentralTest, PendDisconnect) {
       central().Connect(peer->identifier().value(), options);
   PendFuncTask connect_task =
       PendFuncTask([&connect_result, &receiver](Context& cx) -> Poll<> {
-        Poll<pw::Result<Central::ConnectResult>> poll = receiver.Pend(cx);
+        PollResult<Central::ConnectResult> poll = receiver.Pend(cx);
         if (poll.IsPending()) {
           return Pending();
         }

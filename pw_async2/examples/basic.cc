@@ -23,6 +23,7 @@ using ::pw::Result;
 using ::pw::Status;
 using ::pw::async2::Context;
 using ::pw::async2::Poll;
+using ::pw::async2::PollResult;
 
 class MyData {
  public:
@@ -30,13 +31,13 @@ class MyData {
 
 class ReceiveFuture {
  public:
-  Poll<Result<MyData>> Pend(Context&) { return MyData(); }
+  PollResult<MyData> Pend(Context&) { return MyData(); }
 };
 
 class MyReceiver {
  public:
   ReceiveFuture Receive() { return ReceiveFuture(); }
-  Poll<Result<MyData>> PendReceive(Context&) { return MyData(); }
+  PollResult<MyData> PendReceive(Context&) { return MyData(); }
 };
 
 class SendFuture {

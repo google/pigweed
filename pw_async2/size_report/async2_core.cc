@@ -46,7 +46,7 @@ class ReceiverTask : public Task {
 
  private:
   Poll<> DoPend(Context& cx) override {
-    Poll<Result<T>> result = receiver_.Pend(cx);
+    PollResult<T> result = receiver_.Pend(cx);
     if (result.IsPending()) {
       return Pending();
     }

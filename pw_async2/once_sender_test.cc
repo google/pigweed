@@ -28,6 +28,7 @@ using ::pw::async2::OnceRefSender;
 using ::pw::async2::OnceSender;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollResult;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 
@@ -63,7 +64,7 @@ class ValueTask : public Task {
             sender_.value(), receiver_.value());
       }
     }
-    Poll<pw::Result<MoveOnlyValue>> poll = receiver_.value().Pend(cx);
+    PollResult<MoveOnlyValue> poll = receiver_.value().Pend(cx);
     if (poll.IsReady()) {
       ready_value_.emplace(std::move(poll.value()));
       return Ready();
@@ -303,7 +304,7 @@ class AlreadyCompletedReceiverTask : public Task {
       : receiver_(std::move(receiver)) {}
 
   Poll<> DoPend(Context& cx) override {
-    Poll<pw::Result<MoveOnlyValue>> poll = receiver_.Pend(cx);
+    PollResult<MoveOnlyValue> poll = receiver_.Pend(cx);
     if (poll.IsReady()) {
       ready_value_.emplace(std::move(poll.value()));
       return Ready();

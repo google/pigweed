@@ -16,7 +16,7 @@
 
 namespace pw::channel::internal {
 
-async2::Poll<Result<multibuf::MultiBuf>>
+async2::PollResult<multibuf::MultiBuf>
 ForwardingChannel<DataType::kDatagram>::DoPendRead(async2::Context& cx)
     PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
@@ -74,7 +74,7 @@ async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendClose(
   return OkStatus();
 }
 
-async2::Poll<Result<multibuf::MultiBuf>>
+async2::PollResult<multibuf::MultiBuf>
 ForwardingChannel<DataType::kByte>::DoPendRead(async2::Context& cx) {
   std::lock_guard lock(pair_.mutex_);
 

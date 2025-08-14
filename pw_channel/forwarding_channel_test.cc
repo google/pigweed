@@ -25,10 +25,10 @@
 
 namespace {
 
-using ::pw::Result;
 using ::pw::async2::Context;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollResult;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 using ::pw::async2::Waker;
@@ -255,7 +255,7 @@ TEST(ForwardingDatagramchannel, PendCloseAwakensAndClosesPeer) {
 
    private:
     pw::async2::Poll<> DoPend(Context& cx) final {
-      Poll<Result<MultiBuf>> read = reader_.PendRead(cx);
+      PollResult<MultiBuf> read = reader_.PendRead(cx);
       if (read.IsPending()) {
         PW_ASYNC_STORE_WAKER(
             cx, waker, "TryToReadUntilClosed is waiting for reader");
@@ -475,7 +475,7 @@ TEST(ForwardingByteChannel, PendCloseAwakensAndClosesPeer) {
 
    private:
     pw::async2::Poll<> DoPend(Context& cx) final {
-      Poll<Result<MultiBuf>> read = reader_.PendRead(cx);
+      PollResult<MultiBuf> read = reader_.PendRead(cx);
       if (read.IsPending()) {
         PW_ASYNC_STORE_WAKER(
             cx, waker, "TryToReadUntilClosed is waiting for reader");

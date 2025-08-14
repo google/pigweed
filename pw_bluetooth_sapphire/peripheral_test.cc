@@ -31,7 +31,7 @@ class ReceiverTask final : public pw::async2::Task {
       : receiver_(std::move(receiver)) {}
 
   pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
-    pw::async2::Poll<pw::Result<T>> pend = receiver_.Pend(cx);
+    pw::async2::PollResult<T> pend = receiver_.Pend(cx);
     if (pend.IsPending()) {
       return pw::async2::Pending();
     }

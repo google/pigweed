@@ -160,8 +160,7 @@ class Central2 {
     ///    CANCELLED: An internal error occurred and the scan was cancelled.
     ///
     /// @endrst
-    virtual async2::Poll<pw::Result<ScanResult>> PendResult(
-        async2::Context& cx) = 0;
+    virtual async2::PollResult<ScanResult> PendResult(async2::Context& cx) = 0;
 
    private:
     /// Stop the current scan. This method is called by the ~ScanHandle::Ptr()

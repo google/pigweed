@@ -24,6 +24,7 @@ namespace pw::multibuf {
 
 using ::pw::async2::Context;
 using ::pw::async2::Poll;
+using ::pw::async2::PollOptional;
 using ::pw::async2::Waker;
 
 // ########## MultiBufAllocatorAsync
@@ -147,7 +148,7 @@ void MultiBufAllocationFuture::SetDesiredSizes(
   contiguity_requirement_ = new_contiguity_requirement;
 }
 
-Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::Pend(Context& cx) {
+PollOptional<MultiBuf> MultiBufAllocationFuture::Pend(Context& cx) {
   std::lock_guard lock(allocator_->lock_);
   // If we're still listed waiting for a wakeup, don't bother to try again.
   if (this->unlisted()) {
@@ -166,7 +167,7 @@ Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::Pend(Context& cx) {
   return async2::Pending();
 }
 
-Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::TryAllocate() {
+PollOptional<MultiBuf> MultiBufAllocationFuture::TryAllocate() {
   Result<MultiBuf> buf_opt =
       allocator_->DoAllocate(min_size_, desired_size_, contiguity_requirement_);
   if (buf_opt.ok()) {

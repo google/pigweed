@@ -42,11 +42,11 @@ void EpollChannel::Register() {
   ready_to_write_ = true;
 }
 
-async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
+async2::PollResult<multibuf::MultiBuf> EpollChannel::DoPendRead(
     async2::Context& cx) {
   write_alloc_future_.SetDesiredSizes(
       kMinimumReadSize, kDesiredReadSize, pw::multibuf::kNeedsContiguous);
-  async2::Poll<std::optional<multibuf::MultiBuf>> maybe_multibuf =
+  async2::PollOptional<multibuf::MultiBuf> maybe_multibuf =
       write_alloc_future_.Pend(cx);
   if (maybe_multibuf.IsPending()) {
     return async2::Pending();

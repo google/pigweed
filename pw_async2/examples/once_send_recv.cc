@@ -28,6 +28,7 @@ using ::pw::async2::OnceReceiver;
 using ::pw::async2::OnceSender;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollResult;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 
@@ -38,7 +39,7 @@ class ReceiveAndLogValueTask : public Task {
 
  private:
   Poll<> DoPend(Context& cx) override {
-    Poll<Result<int>> value = int_receiver_.Pend(cx);
+    PollResult<int> value = int_receiver_.Pend(cx);
     if (value.IsPending()) {
       return Pending();
     }

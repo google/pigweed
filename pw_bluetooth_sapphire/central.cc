@@ -244,8 +244,8 @@ void Central::ScanHandleImpl::QueueScanResultLocked(ScanResult&& result) {
   std::move(waker_).Wake();
 }
 
-async2::Poll<pw::Result<Central::ScanResult>>
-Central::ScanHandleImpl::PendResult(async2::Context& cx) {
+async2::PollResult<Central::ScanResult> Central::ScanHandleImpl::PendResult(
+    async2::Context& cx) {
   std::lock_guard guard(lock());
   if (!results_.empty()) {
     ScanResult result = std::move(results_.front());

@@ -26,6 +26,7 @@ using ::pw::async2::Context;
 using ::pw::async2::Dispatcher;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
+using ::pw::async2::PollOptional;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 using ::pw::multibuf::ContiguityRequirement;
@@ -85,7 +86,7 @@ class AllocateTask : public Task {
       : future_(std::move(future)), last_result_(Pending()) {}
 
   MultiBufAllocationFuture future_;
-  Poll<std::optional<MultiBuf>> last_result_;
+  PollOptional<MultiBuf> last_result_;
 
  private:
   Poll<> DoPend(Context& cx) override {

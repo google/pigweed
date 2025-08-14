@@ -90,11 +90,11 @@ class Channel {
   }
 
   /// @copydoc AnyChannel::PendRead
-  async2::Poll<Result<multibuf::MultiBuf>> PendRead(async2::Context& cx);
+  async2::PollResult<multibuf::MultiBuf> PendRead(async2::Context& cx);
   /// @copydoc AnyChannel::PendReadyToWrite
   async2::Poll<Status> PendReadyToWrite(pw::async2::Context& cx);
   /// @copydoc AnyChannel::PendAllocateBuffer
-  async2::Poll<std::optional<multibuf::MultiBuf>> PendAllocateWriteBuffer(
+  async2::PollOptional<multibuf::MultiBuf> PendAllocateWriteBuffer(
       async2::Context& cx, size_t min_bytes);
   /// @copydoc AnyChannel::StageWrite
   Status StageWrite(multibuf::MultiBuf&& data);
@@ -266,11 +266,11 @@ class AnyChannel
   ///    channel is still open; writes and seeks may succeed.
   ///
   /// @endrst
-  async2::Poll<Result<multibuf::MultiBuf>> PendRead(async2::Context& cx) {
+  async2::PollResult<multibuf::MultiBuf> PendRead(async2::Context& cx) {
     if (!is_read_open()) {
       return Status::FailedPrecondition();
     }
-    async2::Poll<Result<multibuf::MultiBuf>> result = DoPendRead(cx);
+    async2::PollResult<multibuf::MultiBuf> result = DoPendRead(cx);
     if (result.IsReady() && result->status().IsFailedPrecondition()) {
       set_read_closed();
     }
@@ -326,7 +326,7 @@ class AnyChannel
   /// * Pending - No buffer of at least `min_bytes` is available. The task
   ///   associated with the provided `pw::async2::Context` will be awoken
   ///   when a sufficiently-sized buffer becomes available.
-  async2::Poll<std::optional<multibuf::MultiBuf>> PendAllocateWriteBuffer(
+  async2::PollOptional<multibuf::MultiBuf> PendAllocateWriteBuffer(
       async2::Context& cx, size_t min_bytes) {
     return DoPendAllocateWriteBuffer(cx, min_bytes);
   }
@@ -483,13 +483,13 @@ class AnyChannel
 
   // Read functions
 
-  virtual async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
+  virtual async2::PollResult<multibuf::MultiBuf> DoPendRead(
       async2::Context& cx) = 0;
 
   // Write functions
 
-  virtual async2::Poll<std::optional<multibuf::MultiBuf>>
-  DoPendAllocateWriteBuffer(async2::Context& cx, size_t min_bytes) = 0;
+  virtual async2::PollOptional<multibuf::MultiBuf> DoPendAllocateWriteBuffer(
+      async2::Context& cx, size_t min_bytes) = 0;
 
   virtual pw::async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) = 0;
 
