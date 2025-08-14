@@ -276,6 +276,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # keep-sorted: end
     # Documentation
     # keep-sorted: start
+    r'\.expected$',
     r'\.md$',
     r'\.rst$',
     # TODO: b/388905812 - Delete this file.
