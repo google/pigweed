@@ -180,7 +180,7 @@ build:clang-tidy --build_tag_filters=-noclangtidy
 build:clang-tidy --copt=-Wno-pragma-once-outside-header
 
 # Pylint aspect configuration
-build:pylint --//pw_build:pylintrc=//:pylintrc
+build --//pw_build:pylintrc=//:pylintrc
 build:pylint --aspects //pw_build:pw_pylint.bzl%pylint_aspect
 build:pylint --output_groups=report
 build:pylint --build_tag_filters=-nopylint
