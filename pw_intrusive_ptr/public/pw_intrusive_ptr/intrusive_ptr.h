@@ -182,7 +182,7 @@ inline bool operator!=(std::nullptr_t, const IntrusivePtr<T>& ptr) {
 // constructor.
 template <typename T, typename... Args>
 IntrusivePtr<T> MakeRefCounted(Args&&... args) {
-  return IntrusivePtr(new T(std::forward<Args>(args)...));
+  return IntrusivePtr<T>(new T(std::forward<Args>(args)...));
 }
 
 }  // namespace pw
