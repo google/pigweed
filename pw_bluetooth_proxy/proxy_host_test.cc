@@ -3737,6 +3737,8 @@ TEST_F(ProxyHostConnectionEventTest,
 
 // ########## AclFragTest
 
+// TODO: https://pwbug.dev/438553038 - Update tests to also test in to-host
+// direction.
 class AclFragTest : public ProxyHostTest {
  protected:
   static constexpr uint16_t kHandle = 0x04AD;
