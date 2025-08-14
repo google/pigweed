@@ -40,8 +40,7 @@ class ThreadInfoTest(unittest.TestCase):
         self.assertEqual(expected, str(thread_info))
 
     def test_thread_with_cpu_usage(self):
-        thread = thread_pb2.Thread()
-        thread.cpu_usage_hundredths = 1234
+        thread = thread_pb2.Thread(cpu_usage_hundredths=1234)
         thread_info = ThreadInfo(thread)
 
         expected = '\n'.join(
@@ -58,8 +57,7 @@ class ThreadInfoTest(unittest.TestCase):
         self.assertEqual(expected, str(thread_info))
 
     def test_thread_with_stack_pointer(self):
-        thread = thread_pb2.Thread()
-        thread.stack_pointer = 0x5AC6A86C
+        thread = thread_pb2.Thread(stack_pointer=0x5AC6A86C)
         thread_info = ThreadInfo(thread)
 
         expected = '\n'.join(
@@ -76,9 +74,10 @@ class ThreadInfoTest(unittest.TestCase):
         self.assertEqual(expected, str(thread_info))
 
     def test_thread_with_stack_usage(self):
-        thread = thread_pb2.Thread()
-        thread.stack_start_pointer = 0x5AC6B86C
-        thread.stack_pointer = 0x5AC6A86C
+        thread = thread_pb2.Thread(
+            stack_start_pointer=0x5AC6B86C,
+            stack_pointer=0x5AC6A86C,
+        )
         thread_info = ThreadInfo(thread)
 
         expected = '\n'.join(
@@ -95,11 +94,12 @@ class ThreadInfoTest(unittest.TestCase):
         self.assertEqual(expected, str(thread_info))
 
     def test_thread_with_zero_size_stack(self):
-        thread = thread_pb2.Thread()
-        thread.stack_start_pointer = 0x5AC6B86C
-        thread.stack_end_pointer = 0x5AC6B86C
-        thread.stack_pointer = 0x5AC6A86C
-        thread.stack_pointer_est_peak = 0x5AC6A86C
+        thread = thread_pb2.Thread(
+            stack_start_pointer=0x5AC6B86C,
+            stack_end_pointer=0x5AC6B86C,
+            stack_pointer=0x5AC6A86C,
+            stack_pointer_est_peak=0x5AC6A86C,
+        )
         thread_info = ThreadInfo(thread)
 
         # pylint: disable=line-too-long
@@ -118,10 +118,11 @@ class ThreadInfoTest(unittest.TestCase):
         self.assertEqual(expected, str(thread_info))
 
     def test_thread_with_all_stack_info(self):
-        thread = thread_pb2.Thread()
-        thread.stack_start_pointer = 0x5AC6B86C
-        thread.stack_end_pointer = 0x5AC6986C
-        thread.stack_pointer = 0x5AC6A86C
+        thread = thread_pb2.Thread(
+            stack_start_pointer=0x5AC6B86C,
+            stack_end_pointer=0x5AC6986C,
+            stack_pointer=0x5AC6A86C,
+        )
         thread_info = ThreadInfo(thread)
 
         # pylint: disable=line-too-long
@@ -148,8 +149,7 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
         self.assertEqual('', str(analyzer))
 
     def test_one_empty_thread(self):
-        snapshot = thread_pb2.SnapshotThreadInfo()
-        snapshot.threads.append(thread_pb2.Thread())
+        snapshot = thread_pb2.SnapshotThreadInfo(threads=[thread_pb2.Thread()])
         expected = '\n'.join(
             (
                 'Thread State',
@@ -170,17 +170,19 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
 
     def test_one_thread_with_id(self):
         """Ensures threads with names and IDs are printed correctly."""
-        snapshot = thread_pb2.SnapshotThreadInfo()
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = 'Alice'.encode()
-        temp_thread.id = 0x12345
-        temp_thread.state = thread_pb2.ThreadState.Enum.READY
-        temp_thread.stack_start_pointer = 0x2001AC00
-        temp_thread.stack_end_pointer = 0x2001AA00
-        temp_thread.stack_pointer = 0x2001AB0C
-        temp_thread.stack_pointer_est_peak = 0x2001AA00
-        snapshot.threads.append(temp_thread)
+        snapshot = thread_pb2.SnapshotThreadInfo(
+            threads=[
+                thread_pb2.Thread(
+                    name='Alice'.encode(),
+                    id=0x12345,
+                    state=thread_pb2.ThreadState.Enum.READY,
+                    stack_start_pointer=0x2001AC00,
+                    stack_end_pointer=0x2001AA00,
+                    stack_pointer=0x2001AB0C,
+                    stack_pointer_est_peak=0x2001AA00,
+                )
+            ]
+        )
 
         # pylint: disable=line-too-long
         expected = '\n'.join(
@@ -204,23 +206,24 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
 
     def test_two_threads(self):
         """Ensures multiple threads are printed correctly."""
-        snapshot = thread_pb2.SnapshotThreadInfo()
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = 'Idle'.encode()
-        temp_thread.state = thread_pb2.ThreadState.Enum.READY
-        temp_thread.stack_start_pointer = 0x2001AC00
-        temp_thread.stack_end_pointer = 0x2001AA00
-        temp_thread.stack_pointer = 0x2001AB0C
-        temp_thread.stack_pointer_est_peak = 0x2001AA00
-        snapshot.threads.append(temp_thread)
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = 'Alice'.encode()
-        temp_thread.stack_start_pointer = 0x2001B000
-        temp_thread.stack_pointer = 0x2001AE20
-        temp_thread.state = thread_pb2.ThreadState.Enum.BLOCKED
-        snapshot.threads.append(temp_thread)
+        snapshot = thread_pb2.SnapshotThreadInfo(
+            threads=[
+                thread_pb2.Thread(
+                    name='Idle'.encode(),
+                    state=thread_pb2.ThreadState.Enum.READY,
+                    stack_start_pointer=0x2001AC00,
+                    stack_end_pointer=0x2001AA00,
+                    stack_pointer=0x2001AB0C,
+                    stack_pointer_est_peak=0x2001AA00,
+                ),
+                thread_pb2.Thread(
+                    name='Alice'.encode(),
+                    stack_start_pointer=0x2001B000,
+                    stack_pointer=0x2001AE20,
+                    state=thread_pb2.ThreadState.Enum.BLOCKED,
+                ),
+            ]
+        )
 
         # pylint: disable=line-too-long
         expected = '\n'.join(
@@ -251,23 +254,24 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
 
     def test_interrupts_with_thread(self):
         """Ensures interrupts are properly reported as active."""
-        snapshot = thread_pb2.SnapshotThreadInfo()
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = 'Idle'.encode()
-        temp_thread.state = thread_pb2.ThreadState.Enum.READY
-        temp_thread.stack_start_pointer = 0x2001AC00
-        temp_thread.stack_end_pointer = 0x2001AA00
-        temp_thread.stack_pointer = 0x2001AB0C
-        temp_thread.stack_pointer_est_peak = 0x2001AA00
-        snapshot.threads.append(temp_thread)
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = 'Main/Handler'.encode()
-        temp_thread.stack_start_pointer = 0x2001B000
-        temp_thread.stack_pointer = 0x2001AE20
-        temp_thread.state = thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER
-        snapshot.threads.append(temp_thread)
+        snapshot = thread_pb2.SnapshotThreadInfo(
+            threads=[
+                thread_pb2.Thread(
+                    name='Idle'.encode(),
+                    state=thread_pb2.ThreadState.Enum.READY,
+                    stack_start_pointer=0x2001AC00,
+                    stack_end_pointer=0x2001AA00,
+                    stack_pointer=0x2001AB0C,
+                    stack_pointer_est_peak=0x2001AA00,
+                ),
+                thread_pb2.Thread(
+                    name='Main/Handler'.encode(),
+                    stack_start_pointer=0x2001B000,
+                    stack_pointer=0x2001AE20,
+                    state=thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER,
+                ),
+            ]
+        )
 
         # pylint: disable=line-too-long
         expected = '\n'.join(
@@ -295,30 +299,31 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
         )
         # pylint: enable=line-too-long
         analyzer = ThreadSnapshotAnalyzer(snapshot)
-        self.assertEqual(analyzer.active_thread(), temp_thread)
+        self.assertEqual(analyzer.active_thread(), snapshot.threads[1])
         self.assertEqual(str(ThreadSnapshotAnalyzer(snapshot)), expected)
 
     def test_active_thread(self):
         """Ensures the 'active' thread is highlighted."""
-        snapshot = thread_pb2.SnapshotThreadInfo()
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = 'Idle'.encode()
-        temp_thread.state = thread_pb2.ThreadState.Enum.READY
-        temp_thread.stack_start_pointer = 0x2001AC00
-        temp_thread.stack_end_pointer = 0x2001AA00
-        temp_thread.stack_pointer = 0x2001AB0C
-        temp_thread.stack_pointer_est_peak = 0x2001AC00 + 0x100
-        snapshot.threads.append(temp_thread)
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = 'Main/Handler'.encode()
-        temp_thread.active = True
-        temp_thread.stack_start_pointer = 0x2001B000
-        temp_thread.stack_pointer = 0x2001AE20
-        temp_thread.stack_pointer_est_peak = 0x2001B000 + 0x200
-        temp_thread.state = thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER
-        snapshot.threads.append(temp_thread)
+        snapshot = thread_pb2.SnapshotThreadInfo(
+            threads=[
+                thread_pb2.Thread(
+                    name='Idle'.encode(),
+                    state=thread_pb2.ThreadState.Enum.READY,
+                    stack_start_pointer=0x2001AC00,
+                    stack_end_pointer=0x2001AA00,
+                    stack_pointer=0x2001AB0C,
+                    stack_pointer_est_peak=0x2001AC00 + 0x100,
+                ),
+                thread_pb2.Thread(
+                    name='Main/Handler'.encode(),
+                    active=True,
+                    stack_start_pointer=0x2001B000,
+                    stack_pointer=0x2001AE20,
+                    stack_pointer_est_peak=0x2001B000 + 0x200,
+                    state=thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER,
+                ),
+            ]
+        )
 
         # pylint: disable=line-too-long
         expected = '\n'.join(
@@ -348,12 +353,17 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
         analyzer = ThreadSnapshotAnalyzer(snapshot)
 
         # Ensure the active thread is found.
-        self.assertEqual(analyzer.active_thread(), temp_thread)
+        self.assertEqual(analyzer.active_thread(), snapshot.threads[1])
         self.assertEqual(str(ThreadSnapshotAnalyzer(snapshot)), expected)
 
     def test_tokenized_thread_name(self):
         """Ensures a tokenized thread name is detokenized."""
-        snapshot = thread_pb2.SnapshotThreadInfo()
+        snapshot = thread_pb2.SnapshotThreadInfo(
+            threads=[
+                thread_pb2.Thread(name=b'\x97\x74\xBE\x46'),
+                thread_pb2.Thread(name=b'\x5D\xA8\x66\xAE'),
+            ]
+        )
         detokenizer = pw_tokenizer.Detokenizer(
             tokens.Database(
                 [
@@ -363,12 +373,6 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
                 ]
             )
         )
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = b'\x97\x74\xBE\x46'
-        snapshot.threads.append(temp_thread)
-        temp_thread.name = b'\x5D\xA8\x66\xAE'
-        snapshot.threads.append(temp_thread)
 
         # pylint: disable=line-too-long
         expected = '\n'.join(
@@ -400,13 +404,12 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
 
     def test_no_db_tokenized_thread_name(self):
         """Ensures a tokenized thread name is detokenized."""
-        snapshot = thread_pb2.SnapshotThreadInfo()
-
-        temp_thread = thread_pb2.Thread()
-        temp_thread.name = b'\x97\x74\xBE\x46'
-        snapshot.threads.append(temp_thread)
-        temp_thread.name = b'\x5D\xA8\x66\xAE'
-        snapshot.threads.append(temp_thread)
+        snapshot = thread_pb2.SnapshotThreadInfo(
+            threads=[
+                thread_pb2.Thread(name=b'\x97\x74\xBE\x46'),
+                thread_pb2.Thread(name=b'\x5D\xA8\x66\xAE'),
+            ]
+        )
 
         # pylint: disable=line-too-long
         expected = '\n'.join(
