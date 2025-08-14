@@ -90,6 +90,20 @@ message Thread {
   optional uint64 stack_end_pointer = 8;
 
   // The current stack pointer of this thread.
+  //
+  // This value depends on the state of the thread:
+  //
+  // * If the thread is not running, this reflects the stack pointer saved in
+  //   the TCB. Note that this points to the register context saved by the OS
+  //   scheduler, and does not reflect the SP value that the thread will have
+  //   when it is resumed.
+  //
+  // * If the thread is running, this should correctly reflect the most recent
+  //   stack pointer for the running thread. Note that some projects may
+  //   unintentionally report a stack pointer value as stored in the TCB, which
+  //   is often stale/inaccurate.
+  //
+  // See uses of the StackContext struct for more detail.
   optional uint64 stack_pointer = 9;
 
   // CPU usage info. This is the percentage of CPU time the thread has been
