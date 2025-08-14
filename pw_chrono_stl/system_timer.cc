@@ -32,6 +32,15 @@ bool NoDepsTimedThreadNotification::try_acquire() {
 bool NoDepsTimedThreadNotification::try_acquire_until(
     SystemClock::time_point deadline) {
   std::unique_lock lock(lock_);
+  // If deadline is specified as "infinite", use plain wait instead.
+  // This prevents possible overflow issues in the STL implementation,
+  // like libstdc++: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58931
+  // TODO: https://pwbug.dev/427758785 - Ensure max works for all backends
+  if (deadline == SystemClock::time_point::max()) {
+    cv_.wait(lock, [&] { return is_set_; });
+    is_set_ = false;
+    return true;
+  }
   if (cv_.wait_until(lock, deadline, [&] { return is_set_; })) {
     is_set_ = false;
     return true;
