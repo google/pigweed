@@ -545,6 +545,7 @@ sphinx_docs_library(
     srcs = [
         "backends.rst",
         "code_size.rst",
+        "codelab.rst",
         "design.rst",
         "docs.rst",
         "guides.rst",

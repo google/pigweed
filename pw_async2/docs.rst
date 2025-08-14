@@ -107,6 +107,7 @@ Tasks can then be run on a :cpp:class:`pw::async2::Dispatcher` using the
    :hidden:
    :maxdepth: 1
 
+   codelab
    guides
    design
    reference
