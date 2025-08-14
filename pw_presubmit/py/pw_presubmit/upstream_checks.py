@@ -72,7 +72,9 @@ SOURCE_FILES_FILTER_GN_EXCLUDE = FileFilter(
     exclude=(
         # keep-sorted: start
         r'.*\.rst$',
+        r'\bcodelab',
         r'\bdocs',
+        r'\bexamples',
         r'\bpw_bluetooth_sapphire/fuchsia',
         # keep-sorted: end
     ),
