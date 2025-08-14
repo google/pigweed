@@ -292,7 +292,7 @@ Status DmaUartMcuxpressoNonBlocking::DoRead(
 
   // Has the ring buffer overflowed?
   if (rx_data_.data_loss) {
-    DoClearPendingReceiveBytesLockHeld();
+    PW_TRY(DoClearPendingReceiveBytesLockHeld());
     return Status::DataLoss();
   }
 
