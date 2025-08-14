@@ -3958,23 +3958,27 @@ TEST_F(AclFragTest, ChannelCantAllocateMultibuf) {
 // TODO: https://pwbug.dev/423695410 - In future we should always support
 // recombination so the client has the option to reject.
 TEST_F(AclFragTest, ChannelHasNoRxAllocator) {
-  uint16_t handle = 334;
   // GATT fixed CID is 0x04.
   uint16_t local_cid = 0x0004;
 
+  constexpr uint8_t kPayloadFragmentSize = 3;
+  constexpr uint8_t kRecombinedPayloadSize = kPayloadFragmentSize * 2;
+  std::array<uint8_t, kPayloadFragmentSize> payload_fragment = {
+      0xAB, 0xCD, 0xEF};
+
   std::array<uint8_t,
              emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
-                 emboss::BasicL2capHeader::IntrinsicSizeInBytes() + 3>
+                 emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+                 kPayloadFragmentSize>
       hci_first{};
   std::array<uint8_t,
              emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
-                 emboss::BasicL2capHeader::IntrinsicSizeInBytes() + 3>
+                 emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+                 kPayloadFragmentSize>
       hci_cont{};
 
   struct {
-    int sends_called = 0;
     int to_host_called = 0;
-    std::array<uint8_t, 3> expected_payload = {0xAB, 0xCD, 0xEF};
     std::array<H4PacketWithHci, 2> h4s;
   } capture{.h4s = {H4PacketWithHci{emboss::H4PacketType::ACL_DATA, hci_first},
                     H4PacketWithHci{emboss::H4PacketType::ACL_DATA, hci_cont}}};
@@ -3997,29 +4001,29 @@ TEST_F(AclFragTest, ChannelHasNoRxAllocator) {
 
   GattNotifyChannel channel = BuildGattNotifyChannel(proxy,
                                                      {
-                                                         .handle = handle,
+                                                         .handle = kHandle,
                                                      });
 
   {
     // Define and send first fragment.
     Result<emboss::AclDataFrameWriter> acl =
         MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_first);
-    acl->header().handle().Write(handle);
+    acl->header().handle().Write(kHandle);
     acl->header().packet_boundary_flag().Write(
         emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
     acl->header().broadcast_flag().Write(
         emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
     acl->data_total_length().Write(
         emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
-        capture.expected_payload.size());
+        kPayloadFragmentSize);
 
     emboss::BFrameWriter bframe = emboss::MakeBFrameView(
         acl->payload().BackingStorage().data(), acl->payload().SizeInBytes());
     // We are going to send twice the expected payload (over two fragments).
-    bframe.pdu_length().Write(capture.expected_payload.size() * 2);
+    bframe.pdu_length().Write(kRecombinedPayloadSize);
     bframe.channel_id().Write(local_cid);
-    std::copy(capture.expected_payload.begin(),
-              capture.expected_payload.end(),
+    std::copy(payload_fragment.begin(),
+              payload_fragment.end(),
               bframe.payload().BackingStorage().begin());
 
     std::array<uint8_t, hci_first.size()> hci_first_send{};
@@ -4028,27 +4032,28 @@ TEST_F(AclFragTest, ChannelHasNoRxAllocator) {
     H4PacketWithHci h4_send{emboss::H4PacketType::ACL_DATA, hci_first_send};
     proxy.HandleH4HciFromController(std::move(h4_send));
 
-    // ACL fragment should be delivered to host since channel can't recombine.
-    // An error should be logged also, but we don't have way in Pigweed to test
-    // that.
+    // ACL fragment should be delivered to host since channel can't
+    // recombine. An error should be logged also, but we don't have way in
+    // Pigweed to test that here.
     EXPECT_EQ(capture.to_host_called, 1);
+    ExpectClientReceivedPayloadsAndClear({});
   }
 
   {
     // Define and send 2nd fragment.
     Result<emboss::AclDataFrameWriter> acl =
         MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_first);
-    acl->header().handle().Write(handle);
+    acl->header().handle().Write(kHandle);
     acl->header().packet_boundary_flag().Write(
         emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
     acl->header().broadcast_flag().Write(
         emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
     // Just contains the 2nd payload with no l2cap headers.
-    acl->data_total_length().Write(capture.expected_payload.size());
+    acl->data_total_length().Write(kPayloadFragmentSize);
 
     // Entire ACL payload is just the fragment.
-    std::copy(capture.expected_payload.begin(),
-              capture.expected_payload.end(),
+    std::copy(payload_fragment.begin(),
+              payload_fragment.end(),
               acl->payload().BackingStorage().begin());
 
     std::array<uint8_t, hci_cont.size()> hci_cont_send{};
@@ -4061,6 +4066,7 @@ TEST_F(AclFragTest, ChannelHasNoRxAllocator) {
     // The fact there were two fragments also verifies that recombination didn't
     // happen.
     EXPECT_EQ(capture.to_host_called, 2);
+    ExpectClientReceivedPayloadsAndClear({});
   }
 }
 
