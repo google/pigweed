@@ -4007,6 +4007,8 @@ TEST_F(AclFragTest, ChannelHasNoRxAllocator) {
     acl->header().handle().Write(handle);
     acl->header().packet_boundary_flag().Write(
         emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+    acl->header().broadcast_flag().Write(
+        emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
     acl->data_total_length().Write(
         emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
         capture.expected_payload.size());
@@ -4039,6 +4041,8 @@ TEST_F(AclFragTest, ChannelHasNoRxAllocator) {
     acl->header().handle().Write(handle);
     acl->header().packet_boundary_flag().Write(
         emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+    acl->header().broadcast_flag().Write(
+        emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
     // Just contains the 2nd payload with no l2cap headers.
     acl->data_total_length().Write(capture.expected_payload.size());
 

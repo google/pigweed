@@ -1377,6 +1377,8 @@ TEST_F(L2capCocReadTest, FragmentedPduDoesNotInterfereWithOtherChannels) {
   // 3. 2nd of 3 fragments to frag_channel.
   acl_frag->header().packet_boundary_flag().Write(
       emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+  acl_frag->header().broadcast_flag().Write(
+      emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
   acl_frag->data_total_length().Write(kSduLength / 2);
   H4PacketWithHci h4_2nd_fragment{
       emboss::H4PacketType::ACL_DATA,

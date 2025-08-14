@@ -45,6 +45,10 @@ Result<AclFrameWithStorage> SetupAcl(uint16_t handle, uint16_t l2cap_length) {
   PW_TRY_ASSIGN(frame.writer,
                 MakeEmbossWriter<emboss::AclDataFrameWriter>(frame.hci_span()));
   frame.writer.header().handle().Write(handle);
+  frame.writer.header().packet_boundary_flag().Write(
+      emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+  frame.writer.header().broadcast_flag().Write(
+      emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
   frame.writer.data_total_length().Write(l2cap_length);
   EXPECT_EQ(l2cap_length,
             frame.writer.payload().BackingStorage().SizeInBytes());
@@ -551,6 +555,8 @@ void SendAclContinuingFrag(ProxyHost& proxy,
   acl->header().handle().Write(handle);
   acl->header().packet_boundary_flag().Write(
       emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+  acl->header().broadcast_flag().Write(
+      emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
   acl->data_total_length().Write(acl_data_size);
 
   // Payload
