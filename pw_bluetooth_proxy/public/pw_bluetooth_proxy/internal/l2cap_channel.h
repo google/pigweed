@@ -454,7 +454,12 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   // Create MultiBuf that Recombiner can use to store in-progress payload when
   // being recombined.
-  pw::Status StartRecombinationBuf(Direction direction, size_t payload_size);
+  // Allocate extra_header_size at front of the multibuf for possible use in
+  // headers if needed. That extra is discarded so it will not be part of
+  // initial MultiBuf view returned by TakeBuf.
+  pw::Status StartRecombinationBuf(Direction direction,
+                                   size_t payload_size,
+                                   size_t extra_header_size);
 
   // Returns true if this channel has a recombination MultiBuf (which means
   // recombination is active for this channel).

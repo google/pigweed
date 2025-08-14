@@ -52,6 +52,8 @@ class H4PacketInterface {
 
  protected:
   H4PacketInterface& operator=(const H4PacketInterface& other) = default;
+
+  static constexpr std::uint8_t kH4PacketIndicatorSize = 1;
 };
 
 /// H4PacketWithHci is an H4Packet backed by an HCI buffer.
@@ -59,6 +61,10 @@ class H4PacketWithHci final : public H4PacketInterface {
  public:
   H4PacketWithHci(emboss::H4PacketType h4_type, pw::span<uint8_t> hci_span)
       : hci_span_(hci_span), h4_type_(h4_type) {}
+
+  H4PacketWithHci(pw::span<uint8_t> h4_span)
+      : hci_span_(h4_span.subspan(kH4PacketIndicatorSize)),
+        h4_type_(emboss::H4PacketType{h4_span[0]}) {}
 
   H4PacketWithHci(const H4PacketWithHci& other) = delete;
 
@@ -152,7 +158,8 @@ class H4PacketWithH4 final : public H4PacketInterface {
     if (h4_span_.empty()) {
       return {};
     }
-    return pw::span(h4_span_.data() + 1, h4_span_.size() - 1);
+    return pw::span(h4_span_.data() + kH4PacketIndicatorSize,
+                    h4_span_.size() - kH4PacketIndicatorSize);
   }
 
   pw::span<uint8_t> GetH4Span() {

@@ -40,6 +40,10 @@ class Recombiner {
 
   // Starts a new recombination session.
   //
+  // Allocate extra_header_size at front of the multibuf for possible use in
+  // headers if needed. That extra is discarded so it will not be part of
+  // initial MultiBuf view returned by TakeBuf.
+  //
   // Precondition: `!IsActive()`
   //
   // Postcondition: `IsActive()`
@@ -48,7 +52,9 @@ class Recombiner {
   // * FAILED_PRECONDITION if recombination is already active.
   // * Any error from MultiBufWriter::Create(), namely RESOURCE_EXHAUSTED.
   // * OK if recombination is started.
-  pw::Status StartRecombination(LockedL2capChannel& channel, size_t size);
+  pw::Status StartRecombination(LockedL2capChannel& channel,
+                                size_t size,
+                                size_t extra_header_size);
 
   // Adds a fragment of data to the recombination buffer.
   //

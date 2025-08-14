@@ -50,7 +50,7 @@ TEST_F(RecombinerTest, Start) {
 
   Recombiner recombiner{Direction::kFromHost};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(locked_channel, 8u));
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(locked_channel, 8u, 0u));
 
   EXPECT_TRUE(recombiner.IsActive());
   EXPECT_FALSE(recombiner.IsComplete());
@@ -69,7 +69,7 @@ TEST_F(RecombinerTest, GetLocalCid) {
 
   Recombiner recombiner{Direction::kFromController};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(locked_channel, 8u));
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(locked_channel, 8u, 0u));
 
   EXPECT_EQ(recombiner.local_cid(), kLocalCid);
 }
@@ -86,7 +86,7 @@ TEST_F(RecombinerTest, EndWithChannel) {
 
   Recombiner recombiner{Direction::kFromController};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u, 0u));
 
   EXPECT_TRUE(recombiner.IsActive());
   EXPECT_FALSE(recombiner.IsComplete());
@@ -109,7 +109,7 @@ TEST_F(RecombinerTest, EndWithoutChannel) {
     std::optional<LockedL2capChannel> locked_channel{
         LockedL2capChannel{channel, std::unique_lock(mutex)}};
 
-    PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
+    PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u, 0u));
   }
 
   EXPECT_TRUE(recombiner.IsActive());
@@ -134,7 +134,7 @@ TEST_F(RecombinerTest, WriteThenTake) {
   std::optional<LockedL2capChannel> locked_channel{
       LockedL2capChannel{channel, std::unique_lock(mutex)}};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u, 0u));
 
   EXPECT_TRUE(recombiner.IsActive());
   EXPECT_FALSE(recombiner.IsComplete());
@@ -181,7 +181,7 @@ TEST_F(RecombinerTest, WriteCompleteWithoutChannel) {
     std::optional<LockedL2capChannel> locked_channel{
         LockedL2capChannel{channel, std::unique_lock(mutex)}};
 
-    PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
+    PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u, 0u));
 
     EXPECT_TRUE(recombiner.IsActive());
     EXPECT_FALSE(recombiner.IsComplete());
@@ -222,7 +222,7 @@ TEST_F(RecombinerTest, RecombinedPduIsLargerThanSpecified) {
   std::optional<LockedL2capChannel> locked_channel{
       LockedL2capChannel{channel, std::unique_lock(mutex)}};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u, 0u));
 
   EXPECT_TRUE(recombiner.IsActive());
   EXPECT_FALSE(recombiner.IsComplete());
@@ -249,6 +249,60 @@ TEST_F(RecombinerTest, RecombinedPduIsLargerThanSpecified) {
   recombiner.EndRecombination(locked_channel);
 
   EXPECT_FALSE(recombiner.IsActive());
+}
+// Verify ability to have recombiner allocate extra header and to then claim
+// it from the results of TakeBuf.
+TEST_F(RecombinerTest, CanClaimExtraHeader) {
+  ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
+                   []([[maybe_unused]] H4PacketWithH4&& packet) {},
+                   0,
+                   0};
+  Direction kDirection = Direction::kFromController;
+  Recombiner recombiner{kDirection};
+  BasicL2capChannel channel = BuildBasicL2capChannel(proxy_, {});
+  pw::sync::Mutex mutex;
+  std::optional<LockedL2capChannel> locked_channel{
+      LockedL2capChannel{channel, std::unique_lock(mutex)}};
+
+  constexpr size_t kExtraHeaderSize = 4;
+  PW_TEST_EXPECT_OK(
+      recombiner.StartRecombination(*locked_channel, 8u, kExtraHeaderSize));
+
+  EXPECT_TRUE(recombiner.IsActive());
+  EXPECT_FALSE(recombiner.IsComplete());
+
+  static constexpr std::array<uint8_t, 8> kExpectedData = {
+      0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+
+  // Write first chunk
+  PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
+      locked_channel, to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
+
+  EXPECT_TRUE(recombiner.IsActive());
+  EXPECT_FALSE(recombiner.IsComplete());
+
+  // Write second chunk
+  PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
+      locked_channel, to_array<uint8_t>({0x55, 0x66, 0x77, 0x88})));
+
+  // We have read all expected bytes.
+  EXPECT_TRUE(recombiner.IsComplete());
+  // We are no longer recombining.
+  EXPECT_FALSE(recombiner.IsActive());
+
+  multibuf::MultiBuf mbuf = Recombiner::TakeBuf(locked_channel, kDirection);
+  EXPECT_TRUE(mbuf.IsContiguous());
+
+  pw::span<uint8_t> span =
+      pw::span_cast<uint8_t>(mbuf.ContiguousSpan().value());
+
+  EXPECT_EQ(span.size(), kExpectedData.size());
+  EXPECT_TRUE(std::equal(
+      span.begin(), span.end(), kExpectedData.begin(), kExpectedData.end()));
+
+  // Verify that the extra header is there by claiming it.
+  EXPECT_TRUE(mbuf.ClaimPrefix(kExtraHeaderSize));
+  EXPECT_EQ(mbuf.size(), kExpectedData.size() + kExtraHeaderSize);
 }
 
 }  // namespace

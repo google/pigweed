@@ -432,7 +432,8 @@ bool L2capChannel::SendPayloadToClient(
 }
 
 pw::Status L2capChannel::StartRecombinationBuf(Direction direction,
-                                               size_t payload_size) {
+                                               size_t payload_size,
+                                               size_t extra_header_size) {
   std::optional<multibuf::MultiBuf>& buf_optref =
       GetRecombinationBufOptRef(direction);
   PW_CHECK(!buf_optref.has_value());
@@ -448,10 +449,13 @@ pw::Status L2capChannel::StartRecombinationBuf(Direction direction,
     return Status::FailedPrecondition();
   }
 
-  buf_optref = rx_multibuf_allocator_->AllocateContiguous(payload_size);
+  buf_optref = rx_multibuf_allocator_->AllocateContiguous(payload_size +
+                                                          extra_header_size);
   if (!buf_optref.has_value()) {
     return Status::ResourceExhausted();
   }
+
+  buf_optref->DiscardPrefix(extra_header_size);
 
   return pw::OkStatus();
 }
