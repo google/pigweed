@@ -41,6 +41,13 @@ submodule, too, and then add it to your ``MODULE.bazel`` as a
          path = "third_party/pigweed",
    )
 
+.. note::
+
+   If you put external Bazel modules like Pigweed as submodules within
+   your source tree (e.g. under ``third_party/``), remember to add them
+   to your `.bazelignore <https://bazel.build/run/bazelrc#bazelignore>`__
+   file so that Bazel knows they're third-party!
+
 Set the required Bazel flags
 ============================
 Pigweed projects need to set certain flags in their ``.bazelrc``. These
