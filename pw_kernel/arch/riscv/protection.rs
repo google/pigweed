@@ -23,7 +23,7 @@ use crate::regs::pmp::*;
 /// the PMP block.
 #[derive(Clone)]
 pub struct MemoryConfig {
-    pmp_config: PmpConfig<{ KernelConfig::PMP_CFG_REGISTERS }, { KernelConfig::PMP_ENTRIES }>,
+    pmp_config: PmpConfig<{ KernelConfig::PMP_ENTRIES }>,
     regions: &'static [MemoryRegion],
 }
 
@@ -46,11 +46,6 @@ impl MemoryConfig {
     /// Write this memory configuration to the PMP registers.
     pub unsafe fn write(&self) {
         unsafe { self.pmp_config.write() }
-    }
-
-    /// Log the details of the memory configuration.
-    pub fn dump(&self) {
-        self.pmp_config.dump()
     }
 }
 

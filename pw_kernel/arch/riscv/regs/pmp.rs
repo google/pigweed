@@ -36,6 +36,7 @@ pub enum PmpCfgAddressMode {
 }
 
 #[repr(transparent)]
+#[derive(Clone, Copy)]
 pub struct PmpCfgVal(u8);
 impl PmpCfgVal {
     rw_bool_field!(u8, r, 0, "readable");
@@ -43,6 +44,12 @@ impl PmpCfgVal {
     rw_bool_field!(u8, x, 2, "executable");
     rw_enum_field!(u8, a, 3, 4, PmpCfgAddressMode, "addressing mode");
     rw_bool_field!(u8, l, 7, "locked");
+}
+
+impl Default for PmpCfgVal {
+    fn default() -> Self {
+        PmpCfgVal(0)
+    }
 }
 
 impl PmpCfgVal {
@@ -56,14 +63,13 @@ impl PmpCfgVal {
 }
 
 #[derive(Clone)]
-pub struct PmpConfig<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize> {
-    pub cfg: [usize; NUM_CFG_REGISTERS],
+#[repr(align(4))]
+pub struct PmpConfig<const NUM_ENTRIES: usize> {
+    pub cfg: [PmpCfgVal; NUM_ENTRIES],
     pub addr: [usize; NUM_ENTRIES],
 }
 
-impl<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize>
-    PmpConfig<NUM_CFG_REGISTERS, NUM_ENTRIES>
-{
+impl<const NUM_ENTRIES: usize> PmpConfig<NUM_ENTRIES> {
     /// Creates a new PMP configuration representing the provided `regions`.
     ///
     /// Since the PMP's[^pmp] configuration can take either one or two entries
@@ -74,7 +80,7 @@ impl<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize>
     ///   [The RISC-V Instruction Set Manual Volume II: Privileged Architecture](https://github.com/riscv/riscv-isa-manual/releases/download/20250508/riscv-privileged-20250508.pdf)
     pub const fn new(regions: &[MemoryRegion]) -> Result<Self> {
         let mut cfg = Self {
-            cfg: [0; NUM_CFG_REGISTERS],
+            cfg: [PmpCfgVal(0); NUM_ENTRIES],
             addr: [0; NUM_ENTRIES],
         };
         let mut cur_region = 0;
@@ -117,10 +123,6 @@ impl<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize>
         Ok(cfg)
     }
 
-    const fn configs_per_register() -> usize {
-        NUM_ENTRIES / NUM_CFG_REGISTERS
-    }
-
     pub const fn entry(
         &mut self,
         index: usize,
@@ -130,17 +132,8 @@ impl<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize>
         if index >= NUM_ENTRIES {
             return Err(Error::ResourceExhausted);
         }
-
-        let cfg_index = index / Self::configs_per_register();
-        let cfg_shift = (index % Self::configs_per_register()) * 8;
-
-        let mut cfg_val = self.cfg[cfg_index];
-        cfg_val &= !(0xff << cfg_shift);
-        cfg_val |= (config.0 as usize) << cfg_shift;
-        self.cfg[cfg_index] = cfg_val;
-
+        self.cfg[index] = config;
         self.addr[index] = address;
-
         Ok(self)
     }
 
@@ -148,14 +141,8 @@ impl<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize>
     pub unsafe fn write(&self) {
         // Currently only 16 entry, rv32 PMPs are supported.
         pw_assert::debug_assert!(NUM_ENTRIES == 16);
-        pw_assert::debug_assert!((NUM_ENTRIES / 4) == NUM_CFG_REGISTERS);
 
         unsafe {
-            asm!("csrw pmpcfg0, {cfg}", cfg = in(reg) self.cfg[0]);
-            asm!("csrw pmpcfg1, {cfg}", cfg = in(reg) self.cfg[1]);
-            asm!("csrw pmpcfg2, {cfg}", cfg = in(reg) self.cfg[2]);
-            asm!("csrw pmpcfg3, {cfg}", cfg = in(reg) self.cfg[3]);
-
             asm!("csrw pmpaddr0, {addr}", addr = in(reg) self.addr[0]);
             asm!("csrw pmpaddr1, {addr}", addr = in(reg) self.addr[1]);
             asm!("csrw pmpaddr2, {addr}", addr = in(reg) self.addr[2]);
@@ -172,17 +159,86 @@ impl<const NUM_CFG_REGISTERS: usize, const NUM_ENTRIES: usize>
             asm!("csrw pmpaddr13, {addr}", addr = in(reg) self.addr[13]);
             asm!("csrw pmpaddr14, {addr}", addr = in(reg) self.addr[14]);
             asm!("csrw pmpaddr15, {addr}", addr = in(reg) self.addr[15]);
+
+            // TODO: use zerocopy to perform this transmute.
+            let config: &[usize; 4] = core::mem::transmute(&self.cfg);
+            asm!("csrw pmpcfg0, {cfg}", cfg = in(reg) config[0]);
+            asm!("csrw pmpcfg1, {cfg}", cfg = in(reg) config[1]);
+            asm!("csrw pmpcfg2, {cfg}", cfg = in(reg) config[2]);
+            asm!("csrw pmpcfg3, {cfg}", cfg = in(reg) config[3]);
         }
+    }
+
+    /// Read the PMP configuration from the registers.
+    pub unsafe fn read() -> Self {
+        // Currently only 16 entry, rv32 PMPs are supported.
+        pw_assert::debug_assert!(NUM_ENTRIES == 16);
+
+        let mut cfg = [PmpCfgVal::default(); NUM_ENTRIES];
+        let mut addr = [0usize; NUM_ENTRIES];
+
+        unsafe {
+            // TODO: use zerocopy to perform this transmute.
+            let config: &mut [usize; 4] = core::mem::transmute(&mut cfg);
+            asm!("csrr {cfg}, pmpcfg0", cfg = out(reg) config[0]);
+            asm!("csrr {cfg}, pmpcfg1", cfg = out(reg) config[1]);
+            asm!("csrr {cfg}, pmpcfg2", cfg = out(reg) config[2]);
+            asm!("csrr {cfg}, pmpcfg3", cfg = out(reg) config[3]);
+
+            asm!("csrr {addr}, pmpaddr0", addr = out(reg) addr[0]);
+            asm!("csrr {addr}, pmpaddr1", addr = out(reg) addr[1]);
+            asm!("csrr {addr}, pmpaddr2", addr = out(reg) addr[2]);
+            asm!("csrr {addr}, pmpaddr3", addr = out(reg) addr[3]);
+            asm!("csrr {addr}, pmpaddr4", addr = out(reg) addr[4]);
+            asm!("csrr {addr}, pmpaddr5", addr = out(reg) addr[5]);
+            asm!("csrr {addr}, pmpaddr6", addr = out(reg) addr[6]);
+            asm!("csrr {addr}, pmpaddr7", addr = out(reg) addr[7]);
+            asm!("csrr {addr}, pmpaddr8", addr = out(reg) addr[8]);
+            asm!("csrr {addr}, pmpaddr9", addr = out(reg) addr[9]);
+            asm!("csrr {addr}, pmpaddr10", addr = out(reg) addr[10]);
+            asm!("csrr {addr}, pmpaddr11", addr = out(reg) addr[11]);
+            asm!("csrr {addr}, pmpaddr12", addr = out(reg) addr[12]);
+            asm!("csrr {addr}, pmpaddr13", addr = out(reg) addr[13]);
+            asm!("csrr {addr}, pmpaddr14", addr = out(reg) addr[14]);
+            asm!("csrr {addr}, pmpaddr15", addr = out(reg) addr[15]);
+        }
+        Self { cfg, addr }
     }
 
     /// Log the details of the PMP configuration.
     pub fn dump(&self) {
-        for (i, cfg) in self.cfg.iter().enumerate() {
-            pw_log::debug!("pmpcfg{}: {:#10x}", i as usize, *cfg as usize);
-        }
-
-        for (i, addr) in self.addr.iter().enumerate() {
-            pw_log::debug!("pmpaddr{}: {:#10x}", i as usize, *addr as usize);
+        for (i, (cfg, address)) in self.cfg.iter().zip(self.addr.iter()).enumerate() {
+            let mut size = 0usize;
+            let mut addr = *address;
+            let mode = match cfg.a() {
+                PmpCfgAddressMode::Off => "---",
+                PmpCfgAddressMode::Tor => {
+                    size = (addr - self.addr[i - 1]) << 2;
+                    "TOR"
+                }
+                PmpCfgAddressMode::Na4 => {
+                    size = 4;
+                    "NA4"
+                }
+                PmpCfgAddressMode::Napot => {
+                    size = 1 << (!addr).trailing_zeros();
+                    addr = addr & !(size - 1);
+                    size <<= 3;
+                    "NPT"
+                }
+            };
+            addr <<= 2;
+            pw_log::debug!(
+                "{:2}: {:#010x} {} {}{}{}{} sz={:#010x}",
+                i as usize,
+                addr as usize,
+                mode as &str,
+                if cfg.l() { 'L' } else { '-' } as char,
+                if cfg.x() { 'X' } else { '-' } as char,
+                if cfg.w() { 'W' } else { '-' } as char,
+                if cfg.r() { 'R' } else { '-' } as char,
+                size as usize,
+            );
         }
     }
 }

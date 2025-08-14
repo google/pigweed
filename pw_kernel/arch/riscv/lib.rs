@@ -18,7 +18,7 @@ use kernel::KernelState;
 
 mod exceptions;
 mod protection;
-mod regs;
+pub mod regs;
 mod spinlock;
 mod threads;
 mod timer;
