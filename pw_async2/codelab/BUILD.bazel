@@ -12,7 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,5 +30,28 @@ pw_cc_binary(
     deps = [
         "//pw_async2:dispatcher",
         "//pw_log",
+    ],
+)
+
+cc_library(
+    name = "coin_slot",
+    srcs = ["coin_slot.cc"],
+    hdrs = ["coin_slot.h"],
+    deps = [
+        "//pw_async2:dispatcher",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
+    ],
+)
+
+pw_cc_test(
+    name = "coin_slot_test",
+    srcs = ["coin_slot_test.cc"],
+    deps = [
+        ":coin_slot",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pend_func_task",
+        "//pw_async2:poll",
+        "//pw_unit_test",
     ],
 )
