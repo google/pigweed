@@ -554,7 +554,7 @@ impl<K: Kernel> SchedLockGuard<'_, K, WaitQueue<K>> {
 
         // Timeout callback will remove the thread from the wait queue and put
         // it back on the run queue.
-        let mut callback_closure = move |callback: ForeignBox<Timer<K::Clock>>, _now| {
+        let mut callback_closure = move |_kernel, callback: ForeignBox<Timer<K>>, _now| {
             // Safety: wait queue lock is valid for the lifetime of the callback.
             let mut wait_queue = unsafe { smuggled_wait_queue.lock() };
 

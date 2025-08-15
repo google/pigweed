@@ -100,7 +100,7 @@ pub trait Kernel: Arch + Sync {
         &self.get_state().scheduler
     }
 
-    fn get_timer_queue(self) -> &'static SpinLock<Self, TimerQueue<Self::Clock>> {
+    fn get_timer_queue(self) -> &'static SpinLock<Self, TimerQueue<Self>> {
         &self.get_state().timer_queue
     }
 }
@@ -108,7 +108,7 @@ pub trait Kernel: Arch + Sync {
 type ObjectRef<K> = ForeignRc<<K as Arch>::AtomicUsize, dyn KernelObject<K>>;
 pub struct KernelState<K: Kernel> {
     scheduler: SpinLock<K, SchedulerState<K>>,
-    timer_queue: SpinLock<K, TimerQueue<K::Clock>>,
+    timer_queue: SpinLock<K, TimerQueue<K>>,
     // HACK: A global ticker reference that is hard coded into every object
     // table to allow testing of waiting.
     ticker: SpinLock<K, Option<ObjectRef<K>>>,
@@ -272,20 +272,20 @@ fn bootstrap_thread_entry<K: Kernel>(
     scheduler::start_thread(kernel, idle_thread);
 
     // HACK: Setup up a timer to signal the ticker object every second.
-    let mut ticker_closure = move |mut callback: ForeignBox<Timer<K::Clock>>,
-                                   now|
-          -> Option<ForeignBox<Timer<K::Clock>>> {
-        let ticker = kernel.get_state().ticker.lock(kernel);
-        let Some(ticker_rc) = ticker.as_ref() else {
-            pw_assert::panic!("no ticker object");
+    let mut ticker_closure =
+        move |kernel: K, mut callback: ForeignBox<Timer<K>>, now| -> Option<ForeignBox<Timer<K>>> {
+            let ticker = kernel.get_state().ticker.lock(kernel);
+            let Some(ticker_rc) = ticker.as_ref() else {
+                pw_assert::panic!("no ticker object");
+            };
+            let Some(ticker) = (ticker_rc.deref() as &dyn Any).downcast_ref::<TickerObject<K>>()
+            else {
+                pw_assert::panic!("ticker not a TickerObject");
+            };
+            ticker.tick(kernel);
+            callback.set(now + Duration::<K::Clock>::from_secs(1));
+            Some(callback)
         };
-        let Some(ticker) = (ticker_rc.deref() as &dyn Any).downcast_ref::<TickerObject<K>>() else {
-            pw_assert::panic!("ticker not a TickerObject");
-        };
-        ticker.tick(kernel);
-        callback.set(now + Duration::<K::Clock>::from_secs(1));
-        Some(callback)
-    };
 
     let mut ticker_callback =
         Timer::new(kernel.now() + Duration::<K::Clock>::from_secs(1), unsafe {
