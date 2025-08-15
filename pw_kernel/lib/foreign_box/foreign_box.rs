@@ -15,7 +15,9 @@
 // This module uses the std test harness to allow catching of panics.
 #![cfg_attr(not(test), no_std)]
 
+use core::cell::UnsafeCell;
 use core::marker::PhantomData;
+use core::mem::ManuallyDrop;
 use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
@@ -161,116 +163,114 @@ impl<T: ?Sized> DerefMut for ForeignBox<T> {
     }
 }
 
-pub struct ForeignRcBox<A: AtomicUsize, T: ?Sized> {
-    inner: ForeignBox<T>,
-    // Counts the number of `ForeignRc`s that reference this Box.  If this
-    // number is zero, there are no references.  Will panic if dropped while
-    // there are outstanding references.
+#[doc(hidden)]
+pub struct ForeignRcState<A: AtomicUsize, T: ?Sized> {
+    // Disable auto `Send` and `Sync`. We implement them manually to give us an
+    // opportunity to document their safety proofs.
+    _not_send_sync: PhantomData<NonNull<()>>,
+
+    // `ForeignRcState` has the following lifecycle:
+    // - At creation, `ref_count` is equal to 1 and no `ForeignRc` references
+    //   exist.
+    // - `create_first_ref` is called, which creates the first `ForeignRc`
+    //   reference without incrementing the `ref_count`.
+    // - From here on out, `ref_count` counts the number of `ForeignRc`
+    //   references which exist or which have been forgotten. Each time a
+    //   `ForeignRc` is created or dropped, `ref_count` is updated accordingly.
+    // - Once `ref_count` reaches 0, there are no `ForeignRc` references, and so
+    //   `inner` can be dropped. At this point, `inner` is in an invalid state
+    //   and must never be operated on or exposed to safe code outside of this
+    //   module.
+    //
+    // INVARIANTS:
+    // - `ref_count` is only modified consistent with this lifecycle
+    // - `ref_count` is only modified using thread-safe operations
     ref_count: A,
+    // INVARIANTS: `inner` is in a valid state so long as `ref_count > 0`.
+    inner: UnsafeCell<ManuallyDrop<T>>,
 }
 
-pub struct ForeignRc<A: AtomicUsize, T: ?Sized> {
-    rc_box: NonNull<ForeignRcBox<A, T>>,
+// SAFETY: None of the `ForeignRcState` lifecycle is affected by sending a
+// `ForeignRcState` across threads. TODO: Make this more precise
+unsafe impl<A: Send + AtomicUsize, T: Send + ?Sized> Send for ForeignRcState<A, T> {}
+// SAFETY: By invariant on `ref_count`, it is only modified using thread-safe
+// operations. Thus, permitting references (and, by extension, `ForeignRc`s,
+// which contain a `&ForeignRcState`) to be sent between threads won't violate
+// the `ForeignRcState` lifecycle (so long as `A: Sync` and `T: Sync`).
+unsafe impl<A: Sync + AtomicUsize, T: Sync + ?Sized> Sync for ForeignRcState<A, T> {}
+
+impl<A: AtomicUsize, T> ForeignRcState<A, T> {
+    pub fn new(val: T) -> Self {
+        Self {
+            ref_count: A::new(1),
+            inner: UnsafeCell::new(ManuallyDrop::new(val)),
+            _not_send_sync: PhantomData,
+        }
+    }
+}
+
+impl<A: AtomicUsize, T: ?Sized> ForeignRcState<A, T> {
+    /// # Safety
+    ///
+    /// `create_first_ref` must be the first method called on `self` after
+    /// creation with [`new`]. It must not be called twice.
+    ///
+    /// [`new`]: ForeignRcState::new
+    pub unsafe fn create_first_ref(&'static mut self) -> ForeignRc<A, T> {
+        // SAFETY: The caller promises that this is the first method call. Thus,
+        // this is the first `ForeignRc` reference, consistent with the
+        // lifecycle.
+        ForeignRc { state: self }
+    }
+}
+
+pub struct ForeignRc<A: AtomicUsize + 'static, T: ?Sized + 'static> {
+    state: &'static ForeignRcState<A, T>,
 }
 
 impl<A: AtomicUsize, T: ?Sized> Deref for ForeignRc<A, T> {
     type Target = T;
 
-    fn deref(&self) -> &Self::Target {
-        // SAFETY: self.rc_box validity is guaranteed by self.rc_box panicking
-        // if it is dropped with a ref_count > 0.
-        unsafe { self.rc_box.as_ref().inner.deref() }
+    fn deref(&self) -> &T {
+        let ptr = self.state.inner.get();
+        // SAFETY: By invariant, `self.state.ref_count` is at least 1 since this
+        // `ForeignRc` exists, and also by invariant, `self.state.inner` is
+        // valid since `ref_count` is at least 1.
+        unsafe { &*ptr }
     }
 }
 
 impl<A: AtomicUsize, T: ?Sized> Clone for ForeignRc<A, T> {
     fn clone(&self) -> Self {
-        // SAFETY: self.rc_box validity is guaranteed by self.rc_box panicking
-        // if it is dropped with a ref_count > 0.  Since a new `ForeignRc` is
-        // being created, the box's ref_count is incremented.
-        unsafe {
-            self.rc_box
-                .as_ref()
-                .ref_count
-                .fetch_add(1, Ordering::SeqCst)
-        };
-        Self {
-            rc_box: self.rc_box,
-        }
+        self.state.ref_count.fetch_add(1, Ordering::SeqCst);
+        // SAFETY: We're creating a new `ForeignRc`, but we've just increased
+        // the `ref_count` by 1. Since, by invariant, `ref_count` previously
+        // accurately counted the number of `ForeignRc`s, and since we just
+        // created a new one and incremented `ref_count`, it is still accurate.
+        Self { state: self.state }
     }
 }
 
 impl<A: AtomicUsize, T: ?Sized> Drop for ForeignRc<A, T> {
     fn drop(&mut self) {
-        // SAFETY: self.rc_box's validity is guarding by self.rc_box panicking
-        // if it is dropped with a ref_count > 0.  Since this ForeignRc is being
-        // dropped, the box's refcount is decremented.
-        unsafe {
-            self.rc_box
-                .as_ref()
-                .ref_count
-                .fetch_sub(1, Ordering::SeqCst)
-        };
-    }
-}
-
-impl<A: AtomicUsize, T: ?Sized> ForeignRcBox<A, T> {
-    /// # Safety
-    /// This method has the same safety preconditions as
-    /// [`ForeignBox::new`].
-    #[must_use]
-    pub unsafe fn new(ptr: NonNull<T>) -> Self {
-        Self {
-            inner: unsafe { ForeignBox::new(ptr) },
-            ref_count: A::new(0),
-        }
-    }
-}
-
-impl<A: AtomicUsize, T: ?Sized> ForeignRcBox<A, T> {
-    pub fn get_ref(&self) -> ForeignRc<A, T> {
-        self.ref_count.fetch_add(1, Ordering::SeqCst);
-        ForeignRc {
-            rc_box: NonNull::from_ref(self),
-        }
-    }
-
-    /// Consumes the `ForeignRcBox`, returning the inner `NonNull` T.
-    ///
-    /// # Panics
-    /// Panics if there are any outstanding `ForeignRc` references.
-    #[allow(clippy::must_use_candidate)]
-    pub fn consume(self) -> NonNull<T> {
-        if self.ref_count.load(Ordering::SeqCst) != 0 {
-            local_panic!(
-                "ForeignRcBox@{:08x} consumed with outstanding references",
-                self.inner.inner.as_ptr().cast::<()>().expose_provenance() as usize
-            );
-        }
-        let this = core::mem::ManuallyDrop::new(self);
-        // SAFETY: We are taking ownership of the `inner` field, and because
-        // `this` is a `ManuallyDrop`, a double-free is not possible.
-        let inner = unsafe { core::ptr::read(&this.inner) };
-        inner.consume()
-    }
-}
-
-impl<A: AtomicUsize, T: ?Sized> Drop for ForeignRcBox<A, T> {
-    fn drop(&mut self) {
-        if self.ref_count.load(Ordering::SeqCst) != 0 {
-            #[cfg(test)]
-            {
-                // Mark the inner ForeignBox as consumed to avoid a double panic
-                // when testing for panics using the standard Rust test harness.
-                // The double panic occurs because, when unwinding the stack on
-                // panic, the inner foreign box is still dropped.
-                self.inner.consumed = true;
-            }
-
-            local_panic!(
-                "ForeignRcBox@{:08x} dropped with outstanding references",
-                self.inner.inner.as_ptr().cast::<()>().expose_provenance() as usize
-            );
+        let old = self.state.ref_count.fetch_sub(1, Ordering::SeqCst);
+        if old == 1 {
+            let ptr = self.state.inner.get();
+            // SAFETY: By invariant, `ref_count` counts the number of
+            // `ForeignRc`s which exist or which have been forgotten. Since it
+            // was 1 before being decremented, this is the last `ForeignRc`. It
+            // is sound to construct a mutable reference to `self.state.inner`
+            // because:
+            // - By virtue of being the last `ForeignRc`, no other code is
+            //   accessing `self.state.inner`
+            // - By invariant, `self.state.inner` is valid so long as `ref_count
+            //   > 0`, which it was at the beginning of this function
+            let md = unsafe { &mut *ptr };
+            // SAFETY: As described above, `md` references a valid value, so it
+            // is sound to drop it. By invariant, since `ref_count` is now 0, no
+            // other code will be permitted to access `self.state.inner`, so it
+            // is acceptable to leave it in an invalid state.
+            unsafe { ManuallyDrop::drop(md) };
         }
     }
 }
@@ -398,91 +398,36 @@ mod tests {
 
     #[test]
     fn rc_box_ref_count_is_correct() {
-        let mut value = 0xdecafbad_u32;
-        let ptr = &raw mut value;
-        let rc_box = unsafe {
-            ForeignRcBox::<core::sync::atomic::AtomicUsize, _>::new(NonNull::new_unchecked(ptr))
-        };
+        let state = ForeignRcState::<core::sync::atomic::AtomicUsize, _>::new(0xdecafbad_u32);
+        let state = Box::leak(Box::new(state));
+        assert_eq!(state.ref_count.load(Ordering::SeqCst), 1);
 
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 0);
+        // SAFETY: We haven't called any methods on `state` (okay, we loaded the
+        // `ref_count`, but that doesn't modify anything).
+        let rc = unsafe { state.create_first_ref() };
 
-        let r1 = rc_box.get_ref();
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 1);
+        assert_eq!(rc.state.ref_count.load(Ordering::SeqCst), 1);
 
-        let r2 = rc_box.get_ref();
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 2);
+        let r1 = rc.clone();
+        assert_eq!(rc.state.ref_count.load(Ordering::SeqCst), 2);
 
-        drop(r1);
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 1);
-
-        drop(r2);
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 0);
-
-        rc_box.consume();
-    }
-
-    #[test]
-    fn rc_box_can_be_cloned() {
-        let mut value = 0xdecafbad_u32;
-        let ptr = &raw mut value;
-        let rc_box = unsafe {
-            ForeignRcBox::<core::sync::atomic::AtomicUsize, _>::new(NonNull::new_unchecked(ptr))
-        };
-
-        let r1 = rc_box.get_ref();
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 1);
-
-        let r2 = r1.clone();
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 2);
+        let r2 = rc.clone();
+        assert_eq!(rc.state.ref_count.load(Ordering::SeqCst), 3);
 
         drop(r1);
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 1);
+        assert_eq!(rc.state.ref_count.load(Ordering::SeqCst), 2);
 
         drop(r2);
-        assert_eq!(rc_box.ref_count.load(Ordering::SeqCst), 0);
-
-        rc_box.consume();
+        assert_eq!(rc.state.ref_count.load(Ordering::SeqCst), 1);
     }
 
     #[test]
     fn rc_box_can_be_read_through_deref() {
-        let mut value = 0xdecafbad_u32;
-        let ptr = &raw mut value;
-        let rc_box = unsafe {
-            ForeignRcBox::<core::sync::atomic::AtomicUsize, _>::new(NonNull::new_unchecked(ptr))
-        };
+        let state = ForeignRcState::<core::sync::atomic::AtomicUsize, _>::new(0xdecafbad_u32);
+        let state = Box::leak(Box::new(state));
+        // SAFETY: We haven't called any methods on `state`.
+        let rc = unsafe { state.create_first_ref() };
 
-        let rc = rc_box.get_ref();
         assert_eq!(*rc, 0xdecafbad_u32);
-        drop(rc);
-
-        rc_box.consume();
-    }
-
-    #[should_panic]
-    #[test]
-    fn rc_box_panics_when_dropped_with_no_outstanding_refs() {
-        let mut value = 0xdecafbad_u32;
-        let ptr = &raw mut value;
-        let _rc_box = unsafe {
-            ForeignRcBox::<core::sync::atomic::AtomicUsize, _>::new(NonNull::new_unchecked(ptr))
-        };
-
-        // This should panic when rc_box is dropped.
-    }
-
-    #[should_panic]
-    #[test]
-    fn rc_box_panics_when_dropped_with_outstanding_refs() {
-        let mut value = 0xdecafbad_u32;
-        let ptr = &raw mut value;
-        let rc_box = unsafe {
-            ForeignRcBox::<core::sync::atomic::AtomicUsize, _>::new(NonNull::new_unchecked(ptr))
-        };
-
-        let _rc = rc_box.get_ref();
-
-        // This should panic when rc_box is dropped.
-        drop(rc_box);
     }
 }

@@ -175,7 +175,7 @@ impl<K: Kernel> ObjectTable<K> for NullObjectTable {
                 .ticker
                 .lock(kernel)
                 .as_ref()
-                .map(|object_box| object_box.get_ref()),
+                .map(Clone::clone),
             _ => None,
         }
     }

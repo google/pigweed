@@ -15,9 +15,8 @@
 
 use core::any::Any;
 use core::ops::Deref;
-use core::ptr::NonNull;
 
-use foreign_box::{ForeignBox, ForeignRcBox};
+use foreign_box::{ForeignBox, ForeignRc, ForeignRcState};
 use pw_atomic::AtomicUsize;
 use pw_log::info;
 pub use time::{Duration, Instant};
@@ -106,7 +105,7 @@ pub trait Kernel: Arch + Sync {
     }
 }
 
-type ObjectRef<K> = ForeignRcBox<<K as Arch>::AtomicUsize, dyn KernelObject<K>>;
+type ObjectRef<K> = ForeignRc<<K as Arch>::AtomicUsize, dyn KernelObject<K>>;
 pub struct KernelState<K: Kernel> {
     scheduler: SpinLock<K, SchedulerState<K>>,
     timer_queue: SpinLock<K, TimerQueue<K::Clock>>,
@@ -215,29 +214,36 @@ pub fn main<K: Kernel>(kernel: K, init_state: &'static mut InitKernelState<K>) -
     target::console_init();
     info!("Welcome to Maize on {}!", target::name() as &str);
 
-    let ticker =
-        unsafe { ForeignRcBox::new(NonNull::<dyn KernelObject<K>>::from_ref(&init_state.ticker)) };
-    *kernel.get_state().ticker.lock(kernel) = Some(ticker);
+    with_static(
+        foreign_box::ForeignRcState::new(object::TickerObject::new()),
+        |ticker_state| {
+            let ticker_state: &mut ForeignRcState<_, dyn KernelObject<K>> = ticker_state;
+            // SAFETY: We haven't called any other methods on `ticker_state`, as
+            // required by `create_first_ref`.
+            let ticker = unsafe { ticker_state.create_first_ref() };
+            *kernel.get_state().ticker.lock(kernel) = Some(ticker);
 
-    kernel.early_init();
+            kernel.early_init();
 
-    // Prepare the scheduler for thread initialization.
-    scheduler::initialize(kernel);
+            // Prepare the scheduler for thread initialization.
+            scheduler::initialize(kernel);
 
-    let bootstrap_thread = thread::init_thread_in(
-        kernel,
-        &mut init_state.bootstrap_thread.thread,
-        init_state.bootstrap_thread.stack,
-        "bootstrap",
-        bootstrap_thread_entry,
-        &mut init_state.idle_thread,
+            let bootstrap_thread = thread::init_thread_in(
+                kernel,
+                &mut init_state.bootstrap_thread.thread,
+                init_state.bootstrap_thread.stack,
+                "bootstrap",
+                bootstrap_thread_entry,
+                &mut init_state.idle_thread,
+            );
+            info!("created thread, bootstrapping");
+
+            // special case where we bootstrap the system by half context switching to this thread
+            scheduler::bootstrap_scheduler(kernel, preempt_guard, bootstrap_thread);
+
+            // never get to here
+        },
     );
-    info!("created thread, bootstrapping");
-
-    // special case where we bootstrap the system by half context switching to this thread
-    scheduler::bootstrap_scheduler(kernel, preempt_guard, bootstrap_thread);
-
-    // never get to here
 }
 
 // completion of main in thread context
@@ -270,10 +276,9 @@ fn bootstrap_thread_entry<K: Kernel>(
                                    now|
           -> Option<ForeignBox<TimerCallback<K::Clock>>> {
         let ticker = kernel.get_state().ticker.lock(kernel);
-        let Some(ticker) = ticker.as_ref() else {
+        let Some(ticker_rc) = ticker.as_ref() else {
             pw_assert::panic!("no ticker object");
         };
-        let ticker_rc = ticker.get_ref();
         let Some(ticker) = (ticker_rc.deref() as &dyn Any).downcast_ref::<TickerObject<K>>() else {
             pw_assert::panic!("ticker not a TickerObject");
         };
@@ -299,6 +304,42 @@ fn idle_thread_entry<K: Kernel>(kernel: K, _arg: usize) {
     loop {
         kernel.idle();
     }
+}
+
+/// Stores `t` in stack memory and provides a `&'static mut T` to a function
+/// which will never return.
+///
+/// Since `F: FnOnce(...) -> !`, the stack memory holding `t` will never be
+/// reclaimed, and so it can live forever (ie, be referenced using `&'static mut
+/// T`).
+///
+/// If `f` unwinds, `with_static` will `loop {}` forever to prevent `t` from
+/// being reclaimed.
+pub fn with_static<T: 'static, F: FnOnce(&'static mut T)>(t: T, f: F) -> ! {
+    struct LoopOnDrop<T>(T);
+    impl<T> Drop for LoopOnDrop<T> {
+        fn drop(&mut self) {
+            #[allow(clippy::empty_loop)]
+            loop {}
+        }
+    }
+
+    let mut t = LoopOnDrop(t);
+    let tp: *mut T = &mut t.0;
+
+    // SAFETY: Since we `drop(t)` after the `loop {}`, `t` will only go out of
+    // scope if `f` unwinds. If this happens, `LoopOnDrop::drop` will `loop {}`
+    // forever before its inner `T` is destructed. Thus, `t.0` will never be
+    // destructed, and so it is sound to synthesize a `'static` reference to
+    // `t`.
+    //
+    // See for more analysis: https://github.com/rust-lang/unsafe-code-guidelines/issues/565
+    f(unsafe { &mut *tp });
+
+    #[allow(clippy::empty_loop)]
+    loop {}
+    #[allow(unreachable_code)]
+    drop(t);
 }
 
 #[doc(hidden)]
