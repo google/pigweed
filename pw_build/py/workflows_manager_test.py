@@ -304,6 +304,59 @@ class WorkflowsManagerTest(unittest.TestCase):
         self.assertEqual(len(recipes), 1)
         self.assertEqual(recipes[0].title, 'shared_config')
 
+    def test_program_by_name_group_success(self):
+        """Test program_by_name with a group."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        with patch.object(manager, 'program_group') as mock_program_group:
+            manager.program_by_name('my_group')
+            mock_program_group.assert_called_once_with('my_group')
+
+    def test_program_by_name_build_success(self):
+        """Test program_by_name with a build."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        with patch.object(manager, 'program_build') as mock_program_build:
+            manager.program_by_name('my_build')
+            mock_program_build.assert_called_once_with('my_build')
+
+    def test_program_by_name_tool_success(self):
+        """Test program_by_name with a tool."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        with patch.object(manager, 'program_tool') as mock_program_tool:
+            manager.program_by_name('my_tool')
+            mock_program_tool.assert_called_once_with(
+                'my_tool', forwarded_arguments=(), as_analyzer=True
+            )
+
+    def test_program_by_name_not_found_raises_error(self):
+        """Test program_by_name with a non-existent name."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        with self.assertRaises(TypeError):
+            manager.program_by_name('not_a_real_program')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -381,3 +381,32 @@ class WorkflowsManager:
             )
 
         return recipes
+
+    def program_by_name(self, name: str) -> list[BuildRecipe]:
+        """Generates build recipes for a group, build, or analyzer by name.
+
+        Prefer this method when strict checking of the requested Workflows
+        configuration type isn't required. For example, if you just want to
+        execute 'format' and don't know
+
+        Args:
+            name: The name of the buildable unit to program.
+
+        Returns:
+            A list of BuildRecipes that fulfill this request.
+        """
+        fragment = self._fragments_by_name.get(name, None)
+        if isinstance(fragment, workflows_pb2.TaskGroup):
+            return self.program_group(name)
+        if isinstance(fragment, workflows_pb2.Build):
+            return self.program_build(name)
+        if isinstance(fragment, workflows_pb2.Tool):
+            # When arbitrarily launching a tool, launch as an analyzer
+            # so it doesn't unintentionally modify the source tree.
+            return self.program_tool(
+                name,
+                forwarded_arguments=tuple(),
+                as_analyzer=True,
+            )
+
+        raise TypeError(f'{name} is not a buildable unit')

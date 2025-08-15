@@ -57,10 +57,10 @@ class _BuiltinPlugin(multitool.MultitoolPlugin):
         return self._callback(plugin_args)
 
 
-class _WorkflowPlugin(multitool.MultitoolPlugin):
+class _WorkflowToolPlugin(multitool.MultitoolPlugin):
     def __init__(
         self,
-        fragment: workflows_pb2.Tool | workflows_pb2.TaskGroup,
+        fragment: workflows_pb2.Tool,
         manager: WorkflowsManager,
     ):
         self._fragment = fragment
@@ -88,6 +88,76 @@ class _WorkflowPlugin(multitool.MultitoolPlugin):
                 root_logger=_PROJECT_BUILDER_LOGGER,
             ),
         )
+
+
+class _WorkflowGroupPlugin(multitool.MultitoolPlugin):
+    def __init__(
+        self,
+        fragment: workflows_pb2.TaskGroup,
+        manager: WorkflowsManager,
+    ):
+        self._fragment = fragment
+        self._manager = manager
+
+    def name(self) -> str:
+        return self._fragment.name
+
+    def help(self) -> str:
+        return self._fragment.description
+
+    def run(self, plugin_args: Sequence[str]) -> int:
+        parser = argparse.ArgumentParser(
+            prog=f'pw {self.name()}',
+            description=self.help(),
+        )
+        step_choices = [
+            *self._fragment.builds,
+            *self._fragment.analyzers,
+        ]
+        parser.add_argument(
+            '--step',
+            type=str,
+            metavar='STEP_NAME',
+            choices=step_choices,
+            help=(
+                'Isolates the execution of a single step in this workflow. '
+                'Choices: ' + ', '.join(step_choices)
+            ),
+        )
+        parser.add_argument(
+            '--list-steps',
+            nargs='?',
+            metavar='FILE_PATH',
+            const=sys.stdout,
+            type=argparse.FileType('w'),
+            help=(
+                'Lists the steps in this group. If this is set to a file path, '
+                'the list of steps are written to a file.'
+            ),
+        )
+        args = parser.parse_args(plugin_args)
+
+        if args.list_steps:
+            args.list_steps.write('\n'.join(step_choices))
+            args.list_steps.write('\n')
+            return 0
+
+        if args.step:
+            recipes = self._manager.program_by_name(args.step)
+            _PROJECT_BUILDER_LOGGER.propagate = True
+            builder = project_builder.ProjectBuilder(
+                build_recipes=recipes,
+                root_logger=_PROJECT_BUILDER_LOGGER,
+            )
+            return builder.run_builds()
+
+        recipes = self._manager.program_group(self.name())
+        _PROJECT_BUILDER_LOGGER.propagate = True
+        builder = project_builder.ProjectBuilder(
+            build_recipes=recipes,
+            root_logger=_PROJECT_BUILDER_LOGGER,
+        )
+        return builder.run_builds()
 
 
 class WorkflowsCli(multitool.MultitoolCli):
@@ -241,10 +311,13 @@ class WorkflowsCli(multitool.MultitoolCli):
         all_plugins = []
         all_plugins.extend(self._builtin_plugins())
         all_plugins.extend(
-            [_WorkflowPlugin(t, self._workflows) for t in self.config.tools]
+            [_WorkflowToolPlugin(t, self._workflows) for t in self.config.tools]
         )
         all_plugins.extend(
-            [_WorkflowPlugin(g, self._workflows) for g in self.config.groups]
+            [
+                _WorkflowGroupPlugin(g, self._workflows)
+                for g in self.config.groups
+            ]
         )
         return all_plugins
 
