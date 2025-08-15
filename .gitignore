@@ -35,6 +35,7 @@ tools/bazel
 .vscode/*
 !.vscode/OWNERS
 !.vscode/pw_project_*.json
+*.code-workspace
 .idea/
 .ijwb/
 .project
