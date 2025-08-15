@@ -110,7 +110,7 @@ rust_binary(
 
 filegroup(
     name = "userspace_demo_config",
-    srcs = ["userspace_demo.toml"],
+    srcs = ["userspace_demo.json5"],
 )
 
 system_codegen(

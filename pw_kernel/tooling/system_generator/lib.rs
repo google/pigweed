@@ -90,9 +90,9 @@ pub trait SystemGenerator {
 }
 
 pub fn parse_config(cli: &Cli) -> Result<system_config::SystemConfig> {
-    let toml_str =
+    let json5_str =
         fs::read_to_string(&cli.common_args.config).context("Failed to read config file")?;
-    toml::from_str(&toml_str).context("Failed to parse config file")
+    serde_json5::from_str(&json5_str).context("Failed to parse config file")
 }
 
 pub fn generate<T: SystemGenerator>(cli: &Cli, system_generator: &mut T) -> Result<()> {

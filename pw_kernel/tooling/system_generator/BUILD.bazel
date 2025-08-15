@@ -36,7 +36,7 @@ rust_library(
         "@rust_crates//:clap",
         "@rust_crates//:hashlink",
         "@rust_crates//:serde",
-        "@rust_crates//:toml",
+        "@rust_crates//:serde_json5",
     ],
 )
 
