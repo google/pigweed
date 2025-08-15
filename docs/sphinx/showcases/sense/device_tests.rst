@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-devicetests:
 
 ======================
-8. Run on-device tests
+9. Run on-device tests
 ======================
 .. _mock or stub: https://stackoverflow.com/a/17810004
 

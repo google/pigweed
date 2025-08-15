@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-webapp:
 
 ======================================================
-11. Communicate with your Pico over the Web Serial API
+12. Communicate with your Pico over the Web Serial API
 ======================================================
 .. _Web Serial API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API
 

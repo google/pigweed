@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-flash:
 
 ==================
-7. Flash your Pico
+8. Flash your Pico
 ==================
 Enough with the simulations. Let's work with some real hardware!
 You'll need a physical Raspberry Pi Pico for the rest of the tutorial.

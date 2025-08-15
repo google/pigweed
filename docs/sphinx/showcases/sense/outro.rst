@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-outro:
 
 ===============
-16. Wrapping up
+17. Wrapping up
 ===============
 Thank you for trying out the Tour of Pigweed! We hope you enjoyed the tutorial and
 are excited to build more stuff with Pigweed.

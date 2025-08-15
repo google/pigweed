@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-crash-handler:
 
 =====================================
-15. Handle crashes and view snapshots
+16. Handle crashes and view snapshots
 =====================================
 When a system crashes it can be difficult to debug the cause of the
 crash. To help with this, :ref:`pw_system <module-pw_system>` provides

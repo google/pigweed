@@ -1,8 +1,8 @@
 .. _showcase-sense-tutorial-pico-rpc:
 
-======================================
-9. Communicate with your Pico over RPC
-======================================
+=======================================
+10. Communicate with your Pico over RPC
+=======================================
 Now, let's revisit ``pw_console`` and ``pw_rpc``. This time, we'll send commands
 to and view logs from the real Pico device.
 

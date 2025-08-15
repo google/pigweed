@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-factory:
 
 ======================================
-12. Run factory workflows at your desk
+13. Run factory workflows at your desk
 ======================================
 Bringing a consumer electronics product from concept to mass market
 requires a lot more than just good firmware. The new hardware also

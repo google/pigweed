@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-prod:
 
 ===================================
-14. Run the air quality monitor app
+15. Run the air quality monitor app
 ===================================
 Your tour of Pigweed is almost done. Before you go, let's get you
 familiar with the application described at

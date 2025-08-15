@@ -206,9 +206,6 @@ Another reason why it's important to make code that can be tested on your host:
 security and robustness. This enables you to run modern code analysis
 tooling like `ASAN`_, `TSAN`_, `MSAN`_, :ref:`fuzzers <module-pw_fuzzer>`, and
 more. These tools are unlikely to run correctly in on-device embedded contexts.
-Fun fact: We caught real bugs in Sense with this tooling during
-development!
-
-Now it's time for the fun stuff. Head over to
-:ref:`showcase-sense-tutorial-sim` to try out the bringup
-app, ``blinky``.
+Fun fact: We caught real bugs in Sense with this tooling during development!
+Head over to :ref:`showcase-sense-tutorial-analysis` next to learn more about
+this.

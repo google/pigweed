@@ -286,6 +286,7 @@ or browse the `Sense source code`_.
    build
    code_intelligence
    host_tests
+   analysis
    host_sim
    flash
    device_tests

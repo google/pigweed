@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-bazel_cloud:
 
 ==============================
-13. Use Bazel's cloud features
+14. Use Bazel's cloud features
 ==============================
 One of Bazel's defining features is that it's a cloud build system. Team
 members can easily `share artifacts

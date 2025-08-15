@@ -114,6 +114,7 @@ sphinx_docs_library(
         "os/zephyr/kconfig.rst",
         "overview.rst",
         "showcases/index.rst",
+        "showcases/sense/analysis.rst",
         "showcases/sense/automate.rst",
         "showcases/sense/bazel_cloud.rst",
         "showcases/sense/build.rst",

@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-sim:
 
 ===================
-6. Run the host app
+7. Run the host app
 ===================
 Teams creating projects on top of Pigweed often create host versions of
 their apps to speed up development. "Host" means that there's no physical

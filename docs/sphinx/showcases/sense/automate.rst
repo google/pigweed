@@ -1,7 +1,7 @@
 .. _showcase-sense-tutorial-automate:
 
 =============================
-10. Automate common workflows
+11. Automate common workflows
 =============================
 If you find yourself repeating the same sequence of steps in
 ``pw_console`` over and over again, there are a few ways to automate
