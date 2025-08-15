@@ -14,21 +14,11 @@
 """Library to analyze and dump Thread protos and Thread snapshots into text."""
 
 import binascii
-from typing import Callable, Mapping
+from typing import Callable
 import pw_tokenizer
 from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_tokenizer import proto as proto_detokenizer
 from pw_thread_protos import thread_pb2
-
-THREAD_STATE_TO_STRING: Mapping[int, str] = {
-    thread_pb2.ThreadState.Enum.UNKNOWN: 'UNKNOWN',
-    thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER: 'INTERRUPT_HANDLER',
-    thread_pb2.ThreadState.Enum.RUNNING: 'RUNNING',
-    thread_pb2.ThreadState.Enum.READY: 'READY',
-    thread_pb2.ThreadState.Enum.SUSPENDED: 'SUSPENDED',
-    thread_pb2.ThreadState.Enum.BLOCKED: 'BLOCKED',
-    thread_pb2.ThreadState.Enum.INACTIVE: 'INACTIVE',
-}
 
 
 def process_snapshot(
@@ -281,7 +271,7 @@ class ThreadSnapshotAnalyzer:
                 thread_name = '[unnamed thread]'
             thread_headline = (
                 'Thread '
-                f'({THREAD_STATE_TO_STRING[thread.state]}): '
+                f'({thread_pb2.ThreadState.Enum.Name(thread.state)}): '
                 f'{thread_name}'
             )
             if thread.id:
