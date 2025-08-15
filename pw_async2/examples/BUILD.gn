@@ -86,6 +86,19 @@ if (current_os != "win") {
   }
 }
 
+pw_test("inline_async_queue_with_tasks_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_containers:inline_async_queue",
+    "$dir_pw_containers:vector",
+    "$dir_pw_log",
+    "$dir_pw_span",
+    "$dir_pw_status",
+  ]
+  sources = [ "inline_async_queue_with_tasks_test.cc" ]
+}
+
 pw_test("unit_test") {
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
   sources = [ "unit_test.cc" ]
@@ -105,4 +118,5 @@ pw_test_group("examples") {
       ":once_send_recv",
     ]
   }
+  tests += [ ":inline_async_queue_with_tasks_test" ]
 }

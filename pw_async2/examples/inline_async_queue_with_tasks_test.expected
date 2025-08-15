@@ -1,0 +1,31 @@
+[==========] Running all tests.
+[ RUN      ] ExampleTests.InlineAsyncQueueWithTasks
+INF  Producer::DoPend() invoked
+INF  Producer: writing: 1
+INF  Producer: writing: 2
+INF  Producer: writing: 3
+INF  Producer: writing: 4
+INF  Consumer::DoPend() invoked
+INF  Consumer: read 1
+INF  Consumer: read 2
+INF  Consumer: read 3
+INF  Consumer: read 4
+INF  Producer::DoPend() invoked
+INF  Producer: writing: 5
+INF  Producer: writing: 6
+INF  Producer: writing: 7
+INF  Producer: writing: 8
+INF  Consumer::DoPend() invoked
+INF  Consumer: read 5
+INF  Consumer: read 6
+INF  Consumer: read 7
+INF  Consumer: read 8
+INF  Producer::DoPend() invoked
+INF  Producer: writing terminal
+INF  Producer: completed
+INF  Consumer::DoPend() invoked
+INF  Consumer: read -1
+INF  Consumer: completed
+[       OK ] ExampleTests.InlineAsyncQueueWithTasks
+[==========] Done running all tests.
+[  PASSED  ] 1 test(s).

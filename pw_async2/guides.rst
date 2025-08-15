@@ -505,6 +505,78 @@ The example below runs a task multiple times to test waiting for a
    :start-after: pw_async2-multi-step-test
    :end-before: pw_async2-multi-step-test
 
+.. _module-pw_async2-guides-inline-async-queue-with-tasks:
+
+Using InlineAsyncQueue and InlineAsyncDeque with tasks
+======================================================
+When you have two tasks, you may need a way to send data between them. One good
+way to do that is to leverage the async-aware containers
+:doxylink:`pw::InlineAsyncQueue` or :doxylink:`pw::InlineAsyncDeque` from
+``pw_containers``, both of which implement a fixed-size deque.
+
+The following example can be built and run in upstream Pigweed with the
+following command:
+
+.. code-block:: sh
+
+   bazelisk run //pw_async2/examples:inline-async-queue-with-tasks
+
+The complete code can be found here:
+
+.. _//pw_async2/examples/inline_async_queue_with_tasks_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/inline_async_queue_with_tasks_test.cc
+
+* `//pw_async2/examples/inline_async_queue_with_tasks_test.cc`_
+
+The C++ code simulates a producer and consumer task setup, where the producer
+writes to the queue, and the consumer reads it. For purposes of this example,
+the data is just integers, with a fixed sequence sent by the producer.
+
+To start with, here are the basic declarations for the queue and the two tasks.
+
+.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-declarations]
+   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-declarations]
+
+The producer ``DoPend()`` member function coordinates writing to the queue, and
+has to ensure there is available space in it for the remaining data. It also
+writes the special ``kTerminal`` value signal that the end of the data stream.
+
+.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-producer-do-pend]
+   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-producer-do-pend]
+
+The consumer ``DoPend()`` member function coordinates reading from the queue,
+and has to ensure there is data to read before reading it.
+
+.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-consumer-do-pend]
+   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-consumer-do-pend]
+
+At that point, it is straightforward to set up the dispatcher to run the two
+tasks.
+
+.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-run]
+   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-run]
+
+Running the example should produce the following output.
+
+.. literalinclude:: examples/inline_async_queue_with_tasks_test.expected
+   :start-after: [ RUN      ] ExampleTests.InlineAsyncQueueWithTasks
+   :end-before: [       OK ] ExampleTests.InlineAsyncQueueWithTasks
+
+Notice how the producer DoPend() function fills up the queue with four values,
+then the consumer ``DoPend()`` gets a chance to empty the queue before the
+writer ``DoPend()`` is invoked again.
+
 .. _module-pw_async2-guides-faqs:
 
 ---------------------------------
