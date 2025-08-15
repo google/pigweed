@@ -17,12 +17,12 @@
     flash_start_address: 0x10000800,
     flash_size_bytes: 261120,        // 255Kb
     ram_start_address: 0x38000000,
-    ram_size_bytes: 65600,           // 64 Kb
+    ram_size_bytes: 65536,           // 64Kb
   },
   apps: {
     one: {
       flash_size_bytes: 261120, // 255Kb
-      ram_size_bytes: 65600,    // 64 Kb
+      ram_size_bytes: 65536,    // 64Kb
       process: {
         name: "process one",
         threads: [
@@ -35,7 +35,7 @@
     },
     two: {
       flash_size_bytes: 261120, // 255Kb
-      ram_size_bytes: 65600,    // 64 Kb
+      ram_size_bytes: 65536,    // 64Kb
       process: {
         name: "process two",
         threads: [
