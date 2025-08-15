@@ -1638,5 +1638,35 @@ TEST(StreamDecoder, DelimitedFieldSizeLargerThanRemainingSpan_ReturnsDataLoss) {
   EXPECT_EQ(decoder.Next(), Status::DataLoss());
 }
 
+class ExhaustedStream final : public stream::SeekableReaderWriter {
+ public:
+  constexpr ExhaustedStream() : calls(0) {}
+
+  size_t calls;
+
+ private:
+  size_t ConservativeLimit(LimitType) const final { return 0; }
+  Status DoWrite(ConstByteSpan) final {
+    calls++;
+    return Status::ResourceExhausted();
+  }
+  StatusWithSize DoRead(ByteSpan) final {
+    calls++;
+    return StatusWithSize::ResourceExhausted();
+  }
+  Status DoSeek(ptrdiff_t, Whence) final {
+    calls++;
+    return Status::ResourceExhausted();
+  }
+};
+
+TEST(StreamDecoder, Decode_ReaderWithNoData) {
+  ExhaustedStream reader;
+  StreamDecoder decoder(reader);
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+  EXPECT_EQ(reader.calls, 0u);
+}
+
 }  // namespace
 }  // namespace pw::protobuf

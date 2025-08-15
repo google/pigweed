@@ -318,7 +318,8 @@ class Message {
     Field current_;
     Status status_ = OkStatus();
 
-    iterator(stream::IntervalReader reader) : reader_(std::move(reader)) {
+    iterator(stream::IntervalReader reader)
+        : reader_(std::move(reader)), status_(reader_.status()) {
       this->operator++();
     }
 

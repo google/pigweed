@@ -123,7 +123,8 @@ Status StreamDecoder::Next() {
     PW_TRY(SkipField());
   }
 
-  if (position_ >= stream_bounds_.high) {
+  if (position_ >= stream_bounds_.high ||
+      reader_.ConservativeReadLimit() == 0) {
     return Status::OutOfRange();
   }
 
