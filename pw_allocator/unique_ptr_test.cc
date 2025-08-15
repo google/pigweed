@@ -195,12 +195,17 @@ TEST_F(UniquePtrTest, ArrayElementsAreConstructedWithSpecifiedAlignment) {
 TEST_F(UniquePtrTest, DestructorDestroysAndFreesArray) {
   constexpr static size_t kArraySize = 5;
 
-  auto ptr = allocator_.MakeUnique<Counter[]>(kArraySize);
+  pw::UniquePtr<Counter[]> ptr;
+  EXPECT_EQ(ptr.size(), 0u);
+
+  ptr = allocator_.MakeUnique<Counter[]>(kArraySize);
   ASSERT_NE(ptr, nullptr);
+  EXPECT_EQ(ptr.size(), kArraySize);
   EXPECT_EQ(Counter::TakeNumDtorCalls(), 0u);
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
 
   ptr.Reset();  // Reset the UniquePtr, destroying its contents.
+  EXPECT_EQ(ptr.size(), 0u);
   EXPECT_EQ(Counter::TakeNumDtorCalls(), kArraySize);
   EXPECT_EQ(allocator_.deallocate_size(), sizeof(Counter) * kArraySize);
 }

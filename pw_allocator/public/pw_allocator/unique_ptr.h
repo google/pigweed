@@ -212,6 +212,7 @@ void UniquePtr<T>::Reset() noexcept {
   if (!Base::HasCapability(deallocator_, allocator::kSkipsDestroy)) {
     if constexpr (std::is_array_v<T>) {
       Base::Destroy(size_);
+      size_ = 0;
     } else {
       Base::Destroy();
     }
