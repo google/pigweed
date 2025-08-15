@@ -41,7 +41,7 @@ pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use sync::spinlock::{BareSpinLock, SpinLock, SpinLockGuard};
 
 use crate::object::{KernelObject, TickerObject};
-use crate::scheduler::timer::TimerCallback;
+use crate::scheduler::timer::Timer;
 use crate::scheduler::{PreemptDisableGuard, ThreadLocalState};
 
 pub trait Arch: 'static + Copy + thread::ThreadArg {
@@ -272,9 +272,9 @@ fn bootstrap_thread_entry<K: Kernel>(
     scheduler::start_thread(kernel, idle_thread);
 
     // HACK: Setup up a timer to signal the ticker object every second.
-    let mut ticker_closure = move |mut callback: ForeignBox<TimerCallback<K::Clock>>,
+    let mut ticker_closure = move |mut callback: ForeignBox<Timer<K::Clock>>,
                                    now|
-          -> Option<ForeignBox<TimerCallback<K::Clock>>> {
+          -> Option<ForeignBox<Timer<K::Clock>>> {
         let ticker = kernel.get_state().ticker.lock(kernel);
         let Some(ticker_rc) = ticker.as_ref() else {
             pw_assert::panic!("no ticker object");
@@ -288,7 +288,7 @@ fn bootstrap_thread_entry<K: Kernel>(
     };
 
     let mut ticker_callback =
-        TimerCallback::new(kernel.now() + Duration::<K::Clock>::from_secs(1), unsafe {
+        Timer::new(kernel.now() + Duration::<K::Clock>::from_secs(1), unsafe {
             ForeignBox::new_from_ptr(&raw mut ticker_closure)
         });
     scheduler::timer::schedule_timer(kernel, unsafe {

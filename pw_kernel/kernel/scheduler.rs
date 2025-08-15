@@ -25,7 +25,7 @@ use time::Instant;
 
 use crate::memory::MemoryConfig as _;
 use crate::object::NullObjectTable;
-use crate::scheduler::timer::TimerCallback;
+use crate::scheduler::timer::Timer;
 use crate::sync::spinlock::SpinLockGuard;
 use crate::{Arch, Kernel};
 
@@ -554,7 +554,7 @@ impl<K: Kernel> SchedLockGuard<'_, K, WaitQueue<K>> {
 
         // Timeout callback will remove the thread from the wait queue and put
         // it back on the run queue.
-        let mut callback_closure = move |callback: ForeignBox<TimerCallback<K::Clock>>, _now| {
+        let mut callback_closure = move |callback: ForeignBox<Timer<K::Clock>>, _now| {
             // Safety: wait queue lock is valid for the lifetime of the callback.
             let mut wait_queue = unsafe { smuggled_wait_queue.lock() };
 
@@ -579,7 +579,7 @@ impl<K: Kernel> SchedLockGuard<'_, K, WaitQueue<K>> {
             None // Don't re-arm
         };
 
-        let mut callback = TimerCallback::new(deadline, unsafe {
+        let mut callback = Timer::new(deadline, unsafe {
             ForeignBox::new_from_ptr(&raw mut callback_closure)
         });
         let callback_ptr = &raw mut callback;
