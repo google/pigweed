@@ -404,11 +404,14 @@ export async function activate(context: vscode.ExtensionContext) {
   refreshManager.on(async () => {
     const target = getTarget();
     const allTargets = await availableTargets();
-    if (
-      (!target && allTargets.length > 0) ||
-      (target && !allTargets.map((t) => t.name).includes(target.name))
-    ) {
-      // Decide which target to pick, pick the one with biggest file
+
+    if (target && allTargets.some((t) => t.name === target.name)) {
+      // If we have a target and it's still in the list of available targets,
+      // just re-run the setup for it. This will fix any bad settings.
+      await setTargetWithClangd(target, clangdActiveFilesCache.writeToSettings);
+    } else if (allTargets.length > 0) {
+      // If there's no target, or the old one is gone, pick the biggest file as
+      // the new target.
       const fileSizes = await Promise.all(
         allTargets.map(async (t) => {
           if (existsSync(t.path)) {
@@ -498,6 +501,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   logger.info('Extension initialization complete');
   didInit.fire();
+  refreshManager.refresh();
 }
 
 export async function deactivate() {

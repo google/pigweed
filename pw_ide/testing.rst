@@ -143,6 +143,60 @@ generation logic in ``pw_ide/ts/pigweed_vscode/src/clangd/compileCommandsUtils.t
        | Intellisense should work for files like ``pw_log/public/pw_log/log.h``.
      - |checkbox|
 
+Clangd Argument Restoration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This test verifies that the extension automatically corrects the ``clangd``
+arguments in the VSCode settings if they are missing or incorrect, both upon
+activation and after a build.
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Follow the "First Start Experience" and "Bazel Build..." sections to build a target (e.g., ``//pw_rpc``).
+     - | A ``.vscode/settings.json`` file is created with a ``clangd.arguments`` setting.
+     - |checkbox|
+
+   * - 2
+     - | Open ``.vscode/settings.json`` in the editor.
+     - | The ``clangd.arguments`` setting is visible and contains several arguments (e.g., ``--compile-commands-dir``).
+     - |checkbox|
+
+   * - 3
+     - | Delete the entire ``clangd.arguments`` line from ``.vscode/settings.json`` and save the file.
+     - | The setting is removed.
+     - |checkbox|
+
+   * - 4
+     - | In the Bazelisk terminal, run the build command again:
+       | ``bazelisk build //pw_rpc``
+     - | The build completes.
+       | The ``clangd.arguments`` setting is automatically restored in ``.vscode/settings.json``.
+     - |checkbox|
+
+   * - 5
+     - | Delete the ``clangd.arguments`` line from ``.vscode/settings.json`` again and save.
+     - | The setting is removed.
+     - |checkbox|
+
+   * - 6
+     - | Close the "Extension Development Host" VSCode instance.
+     - | The window closes.
+     - |checkbox|
+
+   * - 7
+     - | Press :kbd:`F5` in the main VSCode instance to start debugging again.
+     - | A new "Extension Development Host" instance opens.
+       | The ``clangd.arguments`` setting is automatically restored in ``.vscode/settings.json``.
+     - |checkbox|
+
 .. |checkbox| raw:: html
 
     <input type="checkbox">
