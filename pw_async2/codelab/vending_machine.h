@@ -11,7 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
 #pragma once
 
 #include "pw_async2/task.h"
@@ -20,6 +19,10 @@ namespace codelab {
 
 // The main task that drives the vending machine.
 class VendingMachineTask : public pw::async2::Task {
+ public:
+  VendingMachineTask()
+      : pw::async2::Task(PW_ASYNC_TASK_NAME("VendingMachineTask")) {}
+
  private:
   // This is the core of the asynchronous task. The dispatcher calls this method
   // to give the task a chance to do work.

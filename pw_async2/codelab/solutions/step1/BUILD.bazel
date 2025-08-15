@@ -18,6 +18,15 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+exports_files(
+    [
+        "main.cc",
+        "vending_machine.cc",
+        "vending_machine.h",
+    ],
+    visibility = ["//pw_async2:__subpackages__"],
+)
+
 pw_cc_binary(
     name = "step1",
     srcs = [

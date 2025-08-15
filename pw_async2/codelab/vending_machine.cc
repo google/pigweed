@@ -20,7 +20,7 @@ namespace codelab {
 
 pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context&) {
   // Fill in your implementation here.
-  return pw::async2::Pending();
+  return pw::async2::Ready();
 }
 
 }  // namespace codelab
