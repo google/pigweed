@@ -1,0 +1,27 @@
+[==========] Running all tests.
+[ RUN      ] ExampleTests.InlineAsyncQueueWithCoro
+INF  Producer() invoked
+INF  Producer() output 1
+INF  Producer() output 2
+INF  Producer() output 3
+INF  Producer() output 4
+INF  Consumer() invoked
+INF  Consumer() input: 1
+INF  Consumer() input: 2
+INF  Consumer() input: 3
+INF  Consumer() input: 4
+INF  Producer() output 5
+INF  Producer() output 6
+INF  Producer() output 7
+INF  Producer() output 8
+INF  Consumer() input: 5
+INF  Consumer() input: 6
+INF  Consumer() input: 7
+INF  Consumer() input: 8
+INF  Producer() output terminal
+INF  Producer() complete
+INF  Consumer() input: -1
+INF  Consumer() complete
+[       OK ] ExampleTests.InlineAsyncQueueWithCoro
+[==========] Done running all tests.
+[  PASSED  ] 1 test(s).

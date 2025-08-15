@@ -61,6 +61,22 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     ]
   }
 
+  pw_test("inline_async_queue_with_coro_test") {
+    enable_if = pw_async2_DISPATCHER_BACKEND != ""
+    deps = [
+      "$dir_pw_allocator:libc_allocator",
+      "$dir_pw_async2:coro",
+      "$dir_pw_async2:coro_or_else_task",
+      "$dir_pw_async2:dispatcher",
+      "$dir_pw_async2:pend_func_awaitable",
+      "$dir_pw_containers:inline_async_queue",
+      "$dir_pw_containers:vector",
+      "$dir_pw_log",
+      "$dir_pw_status",
+    ]
+    sources = [ "inline_async_queue_with_coro_test.cc" ]
+  }
+
   pw_test("once_send_recv") {
     enable_if = pw_async2_DISPATCHER_BACKEND != ""
     deps = [
@@ -115,6 +131,7 @@ pw_test_group("examples") {
     tests += [
       ":basic",
       ":coro_blinky_loop",
+      ":inline_async_queue_with_coro_test",
       ":once_send_recv",
     ]
   }

@@ -577,6 +577,98 @@ Notice how the producer DoPend() function fills up the queue with four values,
 then the consumer ``DoPend()`` gets a chance to empty the queue before the
 writer ``DoPend()`` is invoked again.
 
+.. _module-pw_async2-guides-inline-async-queue-with-coro:
+
+Using InlineAsyncQueue and InlineAsyncDeque with coroutine tasks
+================================================================
+If you choose to use C++20 coroutines, you can also use an async2 dispatcher,
+as well as awaiting on the pendable interface for the queue.
+
+The following example can be built and run in upstream Pigweed with the
+following command:
+
+.. code-block:: sh
+
+   bazelisk run //pw_async2/examples:inline-async-queue-with-coro --config=cxx20
+
+The complete code can be found here:
+
+
+.. _//pw_async2/examples/inline_async_queue_with_coro_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/inline_async_queue_with_coro_test.cc
+
+* `//pw_async2/examples/inline_async_queue_with_coro_test.cc`_
+
+The C++ code simulates a producer and consumer task setup, where the producer
+writes to the queue, and the consumer reads it. For purposes of this example,
+the data is just integers, with a fixed sequence sent by the producer.
+
+To start with, here are the basic declarations for the queue and a special
+terminal sentinel value.
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-coro-declarations]
+   :end-before: [pw_async2-examples-inline-async-queue-with-coro-declarations]
+
+To use the :cpp:func:`pw::InlineAsyncQueue::PendHasSpace`, and
+:cpp:func:`pw::InlineAsyncQueue::PendNotEmpty` functions with ``co_await``, we
+need to use :doxylink:``PendFuncAwaitable`` as an adapter between the async2
+polling system and the C++20 coroutine framework.
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-coro-adapters]
+   :end-before: [pw_async2-examples-inline-async-queue-with-coro-adapters]
+
+The producer coroutine just needs to return a :cpp:type:`Coro<Status>` to turn
+it into a coroutine, and to use the :cpp:type:`QueueHasSpace` adapter we define
+to wait for there to be space in the queue. Once it is done, it should
+``co_return`` a status value to indicate it is complete.
+
+Compare this to the inline_async_queue_with_task.cc example, where the
+:cpp:func:`Producer::DoPend` function has to be written in a way that allows
+the function to be called fresh at any time, and has to figure out what it
+should do next.
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-coro-producer]
+   :end-before: [pw_async2-examples-inline-async-queue-with-coro-producer]
+
+The consumer coroutine similarly needs to return a :cpp:type:`Coro<Status>`
+value, and to use the :cpp:type:`QueueNotEmpty` adapter we define to wait there
+to be content in the queue. Once it is done, it should ``co_return`` a status
+value to indicate it is complete.
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-coro-consumer]
+   :end-before: [pw_async2-examples-inline-async-queue-with-coro-consumer]
+
+At that point, it is straightforward to set up the dispatcher to run the two
+coroutines. Notice however that the :doxylink:`CoroContext` also needs to
+allocate memory dynamically when the coroutine is first created. For this
+example, we use :doxylink:`LibCAllocator`.
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-coro-run]
+   :end-before: [pw_async2-examples-inline-async-queue-with-coro-run]
+
+Running the example should produce the following output.
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.expected
+   :start-after: [ RUN      ] ExampleTests.InlineAsyncQueueWithCoro
+   :end-before: [       OK ] ExampleTests.InlineAsyncQueueWithCoro
+
+Notice how the producer fills up the queue with four values, then the consumer
+gets a chance to empty the queue before the writer gets another chance to run.
+
 .. _module-pw_async2-guides-faqs:
 
 ---------------------------------
