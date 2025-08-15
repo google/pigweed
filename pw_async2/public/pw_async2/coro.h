@@ -349,8 +349,8 @@ class CoroPromiseType final {
 template <typename Pendable, typename PromiseType>
 class Awaitable final {
  public:
-  // The `OutputType` in `Poll<OutputType> Pendable::Pend(Context&)`.
-  using OutputType = std::remove_cvref_t<
+  // The `value_type` in `Poll<value_type> Pendable::Pend(Context&)`.
+  using value_type = std::remove_cvref_t<
       decltype(std::declval<std::remove_pointer_t<Pendable>>()
                    .Pend(std::declval<Context&>())
                    .value())>;
@@ -383,8 +383,8 @@ class Awaitable final {
   //
   // This is automatically invoked by the language runtime when the promise's
   // `resume()` method is called.
-  OutputType&& await_resume() {
-    return std::move(std::get<OutputType>(state_));
+  value_type&& await_resume() {
+    return std::move(std::get<value_type>(state_));
   }
 
   auto& PendableNoPtr() {
@@ -402,7 +402,7 @@ class Awaitable final {
   // resumed, as otherwise the return value will not be available when
   // `await_resume` is called to produce the result of `co_await`.
   Poll<> PendFillReturnValue(Context& cx) {
-    Poll<OutputType> poll_res(PendableNoPtr().Pend(cx));
+    Poll<value_type> poll_res(PendableNoPtr().Pend(cx));
     if (poll_res.IsPending()) {
       return Pending();
     }
@@ -411,7 +411,7 @@ class Awaitable final {
   }
 
  private:
-  std::variant<Pendable, OutputType> state_;
+  std::variant<Pendable, value_type> state_;
 };
 
 }  // namespace internal

@@ -31,7 +31,7 @@ class Dispatcher;
 
 template <typename T>
 using PendOutputOf = typename decltype(std::declval<T>().Pend(
-    std::declval<Context&>()))::OutputType;
+    std::declval<Context&>()))::value_type;
 
 // Windows GCC doesn't realize the nonvirtual destructor is protected.
 PW_MODIFY_DIAGNOSTICS_PUSH();

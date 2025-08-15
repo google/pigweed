@@ -152,14 +152,14 @@ class Selector {
         return PendFrom<kTupleIndex + 1>(cx, has_active_pendable);
       }
 
-      using OutputType =
+      using value_type =
           PendOutputOf<std::tuple_element_t<kTupleIndex, decltype(pendables_)>>;
-      Poll<OutputType> result = pendable.Pend(cx);
+      Poll<value_type> result = pendable.Pend(cx);
 
       if (result.IsReady()) {
         return Ready(ResultVariant(
             std::in_place_index<kTupleIndex>,
-            SelectResult<kTupleIndex, OutputType>(std::move(*result))));
+            SelectResult<kTupleIndex, value_type>(std::move(*result))));
       }
       return PendFrom<kTupleIndex + 1>(cx, true);
     } else {

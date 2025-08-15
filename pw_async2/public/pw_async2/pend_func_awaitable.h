@@ -51,7 +51,7 @@ class PendFuncAwaitable {
 // optimize the amount of storage needed.
 template <typename Callable>
 PendFuncAwaitable(Callable) -> PendFuncAwaitable<
-    typename std::invoke_result<Callable, Context&>::type::OutputType,
+    typename std::invoke_result<Callable, Context&>::type::value_type,
     typename std::remove_reference<Callable>::type>;
 
 }  // namespace pw::async2

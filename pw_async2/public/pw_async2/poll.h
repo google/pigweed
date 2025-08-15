@@ -57,7 +57,7 @@ class PW_NODISCARD_STR(
     "`Poll`-returning functions may or may not have completed. Their "
     "return value should be examined.") Poll {
  public:
-  using OutputType = T;
+  using value_type = T;
 
   /// Basic constructors.
   Poll() = delete;
@@ -74,19 +74,21 @@ class PW_NODISCARD_STR(
   ///
   /// This constructor is explicit if and only if the corresponding construction
   /// of ``T`` from ``U`` is explicit.
-  template <typename U,
-            internal_poll::EnableIfImplicitlyConvertible<T, const U&> = 0>
+  template <
+      typename U,
+      internal_poll::EnableIfImplicitlyConvertible<value_type, const U&> = 0>
   constexpr Poll(const Poll<U>& other) : value_(other.value_) {}
-  template <typename U,
-            internal_poll::EnableIfExplicitlyConvertible<T, const U&> = 0>
+  template <
+      typename U,
+      internal_poll::EnableIfExplicitlyConvertible<value_type, const U&> = 0>
   explicit constexpr Poll(const Poll<U>& other) : value_(other.value_) {}
 
   template <typename U,
-            internal_poll::EnableIfImplicitlyConvertible<T, U&&> = 0>
+            internal_poll::EnableIfImplicitlyConvertible<value_type, U&&> = 0>
   constexpr Poll(Poll<U>&& other)  // NOLINT
       : value_(std::move(other.value_)) {}
   template <typename U,
-            internal_poll::EnableIfExplicitlyConvertible<T, U&&> = 0>
+            internal_poll::EnableIfExplicitlyConvertible<value_type, U&&> = 0>
   explicit constexpr Poll(Poll<U>&& other) : value_(std::move(other.value_)) {}
 
   // Constructs the inner value `T` in-place using the provided args, using the
@@ -96,13 +98,13 @@ class PW_NODISCARD_STR(
   // This constructor is explicit if `U` is not convertible to `T`. To avoid
   // ambiguity, this constructor is disabled if `U` is a `Poll<J>`, where
   // `J` is convertible to `T`.
-  template <typename U = T,
-            internal_poll::EnableIfImplicitlyInitializable<T, U> = 0>
+  template <typename U = value_type,
+            internal_poll::EnableIfImplicitlyInitializable<value_type, U> = 0>
   constexpr Poll(U&& u)  // NOLINT
       : Poll(std::in_place, std::forward<U>(u)) {}
 
-  template <typename U = T,
-            internal_poll::EnableIfExplicitlyInitializable<T, U> = 0>
+  template <typename U = value_type,
+            internal_poll::EnableIfExplicitlyInitializable<value_type, U> = 0>
   explicit constexpr Poll(U&& u)  // NOLINT
       : Poll(std::in_place, std::forward<U>(u)) {}
 
@@ -112,9 +114,9 @@ class PW_NODISCARD_STR(
       : value_(std::in_place, std::move(args)...) {}
 
   // Convert from `T`
-  constexpr Poll(T&& value) : value_(std::move(value)) {}
-  constexpr Poll& operator=(T&& value) {
-    value_ = std::optional<T>(std::move(value));
+  constexpr Poll(value_type&& value) : value_(std::move(value)) {}
+  constexpr Poll& operator=(value_type&& value) {
+    value_ = std::optional<value_type>(std::move(value));
     return *this;
   }
 
@@ -144,26 +146,28 @@ class PW_NODISCARD_STR(
   /// Returns the inner value.
   ///
   /// This must only be called if ``IsReady()`` returned ``true``.
-  constexpr T& value() & noexcept { return *value_; }
-  constexpr const T& value() const& noexcept { return *value_; }
-  constexpr T&& value() && noexcept { return std::move(*value_); }
-  constexpr const T&& value() const&& noexcept { return std::move(*value_); }
+  constexpr value_type& value() & noexcept { return *value_; }
+  constexpr const value_type& value() const& noexcept { return *value_; }
+  constexpr value_type&& value() && noexcept { return std::move(*value_); }
+  constexpr const value_type&& value() const&& noexcept {
+    return std::move(*value_);
+  }
 
   /// Accesses the inner value.
   ///
   /// This must only be called if ``IsReady()`` returned ``true``.
-  constexpr const T* operator->() const noexcept { return &*value_; }
-  constexpr T* operator->() noexcept { return &*value_; }
+  constexpr const value_type* operator->() const noexcept { return &*value_; }
+  constexpr value_type* operator->() noexcept { return &*value_; }
 
   /// Returns the inner value.
   ///
   /// This must only be called if ``IsReady()`` returned ``true``.
-  constexpr const T& operator*() const& noexcept { return *value_; }
-  constexpr T& operator*() & noexcept { return *value_; }
-  constexpr const T&& operator*() const&& noexcept {
+  constexpr const value_type& operator*() const& noexcept { return *value_; }
+  constexpr value_type& operator*() & noexcept { return *value_; }
+  constexpr const value_type&& operator*() const&& noexcept {
     return std::move(*value_);
   }
-  constexpr T&& operator*() && noexcept { return std::move(*value_); }
+  constexpr value_type&& operator*() && noexcept { return std::move(*value_); }
 
   /// Ignores the ``Poll`` value.
   ///
@@ -174,7 +178,7 @@ class PW_NODISCARD_STR(
  private:
   template <typename U>
   friend class Poll;
-  std::optional<T> value_;
+  std::optional<value_type> value_;
 };
 
 // Deduction guide to allow ``Poll(v)`` rather than ``Poll<T>(v)``.

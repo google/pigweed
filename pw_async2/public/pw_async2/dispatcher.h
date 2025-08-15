@@ -25,11 +25,11 @@ namespace internal {
 template <typename Pendable>
 class PendableAsTaskWithOutput : public Task {
  public:
-  using OutputType = PendOutputOf<Pendable>;
+  using value_type = PendOutputOf<Pendable>;
   PendableAsTaskWithOutput(Pendable& pendable)
       : pendable_(pendable), output_(Pending()) {}
 
-  Poll<OutputType> TakePoll() { return std::move(output_); }
+  Poll<value_type> TakePoll() { return std::move(output_); }
 
  private:
   Poll<> DoPend(Context& cx) final {
@@ -37,7 +37,7 @@ class PendableAsTaskWithOutput : public Task {
     return output_.Readiness();
   }
   Pendable& pendable_;
-  Poll<OutputType> output_;
+  Poll<value_type> output_;
 };
 
 }  // namespace internal

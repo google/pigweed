@@ -24,6 +24,9 @@
 namespace pw::async2 {
 namespace {
 
+static_assert(std::is_same_v<Poll<>::value_type, ReadyType>,
+              "Default Poll<> type is ReadyType");
+
 static_assert(std::is_same_v<Poll<Result<int>>, PollResult<int>>);
 static_assert(std::is_same_v<Poll<std::optional<int>>, PollOptional<int>>);
 
@@ -87,6 +90,7 @@ TEST(Poll, ConstructsPendingFromPendingType) {
 
 TEST(Poll, ConstructorInfersValueType) {
   auto res = Poll("hello");
+  static_assert(std::is_same_v<decltype(res)::value_type, const char*>);
   static_assert(std::is_same_v<decltype(res), Poll<const char*>>);
   EXPECT_TRUE(res.IsReady());
   EXPECT_STREQ(res.value(), "hello");
