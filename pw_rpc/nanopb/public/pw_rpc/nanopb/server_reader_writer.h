@@ -182,6 +182,7 @@ class NanopbServerReaderWriter
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Writes a response struct. Returns the following Status codes:
   //
@@ -260,6 +261,7 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
@@ -323,6 +325,7 @@ class NanopbServerWriter : private internal::NanopbServerCall {
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Writes a response struct. Returns the following Status codes:
   //
@@ -392,6 +395,7 @@ class NanopbUnaryResponder : private internal::NanopbServerCall {
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Sends the response. Returns the following Status codes:
   //

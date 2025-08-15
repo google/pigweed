@@ -369,6 +369,7 @@ class PwpbClientReaderWriter
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Writes a request. Returns the following Status codes:
   //
@@ -444,6 +445,7 @@ class PwpbClientReader
 
   using internal::StreamResponseClientCall::active;
   using internal::StreamResponseClientCall::channel_id;
+  using internal::StreamResponseClientCall::MaxWriteSizeBytes;
 
   using internal::Call::Cancel;
   using internal::Call::RequestCompletion;
@@ -491,6 +493,7 @@ class PwpbClientWriter
 
   using internal::UnaryResponseClientCall::active;
   using internal::UnaryResponseClientCall::channel_id;
+  using internal::UnaryResponseClientCall::MaxWriteSizeBytes;
 
   // Writes a request. Returns the following Status codes:
   //
@@ -551,6 +554,7 @@ class PwpbUnaryReceiver
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;

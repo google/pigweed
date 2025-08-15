@@ -442,6 +442,11 @@ Client call objects provide a few common methods.
       callback. The callback should return an OK status with the size of the
       encoded payload on success, or an error status on failure.
 
+   .. cpp:function:: size_t MaxWriteSizeBytes() const
+
+      Returns the maximum encoded payload size for writes to this call or 0 if
+      the call is not active.
+
    .. cpp:function:: pw::Status RequestCompletion()
 
       Notifies the server that client has requested for call completion. On

@@ -37,6 +37,7 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   using internal::ClientCall::id;
 
@@ -97,6 +98,7 @@ class RawClientReader : private internal::StreamResponseClientCall {
 
   using internal::StreamResponseClientCall::active;
   using internal::StreamResponseClientCall::channel_id;
+  using internal::StreamResponseClientCall::MaxWriteSizeBytes;
 
   using internal::StreamResponseClientCall::set_on_completed;
   using internal::StreamResponseClientCall::set_on_error;
@@ -136,6 +138,7 @@ class RawClientWriter : private internal::UnaryResponseClientCall {
 
   using internal::UnaryResponseClientCall::active;
   using internal::UnaryResponseClientCall::channel_id;
+  using internal::UnaryResponseClientCall::MaxWriteSizeBytes;
 
   using internal::UnaryResponseClientCall::set_on_completed;
   using internal::UnaryResponseClientCall::set_on_error;
@@ -178,6 +181,7 @@ class RawUnaryReceiver : private internal::UnaryResponseClientCall {
 
   using internal::UnaryResponseClientCall::active;
   using internal::UnaryResponseClientCall::channel_id;
+  using internal::UnaryResponseClientCall::MaxWriteSizeBytes;
 
   using internal::UnaryResponseClientCall::set_on_completed;
   using internal::UnaryResponseClientCall::set_on_error;

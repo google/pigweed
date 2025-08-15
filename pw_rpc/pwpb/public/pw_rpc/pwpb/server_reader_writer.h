@@ -246,6 +246,7 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
@@ -326,6 +327,7 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
@@ -399,6 +401,7 @@ class PwpbServerWriter : private internal::PwpbServerCall {
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
@@ -474,6 +477,7 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
 
   using internal::ServerCall::active;
   using internal::ServerCall::channel_id;
+  using internal::ServerCall::MaxWriteSizeBytes;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;

@@ -613,5 +613,62 @@ TEST(RawClientReaderWriter,
   EXPECT_STREQ(span_as_cstr(data_1), span_as_cstr(message_1));
 }
 
+TEST(RawUnaryReceiver, MaxSafePayloadSize_Inactive) {
+  RawUnaryReceiver call;
+  EXPECT_EQ(call.MaxWriteSizeBytes(), 0u);
+}
+
+TEST(RawClientReader, MaxSafePayloadSize_NoChannel) {
+  RawClientTestContext ctx;
+  uint32_t channel_id = ctx.channel().id();
+  PW_TEST_ASSERT_OK(ctx.client().CloseChannel(channel_id));
+
+  // This test is similar to RawServerWriter.MaxSafePayloadSize_NoChannel, but
+  // doesn't actually test having a call with an unknown channel ID. Client-side
+  // Open() APIs do not yet exist, so it is not possible to have an open client
+  // call with an unknown channel ID. The call below is never actually open.
+  //
+  // If Open() is added for client calls, this test could be updated to use it.
+  RawClientReader call = TestService::TestServerStreamRpc(ctx.client(),
+                                                          channel_id,
+                                                          {},
+                                                          FailIfOnNextCalled,
+                                                          FailIfCalled,
+                                                          [](Status) {});
+
+  EXPECT_EQ(call.MaxWriteSizeBytes(), 0u);
+}
+
+TEST(RawClientWriter, MaxSafePayloadSize_UnlimitedChannel) {
+  RawClientTestContext ctx;
+  RawClientWriter call = TestService::TestClientStreamRpc(
+      ctx.client(), ctx.channel().id(), FailIfOnCompletedCalled, FailIfCalled);
+
+  EXPECT_EQ(call.MaxWriteSizeBytes(), pw::rpc::MaxSafePayloadSize());
+
+  PW_TEST_EXPECT_OK(call.Cancel());
+  EXPECT_EQ(call.MaxWriteSizeBytes(), 0u);
+}
+
+TEST(RawClientReaderWriter, MaxSafePayloadSize_LimitedChannel) {
+  RawClientTestContext ctx;
+  RawClientReaderWriter call =
+      TestService::TestBidirectionalStreamRpc(ctx.client(),
+                                              ctx.channel().id(),
+                                              FailIfOnNextCalled,
+                                              FailIfCalled,
+                                              FailIfCalled);
+
+  constexpr size_t kChannelMtu = 40;
+  static_assert(kChannelMtu < pw::rpc::MaxSafePayloadSize());
+
+  ctx.output().set_mtu(kChannelMtu);
+
+  EXPECT_EQ(call.MaxWriteSizeBytes(), pw::rpc::MaxSafePayloadSize(kChannelMtu));
+
+  PW_TEST_EXPECT_OK(call.Cancel());
+  EXPECT_EQ(call.MaxWriteSizeBytes(), 0u);
+}
+
 }  // namespace
 }  // namespace pw::rpc

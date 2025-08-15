@@ -173,6 +173,19 @@ void Call::MoveFrom(Call& other) {
   }
 }
 
+size_t Call::MaxWriteSizeBytes() const {
+  RpcLockGuard lock;
+  if (!active_locked()) {
+    return 0u;
+  }
+
+  ChannelBase* channel = endpoint_->GetInternalChannel(channel_id_);
+  if (channel == nullptr) {
+    return 0u;
+  }
+  return channel->MaxWriteSizeBytes();
+}
+
 void Call::WaitUntilReadyForMove(Call& destination, Call& source) {
   do {
     // Wait for the source's callbacks to finish if it is active.

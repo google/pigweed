@@ -242,9 +242,12 @@ static_assert(
 #define PW_RPC_MAKE_UNIQUE_PTR_INCLUDE <memory>
 #endif  // PW_RPC_MAKE_UNIQUE_PTR_INCLUDE
 
-/// Size of the global RPC packet encoding buffer in bytes. If dynamic
-/// allocation is enabled, this value is only used for test helpers that
-/// allocate RPC encoding buffers.
+/// Size of the global RPC packet encoding buffer in bytes.
+///
+/// When dynamic allocation is enabled, the encoding buffer is allocated on
+/// demand. `PW_RPC_ENCODING_BUFFER_SIZE_BYTES` serves as a hint for the maximum
+/// packet size and for `pw::rpc::MaxSafePayloadSize()`. It is also used by test
+/// helpers that allocate RPC encoding buffers.
 #ifndef PW_RPC_ENCODING_BUFFER_SIZE_BYTES
 #define PW_RPC_ENCODING_BUFFER_SIZE_BYTES 512
 #endif  // PW_RPC_ENCODING_BUFFER_SIZE_BYTES

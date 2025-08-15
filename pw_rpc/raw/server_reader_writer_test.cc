@@ -627,5 +627,51 @@ TEST(RawServerReaderWriter, UsableAsWriter) {
       kWriterData);
 }
 
+TEST(RawUnaryResponder, MaxSafePayloadSize_Inactive) {
+  RawUnaryResponder call;
+  EXPECT_EQ(call.MaxWriteSizeBytes(), 0u);
+}
+
+TEST(RawServerWriter, MaxSafePayloadSize_NoChannel) {
+  ReaderWriterTestContext ctx;
+  PW_TEST_ASSERT_OK(ctx.server.CloseChannel(ctx.kChannelId));
+
+  RawServerWriter call =
+      RawServerWriter::Open<TestService::TestServerStreamRpc>(
+          ctx.server, ctx.kChannelId, ctx.service);
+
+  EXPECT_EQ(call.MaxWriteSizeBytes(), 0u);
+  EXPECT_EQ(Status::Unavailable(), call.Write(ConstByteSpan()));
+}
+
+TEST(RawServerReader, MaxSafePayloadSize_UnlimitedChannel) {
+  ReaderWriterTestContext ctx;
+  RawServerReader call =
+      RawServerReader::Open<TestService::TestClientStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+
+  EXPECT_EQ(call.MaxWriteSizeBytes(), pw::rpc::MaxSafePayloadSize());
+
+  PW_TEST_EXPECT_OK(call.Finish({}));
+  EXPECT_EQ(call.MaxWriteSizeBytes(), 0u);
+}
+
+TEST(RawServerReaderWriter, MaxSafePayloadSize_LimitedChannel) {
+  ReaderWriterTestContext ctx;
+  RawServerReaderWriter call =
+      RawServerReaderWriter::Open<TestService::TestBidirectionalStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+
+  constexpr size_t kChannelMtu = 40;
+  static_assert(kChannelMtu < pw::rpc::MaxSafePayloadSize());
+
+  ctx.output.set_mtu(kChannelMtu);
+
+  EXPECT_EQ(call.MaxWriteSizeBytes(), pw::rpc::MaxSafePayloadSize(kChannelMtu));
+
+  PW_TEST_EXPECT_OK(call.Finish());
+  EXPECT_EQ(call.MaxWriteSizeBytes(), 0u);
+}
+
 }  // namespace
 }  // namespace pw::rpc

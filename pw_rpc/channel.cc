@@ -18,6 +18,8 @@
 #include "pw_rpc/channel.h"
 // clang-format on
 
+#include <algorithm>
+
 #include "pw_assert/check.h"
 #include "pw_bytes/span.h"
 #include "pw_log/log.h"
@@ -83,6 +85,12 @@ Status ChannelBase::Send(const Packet& packet) {
     return Status::Unknown();
   }
   return OkStatus();
+}
+
+size_t ChannelBase::MaxWriteSizeBytes() const {
+  PW_DCHECK_NOTNULL(output_);
+  return rpc::MaxSafePayloadSize(std::min(output_->MaximumTransmissionUnit(),
+                                          cfg::kEncodingBufferSizeBytes));
 }
 
 }  // namespace internal

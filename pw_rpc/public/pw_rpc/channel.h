@@ -90,10 +90,18 @@ inline Status ChangeEncodedChannelId(ByteSpan rpc_packet,
 
 /// @}
 
-// Returns the maximum size of the payload of an RPC packet. This can be used
-// when allocating response encode buffers for RPC services.
-// If the RPC encode buffer is too small to fit RPC packet headers, this will
-// return zero.
+/// Returns the maximum payload size of an RPC packet for RPC endpoints as
+/// configured. This can be used when allocating response encode buffers for
+/// RPC services. If the RPC encode buffer is too small to fit RPC packet
+/// headers, this returns zero.
+///
+/// By default, this function uses `PW_RPC_ENCODING_BUFFER_SIZE_BYTES` to
+/// determine the largest supported payload, even when dynamic allocation is
+/// enabled.
+///
+/// @warning `MaxSafePayloadSize` does NOT account for the channel MTU, which
+/// may be smaller. Call `MaxWriteSizeBytes()` on an RPC's call object
+/// (reader/writer) to account for channel MTU.
 constexpr size_t MaxSafePayloadSize(
     size_t encode_buffer_size = cfg::kEncodingBufferSizeBytes) {
   return encode_buffer_size > internal::Packet::kMinEncodedSizeWithoutPayload
@@ -220,6 +228,10 @@ class ChannelBase {
     output_ = nullptr;
   }
 
+  // Returns the maximum payload size for this channel, factoring in the
+  // ChannelOutput's MTU and the RPC system's `pw::rpc::MaxSafePayloadSize()`.
+  size_t MaxWriteSizeBytes() const;
+
  protected:
   constexpr ChannelBase(uint32_t id, ChannelOutput* output)
       : id_(id), output_(output) {}
@@ -272,6 +284,7 @@ class Channel : public internal::ChannelBase {
  private:
   // Hide internal-only methods defined in the internal::ChannelBase.
   using internal::ChannelBase::Close;
+  using internal::ChannelBase::MaxWriteSizeBytes;
   using internal::ChannelBase::Send;
 };
 

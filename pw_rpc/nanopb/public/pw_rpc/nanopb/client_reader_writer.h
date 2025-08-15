@@ -223,6 +223,7 @@ class NanopbClientReaderWriter
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   using internal::ClientCall::id;
 
@@ -297,6 +298,7 @@ class NanopbClientReader
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   using internal::ClientCall::id;
 
@@ -342,6 +344,7 @@ class NanopbClientWriter
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   using internal::ClientCall::id;
 
@@ -391,6 +394,7 @@ class NanopbUnaryReceiver
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   using internal::ClientCall::id;
 

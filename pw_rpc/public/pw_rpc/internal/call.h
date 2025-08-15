@@ -162,6 +162,10 @@ class Call : public IntrusiveList<Call>::Item, private rpc::Writer {
     return channel_id_locked();
   }
 
+  // Returns the maximum encoded payload size for writes to this call or 0 if
+  // the call is not active.
+  size_t MaxWriteSizeBytes() const PW_LOCKS_EXCLUDED(rpc_lock());
+
   uint32_t channel_id_locked() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return channel_id_;
   }

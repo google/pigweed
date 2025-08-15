@@ -72,6 +72,7 @@ class RawServerReaderWriter : private internal::ServerCall {
 
   using internal::Call::active;
   using internal::Call::channel_id;
+  using internal::Call::MaxWriteSizeBytes;
 
   // Functions for setting the callbacks.
   using internal::Call::set_on_error;
@@ -148,6 +149,7 @@ class RawServerReader : private RawServerReaderWriter {
 
   using RawServerReaderWriter::active;
   using RawServerReaderWriter::channel_id;
+  using RawServerReaderWriter::MaxWriteSizeBytes;
 
   using RawServerReaderWriter::set_on_completion_requested;
   using RawServerReaderWriter::set_on_completion_requested_if_enabled;
@@ -201,6 +203,7 @@ class RawServerWriter : private RawServerReaderWriter {
 
   using RawServerReaderWriter::active;
   using RawServerReaderWriter::channel_id;
+  using RawServerReaderWriter::MaxWriteSizeBytes;
 
   using RawServerReaderWriter::set_on_completion_requested;
   using RawServerReaderWriter::set_on_completion_requested_if_enabled;
@@ -252,6 +255,7 @@ class RawUnaryResponder : private RawServerReaderWriter {
 
   using RawServerReaderWriter::active;
   using RawServerReaderWriter::channel_id;
+  using RawServerReaderWriter::MaxWriteSizeBytes;
 
   using RawServerReaderWriter::set_on_error;
 

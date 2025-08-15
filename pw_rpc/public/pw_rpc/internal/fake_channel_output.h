@@ -243,6 +243,16 @@ class FakeChannelOutput : public ChannelOutput {
     on_send_ = std::move(on_send);
   }
 
+  size_t MaximumTransmissionUnit() override PW_LOCKS_EXCLUDED(mutex_) {
+    std::lock_guard lock(mutex_);
+    return mtu_;
+  }
+
+  void set_mtu(size_t mtu) PW_LOCKS_EXCLUDED(mutex_) {
+    std::lock_guard lock(mutex_);
+    mtu_ = mtu;
+  }
+
  protected:
   FakeChannelOutput(Vector<Packet>& packets, Vector<std::byte>& payloads)
       : ChannelOutput("pw::rpc::internal::test::FakeChannelOutput"),
@@ -265,6 +275,7 @@ class FakeChannelOutput : public ChannelOutput {
 
   int return_after_packet_count_ PW_GUARDED_BY(mutex_) = -1;
   unsigned total_response_packets_ PW_GUARDED_BY(mutex_) = 0;
+  size_t mtu_ PW_GUARDED_BY(mutex_) = kUnlimited;
 
   Vector<Packet>& packets_ PW_GUARDED_BY(mutex_);
   Vector<std::byte>& payloads_ PW_GUARDED_BY(mutex_);
