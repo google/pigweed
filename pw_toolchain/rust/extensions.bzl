@@ -241,7 +241,7 @@ def _BUILD_for_toolchain_repo():
                     ],
                     target_compatible_with = [
                         "@platforms//cpu:{}".format(target["cpu"]),
-                    ],
+                    ] + target.get("constraints", []),
                     target_settings = channel["target_settings"],
                     extra_rustc_flags = channel["extra_rustc_flags"],
                     build_std = target.get("build_std", False),

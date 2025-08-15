@@ -64,11 +64,23 @@ EXTRA_TARGETS = [
     },
     {
         "build_std": True,
+        "constraints": [
+            "@pigweed//pw_build/constraints/riscv/extensions:I",
+            "@pigweed//pw_build/constraints/riscv/extensions:M",
+            "@pigweed//pw_build/constraints/riscv/extensions:C",
+            "@pigweed//pw_build/constraints/riscv/extensions:A.not",
+        ],
         "cpu": "riscv32",
         "triple": "riscv32imc-unknown-none-elf",
     },
     {
         "build_std": True,
+        "constraints": [
+            "@pigweed//pw_build/constraints/riscv/extensions:I",
+            "@pigweed//pw_build/constraints/riscv/extensions:M",
+            "@pigweed//pw_build/constraints/riscv/extensions:C",
+            "@pigweed//pw_build/constraints/riscv/extensions:A",
+        ],
         "cpu": "riscv32",
         "triple": "riscv32imac-unknown-none-elf",
     },
