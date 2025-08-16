@@ -19,6 +19,11 @@
 
 namespace pw::containers {
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_utilities
+/// @{
+
 #if PW_CXX_STANDARD_IS_SUPPORTED(20)
 
 // If std::contiguous_iterator_tag exists, use it directly.

@@ -177,7 +177,7 @@ the License.
     <detaileddescription title="" visible="no"/>
     <groupgraph visible="$GROUP_GRAPHS"/>
     <memberdecl>
-      <nestedgroups visible="yes" title=""/>
+      <nestedgroups visible="yes" title="Submodules"/>
       <dirs visible="yes" title=""/>
       <files visible="yes" title=""/>
       <namespaces visible="yes" title=""/>

@@ -35,6 +35,8 @@ class BasicInlineDequeImpl;
 
 }  // namespace containers::internal
 
+/// @module{pw_containers}
+
 template <typename ValueType,
           typename SizeType,
           size_t kCapacity = containers::internal::kGenericSized>
@@ -62,6 +64,8 @@ using BasicInlineDeque = containers::internal::BasicInlineDequeImpl<
 /// `full()` before adding items.
 template <typename T, size_t kCapacity = containers::internal::kGenericSized>
 using InlineDeque = BasicInlineDeque<T, uint16_t, kCapacity>;
+
+/// @}
 
 namespace containers::internal {
 

@@ -27,6 +27,11 @@ class BasicInlineQueueImpl;
 
 }  // namespace containers::internal
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_queues
+/// @{
+
 template <typename T, typename SizeType, size_t kCapacity>
 class BasicInlineQueue;
 
@@ -237,6 +242,8 @@ class BasicInlineQueue<ValueType, SizeType, containers::internal::kGenericSized>
     return static_cast<const Derived<0>*>(this)->deque();
   }
 };
+
+/// @}
 
 namespace containers::internal {
 

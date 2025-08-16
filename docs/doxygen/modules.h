@@ -66,6 +66,9 @@
 /// @defgroup pw_clock_tree_mcuxpresso pw_clock_tree_mcuxpresso
 /// @brief NXP MCUXpresso SDK implementation for pw_clock_tree. Main docs: https://pigweed.dev/pw_clock_tree_mcuxpresso
 
+/// @defgroup pw_containers pw_containers
+/// @brief Generic collections of objects for embedded devices: https://pigweed.dev/pw_containers
+
 /// @defgroup pw_crypto pw_crypto
 /// @brief Main docs: https://pigweed.dev/pw_crypto
 

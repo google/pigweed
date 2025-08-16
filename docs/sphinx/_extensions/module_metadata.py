@@ -549,6 +549,7 @@ def should_add_doxygen_link(module_name) -> bool:
         'pw_chrono',
         'pw_clock_tree',
         'pw_clock_tree_mcuxpresso',
+        'pw_containers',
         'pw_crypto',
         'pw_digital_io',
         'pw_digital_io_mcuxpresso',

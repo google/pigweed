@@ -658,6 +658,7 @@ filegroup(
         "public/pw_containers/dynamic_queue.h",
         "public/pw_containers/dynamic_vector.h",
         "public/pw_containers/filtered_view.h",
+        "public/pw_containers/flat_map.h",
         "public/pw_containers/inline_async_deque.h",
         "public/pw_containers/inline_async_queue.h",
         "public/pw_containers/inline_deque.h",
@@ -673,7 +674,9 @@ filegroup(
         "public/pw_containers/intrusive_multiset.h",
         "public/pw_containers/intrusive_set.h",
         "public/pw_containers/ptr_iterator.h",
+        "public/pw_containers/to_array.h",
         "public/pw_containers/vector.h",
+        "public/pw_containers/wrapped_iterator.h",
     ],
 )
 

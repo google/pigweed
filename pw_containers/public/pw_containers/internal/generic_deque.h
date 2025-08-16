@@ -36,6 +36,11 @@ template <typename T>
 using EnableIfIterable =
     std::enable_if_t<true, decltype(T().begin(), T().end())>;
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_queues
+/// @{
+
 /// Base class for deques.
 ///
 /// This type does not depend on the type of the elements being stored in the

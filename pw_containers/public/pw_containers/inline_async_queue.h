@@ -25,6 +25,11 @@
 
 namespace pw {
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_queues
+/// @{
+
 // Forward declaration.
 template <typename ValueType, typename SizeType, size_t kCapacity>
 class BasicInlineAsyncQueue;

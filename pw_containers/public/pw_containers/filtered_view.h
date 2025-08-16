@@ -21,6 +21,11 @@
 
 namespace pw::containers {
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_utilities
+/// @{
+
 /// `pw::containers::FilteredView` provides a view of a container with only
 /// elements that match the specified filter. This class is similar to C++20's
 /// [std::ranges::filter_view](

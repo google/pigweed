@@ -18,6 +18,11 @@
 
 namespace pw {
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_maps
+/// @{
+
 /// A `std::multimap<Key, T, Compare>`-like class that uses intrusive items.
 ///
 /// Since the map structure is stored in the items themselves, each item must

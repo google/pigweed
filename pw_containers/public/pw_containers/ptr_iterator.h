@@ -121,6 +121,11 @@ class PtrIterator {
 
 }  // namespace internal
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_utilities
+/// @{
+
 /// Provides an iterator for use with container with contiguous storage. Use
 /// this instead of a plain pointer to prevent accidental misuse of iterators as
 /// pointers and vice versa.

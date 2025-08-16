@@ -31,6 +31,8 @@
 #include "pw_preprocessor/util.h"
 #include "pw_varint/varint.h"
 
+// TODO: https://pwbug.dev/426012010 - Find a way to single-source this
+// content on the Sphinx site without Breathe.
 /// @file pw_containers/inline_var_len_entry_queue.h
 ///
 /// A `InlineVarLenEntryQueue` is a queue of inline variable-length binary
@@ -64,7 +66,12 @@
 extern "C" {
 #endif  // __cplusplus
 
-/// @defgroup inline_var_len_entry_queue_c_api InlineVarLenEntryQueue C API
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_queues
+/// @{
+
+/// @defgroup inline_var_len_entry_queue_c_api C API
 /// @{
 
 /// Handle that refers to a `InlineVarLenEntryQueue`. In memory, the queue is a
@@ -225,6 +232,8 @@ static inline bool pw_InlineVarLenEntryQueue_Empty(
 
 /// @}
 
+/// @}
+
 // Implementation details.
 
 #define _PW_VAR_QUEUE_DATA_SIZE_UINT32(max_size_bytes) \
@@ -367,7 +376,12 @@ class BasicInlineVarLenEntryQueue
   uint32_t data_[_PW_VAR_QUEUE_DATA_SIZE_UINT32(kMaxSizeBytes)];
 };
 
-/// @defgroup inline_var_len_entry_queue_cpp_api
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_queues
+/// @{
+
+/// @defgroup inline_var_len_entry_queue_cpp_api C++ API
 /// @{
 
 /// Variable-length entry queue class template for any byte type (e.g.
@@ -684,6 +698,8 @@ class BasicInlineVarLenEntryQueue<T>::iterator {
 template <size_t kMaxSizeBytes = containers::internal::kGenericSized>
 using InlineVarLenEntryQueue =
     BasicInlineVarLenEntryQueue<std::byte, kMaxSizeBytes>;
+
+/// @}
 
 /// @}
 

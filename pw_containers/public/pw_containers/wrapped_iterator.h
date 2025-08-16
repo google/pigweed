@@ -18,13 +18,18 @@
 
 namespace pw::containers {
 
-// Wraps an iterator with another iterator. This is helpful for creating an
-// iterator that yields items derived from the original iterator's type. For
-// example, the derived iterator might return a member of or a value calculated
-// from the original iterator's value.
-//
-// Classes inherit from this and provide operator* and operator-> as
-// appropriate.
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_utilities
+/// @{
+
+/// Wraps an iterator with another iterator. This is helpful for creating an
+/// iterator that yields items derived from the original iterator's type. For
+/// example, the derived iterator might return a member of or a value calculated
+/// from the original iterator's value.
+///
+/// Classes inherit from this and provide operator* and operator-> as
+/// appropriate.
 template <typename Impl, typename Iterator, typename ValueType>
 class WrappedIterator {
  public:

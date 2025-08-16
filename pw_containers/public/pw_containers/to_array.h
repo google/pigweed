@@ -44,8 +44,13 @@ constexpr std::array<std::remove_cv_t<T>, kSize> MoveArray(
 
 }  // namespace impl
 
-// If C++20's std::to_array is not available, implement pw::containers::to_array
-// in a C++14-compatible way.
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_utilities
+/// @{
+
+/// If C++20's std::to_array is not available, implement
+/// pw::containers::to_array in a C++14-compatible way.
 template <typename T, size_t kSize>
 constexpr std::array<std::remove_cv_t<T>, kSize> to_array(T (&values)[kSize]) {
   return impl::CopyArray(values, std::make_index_sequence<kSize>{});

@@ -20,6 +20,11 @@
 
 namespace pw {
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_sets
+/// @{
+
 /// A `std::set<Key, Compare>`-like class that uses intrusive items as keys.
 ///
 /// Since the set structure is stored in the items themselves, each item must

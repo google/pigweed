@@ -42,6 +42,11 @@ struct Pair {
 template <typename T1, typename T2>
 Pair(T1, T2) -> Pair<T1, T2>;
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_maps
+/// @{
+
 /// A simple, fixed-size associative array with lookup by key or value.
 ///
 /// FlatMaps can be initialized by:

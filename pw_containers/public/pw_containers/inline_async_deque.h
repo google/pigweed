@@ -26,6 +26,8 @@
 
 namespace pw {
 
+/// @module{pw_containers}
+
 // Forward declaration.
 template <typename T, typename SizeType, size_t kCapacity>
 class BasicInlineAsyncDeque;

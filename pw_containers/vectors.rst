@@ -11,6 +11,9 @@ A vector is a one-dimensional array with a variable length.
 ----------
 pw::Vector
 ----------
+:doxylink:`Vector` class is similar to ``std::vector``, except it is backed by a
+fixed-size buffer.
+
 Vectors must be declared with an explicit maximum size
 (e.g. ``Vector<int, 10>``) but vectors can be used and referred to without the
 max size template parameter (e.g. ``Vector<int>``).
@@ -28,14 +31,6 @@ Example
    :linenos:
    :start-after: [pw_containers-vector]
    :end-before: [pw_containers-vector]
-
-API reference
-=============
-The Vector class is similar to ``std::vector``, except it is backed by a
-fixed-size buffer.
-
-.. doxygenclass:: pw::Vector
-   :members:
 
 Size report
 ===========
@@ -56,6 +51,10 @@ The tables below illustrate the following scenarios:
 -----------------
 pw::DynamicVector
 -----------------
-.. doxygenclass:: pw::DynamicVector
-   :members:
-   :undoc-members:
+:doxylink:`DynamicVector` is similar to :doxylink:`Vector`, except that
+it uses :doxylink:`Allocator` for memory operations.
+
+-------------
+API reference
+-------------
+Moved: :doxylink:`pw_containers_vectors`

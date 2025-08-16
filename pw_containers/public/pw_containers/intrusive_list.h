@@ -30,7 +30,13 @@
 #include "pw_containers/intrusive_forward_list.h"
 
 namespace pw {
+
+/// @module{pw_containers}
+
 namespace containers::future {
+
+/// @addtogroup pw_containers_lists
+/// @{
 
 /// A doubly-linked intrusive list.
 ///

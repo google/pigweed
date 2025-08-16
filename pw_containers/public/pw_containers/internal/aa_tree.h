@@ -26,6 +26,8 @@
 
 namespace pw::containers::internal {
 
+/// @module{pw_containers}
+
 /// Base type for an AA tree that is devoid of template parameters.
 ///
 /// This generic class does not implement any functionality that requires

@@ -14,7 +14,7 @@ find, and remove key-value pairs in logarithmic time.
 -----------------------
 pw::containers::FlatMap
 -----------------------
-``FlatMap`` provides a simple, fixed-size associative array with ``O(log n)``
+:doxylink:`FlatMap` provides a simple, fixed-size associative array with ``O(log n)``
 lookup by key.
 
 ``pw::containers::FlatMap`` contains the same methods and features for looking
@@ -44,9 +44,12 @@ examples defines a ``FlatMap`` with two items.
 ----------------
 pw::IntrusiveMap
 ----------------
-``pw::IntrusiveMap`` provides an embedded-friendly, tree-based, intrusive
+:doxylink:`pw::IntrusiveMap` provides an embedded-friendly, tree-based, intrusive
 map implementation. The intrusive aspect of the map is very similar to that of
 :ref:`module-pw_containers-intrusive_list`.
+
+This class is similar to ``std::map<K, V>``. Items to be added must derive from
+``pw::IntrusiveMap<K, V>::Item`` or an equivalent type.
 
 See also :ref:`module-pw_containers-multiple_containers`.
 
@@ -61,21 +64,16 @@ Example
 If you need to add this item to containers of more than one type, see
 :ref:`module-pw_containers-multiple_containers`,
 
-API reference
-=============
-This class is similar to ``std::map<K, V>``. Items to be added must derive from
-``pw::IntrusiveMap<K, V>::Item`` or an equivalent type.
-
-.. doxygenclass:: pw::IntrusiveMap
-   :members:
-
 ---------------------
 pw::IntrusiveMultiMap
 ---------------------
-``pw::IntrusiveMultiMap`` provides an embedded-friendly, tree-based, intrusive
+:doxylink:`pw::IntrusiveMultiMap` provides an embedded-friendly, tree-based, intrusive
 multimap implementation. This is very similar to
 :ref:`module-pw_containers-intrusive_map`, except that the tree may contain
 multiple items with equivalent keys.
+
+This class is similar to ``std::multimap<K, V>``. Items to be added must derive
+from ``pw::IntrusiveMultiMap<K, V>::Item`` or an equivalent type.
 
 See also :ref:`module-pw_containers-multiple_containers`.
 
@@ -88,17 +86,14 @@ Example
    :end-before: [pw_containers-intrusive_multimap]
 
 If you need to add this item to containers of more than one type, see
-:ref:`module-pw_containers-multiple_containers`,
+:ref:`module-pw_containers-multiple_containers`.
 
+-------------
 API reference
-=============
-This class is similar to ``std::multimap<K, V>``. Items to be added must derive
-from ``pw::IntrusiveMultiMap<K, V>::Item`` or an equivalent type.
+-------------
+Moved: :doxylink:`pw_containers_maps`
 
-.. doxygenclass:: pw::IntrusiveMultiMap
-   :members:
-
-
+------------
 Size reports
 ------------
 The tables below illustrate the following scenarios:

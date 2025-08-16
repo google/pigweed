@@ -11,102 +11,60 @@ them from the other. This allows "first in, first out", or FIFO, behavior.
 Pigweed provides both single and double-ended queues that are backed by fixed
 or dynamic storage.
 
---------------------------------------
-pw::containers::internal::GenericDeque
---------------------------------------
-These types are not meant to be used directly, but provide a number of common
-methods for all other deque types, and by extension, queues.
+Pigweed provides many queue and deque implementations to meet different needs.
 
-.. doxygenclass:: pw::containers::internal::GenericDequeBase
-   :members:
-   :undoc-members:
-
-.. doxygenclass:: pw::containers::internal::GenericDeque
-   :members:
-   :undoc-members:
-
-----------------
-pw::DynamicDeque
-----------------
-.. doxygenclass:: pw::DynamicDeque
-   :members:
-   :undoc-members:
-
----------------
-pw::InlineDeque
----------------
-.. doxygentypedef:: pw::BasicInlineDeque
-.. doxygentypedef:: pw::InlineDeque
-
-.. TODO: b/394341806 - Add missing examples
-.. Example
-.. =======
-.. .. literalinclude:: examples/inline_deque.cc
-..    :language: cpp
-..    :linenos:
-..    :start-after: [pw_containers-inline_deque]
-..    :end-before: [pw_containers-inline_deque]
-
+-------------
 API reference
-=============
-.. doxygenclass:: pw::containers::internal::BasicInlineDequeImpl
-   :members:
+-------------
+Moved: :doxylink:`pw_containers_queues`
 
---------------------
-pw::InlineAsyncDeque
---------------------
-.. doxygentypedef:: pw::InlineAsyncDeque
-
-API reference
-=============
-.. doxygenclass:: pw::BasicInlineAsyncDeque
-   :members:
-   :undoc-members:
-
-----------------
-pw::DynamicQueue
-----------------
-.. doxygenclass:: pw::DynamicQueue
-   :members:
-   :undoc-members:
-
----------------
-pw::InlineQueue
----------------
-.. doxygentypedef:: pw::InlineQueue
-.. doxygenclass:: pw::BasicInlineQueue
-   :members:
-
-.. TODO: b/394341806 - Add missing examples
-.. Example
-.. =======
-.. .. literalinclude:: examples/inline_queue.cc
-..    :language: cpp
-..    :linenos:
-..    :start-after: [pw_containers-inline_queue]
-..    :end-before: [pw_containers-inline_queue]
-
-API reference
-=============
-.. doxygenclass:: pw::containers::internal::BasicInlineQueueImpl
-   :members:
-
-.. _module-pw_containers-queues-inline_var_len_entry_queue:
-
---------------------
-pw::InlineAsyncQueue
---------------------
-.. doxygentypedef:: pw::InlineAsyncQueue
-.. doxygenclass:: pw::BasicInlineAsyncQueue
-   :members:
+.. _module-pw_containers-inlinevarlenentryqueue:
 
 --------------------------
 pw::InlineVarLenEntryQueue
 --------------------------
-.. doxygenfile:: pw_containers/inline_var_len_entry_queue.h
-   :sections: detaileddescription
+:doxylink:`InlineVarLenEntryQueue` is a queue of inline variable-length binary
+entries. It is implemented as a ring (circular) buffer and supports operations
+to append entries and overwrite if necessary. Entries may be zero bytes up to
+the maximum size supported by the queue.
 
-.. TODO: b/394341806 - Move code to compiled examples
+``InlineVarLenEntryQueue`` has a few interesting properties:
+
+- Data and metadata are stored inline in a contiguous block of
+  ``uint32_t``-aligned memory.
+- The data structure is trivially copyable.
+- All state changes are accomplished with a single update to a ``uint32_t``.
+  The memory is always in a valid state and may be parsed offline.
+
+This data structure is a much simpler version of ``PrefixedEntryRingBuffer``.
+Prefer this sized-entry ring buffer to ``PrefixedEntryRingBuffer`` when:
+
+- A simple ring buffer of variable-length entries is needed. Advanced
+  features like multiple readers and a user-defined preamble are not
+  required.
+- A consistent, parsable, in-memory representation is required (e.g. to
+  decode the buffer from a block of memory).
+- C support is required.
+
+``InlineVarLenEntryQueue`` is implemented in C and provides complete C and C++
+APIs. The ``InlineVarLenEntryQueue`` C++ class is structured similarly to
+:doxylink:`pw::InlineQueue` and :doxylink:`pw::Vector`.
+
+Queue vs. deque
+===============
+This module provides
+:ref:`module-pw_containers-inlinevarlenentryqueue`, but no
+corresponding ``InlineVarLenEntryDeque`` class. Following the C++ Standard
+Library style, the deque class would provide ``push_front()`` and ``pop_back()``
+operations in addition to ``push_back()`` and ``pop_front()`` (equivalent to a
+queue's ``push()`` and ``pop()``).
+
+There is no ``InlineVarLenEntryDeque`` class because there is no efficient way
+to implement ``push_front()`` and ``pop_back()``. These operations would
+necessarily be ``O(n)``, since each entry knows the position of the next entry,
+but not the previous, as in a single-linked list. Given that these operations
+would be inefficient and unlikely to be used, they are not implemented, and only
+a queue class is provided.
 
 Example
 =======
@@ -187,39 +145,10 @@ Example
          // Write some data
          pw_InlineVarLenEntryQueue_PushOverwrite(buffer, "123", 3);
 
-API reference
-=============
-C++
----
-.. doxygengroup:: inline_var_len_entry_queue_cpp_api
-   :content-only:
-   :members:
-
-C
--
-.. doxygengroup:: inline_var_len_entry_queue_c_api
-   :content-only:
-
-Python
-------
+Python API reference
+====================
 .. automodule:: pw_containers.inline_var_len_entry_queue
    :members:
-
-Queue vs. deque
-===============
-This module provides
-:ref:`module-pw_containers-queues-inline_var_len_entry_queue`, but no
-corresponding ``InlineVarLenEntryDeque`` class. Following the C++ Standard
-Library style, the deque class would provide ``push_front()`` and ``pop_back()``
-operations in addition to ``push_back()`` and ``pop_front()`` (equivalent to a
-queue's ``push()`` and ``pop()``).
-
-There is no ``InlineVarLenEntryDeque`` class because there is no efficient way
-to implement ``push_front()`` and ``pop_back()``. These operations would
-necessarily be ``O(n)``, since each entry knows the position of the next entry,
-but not the previous, as in a single-linked list. Given that these operations
-would be inefficient and unlikely to be used, they are not implemented, and only
-a queue class is provided.
 
 ------------
 Size reports

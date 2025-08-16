@@ -17,17 +17,26 @@ memory beyond that of the items themselves.
 -----------------
 pw::IntrusiveList
 -----------------
-``pw::IntrusiveList`` provides an embedded-friendly, double-linked, intrusive
-list implementation. An intrusive list is a type of linked list that embeds list
-metadata, such as a "next" pointer, into the list object itself. This allows the
-construction of a linked list without the need to dynamically allocate list
-entries.
+:doxylink:`pw::IntrusiveList` provides an embedded-friendly, double-linked,
+intrusive list implementation. An intrusive list is a type of linked list that
+embeds list metadata, such as a "next" pointer, into the list object itself.
+This allows the construction of a linked list without the need to dynamically
+allocate list entries.
+
+This class is similar to ``std::list<T>``, except that the type of items to be
+added must derive from ``pw::IntrusiveList<T>::Item``.
 
 In C, an intrusive list can be made by manually including the "next" pointer as
 a member of the object's struct. ``pw::IntrusiveList`` uses C++ features to
 simplify the process of creating an intrusive list. It provides classes that
 list elements can inherit from, protecting the list metadata from being accessed
 by the item class.
+
+.. note::
+   Originally, ``pw::IntrusiveList<T>`` was implemented as a singly linked list.
+   To facilitate migration to ``pw::IntrusiveForwardList<T>::Item``, this
+   original implementation can still be temporarily used by enabling the
+   ``PW_CONTAINERS_USE_LEGACY_INTRUSIVE_LIST`` module configuration option.
 
 See also :ref:`module-pw_containers-multiple_containers`.
 
@@ -44,27 +53,16 @@ Example
 If you need to add this item to containers of more than one type, see
 :ref:`module-pw_containers-multiple_containers`,
 
-API reference
-=============
-This class is similar to ``std::list<T>``, except that the type of items to be
-added must derive from ``pw::IntrusiveList<T>::Item``.
-
-.. doxygenclass:: pw::containers::future::IntrusiveList
-   :members:
-
-.. note::
-   Originally, ``pw::IntrusiveList<T>`` was implemented as a singly linked list.
-   To facilitate migration to ``pw::IntrusiveForwardList<T>::Item``, this
-   original implementation can still be temporarily used by enabling the
-   ``PW_CONTAINERS_USE_LEGACY_INTRUSIVE_LIST`` module configuration option.
-
 ------------------------
 pw::IntrusiveForwardList
 ------------------------
-``pw::IntrusiveForwardList`` provides an embedded-friendly, singly linked,
+:doxylink:`pw::IntrusiveForwardList` provides an embedded-friendly, singly linked,
 intrusive list implementation. It is very similar to
 :ref:`module-pw_containers-intrusive_list`, except that it is singly rather than
 doubly linked.
+
+This class is similar to ``std::forward_list<T>``. Items to be added must derive
+from ``pw::IntrusiveForwardList<T>::Item``.
 
 See also :ref:`module-pw_containers-multiple_containers`.
 
@@ -79,13 +77,10 @@ Example
 If you need to add this item to containers of more than one type, see
 :ref:`module-pw_containers-multiple_containers`,
 
+-------------
 API reference
-=============
-This class is similar to ``std::forward_list<T>``. Items to be added must derive
-from ``pw::IntrusiveForwardList<T>::Item``.
-
-.. doxygenclass:: pw::IntrusiveForwardList
-   :members:
+-------------
+Moved: :doxylink:`pw_containers_lists`
 
 Performance considerations
 ==========================

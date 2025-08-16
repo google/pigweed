@@ -22,6 +22,11 @@
 
 namespace pw {
 
+/// @module{pw_containers}
+
+/// @defgroup pw_containers_vectors Vectors
+/// @{
+
 /// Array-backed list similar to `std::vector`, but optimized for embedded.
 ///
 /// Key features of `pw::DynamicVector`.

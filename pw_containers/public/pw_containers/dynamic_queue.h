@@ -21,6 +21,11 @@
 
 namespace pw {
 
+/// @module{pw_containers}
+
+/// @defgroup pw_containers_queues Queues
+/// @{
+
 /// A queue implementation backed by `pw::DynamicDeque`.
 ///
 /// This class provides a `std::queue`-like interface but uses a Pigweed

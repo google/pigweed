@@ -29,6 +29,11 @@
 
 namespace pw {
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_queues
+/// @{
+
 /// Double-ended queue, similar to `std::deque`, but optimized for embedded.
 ///
 /// Key features of `pw::DynamicDeque`.

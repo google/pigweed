@@ -22,6 +22,11 @@
 
 namespace pw::containers::internal {
 
+/// @module{pw_containers}
+
+/// @addtogroup pw_containers_lists
+/// @{
+
 /// Generic intrusive list implementation.
 ///
 /// This implementation relies on the `Item` type to provide details of how to

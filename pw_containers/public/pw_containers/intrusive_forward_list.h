@@ -40,6 +40,11 @@ class LegacyIntrusiveList;
 
 }  // namespace containers::internal
 
+/// @module{pw_containers}
+
+/// @defgroup pw_containers_lists Lists
+/// @{
+
 /// A singly-list intrusive list.
 ///
 /// IntrusiveForwardList<T> is a handle to access and manipulate the list, and

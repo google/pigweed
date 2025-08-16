@@ -18,6 +18,9 @@ pw::IntrusiveSet
 set implementation. The intrusive aspect of the set is very similar to that of
 :ref:`module-pw_containers-intrusive_list`.
 
+This class is similar to ``std::set<T>``. Items to be added must derive from
+``pw::IntrusiveSet<T>::Item`` or an equivalent type.
+
 See also :ref:`module-pw_containers-multiple_containers`.
 
 Example
@@ -31,14 +34,6 @@ Example
 If you need to add this item to containers of more than one type, see
 :ref:`module-pw_containers-multiple_containers`,
 
-API reference
-=============
-This class is similar to ``std::set<T>``. Items to be added must derive from
-``pw::IntrusiveSet<T>::Item`` or an equivalent type.
-
-.. doxygenclass:: pw::IntrusiveSet
-   :members:
-
 ---------------------
 pw::IntrusiveMultiSet
 ---------------------
@@ -46,6 +41,9 @@ pw::IntrusiveMultiSet
 multiset implementation. This is very similar to
 :ref:`module-pw_containers-intrusive_set`, except that the tree may contain
 multiple items with equivalent keys.
+
+This class is similar to ``std::multiset<T>``. Items to be added must derive
+from ``pw::IntrusiveMultiSet<T>::Item`` or an equivalent type.
 
 See also :ref:`module-pw_containers-multiple_containers`.
 
@@ -60,14 +58,12 @@ Example
 If you need to add this item to containers of more than one type, see
 :ref:`module-pw_containers-multiple_containers`,
 
+-------------
 API reference
-=============
-This class is similar to ``std::multiset<T>``. Items to be added must derive
-from ``pw::IntrusiveMultiSet<T>::Item`` or an equivalent type.
+-------------
+Moved: :doxylink:`pw_containers_sets`
 
-.. doxygenclass:: pw::IntrusiveMultiSet
-   :members:
-
+------------
 Size reports
 ------------
 The tables below illustrate the following scenarios:
