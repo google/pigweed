@@ -11,8 +11,7 @@ API reference
 ---------
 Color API
 ---------
-.. doxygengroup:: pw_display_color
-   :members:
+Moved: :doxylink:`pw_display`
 
 ---------------
 Color Constants

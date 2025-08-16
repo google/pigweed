@@ -21,6 +21,8 @@
 
 namespace pw::digital_io {
 
+/// @module{pw_digital_io}
+
 /// Mock implementation of `DigitalInOut` for testing.
 ///
 /// Records the times at which the state is changed using a provided clock. This

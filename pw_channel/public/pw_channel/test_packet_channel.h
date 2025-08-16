@@ -25,6 +25,8 @@
 
 namespace pw::channel {
 
+/// @module{pw_channel}
+
 /// `pw::channel::PacketReadWriter` implementation for testing use.
 template <typename Packet>
 class TestPacketReaderWriter final

@@ -45,8 +45,8 @@ It could be initialized and used like this:
       and how to define and use platform specific clock tree elements.
 
    .. grid-item-card:: :octicon:`code-square` Reference
-      :link: module-pw_clock_tree-reference
-      :link-type: ref
+      :link: ../doxygen/group__pw__clock__tree.html
+      :link-type: url
       :class-item: sales-pitch-cta-secondary
 
       API references for ``pw::clock_tree::Element``,
@@ -127,5 +127,4 @@ Synchronization
    :maxdepth: 1
 
    examples
-   api
    implementations

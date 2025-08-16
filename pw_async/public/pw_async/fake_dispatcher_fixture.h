@@ -18,6 +18,8 @@
 
 namespace pw::async::test {
 
+/// @module{pw_async}
+
 /// Test fixture that is a simple wrapper around a FakeDispatcher.
 ///
 /// Example:

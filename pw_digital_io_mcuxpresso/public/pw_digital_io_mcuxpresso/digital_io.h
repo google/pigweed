@@ -19,6 +19,8 @@
 
 namespace pw::digital_io {
 
+/// @module{pw_digital_io_mcuxpresso}
+
 PW_EXTERN_C void GPIO_INTA_DriverIRQHandler();
 
 /// Provides output-only support for an MCUXpresso GPIO pin.

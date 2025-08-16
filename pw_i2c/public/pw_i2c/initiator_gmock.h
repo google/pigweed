@@ -18,6 +18,8 @@
 
 namespace pw::i2c {
 
+/// @module{pw_i2c}
+
 /// Provides the `MOCK_METHOD` implementation for
 /// [gMock](https://google.github.io/googletest/gmock_for_dummies.html)
 /// compatibility.

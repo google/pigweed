@@ -38,8 +38,8 @@ flow control, backpressure, composability, and more.
       And more.
 
    .. grid-item-card:: :octicon:`code-square` Reference
-      :link: module-pw_channel-reference
-      :link-type: ref
+      :link: ../doxygen/group__pw__channel.html
+      :link-type: url
       :class-item: sales-pitch-cta-secondary
 
       API reference for:
@@ -56,4 +56,3 @@ flow control, backpressure, composability, and more.
 
    guides
    design
-   reference

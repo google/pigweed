@@ -28,6 +28,8 @@
 
 namespace pw::bluetooth::low_energy {
 
+/// @module{pw_bluetooth}
+
 /// `AdvertisedPeripheral` instances are valid for the duration of advertising.
 class AdvertisedPeripheral2 {
  public:

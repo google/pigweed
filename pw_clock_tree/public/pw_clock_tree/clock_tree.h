@@ -29,6 +29,8 @@
 /// Clock tree management library
 namespace pw::clock_tree {
 
+/// @module{pw_clock_tree}
+
 /// Abstract base class for a clock tree element of a clock tree.
 ///
 /// Class implementations of `Element` must implement `DoAcquireLocked` and

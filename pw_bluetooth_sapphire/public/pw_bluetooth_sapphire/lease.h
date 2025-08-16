@@ -26,6 +26,8 @@
 
 namespace pw::bluetooth_sapphire {
 
+/// @module{pw_bluetooth_sapphire}
+
 /// A handle representing an active lease. The lease is released on
 /// destruction.
 class Lease final {

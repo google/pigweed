@@ -21,6 +21,8 @@
 
 namespace pw::async {
 
+/// @module{pw_async}
+
 namespace test {
 class FakeDispatcher;
 }

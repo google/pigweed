@@ -24,6 +24,8 @@
 
 namespace pw::bluetooth {
 
+/// @module{pw_bluetooth}
+
 /// The Controller class is a shim for communication between the Host and the
 /// Controller. Controller is a `pw::Channel` used to send and receive HCI
 /// packets. The first byte of each datagram is a UART packet indicator

@@ -35,7 +35,9 @@ class ForwardingChannel;
 
 }  // namespace internal
 
-/// @defgroup pw_channel_forwarding
+/// @module{pw_channel}
+
+/// @defgroup pw_channel_forwarding Forwarding
 /// @{
 
 /// Forwards either datagrams or bytes between two channels. Writes to the first

@@ -20,6 +20,8 @@
 
 namespace pw::digital_io {
 
+/// @module{pw_digital_io_mcuxpresso}
+
 /// Abstracts the Pin Interrupt (PINT) module.
 ///
 /// One instance of this class should be created to enable the creation of

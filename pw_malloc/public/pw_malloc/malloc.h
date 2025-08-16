@@ -23,6 +23,8 @@
 /// Replacement interface for standard libc dynamic memory operations
 namespace pw::malloc {
 
+/// @module{pw_malloc}
+
 /// Sets the memory to be used by the system allocator.
 ///
 /// A backend can implement this method to provide the allocator returned by

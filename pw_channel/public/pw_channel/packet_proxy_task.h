@@ -60,6 +60,8 @@ class BasicPacketProxyTask : public async2::Task {
 template <typename Derived>
 class PacketProxy;
 
+/// @module{pw_channel}
+
 /// A task that handles packets being read from a reader and written to a
 /// writer.
 ///

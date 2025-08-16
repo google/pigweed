@@ -18,8 +18,7 @@ on underlying support by the linux-managed device.
 -------------
 API reference
 -------------
-.. doxygenclass:: pw::i2c::LinuxInitiator
-   :members:
+Moved: :doxylink:`pw_i2c_linux`
 
 --------
 Examples

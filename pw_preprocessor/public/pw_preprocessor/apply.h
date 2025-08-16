@@ -18,6 +18,8 @@
 #include "pw_preprocessor/arguments.h"
 #include "pw_preprocessor/internal/apply_macros.h"
 
+/// @module{pw_preprocessor}
+
 /// Repeatedly applies the given macro for each argument provided. The given
 /// macro expands to accept an index value of the current argument, the
 /// forwarded argument provided, and the current argument. The forwarded
@@ -38,6 +40,8 @@
             separator,                                               \
             forwarded_arg,                                           \
             PW_DROP_LAST_ARG_IF_EMPTY(__VA_ARGS__))
+
+/// @}
 
 #define _PW_APPLY(function, macro, separator, forwarded_arg, ...) \
   function(macro, separator, forwarded_arg, __VA_ARGS__)

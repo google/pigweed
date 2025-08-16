@@ -98,7 +98,9 @@ class StreamChannelWriteState {
 
 }  // namespace internal
 
-/// @defgroup pw_channel_stream_channel
+/// @module{pw_channel}
+
+/// @defgroup pw_channel_stream_channel Stream channel
 /// @{
 
 /// A channel which delegates to an underlying reader and writer stream.

@@ -25,6 +25,8 @@
 
 namespace pw::bluetooth::low_energy {
 
+/// @module{pw_bluetooth}
+
 /// Represents the LE central role. Used to scan and connect to peripherals.
 class Central2 {
  public:

@@ -29,6 +29,8 @@
 /// 128-bit universally unique identifier library
 namespace pw::uuid {
 
+/// @module{pw_uuid}
+
 /// Represents a 128-bit universally unique identifier (UUID).
 class Uuid {
  public:

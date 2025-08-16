@@ -24,6 +24,8 @@
 
 namespace pw::dump {
 
+/// @module{pw_hex_dump}
+
 /// Helper to log human-readable hex dumps to console.
 ///
 /// Example:

@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+/// @module{pw_span}
+
 /// @def PW_SPAN_ENABLE_ASSERTS
 ///
 /// @brief Controls whether `pw_span` includes asserts for detecting disallowed

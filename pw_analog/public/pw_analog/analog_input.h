@@ -19,6 +19,8 @@
 /// Analog-to-digital converter (ADC) library
 namespace pw::analog {
 
+/// @module{pw_analog}
+
 /// Base interface for getting analog-to-digital (ADC) samples from one ADC
 /// channel in a thread-safe manner.
 ///

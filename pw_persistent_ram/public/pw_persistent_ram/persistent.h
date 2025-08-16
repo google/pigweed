@@ -27,6 +27,8 @@
 /// Persistent RAM utilities and containers
 namespace pw::persistent_ram {
 
+/// @module{pw_persistent_ram}
+
 // Behavior to use when attempting to get a handle to the underlying data stored
 // in persistent memory.
 enum class GetterAction {

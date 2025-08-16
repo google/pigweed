@@ -23,6 +23,8 @@
 
 namespace pw::bluetooth::proxy {
 
+/// @module{pw_bluetooth_proxy}
+
 /// H4PacketInterface is an abstract interface for an H4 HCI packet.
 ///
 /// Concrete subclasses are used directly in code so their functions will be

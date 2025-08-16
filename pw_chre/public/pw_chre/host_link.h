@@ -20,6 +20,8 @@
 // These host link functions should be implemented by the system integrator.
 namespace pw::chre {
 
+/// @module{pw_chre}
+
 /// This is a token representing a message that CHRE allocated.
 /// It must be passed to `FreeMessageToAp` when the message is finished.
 using MessageToApContext = const void*;

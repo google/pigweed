@@ -19,6 +19,8 @@
 
 namespace pw::crypto::ecdsa {
 
+/// @module{pw_crypto}
+
 /// Verifies the `signature` of `digest` using `public_key`.
 ///
 /// Example:

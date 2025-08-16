@@ -43,6 +43,8 @@ enum class InterruptTrigger : int {
 // the line. It is backend-specific if, when, and how this state is updated.
 using InterruptHandler = ::pw::Function<void(State sampled_state)>;
 
+/// @module{pw_digital_io}
+
 /// A digital I/O line that may support input, output, and interrupts, but makes
 /// no guarantees about whether any operations are supported. You must check the
 /// various `provides_*` flags before calling optional methods. Unsupported

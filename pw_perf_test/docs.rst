@@ -168,19 +168,7 @@ Run your test
 -------------
 API reference
 -------------
-
-Macros
-======
-
-.. doxygendefine:: PW_PERF_TEST
-
-.. doxygendefine:: PW_PERF_TEST_SIMPLE
-
-EventHandler
-============
-
-.. doxygenclass:: pw::perf_test::EventHandler
-   :members:
+Moved: :doxylink:`pw_perf_test`
 
 ------
 Design

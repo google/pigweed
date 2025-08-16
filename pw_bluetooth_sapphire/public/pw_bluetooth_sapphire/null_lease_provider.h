@@ -17,6 +17,8 @@
 
 namespace pw::bluetooth_sapphire {
 
+/// @module{pw_bluetooth_sapphire}
+
 /// A no-op LeaseProvider that always successfully returns an fake lease.
 class NullLeaseProvider final : public LeaseProvider {
  public:

@@ -77,6 +77,8 @@ bool pw_Base64IsValid(const char* base64_data, size_t base64_size);
 /// Base64 encoding, decoding, and validating library
 namespace pw::base64 {
 
+/// @module{pw_base64}
+
 /// @param[in] binary_size_bytes The size of the binary data in bytes, before
 /// encoding.
 ///

@@ -17,6 +17,8 @@
 
 #include "pw_allocator/metrics.h"
 
+/// @module{pw_malloc}
+
 #ifndef PW_MALLOC_LOCK_TYPE
 /// Sets the type of synchronization primitive to use to mediate concurrent
 /// allocations by the system allocator.

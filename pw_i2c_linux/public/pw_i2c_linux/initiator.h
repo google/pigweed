@@ -25,6 +25,8 @@
 
 namespace pw::i2c {
 
+/// @module{pw_i2c_linux}
+
 /// Initiator interface implementation using the Linux userspace i2c-dev driver.
 ///
 /// Takes exclusive control of an I2C bus device (ex. "/dev/i2c-0"). The user is

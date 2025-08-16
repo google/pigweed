@@ -20,6 +20,8 @@
 
 namespace pw::bluetooth {
 
+/// @module{pw_bluetooth}
+
 /// Get the size of an Hci Header
 ///
 /// @param type H4 Packet Type

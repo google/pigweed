@@ -25,7 +25,9 @@
 
 namespace pw::channel {
 
-/// @defgroup pw_channel_loopback
+/// @module{pw_channel}
+
+/// @defgroup pw_channel_loopback Loopback
 /// @{
 
 // Channel implementation which will read its own writes.

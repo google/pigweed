@@ -32,5 +32,4 @@ Read an ELF section into a buffer
 -------------
 API reference
 -------------
-.. doxygenclass:: pw::elf::ElfReader
-   :members:
+Moved: :doxylink:`pw_elf`

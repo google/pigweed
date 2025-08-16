@@ -19,6 +19,8 @@
 
 namespace pw::analog {
 
+/// @module{pw_analog}
+
 /// The common interface for obtaining voltage samples in microvolts. This
 /// interface represents a single voltage input or channel. Users will need to
 /// supply their own ADC driver implementation in order to provide the reference

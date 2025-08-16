@@ -20,6 +20,8 @@
 
 namespace pw {
 
+/// @module{pw_build}
+
 /// Represents a symbol provided by the linker, i.e. via a linker script.
 ///
 /// LinkerSymbol objects are used with linker-provided symbols that don't have

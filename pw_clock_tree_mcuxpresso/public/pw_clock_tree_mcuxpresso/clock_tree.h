@@ -19,6 +19,8 @@
 
 namespace pw::clock_tree {
 
+/// @module{pw_clock_tree_mcuxpresso}
+
 /// Class implementing an FRO clock source.
 class ClockMcuxpressoFro final
     : public ClockSource<ElementNonBlockingCannotFail> {

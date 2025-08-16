@@ -159,28 +159,14 @@ your hardware. See `pw_kvs/flash_memory.h`_.
 ---------
 Reference
 ---------
-
-.. _module-pw_kvs-reference-keyvaluestore:
-
-``pw::kvs::KeyValueStore``
-==========================
-See :ref:`module-pw_kvs-design` for architectural details.
-
-.. doxygenclass:: pw::kvs::KeyValueStore
-   :members:
-
-Configuration
-=============
-.. doxygendefine:: PW_KVS_LOG_LEVEL
-.. doxygendefine:: PW_KVS_MAX_FLASH_ALIGNMENT
-.. doxygendefine:: PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
+Moved: :doxylink:`pw_kvs`
 
 .. _module-pw_kvs-design:
 
 ------
 Design
 ------
-:cpp:class:`pw::kvs::KeyValueStore` ("the KVS") stores key and value data
+:doxylink:`pw::kvs::KeyValueStore` ("the KVS") stores key and value data
 pairs. The key-value pairs are stored in :ref:`flash partition
 <module-pw_kvs-design-memory>` as a :ref:`key-value entry
 <module-pw_kvs-design-entries>` (KV entry) that consists of a header/metadata,
@@ -353,9 +339,9 @@ collected. The always-free sector is rotated as part of the KVS
 Garbage collection can be performed manually, by invoking the methods below,
 or it can be configured to happen automatically.
 
-* :cpp:func:`pw::kvs::KeyValueStore::HeavyMaintenance()`
-* :cpp:func:`pw::kvs::KeyValueStore::FullMaintenance()`
-* :cpp:func:`pw::kvs::KeyValueStore::PartialMaintenance()`
+* :doxylink:`pw::kvs::KeyValueStore::HeavyMaintenance()`
+* :doxylink:`pw::kvs::KeyValueStore::FullMaintenance()`
+* :doxylink:`pw::kvs::KeyValueStore::PartialMaintenance()`
 
 .. _module-pw_kvs-design-wear:
 

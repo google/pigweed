@@ -22,16 +22,18 @@
 /// Graphic display and framebuffer library
 namespace pw::display {
 
+/// @module{pw_display}
+
+/// @defgroup pw_display_color Color
+/// Color conversion functions used by the pw_display draw library and
+/// tests.
+/// @{
+
 /// Base type for pixels in RGBA8888 format.
 using ColorRgba8888 = uint32_t;
 
 /// Base type for pixels in RGB565 format.
 using ColorRgb565 = uint16_t;
-
-/// @defgroup pw_display_color
-/// Color conversion functions used by the pw_display draw library and
-/// tests.
-/// @{
 
 /// Encode an RGB565 value from individual red, green, blue and alpha
 /// values.

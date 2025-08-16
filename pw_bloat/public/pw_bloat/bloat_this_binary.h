@@ -23,6 +23,8 @@ namespace pw::bloat {
 // base in order to get accurate reports.
 void BloatThisBinary();
 
+/// @module{pw_bloat}
+
 /// A value that can cause all conditions passed to `PW_BLOAT_COND` and
 /// expressions passed to `PW_BLOAT_EXPR` to be executed. Assign a volatile
 /// variable to this value and pass it those macros to prevent unwanted compiler

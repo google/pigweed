@@ -26,6 +26,8 @@
 
 namespace pw::bluetooth::gatt {
 
+/// @module{pw_bluetooth}
+
 /// An interface for interacting with a GATT service on a peer device.
 class RemoteService2 {
  public:

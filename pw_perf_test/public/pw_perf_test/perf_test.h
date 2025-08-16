@@ -18,6 +18,8 @@
 #include "pw_perf_test/state.h"
 #include "pw_preprocessor/arguments.h"
 
+/// @module{pw_perf_test}
+
 /// Defines a performance test.
 ///
 /// The `Framework` will create a `State` and pass it to the provided function.

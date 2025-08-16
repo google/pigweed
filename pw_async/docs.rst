@@ -14,8 +14,7 @@ asynchronous code. Currently, it provides:
 
 - Message loop APIs
 
-.. attention::
-  This module is still under construction. The API is not yet stable.
+.. attention:: This module is deprecated.
 
 ----------
 Dispatcher
@@ -27,25 +26,32 @@ Dispatcher is a pure virtual interface that is implemented by backends and
 FakeDispatcher. A virtual interface is used instead of a facade to allow
 substituting a FakeDispatcher for a Dispatcher backend in tests.
 
-Dispatcher API
+FakeDispatcher
 ==============
-.. doxygenclass:: pw::async::Dispatcher
-   :members:
+The FakeDispatcher facade is a utility for simulating a real Dispatcher
+in tests. FakeDispatcher simulates time to allow for reliable, fast testing of
+code that uses Dispatcher. FakeDispatcher is a facade instead of a concrete
+implementation because it depends on Task state for processing tasks, which
+varies across Task backends.
 
+The active FakeDispatcher backend is configured with the GN variable
+``pw_async_FAKE_DISPATCHER_BACKEND``. The specified target must define a class
+``pw::async::test::backend::NativeFakeDispatcher`` in the header
+``pw_async_backend/fake_dispatcher.h`` that meets the interface requirements in
+``public/pw_async/task.h``. FakeDispatcher will then trivially wrap
+``NativeFakeDispatcher``.
 
-Task API
-==============
-.. doxygenstruct:: pw::async::Context
-   :members:
+The bazel build provides the ``pw_async_fake_dispatcher_backend`` label flag to
+configure the FakeDispatcher backend.
 
-.. doxygentypedef:: pw::async::TaskFunction
+Testing FakeDispatcher
+----------------------
+The GN template ``fake_dispatcher_tests`` in ``fake_dispatcher_tests.gni``
+creates a test target that tests a FakeDispatcher backend. This enables
+one test suite to be shared across FakeDispatcher backends and ensures
+conformance.
 
-.. doxygenclass:: pw::async::Task
-   :members:
-
-Facade API
-==========
-
+----
 Task
 ----
 The ``Task`` type represents a work item that can be submitted to and executed
@@ -69,53 +75,25 @@ then trivially wrap ``NativeTask``.
 The bazel build provides the ``pw_async_task_backend`` label flag to configure
 the active Task backend.
 
-FakeDispatcher
---------------
-The FakeDispatcher facade is a utility for simulating a real Dispatcher
-in tests. FakeDispatcher simulates time to allow for reliable, fast testing of
-code that uses Dispatcher. FakeDispatcher is a facade instead of a concrete
-implementation because it depends on Task state for processing tasks, which
-varies across Task backends.
+-------------
+API reference
+-------------
+Moved: :doxylink:`pw_async`
 
-The active FakeDispatcher backend is configured with the GN variable
-``pw_async_FAKE_DISPATCHER_BACKEND``. The specified target must define a class
-``pw::async::test::backend::NativeFakeDispatcher`` in the header
-``pw_async_backend/fake_dispatcher.h`` that meets the interface requirements in
-``public/pw_async/task.h``. FakeDispatcher will then trivially wrap
-``NativeFakeDispatcher``.
-
-The bazel build provides the ``pw_async_fake_dispatcher_backend`` label flag to
-configure the FakeDispatcher backend.
-
-Testing FakeDispatcher
-^^^^^^^^^^^^^^^^^^^^^^
-The GN template ``fake_dispatcher_tests`` in ``fake_dispatcher_tests.gni``
-creates a test target that tests a FakeDispatcher backend. This enables
-one test suite to be shared across FakeDispatcher backends and ensures
-conformance.
-
-FunctionDispatcher
-------------------
-.. doxygenclass:: pw::async::FunctionDispatcher
-   :members:
-
-HeapDispatcher
---------------
-.. doxygenclass:: pw::async::HeapDispatcher
-   :members:
-
+------
 Design
-======
+------
 
 Task Ownership
---------------
+==============
 Tasks are owned by clients rather than the Dispatcher. This avoids either
 memory allocation or queue size limits in Dispatcher implementations. However,
 care must be taken that clients do not destroy Tasks before they have been
 executed or canceled.
 
+---------------
 Getting Started
-===============
+---------------
 First, configure the Task backend for the Dispatcher backend you will be using:
 
 .. code-block::

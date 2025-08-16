@@ -56,10 +56,8 @@ constexpr size_t bit_ceil(size_t x) noexcept {
 }
 #endif  // defined(__cpp_lib_int_pow2) && __cpp_lib_int_pow2 >= 202002L
 
-/// @defgroup pw_alignment
+/// @module{pw_alignment}
 
-/// @ingroup pw_alignment
-///
 /// Ensures the object is naturally aligned to a power of 2 bytes greater
 /// than or equal to its size. `NaturallyAligned` is a wrapper class.
 ///
@@ -82,8 +80,6 @@ struct [[gnu::aligned(bit_ceil(sizeof(T)))]] NaturallyAligned : public T {
   }  // namespace pw
 };
 
-/// @ingroup pw_alignment
-///
 /// Ensures the object held by `std::atomic` is naturally aligned. This
 /// enables the compiler to replace libcalls to atomic functions with native
 /// instructions when appropriate. `AlignedAtomic` is a convenience wrapper.

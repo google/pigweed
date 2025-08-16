@@ -22,9 +22,12 @@
 
 #include "pw_polyfill/static_assert.h"
 
-/// @defgroup pw_preprocessor_internal
+/// @module{pw_preprocessor}
 
-/// @defgroup pw_preprocessor_compiler
+/// @defgroup pw_preprocessor_internal Internal
+/// @{
+
+/// @defgroup pw_preprocessor_compiler Compiler
 /// @{
 
 /// Marks a struct or class as packed.

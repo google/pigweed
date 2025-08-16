@@ -22,6 +22,8 @@
 /// Dual-mode Bluetooth host stack
 namespace pw::bluetooth_sapphire {
 
+/// @module{pw_bluetooth_sapphire}
+
 /// Must only be constructed and destroyed on the Bluetooth thread.
 class Central final : public pw::bluetooth::low_energy::Central2 {
  public:

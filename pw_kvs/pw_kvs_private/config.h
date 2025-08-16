@@ -17,6 +17,8 @@
 
 #include <cstddef>
 
+/// @module{pw_kvs}
+
 /// @def PW_KVS_LOG_LEVEL
 ///
 /// Which log level to use for `pw_kvs` logs.

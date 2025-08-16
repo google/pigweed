@@ -25,6 +25,8 @@
 /// Cross-platform I2C library
 namespace pw::i2c {
 
+/// @module{pw_i2c}
+
 /// @brief The common, base driver interface for initiating thread-safe
 /// transactions with devices on an I2C bus. Other documentation may call this
 /// style of interface an I2C "master", <!-- inclusive-language: disable -->

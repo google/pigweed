@@ -28,7 +28,9 @@ using SpanFromBytes = span<ResultT,
 
 }  // namespace internal
 
-/// @defgroup pw_span_cast
+/// @module{pw_span}
+
+/// @defgroup pw_span_cast Cast
 /// @{
 
 /// Casts a `pw::span<std::byte>` (`ByteSpan`) to a span of a different type.

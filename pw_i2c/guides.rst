@@ -62,11 +62,37 @@ Write some C++ code to interact with an I2C device:
 Guides
 ------
 
+API overview
+============
+* :doxylink:`pw::i2c::Address` is a helper class for representing I2C
+  addresses.
+* :doxylink:`pw::i2c::Message` is a helper class for representing individual
+  read and write components within a single i2c transaction.
+* :doxylink:`pw::i2c::Initiator` is the common, base driver interface for
+  communicating with I2C devices.
+* :doxylink:`pw::i2c::Device` is a helper class that takes a reference
+  to an :doxylink:`pw::i2c::Initiator` instance and provides easier access
+  to a single I2C device.
+* :doxylink:`pw::i2c::RegisterDevice` extends :doxylink:`pw::i2c::Device`
+  for easier access to a single I2C device's registers.
+* :doxylink:`pw::i2c::I2cService` is a service for performing I2C
+  transactions over RPC.
+* :doxylink:`pw::i2c::MockMessageInitiator` is a generic mocked backend for
+  :doxylink:`pw::i2c::Initiator`. It accepts multiple
+  :doxylink:`pw::i2c::MockMessageTransaction`, each of which is mock
+  transmitted as one bus transaction.
+* :doxylink:`pw::i2c::MockMessageTransaction` represents a test i2c
+  transaction. Each transaction consists of an arbitrary sequence of
+  :doxylink:`pw::i2c::MockMessage` objects that are transmitted in one bus
+  operation.
+* :doxylink:`pw::i2c::MockMessage` represents one read or write element of
+  an i2c transaction.
+
 .. _module-pw_i2c-guides-mock:
 
 Mock I2C transactions
 =====================
-See the example in :cpp:class:`pw::i2c::MockInitiator`.
+See the example in :doxylink:`pw::i2c::MockInitiator`.
 
 .. _module-pw_i2c-guides-registerdevice:
 
@@ -146,7 +172,7 @@ files for real ``pw::i2c::RegisterDevice`` usage:
 
 Access an I2C device's registers over RPC
 =========================================
-:cpp:class:`pw::i2c::I2cService` enables accessing an I2C device's registers
+:doxylink:`pw::i2c::I2cService` enables accessing an I2C device's registers
 over RPC.
 
 Using :ref:`module-pw_console`, invoke the service to perform an I2C read:
@@ -193,5 +219,5 @@ sent or received on the bus. The maximum supported value for multi-byte access
 is 4 bytes.
 
 .. note::
-   :cpp:class:`pw::i2c::I2cService` currently only supports 7-bit i2c
+   :doxylink:`pw::i2c::I2cService` currently only supports 7-bit i2c
    addressing.

@@ -18,8 +18,7 @@
 
 namespace pw::channel {
 
-/// @addtogroup pw_channel
-/// @{
+/// @module{pw_channel}
 
 /// Basic properties of a `Channel`. A `Channel` type can convert to any other
 /// `Channel` for which it supports the required properties. For example, a

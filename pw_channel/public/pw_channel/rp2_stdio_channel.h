@@ -23,7 +23,9 @@
 
 namespace pw::channel {
 
-/// @defgroup pw_channel_rp2_stdio
+/// @module{pw_channel}
+
+/// @defgroup pw_channel_rp2_stdio RP2 stdio
 /// @{
 
 /// Initializes and returns a reference to a channel that speaks over rp2's

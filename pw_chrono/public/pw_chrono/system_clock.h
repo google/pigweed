@@ -37,6 +37,9 @@
 
 /// Portable std::chrono library for embedded
 namespace pw::chrono {
+
+/// @module{pw_chrono}
+
 namespace backend {
 
 /// The ARM AEBI does not permit the opaque 'time_point' to be passed via

@@ -25,6 +25,8 @@
 
 namespace pw::random {
 
+/// @module{pw_random}
+
 /// A random generator based off the
 /// [xorshift*](https://en.wikipedia.org/wiki/Xorshift) algorithm.
 ///

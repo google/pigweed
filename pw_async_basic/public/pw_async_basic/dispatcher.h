@@ -22,6 +22,8 @@
 
 namespace pw::async {
 
+/// @module{pw_async_basic}
+
 /// BasicDispatcher is a generic implementation of Dispatcher.
 class BasicDispatcher : public Dispatcher, public thread::ThreadCore {
  public:

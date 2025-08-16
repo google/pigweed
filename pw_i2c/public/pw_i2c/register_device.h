@@ -26,6 +26,8 @@
 namespace pw {
 namespace i2c {
 
+/// @module{pw_i2c}
+
 enum class RegisterAddressSize {
   k1Byte = 1,
   k2Bytes = 2,

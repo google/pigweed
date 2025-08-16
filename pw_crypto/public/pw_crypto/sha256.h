@@ -26,6 +26,8 @@
 /// Cryptography library
 namespace pw::crypto {
 
+/// @module{pw_crypto}
+
 namespace sha256 {
 
 /// The size of a SHA256 digest in bytes.

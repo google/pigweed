@@ -16,6 +16,8 @@
 /// Interrupt context interface
 namespace pw::interrupt {
 
+/// @module{pw_interrupt}
+
 /// @brief Checks if the currently executing code is within an interrupt service
 /// routine handling an interrupt request (IRQ) or non-maskable interrupt (NMI).
 ///

@@ -19,6 +19,8 @@
 
 namespace pw::async {
 
+/// @module{pw_async}
+
 /// A `TaskFunction` is a unit of work that is wrapped by a Task and executed on
 /// a `Dispatcher`.
 ///

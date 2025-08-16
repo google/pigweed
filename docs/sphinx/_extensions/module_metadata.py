@@ -231,7 +231,7 @@ def rustdoc_url(module_name: str) -> str:
 
 def doxygen_url(module_name: str) -> str:
     """Returns the Doxygen URL for a given module."""
-    module_name = module_name.replace("pw_", "pw__")
+    module_name = module_name.replace("_", "__")
     return f'https://pigweed.dev/doxygen/group__{module_name}.html'
 
 
@@ -532,7 +532,50 @@ def should_add_rust_link(module_name: str, languages: list[str] | None) -> bool:
 # TODO: https://pwbug.dev/426012010 - Make this logic general,
 # like how `should_add_rust_link` does it.
 def should_add_doxygen_link(module_name) -> bool:
-    ok = ['pw_function']
+    ok = [
+        'pw_alignment',
+        'pw_analog',
+        'pw_async',
+        'pw_async_basic',
+        'pw_base64',
+        'pw_bloat',
+        'pw_bluetooth',
+        'pw_bluetooth_proxy',
+        'pw_bluetooth_sapphire',
+        'pw_build',
+        'pw_bytes',
+        'pw_channel',
+        'pw_chre',
+        'pw_chrono',
+        'pw_clock_tree',
+        'pw_clock_tree_mcuxpresso',
+        'pw_crypto',
+        'pw_digital_io',
+        'pw_digital_io_mcuxpresso',
+        'pw_display',
+        'pw_elf',
+        'pw_function',
+        'pw_hdlc',
+        'pw_hex_dump',
+        'pw_i2c',
+        'pw_i2c_linux',
+        'pw_interrupt',
+        'pw_json',
+        'pw_kvs',
+        'pw_malloc',
+        'pw_multibuf',
+        'pw_numeric',
+        'pw_perf_test',
+        'pw_persistent_ram',
+        'pw_polyfill',
+        'pw_preprocessor',
+        'pw_random',
+        'pw_span',
+        'pw_uart',
+        'pw_uuid',
+        'pw_varint',
+        'pw_work_queue',
+    ]
     return module_name in ok
 
 

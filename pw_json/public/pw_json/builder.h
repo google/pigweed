@@ -40,6 +40,8 @@
 
 namespace pw {
 
+/// @module{pw_json}
+
 /// @defgroup pw_json_builder_api
 /// @{
 

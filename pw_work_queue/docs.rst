@@ -65,5 +65,4 @@ Example
 -------------
 API reference
 -------------
-.. doxygennamespace:: pw::work_queue
-   :members:
+Moved: :doxylink:`pw_work_queue`

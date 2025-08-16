@@ -17,6 +17,8 @@
 
 namespace pw {
 
+/// @module{pw_numeric}
+
 /// Performs integer division and rounds to the nearest integer. Gives the same
 /// result as `std::round(static_cast<double>(dividend) /
 /// static_cast<double>(divisor))`, but requires no floating point operations

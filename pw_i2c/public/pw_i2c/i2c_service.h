@@ -26,6 +26,8 @@
 
 namespace pw::i2c {
 
+/// @module{pw_i2c}
+
 /// RPC service for performing I2C transactions.
 class I2cService final : public pw_rpc::pwpb::I2c::Service<I2cService> {
  public:

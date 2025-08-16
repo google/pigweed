@@ -19,6 +19,8 @@
 
 namespace pw::chrono {
 
+/// @module{pw_chrono}
+
 /// The `SystemTimer` allows an `ExpiryCallback` be executed at a set time in
 /// the future.
 ///

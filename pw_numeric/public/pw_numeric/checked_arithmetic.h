@@ -20,8 +20,7 @@
 
 namespace pw {
 
-/// @defgroup pw_numeric_checked_arithmetic
-/// @{
+/// @module{pw_numeric}
 
 /// Adds two numbers, checking for overflow.
 ///
@@ -204,6 +203,5 @@ template <typename T, typename A, typename B>
 
   return result;
 }
-/// @}
 
 }  // namespace pw

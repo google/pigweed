@@ -21,6 +21,8 @@
 
 namespace pw::bluetooth::low_energy {
 
+/// @module{pw_bluetooth}
+
 /// An identifier for a service that accepts connection-oriented channel
 /// connections. Referred to as a (simplified) protocol/service multiplexer
 /// in the Bluetooth specification.

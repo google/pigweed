@@ -19,16 +19,27 @@ UART peripheral.
 
 The interface consists of these main classes:
 
-- `UartBase`_ - Base class which provides basic enable/disable and
-  configuration control, but no communication.
-- `Uart`_ - Extends ``pw::uart::UartBase`` to provide blocking Read and Write
-  APIs.
-- `UartNonBlocking`_ - Extends ``pw::uart::UartBase`` to provide non-blocking
-  (callback-based) Read and Write APIs.
-- `UartBlockingAdapter`_ - Provides the blocking `Uart`_ interface on top of a
-  `UartNonBlocking`_ device.
-- `UartStream`_ - Provides the ``pw::stream::NonSeekableReaderWriter``
-  (:ref:`module-pw_stream`) interface on top of a `Uart`_ device.
+- :doxylink:`UartBase <pw::uart::UartBase>` - Base class which provides basic
+  enable/disable and configuration control, but no communication.
+- :doxylink:`Uart` - Extends ``pw::uart::UartBase`` to provide blocking Read
+  and Write APIs.
+- :doxylink:`UartNonBlocking <pw::uart::UartNonBlocking>` - Extends
+  ``pw::uart::UartBase`` to provide non-blocking (callback-based) Read and
+  Write APIs.
+- :doxylink:`UartBlockingAdapter <pw::uart::UartBlockingAdapter>` - Provides
+  the blocking ``Uart`` interface on top of a ``UartNonBlocking`` device.
+- :doxylink:`UartStream <pw::uart::UartStream>` - Provides the
+  ``pw::stream::NonSeekableReaderWriter`` (:ref:`module-pw_stream`)
+  interface on top of a ``Uart`` device.
+
+.. warning::
+
+   Drivers should not implement both ``Uart`` and ``UartNonBlocking``
+   interfaces.
+
+   Drivers which support non-blocking (callback) behavior should implement
+   ``UartNonBlocking``. Applications that require the blocking ``Uart``
+   interface can use the ``UartBlockingAdapter``.
 
 .. mermaid::
 
@@ -112,41 +123,7 @@ Get started
 -------------
 API reference
 -------------
-
-.. warning::
-
-   Drivers should not implement both ``Uart`` and ``UartNonBlocking``
-   interfaces.
-
-   Drivers which support non-blocking (callback) behavior should implement
-   ``UartNonBlocking``. Applications that require the blocking ``Uart``
-   interface can use the ``UartBlockingAdapter``.
-
-UartBase
-========
-.. doxygenclass:: pw::uart::UartBase
-  :members:
-
-Uart
-====
-.. doxygenclass:: pw::uart::Uart
-  :members:
-
-UartNonBlocking
-===============
-.. doxygenclass:: pw::uart::UartNonBlocking
-  :members:
-
-UartBlockingAdapter
-===================
-.. doxygenclass:: pw::uart::UartBlockingAdapter
-  :members:
-
-UartStream
-==========
-.. doxygenclass:: pw::uart::UartStream
-  :members:
-
+Moved: :doxylink:`pw_uart`
 
 .. toctree::
    :hidden:

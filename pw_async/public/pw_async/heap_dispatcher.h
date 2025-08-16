@@ -17,6 +17,8 @@
 
 namespace pw::async {
 
+/// @module{pw_async}
+
 /// HeapDispatcher wraps an existing Dispatcher and allocates Task objects on
 /// the heap before posting them to the existing Dispatcher. After Tasks run,
 /// they are automatically freed.

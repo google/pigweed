@@ -24,6 +24,8 @@
 
 namespace pw::uart {
 
+/// @module{pw_uart}
+
 /// Represents an abstract UART interface.
 ///
 /// The `UartNonBlocking` interface provides a basic set of methods for

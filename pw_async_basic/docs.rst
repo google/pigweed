@@ -12,9 +12,7 @@ FakeDispatcher.
 ---
 API
 ---
-.. doxygenclass:: pw::async::BasicDispatcher
-   :members:
-   :protected-members:
+Moved: :doxylink:`pw_async_basic`
 
 -----
 Usage

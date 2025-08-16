@@ -21,6 +21,8 @@
 
 namespace pw::bluetooth::low_energy {
 
+/// @module{pw_bluetooth}
+
 /// Class that represents a connection to a peer. This can be used to interact
 /// with GATT services and establish LE L2CAP channels.
 ///

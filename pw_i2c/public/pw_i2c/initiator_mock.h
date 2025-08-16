@@ -23,6 +23,8 @@
 
 namespace pw::i2c {
 
+/// @module{pw_i2c}
+
 ///
 /// DEPRECATED: This file is deprecated in favor of initiator_message_mock.h
 ///

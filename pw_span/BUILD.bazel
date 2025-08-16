@@ -90,6 +90,7 @@ filegroup(
     srcs = [
         "public/pw_span/cast.h",
         "public/pw_span/internal/config.h",
+        "public/pw_span/internal/span_impl.h",
     ],
 )
 

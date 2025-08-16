@@ -25,7 +25,9 @@
 
 namespace pw::channel {
 
-/// @defgroup pw_channel_epoll
+/// @module{pw_channel}
+
+/// @defgroup pw_channel_epoll epoll
 /// @{
 
 /// Channel implementation which writes to and reads from a file descriptor,

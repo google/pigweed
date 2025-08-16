@@ -423,11 +423,6 @@ clock may vary due to sleep modes and potential interrupt handling.
 This clock is used for expressing timeout and deadline semantics with the
 scheduler in Pigweed including pw_sync, pw_thread, etc.
 
-C++
----
-.. doxygenstruct:: pw::chrono::SystemClock
-   :members:
-
 Example in C++
 --------------
 .. code-block:: cpp
@@ -449,23 +444,15 @@ Example in C++
 VirtualClock
 ============
 Pigweed also includes a virtual base class for timers,
-:cpp:class:`pw::chrono::VirtualClock`. This class allows for writing
+:doxylink:`pw::chrono::VirtualClock`. This class allows for writing
 timing-sensitive code that can be tested using simulated clocks such as
-:cpp:class:`pw::chrono::SimulatedSystemClock`.
+:doxylink:`pw::chrono::SimulatedSystemClock`.
 
 Using simulated clocks in tests allow tests to avoid sleeping or timeouts,
 resulting in faster and more reliable tests.
 
-See also :cpp:class:`pw::async2::TimeProvider` for creating testable
+See also :doxylink:`pw::async2::TimeProvider` for creating testable
 time-sensitive code using asynchronous timers.
-
-.. doxygenclass:: pw::chrono::VirtualClock
-  :members:
-
-.. doxygenclass:: pw::chrono::SimulatedSystemClock
-  :members:
-
-
 
 Protobuf
 ========
@@ -517,11 +504,6 @@ interrupt, meaning:
 
 C++
 ---
-.. doxygenclass:: pw::chrono::SystemTimer
-   :members:
-
-.. cpp:namespace-push:: pw::chrono::SystemTimer
-
 .. list-table::
    :widths: 70 10 10 10
    :header-rows: 1
@@ -530,28 +512,26 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:func:`pw::chrono::SystemTimer::SystemTimer`
+   * - :doxylink:`pw::chrono::SystemTimer::SystemTimer`
      - ✔
      -
      -
-   * - :cpp:func:`pw::chrono::SystemTimer::~SystemTimer`
+   * - :doxylink:`pw::chrono::SystemTimer::~SystemTimer`
      - ✔
      -
      -
-   * - :cpp:func:`InvokeAfter`
+   * - :doxylink:`pw::chrono::SystemTimer::InvokeAfter`
      - ✔
      -
      -
-   * - :cpp:func:`InvokeAt`
+   * - :doxylink:`pw::chrono::SystemTimer::InvokeAt`
      - ✔
      -
      -
-   * - :cpp:func:`Cancel`
+   * - :doxylink:`pw::chrono::SystemTimer::Cancel`
      - ✔
      -
      -
-
-.. cpp:namespace-pop::
 
 Example in C++
 --------------
@@ -612,6 +592,11 @@ Wrap ``gettimeofday`` and ``time`` with an implementation that uses
 determined by the SystemClock backend epoch, which on most embedded systems will
 be time since boot. Use this option if you don't care about the time returned
 being close to actual time, but do care that it increments like a real clock.
+
+-------------
+API reference
+-------------
+Moved: :doxylink:`pw_chrono`
 
 .. toctree::
    :hidden:

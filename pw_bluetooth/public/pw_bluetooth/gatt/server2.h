@@ -27,6 +27,8 @@
 
 namespace pw::bluetooth::gatt {
 
+/// @module{pw_bluetooth}
+
 /// Interface for serving a local GATT service. This is implemented by the API
 /// client.
 class LocalServiceDelegate2 {

@@ -22,9 +22,3 @@ binary structure of stored data, among other things.
 hex to debug issues. Unless otherwise specified, avoid depending directly on the
 formatting of the output as it may change (unless otherwise specified). With
 that said, the ``FormattedHexDumper`` strives to be xxd compatible by default.
-
-.. toctree::
-   :hidden:
-   :maxdepth: 1
-
-   api

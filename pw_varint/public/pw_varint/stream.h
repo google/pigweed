@@ -22,6 +22,8 @@
 namespace pw {
 namespace varint {
 
+/// @module{pw_varint}
+
 /// @brief Decodes a variable-length integer (varint) from the current position
 /// of a `pw::stream`. Reads a maximum of 10 bytes or `max_size`, whichever is
 /// smaller.

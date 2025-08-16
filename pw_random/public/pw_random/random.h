@@ -23,8 +23,9 @@
 #include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
-/// Generic interface for random number generators
 namespace pw::random {
+
+/// @module{pw_random}
 
 /// A random generator uses injected entropy to generate random values. Many of
 /// the guarantees for this interface are provided at the level of the

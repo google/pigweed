@@ -49,12 +49,12 @@ Compile-time configuration
 This module has configuration options that globally affect the behavior of
 ``pw_malloc`` via compile-time configuration of this module.
 
-.. doxygendefine:: PW_MALLOC_LOCK_TYPE
-.. doxygendefine:: PW_MALLOC_METRICS_TYPE
-.. doxygendefine:: PW_MALLOC_BLOCK_OFFSET_TYPE
-.. doxygendefine:: PW_MALLOC_MIN_BUCKET_SIZE
-.. doxygendefine:: PW_MALLOC_NUM_BUCKETS
-.. doxygendefine:: PW_MALLOC_DUAL_FIRST_FIT_THRESHOLD
+* :doxylink:`PW_MALLOC_LOCK_TYPE`
+* :doxylink:`PW_MALLOC_METRICS_TYPE`
+* :doxylink:`PW_MALLOC_BLOCK_OFFSET_TYPE`
+* :doxylink:`PW_MALLOC_MIN_BUCKET_SIZE`
+* :doxylink:`PW_MALLOC_NUM_BUCKETS`
+* :doxylink:`PW_MALLOC_DUAL_FIRST_FIT_THRESHOLD`
 
 See the
 :ref:`module documentation <module-structure-compile-time-configuration>` for

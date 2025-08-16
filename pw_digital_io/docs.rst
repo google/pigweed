@@ -82,16 +82,16 @@ The following table summarizes the interfaces and their required functionality:
      - Interrupts Required
    * - Input/Output Not Required
      -
-     - :cpp:class:`DigitalInterrupt`
+     - :doxylink:`DigitalInterrupt <pw::digital_io::DigitalInterrupt>`
    * - Input Required
-     - :cpp:class:`DigitalIn`
-     - :cpp:class:`DigitalInInterrupt`
+     - :doxylink:`DigitalIn <pw::digital_io::DigitalIn>`
+     - :doxylink:`DigitalInInterrupt <pw::digital_io::DigitalInterrupt>`
    * - Output Required
-     - :cpp:class:`DigitalOut`
-     - :cpp:class:`DigitalOutInterrupt`
+     - :doxylink:`DigitalOut <pw::digital_io::DigitalOut>`
+     - :doxylink:`DigitalOutInterrupt <pw::digital_io::DigitalOutInterrupt>`
    * - Input/Output Required
-     - :cpp:class:`DigitalInOut`
-     - :cpp:class:`DigitalInOutInterrupt`
+     - :doxylink:`DigitalInOut <pw::digital_io::DigitalInOut>`
+     - :doxylink:`DigitalInOutInterrupt <pw::digital_io::DigitalInOutInterrupt>`
 
 Synchronization requirements
 ============================
@@ -305,16 +305,7 @@ might do that using a Pigweed console device object.
 -------------
 API reference
 -------------
-.. note::
-   This API reference is incomplete.
-
-.. doxygenclass:: pw::digital_io::DigitalIoOptional
-   :members:
-   :private-members:
-
-.. doxygenclass:: pw::digital_io::DigitalInOutMock
-   :members:
-   :private-members:
+Moved: :doxylink:`pw_digital_io`
 
 ------------
 Dependencies

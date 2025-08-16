@@ -6,7 +6,7 @@ pw_span
 .. pigweed-module::
    :name: pw_span
 
-* **Standardized**: :cpp:class:`pw::span` matches C++20's `std::span
+* **Standardized**: :doxylink:`pw::span` matches C++20's `std::span
   <https://en.cppreference.com/w/cpp/container/span>`_ as closely as possible.
 * **Zero-cost**: If ``std::span`` is available, ``pw::span`` is simply an alias
   of it.
@@ -30,7 +30,7 @@ pw_span
 
 .. pw_span-example-end
 
-:cpp:class:`pw::span` is a convenient abstraction that wraps a pointer and a
+``pw::span`` is a convenient abstraction that wraps a pointer and a
 size. It's especially useful in APIs. Spans support implicit conversions from
 C arrays, ``std::array``, or any STL-style container, such as
 ``std::string_view``.

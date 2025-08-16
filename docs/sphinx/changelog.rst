@@ -14583,7 +14583,7 @@ to improve gTest compatibility.
 
 pw_varint
 ---------
-``pw_varint`` now has a :ref:`C-only API <module-pw_varint-api-c>`.
+``pw_varint`` now has a C-only API.
 
 * `Add C-only implementation; cleanup <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/169122>`__
 

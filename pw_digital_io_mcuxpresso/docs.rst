@@ -15,11 +15,19 @@ Overview
 
 This module consists of these main classes:
 
-- `McuxpressoDigitalIn`_ - Provides only input support.
-- `McuxpressoDigitalOut`_ - Provides only output support.
-- `McuxpressoDigitalInOutInterrupt`_ - Provides support for input, output, and GPIO interrupts.
-- `McuxpressoPintController`_ - Controller class for use with ``McuxpressoPintInterrupt``.
-- `McuxpressoPintInterrupt`_ - Provides only interrupt support for a PINT interrupt.
+- :doxylink:`McuxpressoDigitalIn <pw::digital_io::McuxpressoDigitalIn>`:
+  Provides only input support.
+- :doxylink:`McuxpressoDigitalOut <pw::digital_io::McuxpressoDigitalOut>`:
+  Provides only output support.
+- :doxylink:`McuxpressoDigitalInOutInterrupt
+  <pw::digital_io::McuxpressoDigitalInOutInterrupt>`:
+  Provides support for input, output, and GPIO interrupts.
+- :doxylink:`McuxpressoPintController
+  <pw::digital_io::McuxpressoPintController>`: Controller class for use with
+  ``McuxpressoPintInterrupt``.
+- :doxylink:`McuxpressoPintInterrupt
+  <pw::digital_io::McuxpressoPintInterrupt>`: Provides only interrupt support
+  for a PINT interrupt.
 
 -----
 Setup
@@ -34,7 +42,8 @@ Examples
 
 Digital input
 =============
-Use `McuxpressoDigitalIn`_ to read the state of an input.
+Use :doxylink:`McuxpressoDigitalIn <pw::digital_io::McuxpressoDigitalIn>` to
+read the state of an input.
 
 Example code to use GPIO pins from an NXP SDK board definition:
 
@@ -58,7 +67,8 @@ Example code to use GPIO pins from an NXP SDK board definition:
 
 Digital output
 ==============
-Use `McuxpressoDigitalOut`_ to set the state of an output.
+Use :doxylink:`McuxpressoDigitalOut <pw::digital_io::McuxpressoDigitalOut>` to
+set the state of an output.
 
 Example code to use GPIO pins from an NXP SDK board definition:
 
@@ -83,8 +93,9 @@ Example code to use GPIO pins from an NXP SDK board definition:
 
 GPIO interrupt
 ==============
-Use `McuxpressoDigitalInOutInterrupt`_ to handle interrupts via the GPIO
-module.
+Use :doxylink:`McuxpressoDigitalInOutInterrupt
+<pw::digital_io::McuxpressoDigitalInOutInterrupt>` to handle interrupts via
+the GPIO module.
 
 Example code to use GPIO pins from an NXP SDK board definition:
 
@@ -112,8 +123,17 @@ Example code to use GPIO pins from an NXP SDK board definition:
 
 PINT interrupt
 ==============
-`McuxpressoPintInterrupt`_ can also be used to handle interrupts, via the PINT
-module. It must be used with an instance of `McuxpressoPintController`_.
+``pw::digital_io::McuxpressoPintInterrupt`` can also be used to handle
+interrupts, via the PINT module, which supports other features:
+
+* Dedicated (non-shared) IRQs for each interrupt
+* Double edge detection (``InterruptTrigger::kBothEdges``)
+* Waking from deep sleep with edge detection
+* Pattern matching support (currently unsupported here)
+* Triggering interrupts on pins configured for a non-GPIO function
+
+It must be used with an instance of :doxylink:`McuxpressoPintController
+<pw::digital_io::McuxpressoPintController>`.
 
 .. code-block:: cpp
 
@@ -146,37 +166,4 @@ module. It must be used with an instance of `McuxpressoPintController`_.
 -------------
 API reference
 -------------
-
-McuxpressoDigitalIn
-===================
-.. doxygenclass:: pw::digital_io::McuxpressoDigitalIn
-  :members:
-
-McuxpressoDigitalOut
-====================
-.. doxygenclass:: pw::digital_io::McuxpressoDigitalOut
-  :members:
-
-McuxpressoDigitalInOutInterrupt
-===============================
-.. doxygenclass:: pw::digital_io::McuxpressoDigitalInOutInterrupt
-  :members:
-
-McuxpressoPintInterrupt
-=======================
-``pw::digital_io::McuxpressoPintInterrupt`` can also be used to handle
-interrupts, via the PINT module, which supports other features:
-
-* Dedicated (non-shared) IRQs for each interrupt
-* Double edge detection (``InterruptTrigger::kBothEdges``)
-* Waking from deep sleep with edge detection
-* Pattern matching support (currently unsupported here)
-* Triggering interrupts on pins configured for a non-GPIO function
-
-.. doxygenclass:: pw::digital_io::McuxpressoPintInterrupt
-  :members:
-
-McuxpressoPintController
-========================
-.. doxygenclass:: pw::digital_io::McuxpressoPintController
-  :members:
+Moved: :doxylink:`pw_digital_io_mcuxpresso`

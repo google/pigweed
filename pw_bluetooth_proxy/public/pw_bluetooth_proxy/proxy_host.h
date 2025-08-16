@@ -28,6 +28,8 @@
 /// Lightweight proxy for augmenting Bluetooth functionality
 namespace pw::bluetooth::proxy {
 
+/// @module{pw_bluetooth_proxy}
+
 /// `ProxyHost` acts as the main coordinator for proxy functionality. After
 /// creation, the container then passes packets through the proxy.
 class ProxyHost {

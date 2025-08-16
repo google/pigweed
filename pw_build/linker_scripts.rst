@@ -13,32 +13,13 @@ linker script using the C preprocessor with the ``pw_linker_script`` rules.
 - GN :ref:`module-pw_build-gn-pw_linker_script`
 - Bazel :ref:`module-pw_build-bazel-pw_linker_script`
 
----------------------
-Linker Script Helpers
----------------------
-
-``PW_MUST_PLACE``
-=================
-.. doxygengroup:: pw_must_place
-   :content-only:
-   :members:
-
-``PW_MUST_PLACE_SIZE``
-======================
-.. doxygengroup:: pw_must_place_size
-   :content-only:
-   :members:
-
-``PW_MUST_NOT_PLACE``
-=====================
-.. doxygengroup:: pw_must_not_place
-   :content-only:
-   :members:
-
-``LinkerSymbol``
-================
-.. doxygenclass:: pw::LinkerSymbol
-   :members:
+---------------------------
+Linker script C/C++ helpers
+---------------------------
+- :doxylink:`PW_MUST_PLACE`: Ensures inputs are non-zero sized
+- :doxylink:`PW_MUST_PLACE_SIZE`: Ensures inputs are an expected size
+- :doxylink:`PW_MUST_NOT_PLACE`: Ensures inputs are *not* present
+- :doxylink:`pw::LinkerSymbol`: Represents a symbol provided by the linker
 
 .. note::
 

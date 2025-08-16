@@ -23,6 +23,8 @@
 /// Hexdump utilities
 namespace pw::dump {
 
+/// @module{pw_hex_dump}
+
 /// Size, in bytes, of the resulting string after converting an address to a
 /// UTF-8 encoded hex representation. This constant depends on the size
 /// a of a pointer.

@@ -18,6 +18,8 @@
 /// (Deprecated) Async library
 namespace pw::async {
 
+/// @module{pw_async}
+
 class Task;
 
 /// Abstract base class for an asynchronous dispatcher loop.

@@ -21,6 +21,8 @@
 
 namespace pw::uart {
 
+/// @module{pw_uart}
+
 /// The common abstract base class of the UART interface.
 ///
 /// The `UartBase` interface provides basic method for enabling and configuring

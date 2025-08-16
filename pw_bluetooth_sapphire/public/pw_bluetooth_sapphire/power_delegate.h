@@ -18,6 +18,8 @@
 
 namespace pw::bluetooth_sapphire {
 
+/// @module{pw_bluetooth_sapphire}
+
 /// Interface for Sapphire to interact with the system's power management.
 class PowerDelegate {
  public:

@@ -27,6 +27,8 @@
 
 namespace pw::persistent_ram {
 
+/// @module{pw_persistent_ram}
+
 /// `PersistentBufferWriter` implements the `pw::stream::Writer` interface and
 /// provides handles to mutate and access the underlying data of a
 /// `PersistentBuffer`. This object should NOT be stored in persistent RAM.

@@ -23,6 +23,8 @@
 namespace pw {
 namespace i2c {
 
+/// @module{pw_i2c}
+
 /// The common interface for generic I2C devices. Reads and writes arbitrary
 /// chunks of data over an I2C bus to an I2C device. This class contains
 /// `pw::i2c::Address` and wraps the `pw::i2c::Initiator` API. Only works

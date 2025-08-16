@@ -39,11 +39,9 @@
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 
-/// Async, zero-copy library for sending and receiving bytes or datagrams
 namespace pw::channel {
 
-/// @addtogroup pw_channel
-/// @{
+/// @module{pw_channel}
 
 /// The basic `Channel` type. Unlike `AnyChannel`, the `Channel`'s properties
 /// are expressed in template parameters and thus reflected in the type.
@@ -140,6 +138,7 @@ class Channel {
     return as<Channel<data_type(), kOtherChannelProperties...>>();
   }
 
+  /// @returns A byte channel reference to a datagram channel
   [[nodiscard]] Channel<DataType::kByte, kProperties...>&
   IgnoreDatagramBoundaries() {
     static_assert(kDataType == DataType::kDatagram,

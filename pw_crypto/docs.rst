@@ -346,10 +346,4 @@ configurations.
 -------------
 API reference
 -------------
-.. doxygenfunction:: pw::crypto::ecdsa::VerifyP256Signature(ConstByteSpan public_key, ConstByteSpan digest, ConstByteSpan signature)
-.. doxygenfunction:: pw::crypto::sha256::Hash(ConstByteSpan message, ByteSpan out_digest)
-.. doxygenfunction:: pw::crypto::sha256::Hash(stream::Reader& reader, ByteSpan out_digest)
-.. doxygenvariable:: pw::crypto::sha256::kDigestSizeBytes
-.. doxygenfunction:: pw::crypto::sha256::Sha256::Final(ByteSpan out_digest)
-.. doxygenfunction:: pw::crypto::sha256::Sha256::Update(ConstByteSpan data)
-.. doxygenenum::     pw::crypto::sha256::Sha256State
+Moved: :doxylink:`pw_crypto`

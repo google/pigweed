@@ -19,71 +19,10 @@ Host API
 The headers in ``public/pw_bluetooth`` constitute generic interfaces and types
 for a Bluetooth Host API. Currently, only Low Energy APIs exist.
 
-low_energy::Central2
-====================
-.. doxygenclass:: pw::bluetooth::low_energy::Central2
-   :members:
-
-low_energy::Peripheral2
-=======================
-.. doxygenclass:: pw::bluetooth::low_energy::Peripheral2
-   :members:
-
-low_energy::AdvertisedPeripheral2
-=================================
-.. doxygenclass:: pw::bluetooth::low_energy::AdvertisedPeripheral2
-   :members:
-
-low_energy::Connection2
-=======================
-.. doxygenclass:: pw::bluetooth::low_energy::Connection2
-   :members:
-
-low_energy::Channel
-===================
-.. doxygenclass:: pw::bluetooth::low_energy::Channel
-   :members:
-
-
-low_energy::ChannelListenerRegistry
-===================================
-.. doxygenclass:: pw::bluetooth::low_energy::ChannelListenerRegistry
-   :members:
-
-low_energy::ChannelListener
-===================================
-.. doxygenclass:: pw::bluetooth::low_energy::ChannelListener
-   :members:
-
-gatt::Server2
-=============
-.. doxygenclass:: pw::bluetooth::gatt::Server2
-   :members:
-
-gatt::LocalService2
-===================
-.. doxygenclass:: pw::bluetooth::gatt::LocalService2
-   :members:
-
-gatt::LocalServiceDelegate2
-===========================
-.. doxygenclass:: pw::bluetooth::gatt::LocalServiceDelegate2
-   :members:
-
-gatt::Client2
-=============
-.. doxygenclass:: pw::bluetooth::gatt::Client2
-   :members:
-
-gatt::RemoteService2
-====================
-.. doxygenclass:: pw::bluetooth::gatt::RemoteService2
-   :members:
-
-Controller2
-===========
-.. doxygenclass:: pw::bluetooth::Controller2
-   :members:
+-------------
+API reference
+-------------
+Moved: :doxylink:`pw_bluetooth`
 
 Module Configuration Options
 ============================
@@ -218,10 +157,8 @@ The snoop log is easy to integrate into your H4 Uart driver.
 HCI Utils
 ---------
 ``pw_bluetooth`` contains a header with HCI utility functions.
-
-.. doxygenfunction:: pw::bluetooth::GetHciHeaderSize
-.. doxygenfunction:: pw::bluetooth::GetHciPayloadSize
-
+See :doxylink:`pw::bluetooth::GetHciHeaderSize` and
+:doxylink:`pw::bluetooth::GetHciPayloadSize`.
 
 -----------
 Size Report

@@ -28,6 +28,8 @@
 /// Core UART interfaces
 namespace pw::uart {
 
+/// @module{pw_uart}
+
 /// Represents an abstract UART interface.
 ///
 /// The `Uart` interface provides a basic set of methods for performing

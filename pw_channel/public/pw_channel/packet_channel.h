@@ -40,6 +40,8 @@
 
 namespace pw::channel {
 
+/// @module{pw_channel}
+
 /// Represents a pending write operation. Returned by
 /// `pw::channel::PacketChannel::PendReadyToWrite`.
 template <typename Packet>
@@ -83,7 +85,7 @@ class PendingWrite {
   size_t num_packets_;
 };
 
-/// @defgroup pw_channel_packets
+/// @defgroup pw_channel_packets Packets
 /// @{
 
 /// If the number of available writes is set to this value, flow control is

@@ -31,6 +31,8 @@
 /// Basic ELF reader library
 namespace pw::elf {
 
+/// @module{pw_elf}
+
 /// A basic reader for ELF files.
 class ElfReader {
  public:

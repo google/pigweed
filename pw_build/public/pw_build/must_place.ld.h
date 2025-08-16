@@ -18,8 +18,7 @@
 #define __PW_MUST_PLACE_STRINGIFY(x) #x
 #define _PW_MUST_PLACE_STRINGIFY(x) __PW_MUST_PLACE_STRINGIFY(x)
 
-/// @defgroup pw_must_place
-/// @{
+/// @module{pw_build}
 
 // clang-format off
 /// @cond PRIVATE
@@ -87,11 +86,6 @@
 /// collection.
 #define PW_MUST_PLACE(isection)  \
     _PW_MUST_PLACE(isection, __section_place_, __COUNTER__)
-
-/// @}
-
-/// @defgroup pw_must_place_size
-/// @{
 
 // clang-format off
 /// @cond PRIVATE
@@ -163,11 +157,6 @@
 #define PW_MUST_PLACE_SIZE(isection, isize)  \
     _PW_MUST_PLACE_SIZE(isection, isize, __section_place_, __COUNTER__)
 
-/// @}
-
-/// @defgroup pw_must_not_place
-/// @{
-
 // clang-format off
 /// @cond PRIVATE
 #define ___PW_MUST_NOT_PLACE(isection, start_sym, end_sym)                                  \
@@ -210,5 +199,3 @@
 /// change to PW_MUST_PLACE
 #define PW_MUST_NOT_PLACE(isection)  \
     _PW_MUST_NOT_PLACE(isection, __section_not_place_, __COUNTER__)
-
-/// @}

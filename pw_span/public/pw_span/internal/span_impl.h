@@ -159,76 +159,77 @@ struct ExtentStorage<dynamic_extent> {
 
 }  // namespace pw_span_internal
 
-// A span is a value type that represents an array of elements of type T. Since
-// it only consists of a pointer to memory with an associated size, it is very
-// light-weight. It is cheap to construct, copy, move and use spans, so that
-// users are encouraged to use it as a pass-by-value parameter. A span does not
-// own the underlying memory, so care must be taken to ensure that a span does
-// not outlive the backing store.
-//
-// span is somewhat analogous to StringPiece, but with arbitrary element types,
-// allowing mutation if T is non-const.
-//
-// span is implicitly convertible from C++ arrays, as well as most [1]
-// container-like types that provide a data() and size() method (such as
-// std::vector<T>). A mutable span<T> can also be implicitly converted to an
-// immutable span<const T>.
-//
-// Consider using a span for functions that take a data pointer and size
-// parameter: it allows the function to still act on an array-like type, while
-// allowing the caller code to be a bit more concise.
-//
-// For read-only data access pass a span<const T>: the caller can supply either
-// a span<const T> or a span<T>, while the callee will have a read-only view.
-// For read-write access a mutable span<T> is required.
-//
-// Without span:
-//   Read-Only:
-//     // std::string HexEncode(const uint8_t* data, size_t size);
-//     std::vector<uint8_t> data_buffer = GenerateData();
-//     std::string r = HexEncode(data_buffer.data(), data_buffer.size());
-//
-//  Mutable:
-//     // ssize_t SafeSNPrintf(char* buf, size_t N, const char* fmt, Args...);
-//     char str_buffer[100];
-//     SafeSNPrintf(str_buffer, sizeof(str_buffer), "Pi ~= %lf", 3.14);
-//
-// With span:
-//   Read-Only:
-//     // std::string HexEncode(std::span<const uint8_t> data);
-//     std::vector<uint8_t> data_buffer = GenerateData();
-//     std::string r = HexEncode(data_buffer);
-//
-//  Mutable:
-//     // ssize_t SafeSNPrintf(std::span<char>, const char* fmt, Args...);
-//     char str_buffer[100];
-//     SafeSNPrintf(str_buffer, "Pi ~= %lf", 3.14);
-//
-// Spans with "const" and pointers
-// -------------------------------
-//
-// Const and pointers can get confusing. Here are vectors of pointers and their
-// corresponding spans:
-//
-//   const std::vector<int*>        =>  std::span<int* const>
-//   std::vector<const int*>        =>  std::span<const int*>
-//   const std::vector<const int*>  =>  std::span<const int* const>
-//
-// Differences from the C++20 draft
-// --------------------------------
-//
-// http://eel.is/c++draft/views contains the latest C++20 draft of std::span.
-// Chromium tries to follow the draft as close as possible. Differences between
-// the draft and the implementation are documented in subsections below.
-//
-// Differences from [span.cons]:
-// - Constructing a static span (i.e. Extent != dynamic_extent) from a dynamic
-//   sized container (e.g. std::vector) requires an explicit conversion (in the
-//   C++20 draft this is simply UB)
-//
-// Furthermore, all constructors and methods are marked noexcept due to the lack
-// of exceptions in Chromium.
+/// @module{pw_span}
 
+/// A span is a value type that represents an array of elements of type T. Since
+/// it only consists of a pointer to memory with an associated size, it is very
+/// light-weight. It is cheap to construct, copy, move and use spans, so that
+/// users are encouraged to use it as a pass-by-value parameter. A span does not
+/// own the underlying memory, so care must be taken to ensure that a span does
+/// not outlive the backing store.
+///
+/// span is somewhat analogous to StringPiece, but with arbitrary element types,
+/// allowing mutation if T is non-const.
+///
+/// span is implicitly convertible from C++ arrays, as well as most [1]
+/// container-like types that provide a data() and size() method (such as
+/// std::vector<T>). A mutable span<T> can also be implicitly converted to an
+/// immutable span<const T>.
+///
+/// Consider using a span for functions that take a data pointer and size
+/// parameter: it allows the function to still act on an array-like type, while
+/// allowing the caller code to be a bit more concise.
+///
+/// For read-only data access pass a span<const T>: the caller can supply either
+/// a span<const T> or a span<T>, while the callee will have a read-only view.
+/// For read-write access a mutable span<T> is required.
+///
+/// Without span:
+///   Read-Only:
+///     // std::string HexEncode(const uint8_t* data, size_t size);
+///     std::vector<uint8_t> data_buffer = GenerateData();
+///     std::string r = HexEncode(data_buffer.data(), data_buffer.size());
+///
+///  Mutable:
+///     // ssize_t SafeSNPrintf(char* buf, size_t N, const char* fmt, Args...);
+///     char str_buffer[100];
+///     SafeSNPrintf(str_buffer, sizeof(str_buffer), "Pi ~= %lf", 3.14);
+///
+/// With span:
+///   Read-Only:
+///     // std::string HexEncode(std::span<const uint8_t> data);
+///     std::vector<uint8_t> data_buffer = GenerateData();
+///     std::string r = HexEncode(data_buffer);
+///
+///  Mutable:
+///     // ssize_t SafeSNPrintf(std::span<char>, const char* fmt, Args...);
+///     char str_buffer[100];
+///     SafeSNPrintf(str_buffer, "Pi ~= %lf", 3.14);
+///
+/// Spans with "const" and pointers
+/// -------------------------------
+///
+/// Const and pointers can get confusing. Here are vectors of pointers and their
+/// corresponding spans:
+///
+///   const std::vector<int*>        =>  std::span<int* const>
+///   std::vector<const int*>        =>  std::span<const int*>
+///   const std::vector<const int*>  =>  std::span<const int* const>
+///
+/// Differences from the C++20 draft
+/// --------------------------------
+///
+/// http://eel.is/c++draft/views contains the latest C++20 draft of std::span.
+/// Chromium tries to follow the draft as close as possible. Differences between
+/// the draft and the implementation are documented in subsections below.
+///
+/// Differences from [span.cons]:
+/// - Constructing a static span (i.e. Extent != dynamic_extent) from a dynamic
+///   sized container (e.g. std::vector) requires an explicit conversion (in the
+///   C++20 draft this is simply UB)
+///
+/// Furthermore, all constructors and methods are marked noexcept due to the
+/// lack of exceptions in Chromium.
 // [span], class template span
 template <typename T, size_t Extent>
 class span : public pw_span_internal::ExtentStorage<Extent> {
@@ -413,6 +414,8 @@ class span : public pw_span_internal::ExtentStorage<Extent> {
  private:
   T* data_;
 };
+
+/// @}
 
 // span<T, Extent>::extent can not be declared inline prior to C++17, hence this
 // definition is required.

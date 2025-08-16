@@ -24,6 +24,8 @@
 
 namespace pw::i2c {
 
+/// @module{pw_i2c}
+
 /// Base class for creating expected individual Messages that make up a
 /// MockMessageTransaction instance. For read-only, write-only, or probe
 /// messages, improve code readability by using one of the following helpers

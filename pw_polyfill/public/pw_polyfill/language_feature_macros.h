@@ -15,6 +15,8 @@
 // Macros for using C++ features in older standards.
 #pragma once
 
+/// @module{pw_polyfill}
+
 /// Mark functions as `constexpr` if compiling for C++20 or newer. In C++17,
 /// `PW_CONSTEXPR_CPP20` expands to nothing.
 ///

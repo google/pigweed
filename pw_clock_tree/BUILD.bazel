@@ -66,7 +66,6 @@ filegroup(
 sphinx_docs_library(
     name = "docs",
     srcs = [
-        "api.rst",
         "docs.rst",
         "examples.cc",
         "examples.rst",

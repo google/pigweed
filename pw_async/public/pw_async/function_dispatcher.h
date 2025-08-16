@@ -21,6 +21,8 @@
 
 namespace pw::async {
 
+/// @module{pw_async}
+
 /// FunctionDispatcher extends Dispatcher with Post*() methods that take a
 /// TaskFunction instead of a Task. This implies that Tasks are allocated or
 /// are taken from a Task pool. Tasks are owned and managed by the Dispatcher.

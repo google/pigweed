@@ -29,18 +29,4 @@ substantially, some features may be moved to other modules (e.g.
 -----------------
 C++ API reference
 -----------------
-
-pw_numeric/checked_arithmetic.h
-===============================
-.. doxygengroup:: pw_numeric_checked_arithmetic
-   :content-only:
-   :members:
-
-pw_numeric/integer_division.h
-=============================
-.. doxygenfunction:: pw::IntegerDivisionRoundNearest
-
-pw_numeric/saturating_arithmetic.h
-==================================
-.. doxygenfunction:: pw::add_sat
-.. doxygenfunction:: pw::mul_sat
+Moved: :doxylink:`pw_numeric`

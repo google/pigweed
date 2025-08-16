@@ -118,5 +118,4 @@ Get started
 -------------
 API reference
 -------------
-.. doxygengroup:: pw_alignment
-   :members:
+Moved: :doxylink:`pw_alignment`

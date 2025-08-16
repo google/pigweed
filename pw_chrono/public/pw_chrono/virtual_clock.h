@@ -15,6 +15,8 @@
 
 namespace pw::chrono {
 
+/// @module{pw_chrono}
+
 /// An abstract interface representing a Clock.
 ///
 /// This interface allows decoupling code that uses time from the code that

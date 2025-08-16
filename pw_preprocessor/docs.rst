@@ -12,20 +12,21 @@ Compatibility
 =============
 C and C++
 
+API reference
+=============
+Moved: :doxylink:`pw_preprocessor`
+
 Headers
 =======
 The preprocessor module provides several headers.
 
 pw_preprocessor/apply.h
----------------------------------
-Defines general macro to support macro expansion. Includes the following macro:
-
-API Reference
-^^^^^^^^^^^^^
-.. doxygendefine:: PW_APPLY
+-----------------------
+Defines general macro to support macro expansion. Includes the
+:doxylink:`PW_APPLY` macro.
 
 pw_preprocessor/arguments.h
----------------------------------
+---------------------------
 Defines macros for handling variadic arguments to function-like macros. Macros
 include the following:
 
@@ -83,11 +84,11 @@ Modifying compiler diagnostics
 ``pw_preprocessor/compiler.h`` provides macros for enabling or disabling
 compiler diagnostics (warnings or errors) for sections of code.
 
-:c:macro:`PW_MODIFY_DIAGNOSTICS_PUSH` and :c:macro:`PW_MODIFY_DIAGNOSTICS_POP`
+:doxylink:`PW_MODIFY_DIAGNOSTICS_PUSH` and :doxylink:`PW_MODIFY_DIAGNOSTICS_POP`
 are used to turn off or on diagnostics (warnings or errors) for a section of
-code. Use :c:macro:`PW_MODIFY_DIAGNOSTICS_PUSH`, use
-:c:macro:`PW_MODIFY_DIAGNOSTIC` as many times as needed, then use
-:c:macro:`PW_MODIFY_DIAGNOSTICS_POP` to restore the previous settings.
+code. Use :doxylink:`PW_MODIFY_DIAGNOSTICS_PUSH`, use
+:doxylink:`PW_MODIFY_DIAGNOSTIC` as many times as needed, then use
+:doxylink:`PW_MODIFY_DIAGNOSTICS_POP` to restore the previous settings.
 
 .. code-block:: c
 
@@ -100,7 +101,7 @@ code. Use :c:macro:`PW_MODIFY_DIAGNOSTICS_PUSH`, use
 
 .. tip::
 
-  :c:macro:`PW_MODIFY_DIAGNOSTIC` and related macros should rarely be used.
+  :doxylink:`PW_MODIFY_DIAGNOSTIC` and related macros should rarely be used.
   Whenever possible, fix the underlying issues about which the compiler is
   warning, rather than silencing the diagnostics.
 
@@ -111,14 +112,9 @@ Integer with Overflow Checking
 ``pw_preprocessor/compiler.h`` provides macros for performing arithmetic
 operations and checking whether it overflowed.
 
-- :c:macro:`PW_ADD_OVERFLOW`
-- :c:macro:`PW_SUB_OVERFLOW`
-- :c:macro:`PW_MUL_OVERFLOW`
-
-API Reference
-^^^^^^^^^^^^^
-.. doxygengroup:: pw_preprocessor_compiler
-   :content-only:
+- :doxylink:`PW_ADD_OVERFLOW`
+- :doxylink:`PW_SUB_OVERFLOW`
+- :doxylink:`PW_MUL_OVERFLOW`
 
 pw_preprocessor/concat.h
 ------------------------

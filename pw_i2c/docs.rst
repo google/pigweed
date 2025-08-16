@@ -60,8 +60,8 @@ devices.
 .. grid:: 2
 
    .. grid-item-card:: :octicon:`code-square` Reference
-      :link: module-pw_i2c-reference
-      :link-type: ref
+      :link: ../doxygen/group__pw__i2c.html
+      :link-type: url
       :class-item: sales-pitch-cta-secondary
 
       API references for ``pw::i2c::Initiator``, ``pw::i2c::Address``,
@@ -80,5 +80,4 @@ devices.
    :maxdepth: 1
 
    guides
-   reference
    backends

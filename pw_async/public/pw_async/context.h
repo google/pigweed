@@ -18,6 +18,8 @@
 
 namespace pw::async {
 
+/// @module{pw_async}
+
 class Dispatcher;
 class Task;
 

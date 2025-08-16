@@ -17,6 +17,8 @@
 
 namespace pw::bluetooth_sapphire::testing {
 
+/// @module{pw_bluetooth_sapphire}
+
 /// A fake LeaseProvider used for dependency injection in unit tests.
 class FakeLeaseProvider final : public LeaseProvider {
  public:

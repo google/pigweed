@@ -33,6 +33,9 @@
 #include "pw_status/status_with_size.h"
 
 namespace pw {
+
+/// @module{pw_kvs}
+
 /// Lightweight key-value store library
 namespace kvs {
 

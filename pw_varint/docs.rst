@@ -6,8 +6,21 @@ pw_varint
 .. pigweed-module::
    :name: pw_varint
 
-.. doxygenfile:: pw_varint/varint.h
-   :sections: detaileddescription
+The ``pw_varint`` module provides functions for encoding and decoding variable
+length integers or varints. For smaller values, varints require less memory
+than a fixed-size encoding. For example, a 32-bit (4-byte) integer requires
+1–5 bytes when varint-encoded.
+
+``pw_varint`` supports custom variable-length encodings with different
+terminator bit values and positions (:doxylink:`pw::varint::Format`).
+The basic encoding for unsigned integers is Little Endian Base 128 (LEB128).
+ZigZag encoding is also supported, which maps negative integers to positive
+integers to improve encoding density for LEB128.
+
+.. _Protocol Buffers: https://developers.google.com/protocol-buffers/docs/encoding#varints
+
+`Protocol Buffers`_ and :ref:`module-pw_hdlc` use variable-length
+integer encodings for integers.
 
 -------------
 Compatibility
@@ -20,46 +33,9 @@ Compatibility
 API Reference
 -------------
 
-.. _module-pw_varint-api-c:
-
-C
-=
-.. doxygendefine:: PW_VARINT_MAX_INT32_SIZE_BYTES
-.. doxygendefine:: PW_VARINT_MAX_INT64_SIZE_BYTES
-.. doxygenfunction:: pw_varint_Encode32
-.. doxygenfunction:: pw_varint_Encode64
-.. doxygenfunction:: pw_varint_Decode32
-.. doxygenfunction:: pw_varint_Decode64
-.. doxygenfunction:: pw_varint_ZigZagEncode32
-.. doxygenfunction:: pw_varint_ZigZagEncode64
-.. doxygenfunction:: pw_varint_ZigZagDecode32
-.. doxygenfunction:: pw_varint_ZigZagDecode64
-.. doxygendefine:: PW_VARINT_ENCODED_SIZE_BYTES
-.. doxygenfunction:: pw_varint_EncodedSizeBytes
-.. doxygenenum:: pw_varint_Format
-.. doxygenfunction:: pw_varint_EncodeCustom
-.. doxygenfunction:: pw_varint_DecodeCustom
-
-C++
-===
-.. doxygenvariable:: pw::varint::kMaxVarint32SizeBytes
-.. doxygenvariable:: pw::varint::kMaxVarint64SizeBytes
-.. doxygenfunction:: pw::varint::ZigZagEncode
-.. doxygenfunction:: pw::varint::ZigZagDecode
-.. doxygenfunction:: pw::varint::EncodedSize
-.. doxygenfunction:: pw::varint::EncodeLittleEndianBase128
-.. doxygenfunction:: pw::varint::Encode(T integer, const span<std::byte> &output)
-.. doxygenfunction:: pw::varint::Decode(const span<const std::byte>& input, int64_t* output)
-.. doxygenfunction:: pw::varint::Decode(const span<const std::byte>& input, uint64_t* output)
-.. doxygenfunction:: pw::varint::MaxValueInBytes(size_t bytes)
-.. doxygenenum:: pw::varint::Format
-.. doxygenfunction:: pw::varint::Encode(uint64_t value, span<std::byte> output, Format format)
-.. doxygenfunction:: pw::varint::Decode(span<const std::byte> input, uint64_t* value, Format format)
-
-Stream API
-----------
-.. doxygenfunction:: pw::varint::Read(stream::Reader& reader, uint64_t* output, size_t max_size)
-.. doxygenfunction:: pw::varint::Read(stream::Reader& reader, int64_t* output, size_t max_size)
+C/C++
+=====
+Moved: :doxylink:`pw_varint`
 
 Rust
 ====

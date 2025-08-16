@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+/// @module{pw_polyfill}
+
 #if defined(__cplusplus)
 
 /// Evaluates true if the provided C++ standard (98, 11, 14, 17, 20, 23) is
@@ -34,6 +36,8 @@
   (__STDC_VERSION__ >= _PW_C_STANDARD_##std())
 
 #endif  // defined(__cplusplus)
+
+/// @}
 
 // Standard values of __cplusplus and __STDC_VERSION__. See the GCC docs for
 // more info: https://gcc.gnu.org/onlinedocs/cpp/Standard-Predefined-Macros.html

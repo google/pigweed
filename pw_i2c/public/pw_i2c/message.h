@@ -22,6 +22,8 @@
 
 namespace pw::i2c {
 
+/// @module{pw_i2c}
+
 /// A struct that represents I2C read and write messages.
 ///
 /// Individual messages can be accumulated into a span and transmitted

@@ -406,32 +406,41 @@ within Doxygen comments and between reStructuredText and Doxygen.
 
 Cross-references in reST to Doxygen symbols
 -------------------------------------------
-After you've used Doxygen to generate API references, you can link to those
-symbols from your reStructuredText with standard Sphinx x-ref
-syntax.
+For symbols with only one level of namespace (e.g. ``pw::Status``)
+always use the fully qualified name:
 
-.. admonition:: **Yes**
-   :class: checkmark
+.. code-block:: rst
 
-   .. code-block:: rst
+   :doxylink:`pw::IntrusiveList``
 
-      :cpp:class:`pw::sync::BinarySemaphore::BinarySemaphore`
+For symbols with two or more levels of namespace, display the
+unqualified name. The underlying link to the symbol must still
+be fully qualified:
 
-.. inclusive-language: disable
+.. code-block:: rst
 
-.. _domain: https://www.sphinx-doc.org/en/master/usage/domains/index.html
-.. _C++ Domain: https://www.sphinx-doc.org/en/master/usage/domains/cpp.html
-.. _C Domain: https://www.sphinx-doc.org/en/master/usage/domains/c.html
-.. _Python Domain: https://www.sphinx-doc.org/en/master/usage/domains/python.html
+   :doxylink:`PendRead <pw::channel::AnyChannel::PendRead>`
 
-.. inclusive-language: enable
+.. _Doxylink: https://sphinxcontrib-doxylink.readthedocs.io/en/stable/
 
-In the Sphinx docs the reference documentation for x-ref syntax is
-provided in the `domain`_ docs:
+It's also OK to provide the fully qualified name for a symbol with
+two or more levels of namespace. This is less preferred because it
+can be hard to read.
 
-* `C++ Domain`_
-* `C Domain`_
-* `Python Domain`_
+.. code-block:: rst
+
+   :doxylink:`pw::channel::AnyChannel::PendRead`
+
+Direct links to unqualified names are never allowed:
+
+.. code-block:: rst
+
+   :doxylink:`PendRead`
+
+.. _Doxylink: https://sphinxcontrib-doxylink.readthedocs.io/en/stable/
+
+If multiple symbols named ``PendRead`` exist in different namespaces,
+`Doxylink`_ must guess at what particular ``PendRead`` it should link to.
 
 .. _docs-style-doxygen-embedded-rest:
 

@@ -87,8 +87,7 @@ Features that would be nice to have:
 -------------
 API reference
 -------------
-.. doxygennamespace:: pw::chre
-   :members:
+Moved: :doxylink:`pw_chre`
 
 -------------
 Porting Guide
