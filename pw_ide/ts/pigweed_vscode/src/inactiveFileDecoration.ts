@@ -249,7 +249,7 @@ export class InactiveFileDecorationProvider
       return;
     }
 
-    const { status } = await this.activeFilesCache.fileStatus(
+    const { status, targets } = await this.activeFilesCache.fileStatus(
       projectRoot,
       uri,
       target,
@@ -262,8 +262,23 @@ export class InactiveFileDecorationProvider
       (status === 'INACTIVE' || status === 'ORPHANED') &&
       editor.selection.active.line >= 5
     ) {
-      const message = `ℹ️ Compile this file to see code intelligence.`;
-      const hoverMessage = `This file is not included in the compilation for the target ('${target}'). Clangd features like completion, diagnostics, and navigation might not work correctly or reflect the actual build.`;
+      const maxTargetsToShow = 3;
+      const truncatedTargets = targets.slice(0, maxTargetsToShow);
+      const andMore = targets.length > maxTargetsToShow ? '...' : '';
+
+      const message =
+        status === 'INACTIVE' && targets.length > 0
+          ? `ℹ️ Not built in active target ("${target}"). For code intelligence, switch to: ${truncatedTargets
+              .map((t: string) => `"${t}"`)
+              .join(', ')}${andMore}`
+          : `ℹ️ Compile this file to see code intelligence.`;
+
+      const hoverMessage =
+        status === 'INACTIVE' && targets.length > 0
+          ? `This file is not in the active "${target}" target, so code intelligence may be incorrect. To fix this, switch to a target that builds this file. This file is included in the following targets: ${targets
+              .map((t: string) => `"${t}"`)
+              .join(', ')}.`
+          : `This file is not included in the compilation for any known target. Clangd features like completion, diagnostics, and navigation will not be available.`;
 
       // Define the banner content and style dynamically
       const range = new Range(0, 0, 0, 0); // Position at the very top
