@@ -40,22 +40,6 @@ label_flag(
 # Libraries
 
 cc_library(
-    name = "pw_containers",
-    deprecation = "Depend on the individual single-header targets instead",
-    # Tagged manual so that we don't hit the deprecation warning when building
-    # upstream Pigweed itself.
-    tags = ["manual"],
-    deps = [
-        ":algorithm",
-        ":flat_map",
-        ":inline_deque",
-        ":inline_queue",
-        ":intrusive_list",
-        ":vector",
-    ],
-)
-
-cc_library(
     name = "algorithm",
     hdrs = [
         "public/pw_containers/algorithm.h",
