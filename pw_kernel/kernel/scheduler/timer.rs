@@ -70,26 +70,6 @@ impl<K: Kernel> Timer<K> {
     }
 }
 
-impl<K: Kernel> PartialEq for Timer<K> {
-    fn eq(&self, other: &Self) -> bool {
-        self.deadline == other.deadline
-    }
-}
-
-impl<K: Kernel> Eq for Timer<K> {}
-
-impl<K: Kernel> PartialOrd for Timer<K> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<K: Kernel> Ord for Timer<K> {
-    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        self.deadline.cmp(&other.deadline)
-    }
-}
-
 #[allow(dead_code)]
 pub struct TimerQueue<K: Kernel> {
     queue: ForeignList<Timer<K>, TimerCallbackListAdapter<K>>,
@@ -127,7 +107,9 @@ impl<K: Kernel> TimerQueue<K> {
 #[allow(dead_code)]
 pub fn schedule_timer<K: Kernel>(kernel: K, timer: ForeignBox<Timer<K>>) {
     let mut timer_queue = kernel.get_timer_queue().lock(kernel);
-    timer_queue.queue.sorted_insert(timer);
+    timer_queue
+        .queue
+        .sorted_insert_by_key(timer, |timer| timer.deadline);
 }
 
 /// # Safety

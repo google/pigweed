@@ -13,6 +13,7 @@
 // the License.
 #![allow(dead_code)]
 use core::cell::UnsafeCell;
+use core::cmp::Ordering;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 
@@ -482,7 +483,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     }
 }
 
-impl<T: Ord, A: Adapter> UnsafeList<T, A> {
+impl<T, A: Adapter> UnsafeList<T, A> {
     /// unchecked means:
     /// * we don't `assert!((*element_ptr.as_ptr()).is_unlinked());`
     /// * we don't check that `element` is non-null.
@@ -492,7 +493,11 @@ impl<T: Ord, A: Adapter> UnsafeList<T, A> {
     /// members.
     /// It is up to the caller to ensure the element is not in a list.
     /// It is up to the caller to ensure the element is non-null.
-    pub unsafe fn sorted_insert_unchecked(&mut self, element: *mut T) {
+    pub unsafe fn sorted_insert_by_unchecked<F: FnMut(&T, &T) -> Ordering>(
+        &mut self,
+        element: *mut T,
+        mut compare: F,
+    ) {
         let element = unsafe { NonNull::new_unchecked(element) };
         let link_ptr = unsafe { Self::get_link_ptr(element) };
 
@@ -505,7 +510,9 @@ impl<T: Ord, A: Adapter> UnsafeList<T, A> {
 
             unsafe {
                 let cur_element_ptr = Self::get_element_ptr(cur_link_ptr);
-                if *element.as_ptr() <= *cur_element_ptr {
+                if let Ordering::Less | Ordering::Equal =
+                    compare(&*element.as_ptr(), &*cur_element_ptr)
+                {
                     self.insert_before(link_ptr, cur_link_ptr);
                     return;
                 }
@@ -938,9 +945,9 @@ mod tests {
         };
 
         let mut list = UnsafeList::<TestMember, TestAdapter>::new();
-        unsafe { list.sorted_insert_unchecked(&mut element3) };
-        unsafe { list.sorted_insert_unchecked(&mut element2) };
-        unsafe { list.sorted_insert_unchecked(&mut element1) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element3, TestMember::cmp) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element2, TestMember::cmp) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element1, TestMember::cmp) };
         unsafe { validate_list(&list, &[1, 2, 3]) }
     }
 
@@ -960,9 +967,9 @@ mod tests {
         };
 
         let mut list = UnsafeList::<TestMember, TestAdapter>::new();
-        unsafe { list.sorted_insert_unchecked(&mut element1) };
-        unsafe { list.sorted_insert_unchecked(&mut element2) };
-        unsafe { list.sorted_insert_unchecked(&mut element3) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element1, TestMember::cmp) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element2, TestMember::cmp) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element3, TestMember::cmp) };
         unsafe { validate_list(&list, &[1, 2, 3]) }
     }
 
@@ -986,10 +993,10 @@ mod tests {
         };
 
         let mut list = UnsafeList::<TestMember, TestAdapter>::new();
-        unsafe { list.sorted_insert_unchecked(&mut element2) };
-        unsafe { list.sorted_insert_unchecked(&mut element1) };
-        unsafe { list.sorted_insert_unchecked(&mut element3) };
-        unsafe { list.sorted_insert_unchecked(&mut element2_2) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element2, TestMember::cmp) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element1, TestMember::cmp) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element3, TestMember::cmp) };
+        unsafe { list.sorted_insert_by_unchecked(&mut element2_2, TestMember::cmp) };
         unsafe { validate_list(&list, &[1, 2, 2, 3]) }
     }
 }
