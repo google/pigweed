@@ -15,10 +15,10 @@ pw_async2
 - **Coroutine-capable**: C++20 coroutines work just like other tasks, and can
   easily plug into an existing ``pw_async2`` system.
 
-:cpp:class:`pw::async2::Task` is Pigweed's async primitive. ``Task`` objects
+:doxylink:`pw::async2::Task` is Pigweed's async primitive. ``Task`` objects
 are cooperatively-scheduled "threads" which yield to the
-:cpp:class:`pw::async2::Dispatcher` when waiting. When the ``Task`` is able to make
-progress, the ``Dispatcher`` will run it again. For example:
+:doxylink:`pw::async2::Dispatcher` when waiting. When the ``Task`` is able to
+make progress, the ``Dispatcher`` will run it again. For example:
 
 .. tab-set::
 
@@ -38,8 +38,8 @@ progress, the ``Dispatcher`` will run it again. For example:
          :start-after: [pw_async2-examples-basic-coro]
          :end-before: [pw_async2-examples-basic-coro]
 
-Tasks can then be run on a :cpp:class:`pw::async2::Dispatcher` using the
-:cpp:func:`pw::async2::Dispatcher::Post` method:
+Tasks can then be run on a :doxylink:`pw::async2::Dispatcher` using the
+:doxylink:`pw::async2::Dispatcher::Post` method:
 
 .. literalinclude:: examples/basic.cc
    :language: cpp
@@ -73,8 +73,8 @@ Tasks can then be run on a :cpp:class:`pw::async2::Dispatcher` using the
       model, memory model, interoperability, and more.
 
    .. grid-item-card:: :octicon:`code-square` Reference
-      :link: module-pw_async2-reference
-      :link-type: ref
+      :link: ../doxygen/group__pw__async2.html
+      :link-type: url
       :class-item: sales-pitch-cta-secondary
 
       API reference for:
@@ -110,6 +110,5 @@ Tasks can then be run on a :cpp:class:`pw::async2::Dispatcher` using the
    codelab
    guides
    design
-   reference
    backends
    code_size

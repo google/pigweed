@@ -20,6 +20,11 @@
 
 namespace pw::async2 {
 
+/// @module{pw_async2}
+
+/// @ingroup pw_async2_utilities
+/// @{
+
 // A lock guarding OnceReceiver and OnceSender member variables.
 //
 // This is an ``InterruptSpinLock`` in order to allow sending values from an

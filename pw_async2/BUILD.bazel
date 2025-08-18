@@ -550,7 +550,6 @@ sphinx_docs_library(
         "docs.rst",
         "guides.rst",
         "public/pw_async2/coro.h",
-        "reference.rst",
         "//pw_async2/codelab:main.cc",
         "//pw_async2/codelab:vending_machine.cc",
         "//pw_async2/codelab:vending_machine.h",
@@ -568,6 +567,7 @@ filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_async2/allocate_task.h",
+        "public/pw_async2/callback_task.h",
         "public/pw_async2/context.h",
         "public/pw_async2/coro.h",
         "public/pw_async2/coro_or_else_task.h",

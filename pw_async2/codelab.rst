@@ -11,8 +11,8 @@ Welcome to the ``pw_async2`` codelab!
 This codelab provides a hands-on introduction to Pigweed's cooperative
 asynchronous framework. You will build a simple, simulated "Vending Machine"
 application --- an automated machine that asynchronously waits for user input
-like coin insertion and keypad presses before dispensing an item. Along the way,
-you'll learn the core concepts of ``pw_async2``.
+like coin insertion and keypad presses before dispensing an item. Along the
+way, you'll learn the core concepts of ``pw_async2``.
 
 By the end of this codelab, you will know how to:
 
@@ -39,9 +39,9 @@ introduce you to the two most fundamental components of ``pw_async2``: the
 
 What's a Task?
 ---------------
-A ``pw::async2::Task`` is the basic unit of execution in this framework. It's an
-object that represents a job to be done, like blinking an LED, processing sensor
-data, or, in our case, running a vending machine.
+A :doxylink:`pw::async2::Task` is the basic unit of execution in this
+framework. It's an object that represents a job to be done, like blinking an
+LED, processing sensor data, or, in our case, running a vending machine.
 
 Tasks are implemented by inheriting from the ``pw::async2::Task`` class and
 implementing a single virtual method: ``DoPend()``. This method is where the
@@ -70,20 +70,21 @@ Here you'll find the incomplete implementation of ``DoPend``:
   :linenos:
   :lines: 14-
 
-The ``DoPend`` method returns a ``pw::async2::Poll<>``. A ``Poll`` can be in one
-of two states:
+The ``DoPend`` method returns a :doxylink:`pw::async2::Poll<>`. A ``Poll`` can
+be in one of two states:
 
 *   ``Ready()``: The task has finished its work.
 *   ``Pending()``: The task is not yet finished and should be run again later.
 
-Our stub currently simply returns ``Ready()``, meaning it would exit immediately
-without doing any work.
+Our stub currently simply returns ``Ready()``, meaning it would exit
+immediately without doing any work.
 
 What's a Dispatcher?
 --------------------
-A ``pw::async2::Dispatcher`` is the engine that runs the tasks. It's a simple,
-cooperative scheduler. You give it tasks by calling ``Post()``, and then you
-tell it to run them by calling ``RunUntilStalled()`` or ``RunToCompletion()``.
+A :doxylink:`pw::async2::Dispatcher` is the engine that runs the tasks. It's a
+simple, cooperative scheduler. You give it tasks by calling ``Post()``, and
+then you tell it to run them by calling ``RunUntilStalled()`` or
+``RunToCompletion()``.
 
 The dispatcher maintains a queue of tasks that are ready to be polled. When a
 run is triggered, it pulls a task from the queue and invokes its ``DoPend()``

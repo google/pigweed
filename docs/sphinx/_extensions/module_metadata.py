@@ -536,6 +536,7 @@ def should_add_doxygen_link(module_name) -> bool:
         'pw_alignment',
         'pw_analog',
         'pw_async',
+        'pw_async2',
         'pw_async_basic',
         'pw_base64',
         'pw_bloat',

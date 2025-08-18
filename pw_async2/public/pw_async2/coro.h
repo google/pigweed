@@ -416,6 +416,8 @@ class Awaitable final {
 
 }  // namespace internal
 
+/// @module{pw_async2}
+
 /// An asynchronous coroutine which implements the C++20 coroutine API.
 ///
 /// # Why coroutines?
@@ -532,6 +534,8 @@ class Coro final {
 
   internal::OwningCoroutineHandle<promise_type> promise_handle_;
 };
+
+/// @}
 
 // Implement the remaining internal pieces that require a definition of
 // `Coro<T>`.

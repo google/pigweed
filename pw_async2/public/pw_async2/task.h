@@ -24,6 +24,8 @@
 /// Cooperative async tasks for embedded
 namespace pw::async2 {
 
+/// @module{pw_async2}
+
 /// Generates a token for use as a task name.
 #define PW_ASYNC_TASK_NAME(name) PW_LOG_TOKEN_EXPR("pw_async2", name)
 

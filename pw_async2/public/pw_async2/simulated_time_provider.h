@@ -19,6 +19,8 @@
 
 namespace pw::async2 {
 
+/// @module{pw_async2}
+
 /// A simulated `TimeProvider` suitable for testing APIs which use `Timer`.
 template <typename Clock>
 class SimulatedTimeProvider final : public TimeProvider<Clock> {

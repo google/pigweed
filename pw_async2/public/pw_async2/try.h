@@ -14,6 +14,8 @@
 
 #pragma once
 
+/// @module{pw_async2}
+
 /// Returns `Poll::Pending()` if \a expr is `Poll::Pending()`.
 #define PW_TRY_READY(expr)            \
   do {                                \

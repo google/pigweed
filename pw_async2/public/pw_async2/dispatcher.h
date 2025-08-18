@@ -42,6 +42,8 @@ class PendableAsTaskWithOutput : public Task {
 
 }  // namespace internal
 
+/// @module{pw_async2}
+
 /// A single-threaded cooperatively-scheduled runtime for async tasks.
 class Dispatcher {
  public:

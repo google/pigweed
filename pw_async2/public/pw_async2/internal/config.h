@@ -15,6 +15,8 @@
 // Configuration macros for the pw_async2 module.
 #pragma once
 
+/// @module{pw_async2}
+
 /// The log level to use for this module. Logs below this level are omitted.
 #ifndef PW_ASYNC2_CONFIG_LOG_LEVEL
 #define PW_ASYNC2_CONFIG_LOG_LEVEL PW_LOG_LEVEL_INFO

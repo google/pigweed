@@ -18,6 +18,8 @@
 
 namespace pw::async2::impl {
 
+/// @module{pw_async2}
+
 /// A lock guarding the `Task` queue and `Waker` lists. This is a `Dispatcher`
 /// implementation detail and should only be used by `Dispatcher` backends.
 ///

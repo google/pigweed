@@ -37,6 +37,11 @@ class AllocatedTask final : public Task {
 
 }  // namespace internal
 
+/// @module{pw_async2}
+
+/// @ingroup pw_async2_utilities
+/// @{
+
 /// Creates a ``Task`` by dynamically allocating ``Task`` memory from
 /// ``allocator``.
 ///

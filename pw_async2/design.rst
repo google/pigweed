@@ -17,15 +17,15 @@ provide a powerful asynchronous runtime.
 
 Task
 ====
-A :cpp:class:`pw::async2::Task` is the basic unit of asynchronous work. It can
+A :doxylink:`pw::async2::Task` is the basic unit of asynchronous work. It can
 be thought of as a lightweight, cooperatively scheduled "thread" or a state
-machine. Users define tasks by subclassing ``pw::async2::Task`` and implementing
-the ``DoPend`` virtual method. This method contains the core logic of the task
-and is called by the ``Dispatcher`` to advance the task's state.
+machine. Users define tasks by subclassing ``pw::async2::Task`` and
+implementing the ``DoPend`` virtual method. This method contains the core logic
+of the task and is called by the ``Dispatcher`` to advance the task's state.
 
 Dispatcher
 ==========
-The :cpp:class:`pw::async2::Dispatcher` is the scheduler or event loop. Its
+The :doxylink:`pw::async2::Dispatcher` is the scheduler or event loop. Its
 primary role is to manage a queue of tasks and run them to completion. It polls
 tasks to see if they can make progress and puts them to sleep when they are
 blocked waiting for an event.
@@ -33,7 +33,7 @@ blocked waiting for an event.
 Poll
 ====
 Asynchronous operations in ``pw_async2`` do not block. Instead, they return a
-:cpp:class:`pw::async2::Poll<T>` to indicate their status.
+:doxylink:`pw::async2::Poll\<T> <pw::async2::Poll>` to indicate their status.
 
 * ``Ready(T)``: The operation has completed, and the ``Poll`` object contains
   the result of type ``T``.
@@ -43,18 +43,19 @@ Asynchronous operations in ``pw_async2`` do not block. Instead, they return a
 Context
 =======
 When the ``Dispatcher`` polls a ``Task``, it provides a
-:cpp:class:`pw::async2::Context` object. This context contains the necessary
+:doxylink:`pw::async2::Context` object. This context contains the necessary
 information for the task to interact with the asynchronous runtime, most
 importantly the ``Waker`` for the current task.
 
 Waker
 =====
-A :cpp:class:`pw::async2::Waker` is a handle that allows a suspended task to be
+A :doxylink:`pw::async2::Waker` is a handle that allows a suspended task to be
 resumed. When a task's ``DoPend`` method returns ``Pending()``, it must have
 first arranged for its ``Waker`` to be stored somewhere accessible to the event
 source it is waiting on. When the event occurs (e.g., data arrives, a timer
-fires), the event handler calls ``Wake()`` on the stored ``Waker``. This notifies
-the ``Dispatcher`` to place the corresponding task back on the run queue.
+fires), the event handler calls ``Wake()`` on the stored ``Waker``. This
+notifies the ``Dispatcher`` to place the corresponding task back on the run
+queue.
 
 -------------------------------
 The Pendable Function Interface
@@ -97,7 +98,7 @@ operation is not yet complete and the task should be suspended. Before doing
 so, it should arrange for the current task to be woken up in the future.
 
 This is done by storing a ``Waker`` for the task from its ``Context``.
-Use the :c:macro:`PW_ASYNC_STORE_WAKER` macro to copy the current task's
+Use the :doxylink:`PW_ASYNC_STORE_WAKER` macro to copy the current task's
 ``Waker`` into a location accessible by the event source (e.g., an interrupt
 handler, a timer manager, another task).
 
@@ -115,19 +116,19 @@ There are several strategies for handling wakers from multiple callers:
 
 * **Single Waker (Assert)**: If you are certain that an operation will only
   ever have one task waiting on it at a time (common in application-specific
-  code), you can use a single :cpp:class:`pw::async2::Waker` and the
-  :c:macro:`PW_ASYNC_STORE_WAKER` macro. This macro will crash if a second
+  code), you can use a single :doxylink:`pw::async2::Waker` and the
+  :doxylink:`PW_ASYNC_STORE_WAKER` macro. This macro will crash if a second
   task attempts to store its waker before the first one has been woken, which
   can help enforce design assumptions.
 
 * **Single Waker (Try)**: A more robust approach for single-waiter
-  operations is to use :c:macro:`PW_ASYNC_TRY_STORE_WAKER`. This macro
+  operations is to use :doxylink:`PW_ASYNC_TRY_STORE_WAKER`. This macro
   returns ``false`` if a waker is already stored, allowing the function to
   gracefully signal that it is busy (e.g., by returning
   ``Poll<Result<T>>(Status::Unavailable())``).
 
 * **Multiple Wakers**: For operations that support multiple concurrent waiters,
-  use a :cpp:class:`pw::async2::WakerQueue`. This is a fixed-size queue that can
+  use a :doxylink:`pw::async2::WakerQueue`. This is a fixed-size queue that can
   store multiple wakers. When the operation completes, you can choose to wake
   the first (``WakeOne()``), a specific number (``WakeMany(n)``), or all
   (``WakeAll()``) of the waiting tasks. The same macros work with a
@@ -157,7 +158,7 @@ The execution model of ``pw_async2`` revolves around the interaction between
 ``Task`` objects and the ``Dispatcher``.
 
 1. **Posting**: A ``Task`` is scheduled to run by passing it to the
-   :cpp:func:`pw::async2::Dispatcher::Post` method. This adds the task to the
+   :doxylink:`pw::async2::Dispatcher::Post` method. This adds the task to the
    dispatcher's queue of runnable tasks.
 
 2. **Polling**: The ``Dispatcher`` runs its event loop (e.g., via
@@ -209,11 +210,12 @@ flexibility in how tasks are allocated and stored. Common patterns include:
   statically or as class members. This is the most common and memory-safe
   approach. The user must ensure the ``Task`` object is not destroyed while it
   is still registered with a ``Dispatcher``. Calling
-  :cpp:func:`pw::async2::Task::Deregister` before destruction guarantees safety.
+  :doxylink:`pw::async2::Task::Deregister` before destruction guarantees
+  safety.
 
 * **Dynamic Allocation**: For tasks with a dynamic lifetime, ``pw_async2``
-  provides the :cpp:func:`pw::async2::AllocateTask` helper. This function
-  allocates a task using a provided :cpp:class:`pw::allocator::Allocator` and
+  provides the :doxylink:`pw::async2::AllocateTask` helper. This function
+  allocates a task using a provided :doxylink:`pw::Allocator` and
   wraps it in a concrete ``Task`` implementation that automatically calls the
   allocator's ``Delete`` method upon completion. This simplifies memory
   management for "fire-and-forget" tasks.
@@ -226,13 +228,14 @@ flexibility in how tasks are allocated and stored. Common patterns include:
 
 Coroutine Memory
 ================
-When using C++20 coroutines, the compiler generates code to save the coroutine's
-state (including local variables) across suspension points (``co_await``).
-``pw_async2`` hooks into this mechanism to control where this state is stored.
+When using C++20 coroutines, the compiler generates code to save the
+coroutine's state (including local variables) across suspension points
+(``co_await``). ``pw_async2`` hooks into this mechanism to control where this
+state is stored.
 
-A :cpp:class:`pw::async2::CoroContext`, which holds a
-:cpp:class:`pw::allocator::Allocator`, must be passed to any function that
-returns a :cpp:class:`pw::async2::Coro`. This allocator is used to allocate the
+A :doxylink:`pw::async2::CoroContext`, which holds a
+:doxylink:`pw::Allocator`, must be passed to any function that
+returns a :doxylink:`pw::async2::Coro`. This allocator is used to allocate the
 coroutine frame. If allocation fails, the resulting ``Coro`` will be invalid
 and will immediately return a ``Ready(Status::Internal())`` result when polled.
 This design makes coroutine memory usage explicit and controllable.
@@ -249,12 +252,12 @@ It's common to have a system where some parts use ``pw_async2`` and others use
 callbacks. To bridge this gap, ``pw_async2`` provides helpers to wrap a
 pendable function and invoke a callback with its result.
 
-* :cpp:class:`pw::async2::OneshotCallbackTask`: Polls a pendable function
+* :doxylink:`pw::async2::OneshotCallbackTask`: Polls a pendable function
   until it completes. When the function returns ``Ready(value)``, invokes a
-  provided callback with the ``value`` and then finishes the task. This is ideal
-  for request/response patterns.
+  provided callback with the ``value`` and then finishes the task. This is
+  ideal for request/response patterns.
 
-* :cpp:class:`pw::async2::RecurringCallbackTask`: This task is similar but
+* :doxylink:`pw::async2::RecurringCallbackTask`: This task is similar but
   reschedules itself after the callback is invoked. This allows it to handle
   pendable functions that produce a stream of values over time.
 
@@ -300,43 +303,44 @@ to consider:
 
 * **Robust Callback APIs**: If an asynchronous operation needs to expose a
   robust, primary API based on callbacks to non-``pw_async2`` parts of a
-  system, a more integrated solution is recommended. Instead of using standalone
-  ``CallbackTask`` objects, the core ``Task`` that manages the operation should
-  natively support registering and managing a list of callbacks. This provides
-  a clearer and more efficient interface for external consumers.
+  system, a more integrated solution is recommended. Instead of using
+  standalone ``CallbackTask`` objects, the core ``Task`` that manages the
+  operation should natively support registering and managing a list of
+  callbacks. This provides a clearer and more efficient interface for external
+  consumers.
 
 ---------------
 Time and Timers
 ---------------
 Asynchronous systems often need to interact with time, for example to implement
 timeouts, delays, or periodic tasks. ``pw_async2`` provides a flexible and
-testable mechanism for this through the :cpp:class:`pw::async2::TimeProvider`
+testable mechanism for this through the :doxylink:`pw::async2::TimeProvider`
 interface.
 
 ``TimeProvider``
 ================
-The :cpp:class:`pw::async2::TimeProvider` is an abstract interface that acts as
+The :doxylink:`pw::async2::TimeProvider` is an abstract interface that acts as
 a factory for timers. Its key responsibilities are:
 
 * **Providing the current time**: The ``now()`` method returns the current
   time according to a specific clock.
 * **Creating timers**: The ``WaitUntil(timestamp)`` and ``WaitFor(delay)``
-  methods return a :cpp:class:`pw::async2::TimeFuture` object.
+  methods return a :doxylink:`pw::async2::TimeFuture` object.
 
 This design is friendly to dependency injection. By providing different
 implementations of ``TimeProvider``, code that uses timers can be tested with a
-simulated clock (like :cpp:class:`pw::chrono::SimulatedClock`), allowing for
+simulated clock (like ``pw::chrono::SimulatedClock``), allowing for
 fast and deterministic tests without real-world delays. For production code,
-the :cpp:func:`pw::async2::GetSystemTimeProvider` function returns a global
+the :doxylink:`pw::async2::GetSystemTimeProvider` function returns a global
 ``TimeProvider`` that uses the configured system clock.
 
 ``TimeFuture``
 ==============
-A :cpp:class:`pw::async2::TimeFuture` is a pendable object that completes at a
+A :doxylink:`pw::async2::TimeFuture` is a pendable object that completes at a
 specific time. A task can ``Pend`` on a ``TimeFuture`` to suspend itself until
-the time designated by the future. When the time is reached, the ``TimeProvider``
-wakes the task, and its next poll of the ``TimeFuture`` will return
-``Ready(timestamp)``.
+the time designated by the future. When the time is reached, the
+``TimeProvider`` wakes the task, and its next poll of the ``TimeFuture`` will
+return ``Ready(timestamp)``.
 
 Example
 =======
@@ -405,7 +409,7 @@ primitives to make asynchronous programming easier and more expressive.
 Coroutines (``Coro<T>``)
 ========================
 For projects using C++20, ``pw_async2`` provides first-class support for
-coroutines via :cpp:class:`pw::async2::Coro`. This allows you to write
+coroutines via :doxylink:`pw::async2::Coro`. This allows you to write
 asynchronous logic in a sequential, synchronous style, eliminating the need to
 write explicit state machines. The ``co_await`` keyword is used to suspend
 execution until an asynchronous operation is ``Ready``.
@@ -428,18 +432,18 @@ Data Passing (``OnceSender`` / ``OnceReceiver``)
 ================================================
 This pair of types provides a simple, single-use channel for passing a value
 from one task to another. The receiving task pends on the
-:cpp:class:`pw::async2::OnceReceiver` until the producing task sends a value
-through the :cpp:class:`pw::async2::OnceSender`.
+:doxylink:`pw::async2::OnceReceiver` until the producing task sends a value
+through the :doxylink:`pw::async2::OnceSender`.
 
 Combinators (``Join`` and ``Select``)
 =====================================
 These powerful utilities allow for the composition of multiple asynchronous
 operations:
 
-* :cpp:class:`pw::async2::Join`: Waits for *all* of a set of pendable
+* :doxylink:`pw::async2::Join`: Waits for *all* of a set of pendable
   operations to complete.
 
-* :cpp:class:`pw_async2::Select`: Waits for the *first* of a set of pendable
+* :doxylink:`pw::async2::Select`: Waits for the *first* of a set of pendable
   operations to complete, returning its result.
 
 Poll aliases

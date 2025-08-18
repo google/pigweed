@@ -19,6 +19,11 @@
 
 namespace pw::async2 {
 
+/// @module{pw_async2}
+
+/// @ingroup pw_async2_utilities
+/// @{
+
 /// A ``Task`` that delegates to a provided ``Coro<Status>>`` and executes
 /// an ``or_else`` handler function on failure.
 class CoroOrElseTask : public Task {

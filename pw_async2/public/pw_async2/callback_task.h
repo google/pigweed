@@ -63,6 +63,8 @@ class CallbackTask : public Task {
 
 }  // namespace internal
 
+/// @module{pw_async2}
+
 /// A ``Task`` which pends a pendable function and invokes a provided callback
 /// with its output when it returns ``Ready``.
 ///

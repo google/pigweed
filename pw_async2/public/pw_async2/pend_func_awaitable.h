@@ -22,6 +22,11 @@
 
 namespace pw::async2 {
 
+/// @module{pw_async2}
+
+/// @ingroup pw_async2_utilities
+/// @{
+
 /// A co-awaitable object that delegates to a provided ``func``.
 ///
 /// Thie provided ``func`` may be any callable (function, lambda, or similar)

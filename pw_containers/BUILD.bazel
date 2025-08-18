@@ -665,6 +665,7 @@ filegroup(
         "public/pw_containers/inline_queue.h",
         "public/pw_containers/inline_var_len_entry_queue.h",
         "public/pw_containers/internal/aa_tree.h",
+        "public/pw_containers/internal/async_count_and_capacity.h",
         "public/pw_containers/internal/generic_deque.h",
         "public/pw_containers/internal/intrusive_list.h",
         "public/pw_containers/intrusive_forward_list.h",

@@ -43,6 +43,8 @@ class WakerQueueBase;
 
 }  // namespace internal
 
+/// @module{pw_async2}
+
 /// Context for an asynchronous ``Task``.
 ///
 /// This object contains resources needed for scheduling asynchronous work,

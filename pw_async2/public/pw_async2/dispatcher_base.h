@@ -25,6 +25,8 @@
 
 namespace pw::async2 {
 
+/// @module{pw_async2}
+
 // Forward-declare ``Dispatcher``.
 // This concrete type must be provided by a backend.
 class Dispatcher;

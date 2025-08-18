@@ -27,6 +27,9 @@
 /// @defgroup pw_async pw_async
 /// @brief Portable APIs for asynchronous code. Main docs: https://pigweed.dev/pw_async
 
+/// @defgroup pw_async2 pw_async2
+/// @brief Cooperative async tasks for embedded: https://pigweed.dev/pw_async2
+
 /// @defgroup pw_async_basic pw_async_basic
 /// @brief Main docs: https://pigweed.dev/pw_async_basic
 

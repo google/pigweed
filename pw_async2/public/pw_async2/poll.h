@@ -26,6 +26,8 @@ class Result;
 
 namespace async2 {
 
+/// @module{pw_async2}
+
 /// A type whose value indicates that an operation was able to complete (or
 /// was ready to produce an output).
 ///

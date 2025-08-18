@@ -17,6 +17,11 @@
 
 namespace pw::async2 {
 
+/// @module{pw_async2}
+
+/// @ingroup pw_async2_utilities
+/// @{
+
 /// A pendable value which joins together several separate pendable values.
 ///
 /// It will only return ``Ready`` once all of the individual pendables have

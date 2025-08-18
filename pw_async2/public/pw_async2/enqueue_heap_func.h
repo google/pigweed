@@ -37,6 +37,12 @@ class RunHeapFuncTask : public Task {
 
 }  // namespace internal
 
+/// @module{pw_async2}
+
+// TODO: https://pwbug.dev/438818334 - Use `@submodule` alias.
+/// @defgroup pw_async2_utilities Utilities
+/// @{
+
 /// Heap-allocates space for ``func`` and enqueues it to run on ``dispatcher``.
 ///
 /// ``func`` must be a no-argument callable that returns ``void``.

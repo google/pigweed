@@ -41,6 +41,8 @@ template <typename Callable>
 
 }  // namespace internal
 
+/// @module{pw_async2}
+
 /// Attempts to store a waker associated with the current context into
 /// ``waker_or_queue_out``. If the waker cannot be stored into
 /// ``waker_or_queue_out`` due to the target waker already referencing a task or

@@ -40,6 +40,8 @@ void AssertTimeFutureObjectsAllGone(bool empty);
 
 }  // namespace internal
 
+/// @module{pw_async2}
+
 template <typename Clock>
 class TimeFuture;
 

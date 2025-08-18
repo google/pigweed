@@ -22,6 +22,11 @@
 
 namespace pw::async2 {
 
+/// @module{pw_async2}
+
+/// @ingroup pw_async2_utilities
+/// @{
+
 template <typename... Pendables>
 class Selector;
 
@@ -45,6 +50,10 @@ struct AllPendablesCompleted {
   static constexpr size_t kIndex = std::numeric_limits<size_t>::max();
   std::nullopt_t value = std::nullopt;
 };
+
+/// @}
+
+/// @}
 
 namespace internal {
 
@@ -81,6 +90,11 @@ void VisitSelectResult(ResultVariant&& variant,
 }
 
 }  // namespace internal
+
+/// @module{pw_async2}
+
+/// @ingroup pw_async2_utilities
+/// @{
 
 /// A pendable value which returns the result of the first of several pendable
 /// values to complete.
