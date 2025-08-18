@@ -13,8 +13,9 @@
 // the License.
 
 use core::ptr::NonNull;
-use core::sync::atomic::{AtomicUsize, Ordering};
+use core::sync::atomic::Ordering;
 
+use pw_atomic::{AtomicAdd, AtomicLoad, AtomicNew, AtomicSub};
 use pw_status::Result;
 use time::Instant;
 
@@ -63,7 +64,7 @@ struct EventState {
 pub struct Event<K: Kernel> {
     config: EventConfig,
     state: WaitQueueLock<K, EventState>,
-    signalers: AtomicUsize,
+    signalers: K::AtomicUsize,
 }
 
 /// An signaler for an [`Event`]
@@ -137,11 +138,11 @@ impl<K: Kernel> Event<K> {
     /// Returns the new `Event` long with an [`EventSignaler`] which can be
     /// used to signal the event.
     #[must_use]
-    pub const fn new(kernel: K, config: EventConfig) -> Self {
+    pub fn new(kernel: K, config: EventConfig) -> Self {
         Self {
             config,
             state: WaitQueueLock::new(kernel, EventState { signaled: false }),
-            signalers: AtomicUsize::new(1),
+            signalers: K::AtomicUsize::new(1),
         }
     }
 

@@ -17,11 +17,24 @@ load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "riscv32_without_atomics",
+    constraint_values = [
+        "//pw_build/constraints/riscv/extensions:A.not",
+        "@platforms//cpu:riscv32",
+    ],
+)
+
 rust_library(
     name = "pw_atomic",
     srcs = [
         "pw_atomic.rs",
     ],
+    crate_features =
+        select({
+            "riscv32_without_atomics": [],
+            "//conditions:default": ["builtin_impls"],
+        }),
     tags = ["kernel"],
 )
 

@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_kernel:flags.bzl", "KERNEL_TEST_DEPS", "KERNEL_TEST_RUSTC_FLAGS")
 
 package(default_visibility = ["//visibility:public"])
@@ -29,6 +30,7 @@ rust_library(
     ],
     rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_kernel/config:kernel_config",
         "//pw_kernel/kernel",

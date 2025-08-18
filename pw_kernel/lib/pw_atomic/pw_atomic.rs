@@ -16,35 +16,37 @@
 use core::sync::atomic::Ordering;
 
 pub trait AtomicAdd<T> {
-    // Adds `val` to the current value, returning the previous value.
-    //
-    // Behaves the same as [`core::atomic::AtomicUsize::fetch_add()`].
+    /// Adds `val` to the current value, returning the previous value.
+    ///
+    /// Behaves the same as [`core::atomic::AtomicUsize::fetch_add()`].  Notably
+    /// this means that is has wrapping semantics.
     fn fetch_add(&self, val: T, order: Ordering) -> T;
 }
 
 pub trait AtomicSub<T> {
-    // Subtracts `val` to the current value, returning the previous value.
-    //
-    // Behaves the same as [`core::atomic::AtomicUsize::fetch_sub()`].
+    /// Subtracts `val` to the current value, returning the previous value.
+    ///
+    /// Behaves the same as [`core::atomic::AtomicUsize::fetch_sub()`].  Notably
+    /// this means that is has wrapping semantics.
     fn fetch_sub(&self, val: T, order: Ordering) -> T;
 }
 
 pub trait AtomicLoad<T> {
-    // Loads and returns the current value.
-    //
-    // Behaves the same as [`core::atomic::AtomicUsize::load()`].
+    /// Loads and returns the current value.
+    ///
+    /// Behaves the same as [`core::atomic::AtomicUsize::load()`].
     fn load(&self, order: Ordering) -> T;
 }
 
 pub trait AtomicStore<T> {
-    // Stores a value in the atomic.
-    //
-    // Behaves the same as [`core::atomic::AtomicUsize::store()`].
+    /// Stores a value in the atomic.
+    ///
+    /// Behaves the same as [`core::atomic::AtomicUsize::store()`].
     fn store(&self, val: T, order: Ordering);
 }
 
 pub trait AtomicNew<T> {
-    // Returns a new atomic with `val`
+    /// Returns a new atomic with `val`
     fn new(val: T) -> Self;
 }
 
@@ -59,45 +61,49 @@ pub trait Atomic<T>:
 
 pub trait AtomicUsize: Atomic<usize> + AtomicZero {}
 
-macro_rules! impl_for_type {
-    ($atomic_type:ty, $primitive_type:ty) => {
-        impl AtomicAdd<$primitive_type> for $atomic_type {
-            fn fetch_add(&self, val: $primitive_type, ordering: Ordering) -> $primitive_type {
-                self.fetch_add(val, ordering)
+#[cfg(feature = "builtin_impls")]
+mod builtin_impls {
+    use super::*;
+    macro_rules! impl_for_type {
+        ($atomic_type:ty, $primitive_type:ty) => {
+            impl AtomicAdd<$primitive_type> for $atomic_type {
+                fn fetch_add(&self, val: $primitive_type, ordering: Ordering) -> $primitive_type {
+                    self.fetch_add(val, ordering)
+                }
             }
-        }
 
-        impl AtomicSub<$primitive_type> for $atomic_type {
-            fn fetch_sub(&self, val: $primitive_type, ordering: Ordering) -> $primitive_type {
-                self.fetch_sub(val, ordering)
+            impl AtomicSub<$primitive_type> for $atomic_type {
+                fn fetch_sub(&self, val: $primitive_type, ordering: Ordering) -> $primitive_type {
+                    self.fetch_sub(val, ordering)
+                }
             }
-        }
 
-        impl AtomicLoad<$primitive_type> for $atomic_type {
-            fn load(&self, ordering: Ordering) -> $primitive_type {
-                self.load(ordering)
+            impl AtomicLoad<$primitive_type> for $atomic_type {
+                fn load(&self, ordering: Ordering) -> $primitive_type {
+                    self.load(ordering)
+                }
             }
-        }
 
-        impl AtomicStore<$primitive_type> for $atomic_type {
-            fn store(&self, val: $primitive_type, ordering: Ordering) {
-                self.store(val, ordering)
+            impl AtomicStore<$primitive_type> for $atomic_type {
+                fn store(&self, val: $primitive_type, ordering: Ordering) {
+                    self.store(val, ordering)
+                }
             }
-        }
 
-        impl AtomicNew<$primitive_type> for $atomic_type {
-            fn new(val: $primitive_type) -> Self {
-                Self::new(val)
+            impl AtomicNew<$primitive_type> for $atomic_type {
+                fn new(val: $primitive_type) -> Self {
+                    Self::new(val)
+                }
             }
-        }
 
-        impl AtomicZero for $atomic_type {
-            const ZERO: Self = Self::new(0);
-        }
+            impl AtomicZero for $atomic_type {
+                const ZERO: Self = Self::new(0);
+            }
 
-        impl Atomic<$primitive_type> for $atomic_type {}
-    };
+            impl Atomic<$primitive_type> for $atomic_type {}
+        };
+    }
+
+    impl_for_type!(core::sync::atomic::AtomicUsize, usize);
+    impl AtomicUsize for core::sync::atomic::AtomicUsize {}
 }
-
-impl_for_type!(core::sync::atomic::AtomicUsize, usize);
-impl AtomicUsize for core::sync::atomic::AtomicUsize {}

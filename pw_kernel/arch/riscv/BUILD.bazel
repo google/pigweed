@@ -20,26 +20,27 @@ package(default_visibility = ["//visibility:public"])
 rust_library(
     name = "arch_riscv",
     srcs = [
+        "disable_interrupts_atomic.rs",
         "exceptions.rs",
         "lib.rs",
         "protection.rs",
         "regs.rs",
+        "regs/epmp.rs",
         "regs/pmp.rs",
         "spinlock.rs",
         "threads.rs",
         "timer.rs",
-    ] + select({
-        "timer_clint": ["timer/clint.rs"],
-        "timer_mtime": ["timer/mtime.rs"],
-    }) + select({
-        "//pw_build/constraints/riscv/extensions:Smepmp": ["regs/epmp.rs"],
-        "//conditions:default": [],
-    }),
+        "timer/clint.rs",
+        "timer/mtime.rs",
+    ],
     crate_features = ["user_space"] + select({
         "timer_clint": ["timer_clint"],
         "timer_mtime": ["timer_mtime"],
     }) + select({
         "//pw_build/constraints/riscv/extensions:Smepmp": ["epmp"],
+        "//conditions:default": [],
+    }) + select({
+        "//pw_build/constraints/riscv/extensions:A.not": ["disable_interrupts_atomic"],
         "//conditions:default": [],
     }),
     proc_macro_deps = [
@@ -59,6 +60,7 @@ rust_library(
         "//pw_kernel/lib/list",
         "//pw_kernel/lib/log_if",
         "//pw_kernel/lib/pw_assert",
+        "//pw_kernel/lib/pw_atomic",
         "//pw_kernel/lib/pw_cast",
         "//pw_kernel/lib/pw_status",
         "//pw_kernel/lib/regs",
@@ -76,7 +78,10 @@ rust_doc(
         "--document-private-items",
         "--cfg=feature=\"user_space\"",
         "--cfg=feature=\"arch_riscv\"",
-    ],
+    ] + select({
+        "//pw_build/constraints/riscv/extensions:A.not": ["--cfg=feature=\"disable_interrupts_atomic\""],
+        "//conditions:default": [],
+    }),
     tags = ["kernel"],
 )
 

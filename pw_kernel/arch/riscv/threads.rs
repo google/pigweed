@@ -95,7 +95,10 @@ impl Arch for super::Arch {
     type ThreadState = ArchThreadState;
     type BareSpinLock = BareSpinLock;
     type Clock = super::timer::Clock;
+    #[cfg(not(feature = "disable_interrupts_atomic"))]
     type AtomicUsize = core::sync::atomic::AtomicUsize;
+    #[cfg(feature = "disable_interrupts_atomic")]
+    type AtomicUsize = crate::disable_interrupts_atomic::AtomicUsize;
 
     #[inline(never)]
     unsafe fn context_switch<'a>(

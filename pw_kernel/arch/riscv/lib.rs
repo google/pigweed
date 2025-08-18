@@ -16,6 +16,8 @@
 
 use kernel::KernelState;
 
+#[cfg(feature = "disable_interrupts_atomic")]
+mod disable_interrupts_atomic;
 mod exceptions;
 mod protection;
 pub mod regs;
