@@ -138,6 +138,9 @@ cc_toolchain(
         # This MUST be the last feature!!!!
         ":cortex_libc",
     ],
+    known_features = [
+        "//pw_toolchain/cc/capability:known_toolchain_types",
+    ],
     target_compatible_with = select({
         # TODO: https://pwbug.dev/380001331 - Add support for other cortex MCUs
         "//pw_build/constraints/arm:cortex-m7": [],

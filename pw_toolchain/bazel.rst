@@ -294,3 +294,63 @@ Example:
        ),
        srcs = ["lib.cc"],
    )
+
+---------------------------------
+Compiler-specific toolchain flags
+---------------------------------
+In cases where foundationally different toolchains (e.g. Clang, GCC, MSVC) share
+large pieces of project-wide configuration, you may want to conditionally add
+flags that are compiler-specific. This can be done with the following steps:
+
+#. **Express the type of compiler in your cc_toolchain.** This is how the
+   rest of your toolchain rules will know what kind of compiler is active.
+
+   .. code-block:: py
+
+      cc_toolchain(
+          name = "arm_clang_toolchain_cortex-a",
+          # ...
+          enabled_features = [
+              "@pigweed//pw_toolchain/cc/capability:compiler_is_clang",
+              "@pigweed//pw_toolchain/cc/capability:linker_is_clang",
+          ],
+      )
+
+#. **Add the list of known toolchain types to your toolchain.** This ensures
+   that the ``cc_toolchain`` passes feature correctness validations.
+
+   .. code-block:: py
+
+      cc_toolchain(
+          name = "arm_clang_toolchain_cortex-a",
+          # ...
+          enabled_features = [
+              "@pigweed//pw_toolchain/cc/capability:compiler_is_clang",
+              "@pigweed//pw_toolchain/cc/capability:linker_is_clang",
+          ],
+          known_features = [
+              "//pw_toolchain/cc/capability:known_toolchain_types",
+          ],
+      )
+
+#. **Gate the arguments with requires_any_of.** ``cc_args`` gated by
+   a ``requires_any_of`` constraint on a toolchain type will only be expanded
+   in the compiler/linker invocation if the toolchain tool matches the required
+   type. Keep in mind that ``compiler_is_clang`` and ``linker_is_clang`` types
+   are offered separately to support cases where the compiler and linker types
+   are not the same.
+
+   .. code-block:: py
+
+      cc_args(
+          name = "clang_only_extra_pigweed_warnings",
+          actions = [
+              "@rules_cc//cc/toolchains/actions:compile_actions",
+          ],
+          requires_any_of = [
+              "//pw_toolchain/cc/capability:compiler_is_clang",
+          ],
+          args = [
+              "-Wshadow-all",
+          ],
+      )

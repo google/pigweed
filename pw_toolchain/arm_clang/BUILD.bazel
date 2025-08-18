@@ -267,6 +267,9 @@ cc_toolchain(
         "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/cc/args:c++20_feature"],
         "//conditions:default": [],
     }),
+    known_features = [
+        "//pw_toolchain/cc/capability:known_toolchain_types",
+    ],
     tags = ["manual"],  # Don't try to build this in wildcard builds.
     target_compatible_with = select({
         "//pw_build/constraints/arm:cortex-m0": [],
@@ -342,6 +345,9 @@ cc_toolchain(
         "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/cc/args:c++20_feature"],
         "//conditions:default": [],
     }),
+    known_features = [
+        "//pw_toolchain/cc/capability:known_toolchain_types",
+    ],
     tags = ["manual"],  # Don't try to build this in wildcard builds.
     target_compatible_with = select({
         "//pw_build/constraints/arm:cortex-a35": [],

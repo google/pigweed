@@ -445,6 +445,7 @@ cc_toolchain(
         ":verbose_compiler_output",
         "//pw_toolchain/cc/args:conversion_warnings_feature",
         "//pw_toolchain/cc/args:ctad_warnings_feature",
+        "//pw_toolchain/cc/capability:known_toolchain_types",
     ],
     # TODO: https://pwbug.dev/219091175 - Remove this select (always set this to
     # builtin_module_map) once all Pigweed downstream projects are on Bazel 8.

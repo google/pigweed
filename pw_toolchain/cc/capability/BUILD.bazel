@@ -13,6 +13,8 @@
 # the License.
 
 load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+load("@rules_cc//cc/toolchains:feature_set.bzl", "cc_feature_set")
+load("@rules_cc//cc/toolchains:mutually_exclusive_category.bzl", "cc_mutually_exclusive_category")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -20,22 +22,53 @@ package(default_visibility = ["//visibility:public"])
 # features. By nature, they do not provide any flags. Instead, these features
 # are used to guide other behaviors throughout a toolchain.
 
+cc_mutually_exclusive_category(
+    name = "compiler_type",
+)
+
 cc_feature(
     name = "compiler_is_clang",
     feature_name = "compiler_is_clang",
+    mutually_exclusive = [":compiler_type"],
 )
 
 cc_feature(
     name = "compiler_is_gcc",
     feature_name = "compiler_is_gcc",
+    mutually_exclusive = [":compiler_type"],
+)
+
+cc_mutually_exclusive_category(
+    name = "linker_type",
 )
 
 cc_feature(
     name = "linker_is_clang",
     feature_name = "linker_is_clang",
+    mutually_exclusive = [":linker_type"],
 )
 
 cc_feature(
     name = "linker_is_gcc",
     feature_name = "linker_is_gcc",
+    mutually_exclusive = [":linker_type"],
+)
+
+# Always add this to ``cc_toolchain.known_features`` list of your toolchain to
+# enable compiler-specific flags. If this is not included in your cc_toolchain,
+# you'll get the following error:
+#
+#   Error in fail: It is impossible to enable @@pigweed//pw_toolchain/cc/args:clang_only_extra_pigweed_warnings.
+#
+#   None of the entries in requires_any_of could be matched. This is required
+#   features are not implicitly added to the toolchain. It's likely that the
+#   feature that you require needs to be added to the toolchain explicitly.
+cc_feature_set(
+    name = "known_toolchain_types",
+    all_of = [
+        ":compiler_is_clang",
+        ":compiler_is_gcc",
+        ":linker_is_clang",
+        ":linker_is_gcc",
+    ],
 )
