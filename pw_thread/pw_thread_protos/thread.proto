@@ -124,6 +124,13 @@ message Thread {
   // This value should be used to refer to this thread in a context that
   // requires numeric thread IDs, e.g. in a coredump for use with GDB or LLDB.
   optional uint64 id = 12;
+
+  // RESERVED FOR PIGWEED. Downstream projects may NOT write to these fields.
+  // Encodes to two bytes of tag overhead.
+  reserved 13 to 1031;
+
+  // RESERVED FOR USERS. Encodes to two or more bytes of tag overhead.
+  reserved 1032 to max;
 }
 
 // This message overlays the pw.snapshot.Snapshot proto. It's valid to encode
