@@ -21,6 +21,8 @@
 
 namespace pw::log_tokenized {
 
+/// @module{pw_log_tokenized}
+
 // Minimum capacity for a string that to hold the Base64-encoded version of a
 // PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES tokenized message. This is the
 // capacity needed to encode to a `pw::InlineString` and does not include a null

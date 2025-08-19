@@ -44,12 +44,7 @@ implementation.
 
 API reference
 =============
-.. doxygenfunction:: pw::sys_io::ReadByte(std::byte* dest)
-.. doxygenfunction:: pw::sys_io::TryReadByte(std::byte* dest)
-.. doxygenfunction:: pw::sys_io::WriteByte(std::byte b)
-.. doxygenfunction:: pw::sys_io::WriteLine(std::string_view s)
-.. doxygenfunction:: pw::sys_io::ReadBytes(ByteSpan dest)
-.. doxygenfunction:: pw::sys_io::WriteBytes(ConstByteSpan src)
+Moved: :doxylink:`pw_sys_io`
 
 Dependencies
 ============

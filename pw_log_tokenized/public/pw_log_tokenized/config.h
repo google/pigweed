@@ -18,6 +18,8 @@
 #include "pw_polyfill/static_assert.h"
 #include "pw_tokenizer/config.h"
 
+/// @module{pw_log_tokenized}
+
 // The size of the stack-allocated argument encoding buffer to use by default.
 // A buffer of this size is allocated and used for the 4-byte token and for
 // encoding all arguments. It must be at least large enough for the token (4

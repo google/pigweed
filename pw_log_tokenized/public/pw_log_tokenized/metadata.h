@@ -43,6 +43,8 @@ class BitField<T, 0, kShift> {
 
 }  // namespace internal
 
+/// @module{pw_log_tokenized}
+
 // This class, which is aliased to pw::log_tokenized::Metadata below, is used to
 // access the log metadata packed into the tokenizer's payload argument.
 //

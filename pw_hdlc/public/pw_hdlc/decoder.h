@@ -28,6 +28,8 @@
 
 namespace pw::hdlc {
 
+/// @module{pw_hdlc}
+
 // Represents the contents of an HDLC frame -- the unescaped data between two
 // flag bytes. Instances of Frame are only created when a full, valid frame has
 // been read.

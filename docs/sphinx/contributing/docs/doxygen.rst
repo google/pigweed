@@ -93,6 +93,8 @@ Authoring content
 
 #. To be continued…
 
+.. Mention PW_EXCLUDE_FROM_DOXYGEN
+
 .. _doxygen-modify:
 
 -----------------

@@ -21,6 +21,9 @@
 #include "pw_thread_backend/stack.h"
 
 namespace pw {
+
+/// @module{pw_thread}
+
 namespace internal {
 
 using ThreadStackPointer =

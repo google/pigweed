@@ -17,6 +17,8 @@
 
 namespace pw {
 
+/// @module{pw_toolchain}
+
 /// Loops infinitely. Call as `pw_InfiniteLoop()` in C.
 ///
 /// Infinite loops without side effects are undefined behavior. Use

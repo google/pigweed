@@ -20,6 +20,8 @@
 
 PW_EXTERN_C_START
 
+/// @module{pw_log_tokenized}
+
 /// Function that is called for each log message. The metadata `uint32_t` can be
 /// converted to a @cpp_type{pw::log_tokenized::Metadata}. The message is passed
 /// as a pointer to a buffer and a size. The pointer is invalidated after this

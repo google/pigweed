@@ -22,6 +22,8 @@
 
 namespace pw {
 
+/// @module{pw_thread}
+
 /// Generic attributes of a thread. `ThreadAttrs` is used with a `ThreadContext`
 /// to create threads.
 ///

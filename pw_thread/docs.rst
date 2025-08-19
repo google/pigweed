@@ -159,27 +159,7 @@ multiple functions to execute concurrently.
 
 API reference
 =============
-.. doxygentypedef:: pw::Thread
-
-.. doxygenclass:: pw::thread::Thread
-   :members:
-
-.. doxygenclass:: pw::thread::Options
-   :members:
-
-.. doxygentypedef:: pw::ThreadPriority
-
-.. doxygenclass:: pw::thread::internal::Priority
-   :members:
-
-.. doxygenclass:: pw::ThreadAttrs
-   :members:
-
-.. doxygenclass:: pw::ThreadContext
-   :members:
-
-.. doxygenclass:: pw::ThreadStack
-   :members:
+Moved: :doxylink:`pw_thread`
 
 Differences from ``std::thread``
 ================================
@@ -460,11 +440,8 @@ new code.
 -------------------------
 Unit testing with threads
 -------------------------
-.. doxygenclass:: pw::thread::test::TestThreadContext
-   :members:
-
-As an example, the STL :cpp:class:`TestThreadContext` backend implementation in
-``test_thread_context_native.h`` is shown below.
+As an example, the STL :doxylink:`pw::thread::test::TestThreadContext` backend
+implementation in ``test_thread_context_native.h`` is shown below.
 
 .. literalinclude:: ../pw_thread_stl/public/pw_thread_stl/test_thread_context_native.h
    :language: cpp
@@ -589,14 +566,6 @@ currently running thread and produce symbolized thread dumps.
 .. Warning::
   Snapshot integration is a work-in-progress and may see significant API
   changes.
-
---------------
-Thread Checker
---------------
-.. doxygenclass:: pw::ThreadChecker
-   :members:
-.. doxygenclass:: pw::LazyInitThreadChecker
-   :members:
 
 .. toctree::
    :hidden:

@@ -19,6 +19,8 @@
 
 namespace pw {
 
+/// @module{pw_toolchain}
+
 /// Declares a global variable that is initialized at runtime and whose
 /// destructor is never run.
 ///

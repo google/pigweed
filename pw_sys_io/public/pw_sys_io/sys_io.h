@@ -46,6 +46,8 @@
 /// Unoptimized I/O library
 namespace pw::sys_io {
 
+/// @module{pw_sys_io}
+
 /// Reads a single byte from the `pw_sys_io` backend.
 /// This function blocks until it either succeeds or fails to read a
 /// byte.

@@ -939,8 +939,3 @@ to the tests depending on the OS. But this is not supported, `gh#2971
 We don't want to tag the tests ``"exclusive"`` by default because that will
 prevent *different* tests from running in parallel, significantly slowing them
 down.
-
-.. toctree::
-   :hidden:
-
-   API reference <api>

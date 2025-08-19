@@ -20,6 +20,8 @@
 
 namespace pw {
 
+/// @module{pw_toolchain}
+
 /// Helper type to create a global or function-local static variable of type `T`
 /// when `T` has a non-trivial destructor. Storing a `T` in a
 /// `pw::NoDestructor<T>` will prevent `~T()` from running, even when the

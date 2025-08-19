@@ -17,6 +17,8 @@
 
 namespace pw::trace {
 
+/// @module{pw_trace_tokenized}
+
 /// A ReadOnlyHandler that transfers trace buffer data via pw_transfer.
 ///
 /// To use, create a handler object and register with

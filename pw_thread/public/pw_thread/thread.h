@@ -43,6 +43,9 @@
 #endif  // _PW_THREAD_GENERIC_CREATION_UNSUPPORTED
 
 namespace pw {
+
+/// @module{pw_thread}
+
 /// Thread creation and execution library
 namespace thread {
 

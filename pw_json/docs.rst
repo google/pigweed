@@ -29,8 +29,9 @@ pw_json
 -----------
 JsonBuilder
 -----------
-.. doxygenfile:: pw_json/builder.h
-   :sections: detaileddescription
+:doxylink:`pw::JsonBuilder` is used to create arbitrary JSON. It contains a
+JSON value, which may be an object or array. Arrays and objects may contain
+other values, objects, or arrays.
 
 **Example**
 

@@ -17,6 +17,8 @@
 
 namespace pw::thread::test {
 
+/// @module{pw_thread}
+
 /// `TestThreadContext` is a facade class for creating threads for unit tests in
 /// a platform independent way. To use it, set
 /// `pw_thread_TEST_THREAD_CONTEXT_BACKEND` to a backend that implements the

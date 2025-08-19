@@ -15,6 +15,8 @@
 
 namespace pw::thread {
 
+/// @module{pw_thread}
+
 /// The Options contains the parameters needed for a thread to start.
 ///
 /// Options are backend specific and ergo the generic base class cannot be

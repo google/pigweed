@@ -15,10 +15,8 @@ C++ backend
 ``pw_log_tokenized`` provides a backend for ``pw_log`` that tokenizes log
 messages with the ``pw_tokenizer`` module. The log level, 16-bit tokenized
 module name, and flags bits are passed through the payload argument. The macro
-eventually passes logs to the :c:func:`pw_log_tokenized_HandleLog` function,
+eventually passes logs to the :doxylink:`pw_log_tokenized_HandleLog` function,
 which must be implemented by the application.
-
-.. doxygenfunction:: pw_log_tokenized_HandleLog
 
 Example implementation:
 
@@ -80,10 +78,8 @@ file were first, the long path might take most of the hashed characters,
 increasing the odds of a collision with other strings in that file. In C++, all
 characters in the string are hashed, so the order is not important.
 
-The format string is created by the :c:macro:`PW_LOG_TOKENIZED_FORMAT_STRING`
+The format string is created by the :doxylink:`PW_LOG_TOKENIZED_FORMAT_STRING`
 macro.
-
-.. doxygendefine:: PW_LOG_TOKENIZED_FORMAT_STRING
 
 Metadata in the tokenizer payload argument
 -------------------------------------------
@@ -106,18 +102,17 @@ The number of bits to use for each metadata field is configurable through macros
 in ``pw_log/config.h``. The field widths must sum to 32 bits. A field with zero
 bits allocated is excluded from the log metadata.
 
-.. doxygendefine:: PW_LOG_TOKENIZED_LEVEL_BITS
-.. doxygendefine:: PW_LOG_TOKENIZED_LINE_BITS
-.. doxygendefine:: PW_LOG_TOKENIZED_FLAG_BITS
-.. doxygendefine:: PW_LOG_TOKENIZED_MODULE_BITS
+* :doxylink:`PW_LOG_TOKENIZED_LEVEL_BITS`
+* :doxylink:`PW_LOG_TOKENIZED_LINE_BITS`
+* :doxylink:`PW_LOG_TOKENIZED_FLAG_BITS`
+* :doxylink:`PW_LOG_TOKENIZED_MODULE_BITS`
 
 Creating and reading Metadata payloads
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``pw_log_tokenized`` provides a C++ class to facilitate the creation and
-interpretation of packed log metadata payloads.
-
-.. doxygenclass:: pw::log_tokenized::GenericMetadata
-.. doxygentypedef:: pw::log_tokenized::Metadata
+``pw_log_tokenized`` provides :doxylink:`GenericMetadata
+<pw::log_tokenized::GenericMetadata>` to facilitate the creation and
+interpretation of packed log :doxylink:`Metadata
+<pw::log_tokenized::Metadata>` payloads.
 
 The following example shows that a ``Metadata`` object can be created from a
 ``uint32_t`` log metadata payload.
@@ -159,17 +154,14 @@ object:
    }
 
 The binary tokenized message may be encoded in the :ref:`prefixed Base64 format
-<module-pw_tokenizer-base64-format>` with the following function:
-
-.. doxygenfunction:: PrefixedBase64Encode(span<const std::byte>)
+<module-pw_tokenizer-base64-format>` with the
+:doxylink:`pw::log_tokenized::PrefixedBase64Encode` function.
 
 Parsing metadata fields
 -----------------------
 The metadata fields packed into the format string can be parsed with the
-`pw::log_tokenized::ParseFields` function. This function takes a string and a
-callback that is called for each key-value pair.
-
-.. doxygenfunction:: pw::log_tokenized::ParseFields
+:doxylink:`pw::log_tokenized::ParseFields` function. This function takes a string
+and a callback that is called for each key-value pair.
 
 Build targets
 -------------

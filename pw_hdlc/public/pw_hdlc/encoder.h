@@ -25,6 +25,8 @@
 /// Serial comms library
 namespace pw::hdlc {
 
+/// @module{pw_hdlc}
+
 /// @brief Writes an HDLC unnumbered information frame (UI frame) to the
 /// provided ``pw::stream`` writer.
 ///

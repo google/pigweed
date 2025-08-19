@@ -21,6 +21,8 @@
 
 namespace pw {
 
+/// @module{pw_thread}
+
 /// A BaseLockable class that stores the id of a thread and verifies that all
 /// `lock()` calls happen on that thread if
 /// `PW_THREAD_CHECKER_RUNTIME_ASSERT_ENABLED` config is set.

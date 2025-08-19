@@ -18,6 +18,8 @@
 
 namespace pw {
 
+/// @module{pw_thread}
+
 /// Represents a thread's priority. Schedulers favor higher priority tasks when
 /// determining which thread to run. Scheduling policies differ, but a common
 /// default policy for real-time operating systems is preemptive scheduling,

@@ -37,6 +37,8 @@
 
 namespace pw::hdlc {
 
+/// @module{pw_hdlc}
+
 /// A router that multiplexes multiple datagram-oriented ``Channel`` s
 /// over a single byte-oriented ``Channel`` using HDLC framing.
 class Router final {

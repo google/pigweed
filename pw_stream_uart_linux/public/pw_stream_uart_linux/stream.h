@@ -21,6 +21,8 @@
 
 namespace pw::stream {
 
+/// @module{pw_stream_uart_linux}
+
 /// `pw::stream::NonSeekableReaderWriter` implementation for UARTs on Linux.
 class UartStreamLinux : public NonSeekableReaderWriter {
  public:

@@ -15,6 +15,8 @@
 
 namespace pw {
 
+/// @module{pw_toolchain}
+
 /// Tag type used to differentiate between `constexpr` and non-`constexpr`
 /// constructors. Do NOT use this feature for new classes! It should only be
 /// used to add a `constexpr` constructor to an existing class in limited

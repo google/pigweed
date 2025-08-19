@@ -21,6 +21,9 @@
 #include "pw_rpc/server.h"
 
 namespace pw {
+
+/// @module{pw_system}
+
 /// Opinionated system framework
 namespace system {
 

@@ -29,7 +29,7 @@ C++, Python, and TypeScript:
    .. tab-item:: C++
       :sync: cpp
 
-      .. doxygenfunction:: pw::hdlc::WriteUIFrame(uint64_t address, ConstByteSpan data, stream::Writer &writer)
+      :doxylink:`pw::hdlc::WriteUIFrame(uint64_t address, ConstByteSpan data, stream::Writer &writer)`
 
       Example:
 
@@ -86,11 +86,9 @@ C++, Python, and TypeScript:
 Piecemeal Encoding
 ==================
 
-Additionally, the C++ API provides an API for piecemeal encoding of an HDLC
-frame. This allows frames to be encoded gradually without ever holding an
-entire frame in memory at once.
-
-.. doxygenclass:: pw::hdlc::Encoder
+Additionally, the C++ API provides a :doxylink:`pw::hdlc::Encoder` class for
+piecemeal encoding of an HDLC frame. This allows frames to be encoded gradually
+without ever holding an entire frame in memory at once.
 
 .. _module-pw_hdlc-api-decoder:
 
@@ -102,8 +100,7 @@ Decoder
    .. tab-item:: C++
       :sync: cpp
 
-      .. doxygenclass:: pw::hdlc::Decoder
-         :members:
+      :doxylink:`pw::hdlc::Decoder`
 
       Example:
 

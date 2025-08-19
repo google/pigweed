@@ -20,6 +20,8 @@
 
 namespace pw::log_tokenized {
 
+/// @module{pw_log_tokenized}
+
 /// Parses metadata fields from a tokenized log format string.
 ///
 /// This function iterates through a string, parsing key-value pairs that are

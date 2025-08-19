@@ -111,6 +111,9 @@
 /// @defgroup pw_kvs pw_kvs
 /// @brief Lightweight, persistent key-value store. Main docs: https://pigweed.dev/pw_kvs
 
+/// @defgroup pw_log_tokenized pw_log_tokenized
+/// @brief Main docs: https://pigweed.dev/pw_log_tokenized
+
 /// @defgroup pw_malloc pw_malloc
 /// @brief Replacement interface for standard libc dynamic memory operations. Main docs: https://pigweed.dev/pw_malloc
 
@@ -137,6 +140,27 @@
 
 /// @defgroup pw_span pw_span
 /// @brief std::span for C++17. Main docs: https://pigweed.dev/pw_span
+
+/// @defgroup pw_stream_uart_linux pw_stream_uart_linux
+/// @brief Main docs: https://pigweed.dev/pw_stream_uart_linux
+
+/// @defgroup pw_sys_io pw_sys_io
+/// @brief Main docs: https://pigweed.dev/pw_sys_io
+
+/// @defgroup pw_system pw_system
+/// @brief Main docs: https://pigweed.dev/pw_system
+
+/// @defgroup pw_thread pw_thread
+/// @brief Main docs: https://pigweed.dev/pw_thread
+
+/// @defgroup pw_toolchain pw_toolchain
+/// @brief Embedded toolchains for GN-based Pigweed projects. Main docs: https://pigweed.dev/pw_toolchain
+
+/// @defgroup pw_trace_tokenized pw_trace_tokenized
+/// @brief Main docs: https://pigweed.dev/pw_trace_tokenized
+
+/// @defgroup pw_transfer pw_transfer
+/// @brief Main docs: https://pigweed.dev/pw_transfer
 
 /// @defgroup pw_varint pw_varint
 /// @brief Functions for encoding and decoding variable length integers. Main docs: https://pigweed.dev/pw_varint

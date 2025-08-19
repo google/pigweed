@@ -25,6 +25,8 @@
 
 namespace pw::thread::internal {
 
+/// @module{pw_thread}
+
 // Number of named priorities (lowest, low, very low, ..., very high, highest).
 inline constexpr size_t kNamedPriorities = 9;
 

@@ -22,6 +22,8 @@
 
 namespace pw {
 
+/// @module{pw_thread}
+
 inline constexpr size_t kExternallyAllocatedThreadStack =
     std::numeric_limits<size_t>::max();
 

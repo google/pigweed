@@ -24,6 +24,8 @@
 
 namespace pw::transfer {
 
+/// @module{pw_transfer}
+
 /// `AtomicFileTransferHandler` is intended to be used as a transfer handler for
 /// files. It ensures that the target file of the transfer is always in a
 /// correct state. In particular, the transfer is first done to a temporary file

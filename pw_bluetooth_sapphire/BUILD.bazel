@@ -242,7 +242,6 @@ sphinx_docs_library(
     srcs = [
         "docs.rst",
         "fuchsia.rst",
-        "reference.rst",
         "size_report.rst",
         "//pw_bluetooth_sapphire/host/att:docs",
         "//pw_bluetooth_sapphire/host/gap:docs",

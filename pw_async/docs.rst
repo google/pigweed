@@ -162,10 +162,7 @@ Fake Dispatcher
 To test async code, FakeDispatcher should be dependency injected in place of
 Dispatcher. Then, time should be driven in unit tests using the ``Run*()``
 methods. For convenience, you can use the test fixture
-FakeDispatcherFixture.
-
-.. doxygenclass:: pw::async::test::FakeDispatcherFixture
-   :members:
+:doxylink:`FakeDispatcherFixture <pw::async::test::FakeDispatcherFixture>`.
 
 .. attention::
 
