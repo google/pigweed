@@ -103,8 +103,8 @@
     "https://bcr.bazel.build/modules/libpfm/4.11.0/MODULE.bazel": "45061ff025b301940f1e30d2c16bea596c25b176c8b6b3087e92615adbd52902",
     "https://bcr.bazel.build/modules/lz4/1.9.4/MODULE.bazel": "e3d307b1d354d70f6c809167eafecf5d622c3f27e3971ab7273410f429c7f83a",
     "https://bcr.bazel.build/modules/lz4/1.9.4/source.json": "233f0bdfc21f254e3dda14683ddc487ca68c6a3a83b7d5db904c503f85bd089b",
-    "https://bcr.bazel.build/modules/nanopb/0.4.9.1.bcr.1/MODULE.bazel": "bd62b8e5d540c4b8101f85296d90b1d5853045919f1659ae2642ba6df16a36a6",
-    "https://bcr.bazel.build/modules/nanopb/0.4.9.1.bcr.1/source.json": "188a02a2d00e3297f91192df8e756ea332b22521983a3ff1e6d9425557928afe",
+    "https://bcr.bazel.build/modules/nanopb/0.4.9.1.bcr.2/MODULE.bazel": "4469b089354af0f478011cce5c94125d5e3cf2fda77329d4c16bf2da2e909bce",
+    "https://bcr.bazel.build/modules/nanopb/0.4.9.1.bcr.2/source.json": "c380d80450c09ccaf0537ac755897a471a6d4fb5a79e4d6d648789387a63ca08",
     "https://bcr.bazel.build/modules/pico-sdk/2.1.0/MODULE.bazel": "93dabc91a5b4736f5a5e299ccdc224cd1fb6b29fa667619cb8e985311bb469d5",
     "https://bcr.bazel.build/modules/pico-sdk/2.1.1/MODULE.bazel": "58dce072cd2bd1d9ef07c054c1c9ad0301e008285dbe24580bf880505c0ce382",
     "https://bcr.bazel.build/modules/pico-sdk/2.1.1/source.json": "ade0380bcf4418f2c186d92e3f1fc5e96c6d1a5d265164ab8ed7451c7b68fec5",
@@ -1833,7 +1833,7 @@
     "@@rules_python+//python/extensions:pip.bzl%pip": {
       "general": {
         "bzlTransitiveDigest": "m5TI0a+f/cMncIaxnE+bH/nrs8cTLNzI9IPCXKgL5AE=",
-        "usagesDigest": "tMvyQpptS0x5PhKpoMTKomUXH++DL4n7twTDiAeKePk=",
+        "usagesDigest": "HPMVjBgD/ZCkCjW1pgXG/NzNswa8H9Yu1qolaxElRGg=",
         "recordedFileInputs": {
           "@@//pw_env_setup/py/pw_env_setup/virtualenv_setup/upstream_requirements_darwin_lock.txt": "468952a6d403d5718a0f1a0c3db9c2f65b38520da40d4db716a4cbbb6bf6c43a",
           "@@//pw_env_setup/py/pw_env_setup/virtualenv_setup/upstream_requirements_linux_lock.txt": "9f623d1be070992efe54e5ee2d7c69e733a9a8d247c477c12eb629a1e7e78c54",
