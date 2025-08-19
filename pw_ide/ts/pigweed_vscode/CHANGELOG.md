@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.9.6] - 2025-08-01
+
+### Bug Fixes
+
+ - Fix incremental build failures on compile commands generator test.
+   ([b/429233254](https://issuetracker.google.com/b/429233254))
+ - Improve the development guide for running, building, and debugging the
+   VSCode extension.
+ - Fix the clang path when using the fish shell.
+ - Run the compile commands target with the same flags as real bazel
+   invocation. This ensures the artifacts in bazel-bin/ are not cleared.
+
 ## [1.9.5] - 2025-07-07
 
 ### Features
