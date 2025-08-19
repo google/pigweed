@@ -168,6 +168,7 @@ template("pw_python_action_test") {
       _deps += [ ":$_test_python_group" ]
     }
   } else {
+    not_needed(invoker, "*")
     if (defined(invoker.source_gen_deps)) {
       _deps += invoker.source_gen_deps
     }

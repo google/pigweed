@@ -55,10 +55,9 @@ template("pw_rust_proc_macro") {
       underlying_target_type = "rust_proc_macro"
     }
   } else {
-    assert(
-        false,
-        "proc_macro target ${target_name}(${pw_toolchain_SCOPE.name}) is not " +
-            "a host target, please specify a host toolchain through " +
-            "`rustc_macro_toolchain_name` for it to be compiled.")
+    assert(false,
+           "proc_macro target ${target_name}($current_toolchain) is not " +
+               "a host target, please specify a host toolchain through " +
+               "`rustc_macro_toolchain_name` for it to be compiled.")
   }
 }

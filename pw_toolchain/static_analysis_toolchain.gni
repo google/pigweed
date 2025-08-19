@@ -303,6 +303,9 @@ template("pw_static_analysis_toolchain") {
       # Always disable coverage generation since we will not actually run the
       # instrumented binaries to produce a profraw file.
       pw_toolchain_COVERAGE_ENABLED = false
+
+      # Static analysis toolchains cannot run binaries.
+      pw_unit_test_AUTOMATIC_RUNNER = ""
     }
 
     _generate_rust_tools = defined(invoker.rustc)

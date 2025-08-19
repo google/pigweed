@@ -542,7 +542,7 @@ group("pigweed_default") {
     }
 
     # Add action tests to the automatic build
-    if (_is_host_toolchain) {
+    if (_is_host_toolchain && pw_unit_test_AUTOMATIC_RUNNER != "") {
       deps += [ ":pw_action_tests.run" ]
     }
 
