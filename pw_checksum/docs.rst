@@ -17,7 +17,7 @@ pw_checksum/crc16_ccitt.h
 
   The default initial value for the CRC16.
 
-.. cpp:function:: uint16_t CcittCrc16(span<const std::byte> data, uint16_t initial_value = kCcittCrc16DefaultInitialValue)
+.. cpp:function:: uint16_t Crc16Ccitt::Calculate(span<const std::byte> data, uint16_t initial_value = kCcittCrc16DefaultInitialValue)
 
   Calculates the CRC16 of the provided data using polynomial 0x1021, with a
   default initial value of :cpp:expr:`0xFFFF`.
@@ -27,9 +27,9 @@ pw_checksum/crc16_ccitt.h
 
   .. code-block:: cpp
 
-     uint16_t crc = CcittCrc16(my_data);
+     uint16_t crc = Crc16Ccitt::Calculate(my_data);
 
-     crc  = CcittCrc16(more_data, crc);
+     crc  = Crc16Ccitt::Calculate(more_data, crc);
 
 pw_checksum/crc32.h
 ===================
