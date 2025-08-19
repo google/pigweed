@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.9.7] - 2025-08-19
+
+### Bug Fixes
+
+ - Show a message of the correct targets for currently untracked files.
+ - Automatically fix and correct clangd settings if they are incorrect or
+   missing. This ensures code intelligence is always functional for the user.
+ - Remove zxh404.vscode-proto3 as dependency.
+
 ## [1.9.6] - 2025-08-01
 
 ### Bug Fixes
