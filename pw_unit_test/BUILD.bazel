@@ -487,6 +487,15 @@ pw_cc_test(
     ],
 )
 
+# This executable is used to test pw_unit_test/golden_test.py.
+pw_cc_binary(
+    name = "run_and_compare_test_executable",
+    testonly = True,
+    srcs = ["run_and_compare_test_executable.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = [":__subpackages__"],
+)
+
 pw_cc_binary(
     name = "test_rpc_server",
     testonly = True,
@@ -526,6 +535,7 @@ sphinx_docs_library(
     srcs = [
         "constexpr_test.cc",
         "docs.rst",
+        "//pw_unit_test/py:BUILD.bazel",
     ],
     prefix = "pw_unit_test/",
     target_compatible_with = incompatible_with_mcu(),

@@ -367,6 +367,13 @@ pw_test("metadata_only_test") {
   }
 }
 
+# This executable is used to test pw_unit_test/golden_test.py.
+pw_executable("run_and_compare_test_executable") {
+  testonly = pw_unit_test_TESTONLY
+  sources = [ "run_and_compare_test_executable.cc" ]
+  visibility = [ "./*" ]
+}
+
 # pw_test_group produces the metadata file for its tests.
 pw_test_group("metadata_only_group") {
   tests = [ ":metadata_only_test" ]

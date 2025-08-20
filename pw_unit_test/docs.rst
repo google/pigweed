@@ -541,6 +541,29 @@ To set up RPC-based unit tests in your application:
           ) as client:
               run_tests(client.rpcs())
 
+Golden file testing with ``pw_golden_test``
+===========================================
+The ``pw_golden_test`` macro in ``//pw_unit_test/golden.bzl`` defines tests that
+execute a binary and compares its output against the contents of a predefined
+"golden" file. This is useful for testing that command-line tools or other
+binaries run successfully and produce consistent text-based output across code
+changes.
+
+If the output of the binary differs from the expected file, the test prints a
+diff between the actual and expected outputs and exits with a non-zero code.
+
+The following example shows how to use ``pw_golden_test`` in Bazel. The test
+runs the ``//pw_unit_test:run_and_compare_test_executable`` C++ binary and
+compares its output to the ``run_and_compare_test.expected`` file.
+
+.. literalinclude:: py/BUILD.bazel
+   :language: python
+   :start-after: pw_unit_test-run-and-compare-test-bazel
+   :end-before: pw_unit_test-run-and-compare-test-bazel
+
+In GN and CMake, directly run the
+``//pw_unit_test/py/pw_unit_test/golden_test.py`` script for golden tests.
+
 .. _module-pw_unit_test-cpp:
 
 -----------------

@@ -13,6 +13,7 @@
 # the License.
 
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_unit_test:pw_golden_test.bzl", "pw_golden_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,4 +39,10 @@ pw_cc_binary(
         "//pw_async2:dispatcher",
         "//pw_log",
     ],
+)
+
+pw_golden_test(
+    name = "test",
+    executable = ":step1",
+    expected = ":step1.expected",
 )
