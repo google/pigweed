@@ -197,12 +197,19 @@ class WorkflowsCli(multitool.MultitoolCli):
             nargs='?',
             default=None,
         )
+        parser.add_argument(
+            '--dump-build-requests',
+            action='store_true',
+            help=argparse.SUPPRESS,
+        )
         args = parser.parse_args(plugin_args)
         if self.config is None:
             print('Config is empty')
             return 0
         if not args.name:
             print(self.dump_config())
+        elif args.dump_build_requests:
+            print(self.dump_build_request(args.name))
         else:
             print(self.dump_fragment(args.name))
         return 0
@@ -213,6 +220,13 @@ class WorkflowsCli(multitool.MultitoolCli):
             return ''
 
         return text_format.MessageToBytes(self.config).decode()
+
+    def dump_build_request(self, name: str) -> str:
+        """Dumps the unified build driver request for this config fragment."""
+        assert self._workflows is not None
+        return text_format.MessageToBytes(
+            self._workflows.get_unified_driver_request([name], sanitize=False)
+        ).decode()
 
     def dump_fragment(self, fragment_name: str) -> str:
         """Dumps a fragment of the config in a human-readable format."""

@@ -43,6 +43,8 @@ class FakeBuildDriver(BuildDriver):
 class WorkflowsManagerTest(unittest.TestCase):
     """Tests for the WorkflowsManager class."""
 
+    # pylint: disable=too-many-public-methods
+
     def setUp(self):
         """Set up a test environment."""
         self.project_root = Path('/test/project/root')
@@ -356,6 +358,99 @@ class WorkflowsManagerTest(unittest.TestCase):
         )
         with self.assertRaises(TypeError):
             manager.program_by_name('not_a_real_program')
+
+    def test_get_unified_driver_request_single_build(self):
+        """Test get_unified_driver_request with a single build."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        request = manager.get_unified_driver_request(['my_build'])
+        self.assertEqual(len(request.jobs), 1)
+        self.assertEqual(request.jobs[0].build.name, 'my_build')
+        self.assertEqual(
+            request.jobs[0].build.build_config.name, 'build_config'
+        )
+
+    def test_get_unified_driver_request_single_build_sanitized(self):
+        """Test get_unified_driver_request with a sanitized single build."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        request = manager.get_unified_driver_request(
+            ['my_build'], sanitize=True
+        )
+        self.assertEqual(len(request.jobs), 1)
+        self.assertEqual(request.jobs[0].build.name, '')
+        self.assertEqual(request.jobs[0].build.build_config.name, '')
+
+    def test_get_unified_driver_request_single_tool(self):
+        """Test get_unified_driver_request with a single tool."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        request = manager.get_unified_driver_request(['my_tool'])
+        self.assertEqual(len(request.jobs), 1)
+        self.assertEqual(request.jobs[0].tool.name, 'my_tool')
+
+    def test_get_unified_driver_request_group(self):
+        """Test get_unified_driver_request with a group."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        request = manager.get_unified_driver_request(['my_group'])
+        self.assertEqual(len(request.jobs), 2)
+        job_fragments = [
+            job.build if job.WhichOneof('type') == 'build' else job.tool
+            for job in request.jobs
+        ]
+        job_names = {fragment.name for fragment in job_fragments}
+        self.assertEqual(job_names, {'my_build', 'analyzer_tool'})
+
+    def test_get_unified_driver_request_mix_build_and_tool(self):
+        """Test get_unified_driver_request with a mix of build and tool."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        request = manager.get_unified_driver_request(['my_build', 'my_tool'])
+        self.assertEqual(len(request.jobs), 2)
+        job_fragments = [
+            job.build if job.WhichOneof('type') == 'build' else job.tool
+            for job in request.jobs
+        ]
+        job_names = {fragment.name for fragment in job_fragments}
+        self.assertEqual(job_names, {'my_build', 'my_tool'})
+
+    def test_get_unified_driver_request_non_existent_raises_error(self):
+        """Test get_unified_driver_request with a non-existent name."""
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+        )
+        with self.assertRaises(AssertionError):
+            manager.get_unified_driver_request(['not_a_real_thing'])
 
 
 if __name__ == '__main__':
