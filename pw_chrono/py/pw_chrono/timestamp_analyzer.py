@@ -26,8 +26,7 @@ def process_snapshot(
     serialized_snapshot: bytes,
     detokenizer: pw_tokenizer.Detokenizer | None = None,
 ):
-    snapshot = chrono_pb2.SnapshotTimestamps()
-    snapshot.ParseFromString(serialized_snapshot)
+    snapshot = chrono_pb2.SnapshotTimestamps.FromString(serialized_snapshot)
 
     output: list[str] = []
     for timestamp in snapshot.timestamps or []:
