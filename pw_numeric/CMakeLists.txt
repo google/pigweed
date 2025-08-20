@@ -28,6 +28,7 @@ pw_add_test(pw_numeric.checked_arithmetic_test
     checked_arithmetic_test.cc
   PRIVATE_DEPS
     pw_numeric.checked_arithmetic
+    pw_unit_test.constexpr
   GROUPS
     modules
     pw_numeric
@@ -55,7 +56,7 @@ pw_add_library(pw_numeric.saturating_arithmetic INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_preprocessor
+    pw_numeric.checked_arithmetic
 )
 
 pw_add_test(pw_numeric.saturating_arithmetic_test

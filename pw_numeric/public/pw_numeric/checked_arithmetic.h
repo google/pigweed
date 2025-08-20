@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstdint>
+#include <limits>
 #include <optional>
 #include <type_traits>
 
@@ -40,10 +42,12 @@ namespace pw {
 template <typename A, typename B, typename T>
 [[nodiscard]] constexpr bool CheckedAdd(A a, B b, T& result) {
   T temp = 0;
+
   if (PW_ADD_OVERFLOW(a, b, &temp)) {
     return false;
   }
   result = temp;
+
   return true;
 }
 
@@ -63,9 +67,9 @@ template <typename A, typename B, typename T>
 /// `pw::CheckedAdd<uint32_t>(...)`.
 template <typename T, typename A, typename B>
 [[nodiscard]] constexpr std::optional<T> CheckedAdd(A a, B b) {
-  T result;
+  T result{0};
 
-  if (PW_ADD_OVERFLOW(a, b, &result)) {
+  if (!CheckedAdd(a, b, result)) {
     return std::nullopt;
   }
 
@@ -106,10 +110,12 @@ template <typename T, typename Inc>
 template <typename A, typename B, typename T>
 [[nodiscard]] constexpr bool CheckedSub(A a, B b, T& result) {
   T temp = 0;
+
   if (PW_SUB_OVERFLOW(a, b, &temp)) {
     return false;
   }
   result = temp;
+
   return true;
 }
 
@@ -129,9 +135,9 @@ template <typename A, typename B, typename T>
 /// `pw::CheckedSub<uint32_t>(...)`.
 template <typename T, typename A, typename B>
 [[nodiscard]] constexpr std::optional<T> CheckedSub(A a, B b) {
-  T result;
+  T result{0};
 
-  if (PW_SUB_OVERFLOW(a, b, &result)) {
+  if (!CheckedSub(a, b, result)) {
     return std::nullopt;
   }
 
@@ -172,10 +178,12 @@ template <typename T, typename Dec>
 template <typename A, typename B, typename T>
 [[nodiscard]] constexpr bool CheckedMul(A a, B b, T& result) {
   T temp = 0;
+
   if (PW_MUL_OVERFLOW(a, b, &temp)) {
     return false;
   }
   result = temp;
+
   return true;
 }
 
@@ -195,9 +203,9 @@ template <typename A, typename B, typename T>
 /// `pw::CheckedMul<uint32_t>(...)`.
 template <typename T, typename A, typename B>
 [[nodiscard]] constexpr std::optional<T> CheckedMul(A a, B b) {
-  T result;
+  T result{0};
 
-  if (PW_MUL_OVERFLOW(a, b, &result)) {
+  if (!CheckedMul(a, b, result)) {
     return std::nullopt;
   }
 

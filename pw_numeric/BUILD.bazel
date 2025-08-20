@@ -25,15 +25,16 @@ cc_library(
     name = "checked_arithmetic",
     hdrs = ["public/pw_numeric/checked_arithmetic.h"],
     strip_include_prefix = "public",
-    deps = [
-        "//pw_preprocessor",
-    ],
+    deps = ["//pw_preprocessor"],
 )
 
 pw_cc_test(
     name = "checked_arithmetic_test",
     srcs = ["checked_arithmetic_test.cc"],
-    deps = [":checked_arithmetic"],
+    deps = [
+        ":checked_arithmetic",
+        "//pw_unit_test:constexpr",
+    ],
 )
 
 cc_library(
@@ -52,7 +53,7 @@ cc_library(
     name = "saturating_arithmetic",
     hdrs = ["public/pw_numeric/saturating_arithmetic.h"],
     strip_include_prefix = "public",
-    deps = ["//pw_preprocessor"],
+    deps = [":checked_arithmetic"],
 )
 
 pw_cc_test(

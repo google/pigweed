@@ -35,7 +35,7 @@ using std::mul_sat;
 #include <limits>
 #include <type_traits>
 
-#include "pw_preprocessor/compiler.h"
+#include "pw_numeric/checked_arithmetic.h"
 
 // Polyfills of C++26's saturating arithmetic operations in <numeric>.
 
