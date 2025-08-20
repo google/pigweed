@@ -280,7 +280,6 @@ cc_library(
     hdrs = ["public/pw_containers/inline_var_len_entry_queue.h"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     deps = [
         ":raw_storage",
         "//pw_preprocessor",
@@ -417,6 +416,7 @@ pw_cc_test(
         ":inline_var_len_entry_queue",
         "//pw_assert:assert",
         "//pw_bytes",
+        "//pw_span",
         "//pw_varint",
     ],
 )

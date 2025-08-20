@@ -25,9 +25,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #endif  // __cplusplus
 
+#include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 #include "pw_varint/varint.h"
 
@@ -149,38 +151,69 @@ typedef struct {
   // Private: do not access these fields directly!
   pw_InlineVarLenEntryQueue_ConstHandle _pw_queue;
   uint32_t _pw_offset;
+} pw_InlineVarLenEntryQueue_ConstIterator;
+
+typedef struct {
+  // Private: do not access these fields directly!
+  pw_InlineVarLenEntryQueue_ConstIterator _iterator;
 } pw_InlineVarLenEntryQueue_Iterator;
 
 /// An entry in the queue. Entries may be stored in up to two segments, so this
 /// struct includes pointers to both portions of the entry.
 typedef struct {
+  uint8_t* data_1;
+  uint32_t size_1;
+  uint8_t* data_2;
+  uint32_t size_2;
+} pw_InlineVarLenEntryQueue_Entry;
+
+/// Const version of `pw_InlineVarLenEntryQueue_Entry`.
+typedef struct {
   const uint8_t* data_1;
   uint32_t size_1;
   const uint8_t* data_2;
   uint32_t size_2;
-} pw_InlineVarLenEntryQueue_Entry;
+} pw_InlineVarLenEntryQueue_ConstEntry;
 
 /// Returns an iterator to the start of the `InlineVarLenEntryQueue`.
 static inline pw_InlineVarLenEntryQueue_Iterator
-pw_InlineVarLenEntryQueue_Begin(pw_InlineVarLenEntryQueue_ConstHandle queue);
+pw_InlineVarLenEntryQueue_Begin(pw_InlineVarLenEntryQueue_Handle queue);
 
 /// Returns an iterator that points past the end of the queue.
 static inline pw_InlineVarLenEntryQueue_Iterator pw_InlineVarLenEntryQueue_End(
-    pw_InlineVarLenEntryQueue_ConstHandle queue);
+    pw_InlineVarLenEntryQueue_Handle queue);
+
+/// Returns an iterator that points past the end of the queue.
+static inline pw_InlineVarLenEntryQueue_ConstIterator
+pw_InlineVarLenEntryQueue_ConstEnd(pw_InlineVarLenEntryQueue_ConstHandle queue);
 
 /// Advances an iterator to point to the next entry in the queue. It is
 /// invalid to call `Advance` on an iterator equal to the `End` iterator.
-void pw_InlineVarLenEntryQueue_Iterator_Advance(
+static inline void pw_InlineVarLenEntryQueue_Iterator_Advance(
     pw_InlineVarLenEntryQueue_Iterator* iterator);
+
+/// Advances a const iterator.
+void pw_InlineVarLenEntryQueue_ConstIterator_Advance(
+    pw_InlineVarLenEntryQueue_ConstIterator* iterator);
 
 /// Compares two iterators for equality.
 static inline bool pw_InlineVarLenEntryQueue_Iterator_Equal(
     const pw_InlineVarLenEntryQueue_Iterator* lhs,
     const pw_InlineVarLenEntryQueue_Iterator* rhs);
 
+/// Compares two const iterators for equality.
+static inline bool pw_InlineVarLenEntryQueue_ConstIterator_Equal(
+    const pw_InlineVarLenEntryQueue_ConstIterator* lhs,
+    const pw_InlineVarLenEntryQueue_ConstIterator* rhs);
+
 /// Dereferences an iterator, loading the entry it points to.
-pw_InlineVarLenEntryQueue_Entry pw_InlineVarLenEntryQueue_GetEntry(
+static inline pw_InlineVarLenEntryQueue_Entry
+pw_InlineVarLenEntryQueue_GetEntry(
     const pw_InlineVarLenEntryQueue_Iterator* iterator);
+
+/// Dereferences a const iterator, loading the entry it points to.
+pw_InlineVarLenEntryQueue_ConstEntry pw_InlineVarLenEntryQueue_GetConstEntry(
+    const pw_InlineVarLenEntryQueue_ConstIterator* iterator);
 
 /// Copies the contents of the entry to the provided buffer. The entry may be
 /// split into two regions; this serializes it into one buffer.
@@ -189,13 +222,34 @@ pw_InlineVarLenEntryQueue_Entry pw_InlineVarLenEntryQueue_GetEntry(
 /// @param dest The buffer into which to copy the serialized entry
 /// @param count Copy up to this many bytes; must not be larger than the `dest`
 ///     buffer, but may be larger than the entry
-uint32_t pw_InlineVarLenEntryQueue_Entry_Copy(
-    const pw_InlineVarLenEntryQueue_Entry* entry, void* dest, uint32_t count);
+uint32_t pw_InlineVarLenEntryQueue_ConstEntry_Copy(
+    const pw_InlineVarLenEntryQueue_ConstEntry* entry,
+    void* dest,
+    uint32_t count);
+
+// clang-tidy gives errors for `static inline` functions in headers, so disable
+// these diagnostics.
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wunused-function");
+PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wunneeded-internal-declaration");
+
+/// Copies the contents of a mutable entry.
+static inline uint32_t pw_InlineVarLenEntryQueue_Entry_Copy(
+    const pw_InlineVarLenEntryQueue_Entry* entry, void* dest, uint32_t count) {
+  pw_InlineVarLenEntryQueue_ConstEntry const_entry;
+  memcpy(&const_entry, entry, sizeof(const_entry));
+  return pw_InlineVarLenEntryQueue_ConstEntry_Copy(&const_entry, dest, count);
+}
 
 /// Returns the byte at the specified index in the entry. Asserts if index is
 /// out-of-bounds.
 static inline uint8_t pw_InlineVarLenEntryQueue_Entry_At(
     const pw_InlineVarLenEntryQueue_Entry* entry, size_t index);
+
+/// Returns the byte at the specified index in the entry. Asserts if index is
+/// out-of-bounds.
+static inline uint8_t pw_InlineVarLenEntryQueue_ConstEntry_At(
+    const pw_InlineVarLenEntryQueue_ConstEntry* entry, size_t index);
 
 /// Returns the number of variable-length entries in the queue. This is O(n) in
 /// the number of entries in the queue.
@@ -264,38 +318,81 @@ static inline void pw_InlineVarLenEntryQueue_Clear(
 }
 
 static inline pw_InlineVarLenEntryQueue_Iterator
-pw_InlineVarLenEntryQueue_Begin(pw_InlineVarLenEntryQueue_ConstHandle queue) {
-  pw_InlineVarLenEntryQueue_Iterator begin = {queue, _PW_VAR_QUEUE_HEAD};
+pw_InlineVarLenEntryQueue_Begin(pw_InlineVarLenEntryQueue_Handle queue) {
+  pw_InlineVarLenEntryQueue_Iterator begin = {{queue, _PW_VAR_QUEUE_HEAD}};
+  return begin;
+}
+
+static inline pw_InlineVarLenEntryQueue_ConstIterator
+pw_InlineVarLenEntryQueue_ConstBegin(
+    pw_InlineVarLenEntryQueue_ConstHandle queue) {
+  pw_InlineVarLenEntryQueue_ConstIterator begin = {queue, _PW_VAR_QUEUE_HEAD};
   return begin;
 }
 
 static inline pw_InlineVarLenEntryQueue_Iterator pw_InlineVarLenEntryQueue_End(
-    pw_InlineVarLenEntryQueue_ConstHandle queue) {
-  pw_InlineVarLenEntryQueue_Iterator end = {queue, _PW_VAR_QUEUE_TAIL};
+    pw_InlineVarLenEntryQueue_Handle queue) {
+  pw_InlineVarLenEntryQueue_Iterator end = {{queue, _PW_VAR_QUEUE_TAIL}};
   return end;
+}
+
+static inline pw_InlineVarLenEntryQueue_ConstIterator
+pw_InlineVarLenEntryQueue_ConstEnd(
+    pw_InlineVarLenEntryQueue_ConstHandle queue) {
+  pw_InlineVarLenEntryQueue_ConstIterator end = {queue, _PW_VAR_QUEUE_TAIL};
+  return end;
+}
+
+static inline void pw_InlineVarLenEntryQueue_Iterator_Advance(
+    pw_InlineVarLenEntryQueue_Iterator* iterator) {
+  pw_InlineVarLenEntryQueue_ConstIterator_Advance(&iterator->_iterator);
 }
 
 static inline bool pw_InlineVarLenEntryQueue_Iterator_Equal(
     const pw_InlineVarLenEntryQueue_Iterator* lhs,
     const pw_InlineVarLenEntryQueue_Iterator* rhs) {
+  return pw_InlineVarLenEntryQueue_ConstIterator_Equal(&lhs->_iterator,
+                                                       &rhs->_iterator);
+}
+
+static inline bool pw_InlineVarLenEntryQueue_ConstIterator_Equal(
+    const pw_InlineVarLenEntryQueue_ConstIterator* lhs,
+    const pw_InlineVarLenEntryQueue_ConstIterator* rhs) {
   return lhs->_pw_offset == rhs->_pw_offset && lhs->_pw_queue == rhs->_pw_queue;
 }
 
-// Private function that returns a pointer to the specified index in the Entry.
-static inline const uint8_t* _pw_InlineVarLenEntryQueue_Entry_GetPointer(
-    const pw_InlineVarLenEntryQueue_Entry* entry, size_t index) {
+static inline pw_InlineVarLenEntryQueue_Entry
+pw_InlineVarLenEntryQueue_GetEntry(
+    const pw_InlineVarLenEntryQueue_Iterator* iterator) {
+  pw_InlineVarLenEntryQueue_ConstEntry const_entry =
+      pw_InlineVarLenEntryQueue_GetConstEntry(&iterator->_iterator);
+  pw_InlineVarLenEntryQueue_Entry entry;
+  memcpy(&entry, &const_entry, sizeof(entry));
+  return entry;
+}
+
+// Private function that returns a pointer to the specified index in the entry.
+static inline const uint8_t* _pw_InlineVarLenEntryQueue_ConstEntry_GetPointer(
+    const pw_InlineVarLenEntryQueue_ConstEntry* entry, size_t index) {
   if (index < entry->size_1) {
     return &entry->data_1[index];
   }
   return &entry->data_2[index - entry->size_1];
 }
 
-const uint8_t* _pw_InlineVarLenEntryQueue_Entry_GetPointerChecked(
-    const pw_InlineVarLenEntryQueue_Entry* entry, size_t index);
+const uint8_t* _pw_InlineVarLenEntryQueue_ConstEntry_GetPointerChecked(
+    const pw_InlineVarLenEntryQueue_ConstEntry* entry, size_t index);
 
 static inline uint8_t pw_InlineVarLenEntryQueue_Entry_At(
     const pw_InlineVarLenEntryQueue_Entry* entry, size_t index) {
-  return *_pw_InlineVarLenEntryQueue_Entry_GetPointerChecked(entry, index);
+  pw_InlineVarLenEntryQueue_ConstEntry const_entry;
+  memcpy(&const_entry, entry, sizeof(const_entry));
+  return pw_InlineVarLenEntryQueue_ConstEntry_At(&const_entry, index);
+}
+
+static inline uint8_t pw_InlineVarLenEntryQueue_ConstEntry_At(
+    const pw_InlineVarLenEntryQueue_ConstEntry* entry, size_t index) {
+  return *_pw_InlineVarLenEntryQueue_ConstEntry_GetPointerChecked(entry, index);
 }
 
 static inline uint32_t pw_InlineVarLenEntryQueue_RawStorageSizeBytes(
@@ -320,6 +417,7 @@ static inline bool pw_InlineVarLenEntryQueue_Empty(
     pw_InlineVarLenEntryQueue_ConstHandle queue) {
   return _PW_VAR_QUEUE_HEAD == _PW_VAR_QUEUE_TAIL;
 }
+PW_MODIFY_DIAGNOSTICS_POP();
 
 // These macros are not part of the public API, so undefine them.
 #undef _PW_VAR_QUEUE_ARRAY_SIZE_BYTES
@@ -339,6 +437,12 @@ static inline bool pw_InlineVarLenEntryQueue_Empty(
 #include "pw_span/span.h"
 
 namespace pw {
+namespace containers::internal {
+
+template <typename T>
+class VarLenEntryQueueEntry;
+
+}  // namespace containers::internal
 
 // A`BasicInlineVarLenEntryQueue` with a known maximum size of a single entry.
 // The member functions are immplemented in the generic-capacity base.
@@ -394,21 +498,22 @@ class BasicInlineVarLenEntryQueue
 template <typename T>
 class BasicInlineVarLenEntryQueue<T, containers::internal::kGenericSized> {
  public:
-  class Entry;
-
-  using value_type = Entry;
+  using value_type = containers::internal::VarLenEntryQueueEntry<T>;
+  using const_value_type = containers::internal::VarLenEntryQueueEntry<const T>;
   using size_type = std::uint32_t;
   using pointer = const value_type*;
   using const_pointer = pointer;
   using reference = const value_type&;
   using const_reference = reference;
 
-  // Refers to an entry in-place in the queue. Entries may not be contiguous.
+  /// Iterator object for an `InlineVarLenEntryQueue`.
+  ///
+  /// Iterators are invalidated by any operations that change the container or
+  /// its underlying data (push/pop/init).
   class iterator;
 
-  // Currently, iterators provide read-only access.
-  // TODO: b/303046109 - Provide a non-const iterator.
-  using const_iterator = iterator;
+  /// Const iterator object for an `InlineVarLenEntryQueue`.
+  class const_iterator;
 
   /// @copydoc pw_InlineVarLenEntryQueue_Init
   template <size_t kArraySize>
@@ -429,17 +534,25 @@ class BasicInlineVarLenEntryQueue<T, containers::internal::kGenericSized> {
 
   /// Returns the first entry in the queue.
   /// @pre The queue must NOT empty (`empty()` is false).
-  Entry front() const { return *begin(); }
+  value_type front() { return *begin(); }
+
+  const_value_type front() const { return *cbegin(); }
 
   /// @copydoc pw_InlineVarLenEntryQueue_Begin
+  iterator begin() {
+    return iterator(pw_InlineVarLenEntryQueue_ConstBegin(array_));
+  }
   const_iterator begin() const {
-    return const_iterator(pw_InlineVarLenEntryQueue_Begin(array_));
+    return const_iterator(pw_InlineVarLenEntryQueue_ConstBegin(array_));
   }
   const_iterator cbegin() const { return begin(); }
 
   /// @copydoc pw_InlineVarLenEntryQueue_End
+  iterator end() {
+    return iterator(pw_InlineVarLenEntryQueue_ConstEnd(array_));
+  }
   const_iterator end() const {
-    return const_iterator(pw_InlineVarLenEntryQueue_End(array_));
+    return const_iterator(pw_InlineVarLenEntryQueue_ConstEnd(array_));
   }
   const_iterator cend() const { return end(); }
 
@@ -516,136 +629,235 @@ class BasicInlineVarLenEntryQueue<T, containers::internal::kGenericSized> {
   uint32_t array_[PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32];
 };
 
+namespace containers::internal {
+
+template <typename T>
+class VarLenEntryQueueEntryIterator {
+ public:
+  using difference_type = std::ptrdiff_t;
+  using value_type = std::remove_cv_t<T>;
+  using pointer = T*;
+  using reference = T&;
+  using iterator_category = std::forward_iterator_tag;
+
+  constexpr VarLenEntryQueueEntryIterator() : entry_(nullptr), index_(0) {}
+
+  constexpr VarLenEntryQueueEntryIterator(
+      const VarLenEntryQueueEntryIterator&) = default;
+  constexpr VarLenEntryQueueEntryIterator& operator=(
+      const VarLenEntryQueueEntryIterator&) = default;
+
+  constexpr VarLenEntryQueueEntryIterator& operator++() {
+    index_ += 1;
+    return *this;
+  }
+  constexpr VarLenEntryQueueEntryIterator operator++(int) {
+    VarLenEntryQueueEntryIterator previous_value(*this);
+    operator++();
+    return previous_value;
+  }
+
+  constexpr VarLenEntryQueueEntryIterator& operator+=(difference_type n) {
+    index_ += static_cast<size_t>(n);
+    return *this;
+  }
+
+  reference operator*() const { return const_cast<reference>(*operator->()); }
+
+  pointer operator->() const {
+    return const_cast<pointer>(reinterpret_cast<const T*>(
+        _pw_InlineVarLenEntryQueue_ConstEntry_GetPointer(entry_, index_)));
+  }
+
+  friend VarLenEntryQueueEntryIterator operator+(
+      const VarLenEntryQueueEntryIterator& it, difference_type n) {
+    return VarLenEntryQueueEntryIterator(*it.entry_,
+                                         it.index_ + static_cast<size_t>(n));
+  }
+
+  friend VarLenEntryQueueEntryIterator operator+(
+      difference_type n, const VarLenEntryQueueEntryIterator& it) {
+    return VarLenEntryQueueEntryIterator(*it.entry_,
+                                         it.index_ + static_cast<size_t>(n));
+  }
+
+  friend bool operator==(const VarLenEntryQueueEntryIterator& lhs,
+                         const VarLenEntryQueueEntryIterator& rhs) {
+    return lhs.entry_->data_1 == rhs.entry_->data_1 && lhs.index_ == rhs.index_;
+  }
+  friend bool operator!=(const VarLenEntryQueueEntryIterator& lhs,
+                         const VarLenEntryQueueEntryIterator& rhs) {
+    return !(lhs == rhs);
+  }
+
+ private:
+  template <typename U>
+  friend class VarLenEntryQueueEntry;
+
+  constexpr VarLenEntryQueueEntryIterator(
+      const pw_InlineVarLenEntryQueue_ConstEntry& entry, size_t index)
+      : entry_(&entry), index_(index) {}
+
+  const pw_InlineVarLenEntryQueue_ConstEntry* entry_;
+  size_t index_;
+};
+
 /// Refers to an entry in-place in the queue. Entries may be discontiguous.
 template <typename T>
-class BasicInlineVarLenEntryQueue<T>::Entry {
+class VarLenEntryQueueEntry {
  public:
-  using value_type = T;
+  using element_type = T;
+  using value_type = std::remove_cv_t<T>;
   using size_type = std::uint32_t;
-  using pointer = const T*;
-  using const_pointer = pointer;
-  using reference = const T&;
-  using const_reference = reference;
+  using pointer = T*;
+  using const_pointer = const T*;
+  using reference = T&;
+  using const_reference = const T&;
 
   /// Iterator for the bytes in an Entry. Entries may be discontiguous, so a
   /// pointer cannot serve as an iterator.
-  class iterator {
-   public:
-    using difference_type = std::ptrdiff_t;
-    using value_type = T;
-    using pointer = const T*;
-    using reference = const T&;
-    using iterator_category = std::forward_iterator_tag;
+  using iterator = VarLenEntryQueueEntryIterator<T>;
+  using const_iterator = VarLenEntryQueueEntryIterator<const T>;
 
-    constexpr iterator() : entry_(nullptr), index_(0) {}
+  constexpr VarLenEntryQueueEntry(const VarLenEntryQueueEntry&) = default;
+  constexpr VarLenEntryQueueEntry& operator=(const VarLenEntryQueueEntry&) =
+      default;
 
-    constexpr iterator(const iterator&) = default;
-    constexpr iterator& operator=(const iterator&) = default;
-
-    constexpr iterator& operator++() {
-      index_ += 1;
-      return *this;
-    }
-    constexpr iterator operator++(int) {
-      iterator previous_value(*this);
-      operator++();
-      return previous_value;
-    }
-
-    reference operator*() const { return *GetIndex(*entry_, index_); }
-    pointer operator->() const { return GetIndex(*entry_, index_); }
-
-    bool operator==(const iterator& rhs) const {
-      return entry_->data_1 == rhs.entry_->data_1 && index_ == rhs.index_;
-    }
-    bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
-
-   private:
-    friend class Entry;
-
-    constexpr iterator(const pw_InlineVarLenEntryQueue_Entry& entry,
-                       size_t index)
-        : entry_(&entry), index_(index) {}
-
-    const pw_InlineVarLenEntryQueue_Entry* entry_;
-    size_t index_;
-  };
-
-  // TODO: b/303046109 - Provide mutable access to Entry contents.
-  using const_iterator = iterator;
-
-  constexpr Entry(const Entry&) = default;
-  constexpr Entry& operator=(const Entry&) = default;
-
-  const_reference at(size_t index) const {
-    return *reinterpret_cast<const T*>(
-        _pw_InlineVarLenEntryQueue_Entry_GetPointerChecked(&entry_, index));
+  constexpr operator VarLenEntryQueueEntry<const T>() const {
+    return VarLenEntryQueueEntry<const T>(entry_);
   }
 
-  const_reference operator[](size_t index) const {
-    return *GetIndex(entry_, index);
+  reference at(size_t index) const {
+    return const_cast<reference>(*reinterpret_cast<const_pointer>(
+        _pw_InlineVarLenEntryQueue_ConstEntry_GetPointerChecked(&entry_,
+                                                                index)));
   }
 
-  const_reference front() const { return *entry_.data_1; }
-  const_reference back() const { *GetIndex(entry_, size() - 1); }
+  reference operator[](size_t index) const {
+    return const_cast<reference>(*reinterpret_cast<const_pointer>(
+        _pw_InlineVarLenEntryQueue_ConstEntry_GetPointer(&entry_, index)));
+  }
+
+  reference front() const {
+    return const_cast<reference>(
+        reinterpret_cast<const_reference>(*entry_.data_1));
+  }
+  reference back() const { return operator[](size() - 1); }
 
   /// Entries may be stored in up to two segments, so this returns spans
   /// refering to both portions of the entry. If the entry is contiguous, the
   /// second span is empty.
-  std::pair<span<const value_type>, span<const value_type>> contiguous_data()
-      const {
+  std::pair<span<element_type>, span<element_type>> contiguous_data() const {
     return std::make_pair(
-        span(reinterpret_cast<const_pointer>(entry_.data_1), entry_.size_1),
-        span(reinterpret_cast<const_pointer>(entry_.data_2), entry_.size_2));
+        span(
+            const_cast<pointer>(reinterpret_cast<const_pointer>(entry_.data_1)),
+            entry_.size_1),
+        span(
+            const_cast<pointer>(reinterpret_cast<const_pointer>(entry_.data_2)),
+            entry_.size_2));
   }
 
-  /// @copydoc pw_InlineVarLenEntryQueue_Entry_Copy
+  /// @copydoc pw_InlineVarLenEntryQueue_ConstEntry_Copy
   ///
   /// Copying with `copy()` is likely more efficient than an iterator-based copy
   /// with `std::copy()`, since `copy()` uses one or two `memcpy` calls instead
   /// of copying byte-by-byte.
-  size_type copy(T* dest, size_type count) const {
-    return pw_InlineVarLenEntryQueue_Entry_Copy(&entry_, dest, count);
+  size_type copy(value_type* dest, size_type count) const {
+    return pw_InlineVarLenEntryQueue_ConstEntry_Copy(&entry_, dest, count);
   }
 
-  const_iterator begin() const { return const_iterator(entry_, 0); }
-  const_iterator cbegin() const { return begin(); }
+  iterator begin() const { return iterator(entry_, 0); }
+  const_iterator cbegin() const { return const_iterator(entry_, 0); }
 
-  const_iterator end() const { return const_iterator(entry_, size()); }
-  const_iterator cend() const { return cend(); }
+  iterator end() const { return iterator(entry_, size()); }
+  const_iterator cend() const { return const_iterator(entry_, size()); }
 
   [[nodiscard]] bool empty() const { return size() == 0; }
 
   size_type size() const { return entry_.size_1 + entry_.size_2; }
 
  private:
+  friend class VarLenEntryQueueEntry<std::remove_const_t<T>>;
   friend class BasicInlineVarLenEntryQueue;
+  friend class BasicInlineVarLenEntryQueue<std::remove_const_t<T>>::iterator;
+  friend class BasicInlineVarLenEntryQueue<
+      std::remove_const_t<T>>::const_iterator;
 
-  static const T* GetIndex(const pw_InlineVarLenEntryQueue_Entry& entry,
-                           size_t index) {
-    return reinterpret_cast<const T*>(
-        _pw_InlineVarLenEntryQueue_Entry_GetPointer(&entry, index));
-  }
-
-  explicit constexpr Entry(const pw_InlineVarLenEntryQueue_Entry& entry)
+  explicit constexpr VarLenEntryQueueEntry(
+      const pw_InlineVarLenEntryQueue_ConstEntry& entry)
       : entry_(entry) {}
 
-  constexpr Entry() : entry_{} {}
+  constexpr VarLenEntryQueueEntry() : entry_{} {}
 
-  pw_InlineVarLenEntryQueue_Entry entry_;
+  pw_InlineVarLenEntryQueue_ConstEntry entry_;
 };
 
-/// Iterator object for a `InlineVarLenEntryQueue`.
-///
-/// Iterators are invalidated by any operations that change the container or
-/// its underlying data (push/pop/init).
+}  // namespace containers::internal
+
+template <typename T>
+class BasicInlineVarLenEntryQueue<T>::const_iterator {
+ public:
+  using difference_type = std::ptrdiff_t;
+  using value_type = BasicInlineVarLenEntryQueue<T>::const_value_type;
+  using pointer = const value_type*;
+  using reference = const value_type&;
+  using iterator_category = std::forward_iterator_tag;
+
+  constexpr const_iterator() : iterator_{}, entry_{} {}
+
+  constexpr const_iterator(const const_iterator&) = default;
+  constexpr const_iterator& operator=(const const_iterator&) = default;
+
+  const_iterator& operator++() {
+    pw_InlineVarLenEntryQueue_ConstIterator_Advance(&iterator_);
+    entry_.entry_.data_1 = nullptr;  // mark the entry as unloaded
+    return *this;
+  }
+  const_iterator operator++(int) {
+    const_iterator previous_value(*this);
+    operator++();
+    return previous_value;
+  }
+
+  reference operator*() const {
+    LoadEntry();
+    return entry_;
+  }
+  pointer operator->() const {
+    LoadEntry();
+    return &entry_;
+  }
+
+  bool operator==(const const_iterator& rhs) const {
+    return pw_InlineVarLenEntryQueue_ConstIterator_Equal(&iterator_,
+                                                         &rhs.iterator_);
+  }
+  bool operator!=(const const_iterator& rhs) const { return !(*this == rhs); }
+
+ private:
+  friend class BasicInlineVarLenEntryQueue;
+
+  explicit constexpr const_iterator(
+      const pw_InlineVarLenEntryQueue_ConstIterator& it)
+      : iterator_(it) {}
+
+  void LoadEntry() const {
+    if (entry_.entry_.data_1 == nullptr) {
+      entry_.entry_ = pw_InlineVarLenEntryQueue_GetConstEntry(&iterator_);
+    }
+  }
+
+  pw_InlineVarLenEntryQueue_ConstIterator iterator_;
+  mutable value_type entry_;
+};
+
 template <typename T>
 class BasicInlineVarLenEntryQueue<T>::iterator {
  public:
   using difference_type = std::ptrdiff_t;
-  using value_type = Entry;
-  using pointer = const Entry*;
-  using reference = const Entry&;
+  using value_type = BasicInlineVarLenEntryQueue<T>::value_type;
+  using pointer = const value_type*;
+  using reference = const value_type&;
   using iterator_category = std::forward_iterator_tag;
 
   constexpr iterator() : iterator_{}, entry_{} {}
@@ -654,7 +866,7 @@ class BasicInlineVarLenEntryQueue<T>::iterator {
   constexpr iterator& operator=(const iterator&) = default;
 
   iterator& operator++() {
-    pw_InlineVarLenEntryQueue_Iterator_Advance(&iterator_);
+    pw_InlineVarLenEntryQueue_ConstIterator_Advance(&iterator_);
     entry_.entry_.data_1 = nullptr;  // mark the entry as unloaded
     return *this;
   }
@@ -674,24 +886,25 @@ class BasicInlineVarLenEntryQueue<T>::iterator {
   }
 
   bool operator==(const iterator& rhs) const {
-    return pw_InlineVarLenEntryQueue_Iterator_Equal(&iterator_, &rhs.iterator_);
+    return pw_InlineVarLenEntryQueue_ConstIterator_Equal(&iterator_,
+                                                         &rhs.iterator_);
   }
   bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
 
  private:
   friend class BasicInlineVarLenEntryQueue;
 
-  explicit constexpr iterator(const pw_InlineVarLenEntryQueue_Iterator& it)
+  explicit constexpr iterator(const pw_InlineVarLenEntryQueue_ConstIterator& it)
       : iterator_(it) {}
 
   void LoadEntry() const {
     if (entry_.entry_.data_1 == nullptr) {
-      entry_.entry_ = pw_InlineVarLenEntryQueue_GetEntry(&iterator_);
+      entry_.entry_ = pw_InlineVarLenEntryQueue_GetConstEntry(&iterator_);
     }
   }
 
-  pw_InlineVarLenEntryQueue_Iterator iterator_;
-  mutable Entry entry_;
+  pw_InlineVarLenEntryQueue_ConstIterator iterator_;
+  mutable value_type entry_;
 };
 
 /// Variable-length entry queue that uses ``std::byte`` for the byte type.

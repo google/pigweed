@@ -140,6 +140,7 @@ PREDEFINED             = __cplusplus=202002L \
                          PW_LOCKS_EXCLUDED(...)= \
                          PW_EXCLUSIVE_LOCKS_REQUIRED(...)= \
                          PW_GUARDED_BY(...)= \
+                         PW_MODIFY_DIAGNOSTIC_CLANG(...)= \
                          PW_NO_SANITIZE(...)= \
                          PW_NODISCARD_STR(...)= \
                          PW_ALLOCATOR_HAS_ATOMICS=1 \

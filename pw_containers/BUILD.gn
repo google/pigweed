@@ -515,6 +515,7 @@ pw_test("inline_var_len_entry_queue_test") {
     ":inline_var_len_entry_queue",
     dir_pw_assert,
     dir_pw_bytes,
+    dir_pw_span,
   ]
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.

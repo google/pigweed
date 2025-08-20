@@ -41,7 +41,7 @@ class RpcChannelOutputQueue final : public rpc::ChannelOutput {
       : rpc::ChannelOutput("RPC output queue"), dropped_packets_(0) {}
 
   // Read packets from the outbound queue.
-  async2::Poll<InlineVarLenEntryQueue<>::Entry> PendOutgoingDatagram(
+  async2::Poll<InlineVarLenEntryQueue<>::const_value_type> PendOutgoingDatagram(
       async2::Context& cx);
 
   // Pops the packet read from a Pend call.
@@ -72,7 +72,7 @@ class RpcServerThread final {
  public:
   RpcServerThread(Allocator& allocator, rpc::Server& server);
 
-  async2::Poll<InlineVarLenEntryQueue<>::Entry> PendOutgoingDatagram(
+  async2::Poll<InlineVarLenEntryQueue<>::const_value_type> PendOutgoingDatagram(
       async2::Context& cx) {
     return rpc_packet_queue_.PendOutgoingDatagram(cx);
   }
@@ -135,7 +135,7 @@ class PacketIO {
     async2::Poll<> DoPend(async2::Context& cx) override;
 
     PacketIO& io_;
-    async2::Poll<InlineVarLenEntryQueue<>::Entry> outbound_packet_;
+    async2::Poll<InlineVarLenEntryQueue<>::const_value_type> outbound_packet_;
   };
 
   channel::DatagramReaderWriter& channel() { return channels_.first(); }

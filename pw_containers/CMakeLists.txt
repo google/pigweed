@@ -516,6 +516,7 @@ pw_add_test(pw_containers.inline_var_len_entry_queue_test
     pw_assert
     pw_bytes
     pw_containers.inline_var_len_entry_queue
+    pw_span
 )
 
 pw_add_test(pw_containers.vector_test

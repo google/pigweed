@@ -181,19 +181,19 @@ void pw_InlineVarLenEntryQueue_Pop(pw_InlineVarLenEntryQueue_Handle queue) {
   PopNonEmpty(queue);
 }
 
-void pw_InlineVarLenEntryQueue_Iterator_Advance(
-    pw_InlineVarLenEntryQueue_Iterator* iterator) {
+void pw_InlineVarLenEntryQueue_ConstIterator_Advance(
+    pw_InlineVarLenEntryQueue_ConstIterator* iterator) {
   iterator->_pw_offset = WrapIndex(
       iterator->_pw_queue,
       iterator->_pw_offset +
           ReadEncodedEntrySize(iterator->_pw_queue, iterator->_pw_offset));
 }
 
-pw_InlineVarLenEntryQueue_Entry pw_InlineVarLenEntryQueue_GetEntry(
-    const pw_InlineVarLenEntryQueue_Iterator* iterator) {
+pw_InlineVarLenEntryQueue_ConstEntry pw_InlineVarLenEntryQueue_GetConstEntry(
+    const pw_InlineVarLenEntryQueue_ConstIterator* iterator) {
   pw_InlineVarLenEntryQueue_ConstHandle queue = iterator->_pw_queue;
 
-  pw_InlineVarLenEntryQueue_Entry entry;
+  pw_InlineVarLenEntryQueue_ConstEntry entry;
   EntrySize size = ReadEntrySize(queue, iterator->_pw_offset);
   uint32_t offset_1 = WrapIndex(queue, iterator->_pw_offset + size.prefix);
 
@@ -212,8 +212,10 @@ pw_InlineVarLenEntryQueue_Entry pw_InlineVarLenEntryQueue_GetEntry(
   return entry;
 }
 
-uint32_t pw_InlineVarLenEntryQueue_Entry_Copy(
-    const pw_InlineVarLenEntryQueue_Entry* entry, void* dest, uint32_t count) {
+uint32_t pw_InlineVarLenEntryQueue_ConstEntry_Copy(
+    const pw_InlineVarLenEntryQueue_ConstEntry* entry,
+    void* dest,
+    uint32_t count) {
   PW_DCHECK(dest != NULL || count == 0u);
 
   const uint32_t entry_size = entry->size_1 + entry->size_2;
@@ -233,10 +235,10 @@ uint32_t pw_InlineVarLenEntryQueue_Entry_Copy(
   return to_copy;
 }
 
-const uint8_t* _pw_InlineVarLenEntryQueue_Entry_GetPointerChecked(
-    const pw_InlineVarLenEntryQueue_Entry* entry, size_t index) {
+const uint8_t* _pw_InlineVarLenEntryQueue_ConstEntry_GetPointerChecked(
+    const pw_InlineVarLenEntryQueue_ConstEntry* entry, size_t index) {
   PW_CHECK_UINT_LT(index, entry->size_1 + entry->size_2);
-  return _pw_InlineVarLenEntryQueue_Entry_GetPointer(entry, index);
+  return _pw_InlineVarLenEntryQueue_ConstEntry_GetPointer(entry, index);
 }
 
 uint32_t pw_InlineVarLenEntryQueue_Size(
