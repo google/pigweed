@@ -46,8 +46,9 @@ def process_snapshot(
     serialized_snapshot: bytes, tokenizer_db: pw_tokenizer.Detokenizer | None
 ) -> str:
     """Processes snapshot metadata and tags, producing a multi-line string."""
-    snapshot = snapshot_metadata_pb2.SnapshotBasicInfo()
-    snapshot.ParseFromString(serialized_snapshot)
+    snapshot = snapshot_metadata_pb2.SnapshotBasicInfo.FromString(
+        serialized_snapshot
+    )
 
     output: list[str] = []
 

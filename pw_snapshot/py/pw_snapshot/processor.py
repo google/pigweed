@@ -69,8 +69,7 @@ def process_snapshot(
     output = [_BRANDING]
 
     # Open a symbolizer.
-    snapshot = snapshot_pb2.Snapshot()
-    snapshot.ParseFromString(serialized_snapshot)
+    snapshot = snapshot_pb2.Snapshot.FromString(serialized_snapshot)
 
     if symbolizer_matcher is not None:
         symbolizer = symbolizer_matcher(snapshot)
@@ -90,8 +89,9 @@ def process_snapshot(
         output.append(captured_metadata)
 
     # Create MetadataProcessor
-    snapshot_metadata = snapshot_metadata_pb2.SnapshotBasicInfo()
-    snapshot_metadata.ParseFromString(serialized_snapshot)
+    snapshot_metadata = snapshot_metadata_pb2.SnapshotBasicInfo.FromString(
+        serialized_snapshot
+    )
     metadata_processor = metadata.MetadataProcessor(
         snapshot_metadata.metadata, detokenizer
     )
@@ -148,8 +148,7 @@ def process_snapshots(
     """Processes a snapshot that may have multiple embedded snapshots."""
     output = []
     # Process the top-level snapshot.
-    snapshot = snapshot_pb2.Snapshot()
-    snapshot.ParseFromString(serialized_snapshot)
+    snapshot = snapshot_pb2.Snapshot.FromString(serialized_snapshot)
 
     callback: Callable[[bytes], str] | None = None
     if thread_processing_callback:

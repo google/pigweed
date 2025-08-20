@@ -305,9 +305,10 @@ by creating a light wrapper around
 
    def _process_hw_failures(serialized_snapshot: bytes) -> str:
        """Custom handler that checks wheel state."""
-       wheel_state = wheel_state_pb2.WheelStateSnapshot()
+       wheel_state = wheel_state_pb2.WheelStateSnapshot.FromString(
+           serialized_snapshot
+       )
        output = []
-       wheel_state.ParseFromString(serialized_snapshot)
 
        if len(wheel_state.wheels) != 2:
            output.append(f'Expected 2 wheels, found {len(wheel_state.wheels)}')
