@@ -28,8 +28,9 @@ def process_snapshot(
     user_processing_callback: Callable[[bytes], str] | None = None,
 ) -> str:
     """Processes snapshot threads, producing a multi-line string."""
-    captured_threads = thread_pb2.SnapshotThreadInfo()
-    captured_threads.ParseFromString(serialized_snapshot)
+    captured_threads = thread_pb2.SnapshotThreadInfo.FromString(
+        serialized_snapshot
+    )
     if symbolizer is None:
         symbolizer = LlvmSymbolizer()
 
