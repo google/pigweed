@@ -48,8 +48,7 @@ class PacketsTest(unittest.TestCase):
 
     def test_encode_request(self):
         data = packets.encode_request(_TEST_IDS, RpcPacket(status=_TEST_STATUS))
-        packet = RpcPacket()
-        packet.ParseFromString(data)
+        packet = RpcPacket.FromString(data)
 
         self.assertEqual(_TEST_REQUEST, packet)
 
@@ -57,16 +56,14 @@ class PacketsTest(unittest.TestCase):
         data = packets.encode_response(
             _TEST_IDS, RpcPacket(status=_TEST_STATUS), Status.OK
         )
-        packet = RpcPacket()
-        packet.ParseFromString(data)
+        packet = RpcPacket.FromString(data)
 
         self.assertEqual(_TEST_RESPONSE, packet)
 
     def test_encode_cancel(self):
         data = packets.encode_cancel(RpcIds(9, 8, 7, 6))
 
-        packet = RpcPacket()
-        packet.ParseFromString(data)
+        packet = RpcPacket.FromString(data)
 
         self.assertEqual(
             packet,
@@ -83,8 +80,7 @@ class PacketsTest(unittest.TestCase):
     def test_encode_client_error(self):
         data = packets.encode_client_error(_TEST_REQUEST, Status.NOT_FOUND)
 
-        packet = RpcPacket()
-        packet.ParseFromString(data)
+        packet = RpcPacket.FromString(data)
 
         self.assertEqual(
             packet,
@@ -101,8 +97,7 @@ class PacketsTest(unittest.TestCase):
     def test_encode_server_error(self):
         data = packets.encode_server_error(_TEST_REQUEST, Status.UNKNOWN)
 
-        packet = RpcPacket()
-        packet.ParseFromString(data)
+        packet = RpcPacket.FromString(data)
 
         self.assertEqual(
             packet,
@@ -121,8 +116,7 @@ class PacketsTest(unittest.TestCase):
             _TEST_REQUEST, RpcPacket(status=_TEST_STATUS)
         )
 
-        packet = RpcPacket()
-        packet.ParseFromString(data)
+        packet = RpcPacket.FromString(data)
 
         self.assertEqual(
             packet,

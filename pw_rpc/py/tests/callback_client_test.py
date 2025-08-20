@@ -190,8 +190,7 @@ class _CallbackClientImplTestBase(unittest.TestCase):
         self.send_responses_after_packets = send_after_count
 
     def _sent_payload(self, message_type: type) -> Any:
-        message = message_type()
-        message.ParseFromString(self.last_request().payload)
+        message = message_type().FromString(self.last_request().payload)
         return message
 
 
