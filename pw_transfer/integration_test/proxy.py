@@ -461,12 +461,10 @@ def _extract_transfer_chunk(data: bytes) -> Chunk:
 
     decoder = decode.FrameDecoder()
     for frame in decoder.process(data):
-        packet = packet_pb2.RpcPacket()
-        packet.ParseFromString(frame.data)
+        packet = packet_pb2.RpcPacket.FromString(frame.data)
 
         if packet.payload:
-            raw_chunk = transfer_pb2.Chunk()
-            raw_chunk.ParseFromString(packet.payload)
+            raw_chunk = transfer_pb2.Chunk.FromString(packet.payload)
             return Chunk.from_message(raw_chunk)
 
         # The incoming data is expected to be HDLC-packetized, so only one
