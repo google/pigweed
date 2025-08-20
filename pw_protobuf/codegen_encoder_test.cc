@@ -12,9 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#undef PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION
-#define PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION 0
-
 #include <algorithm>
 
 #include "pw_bytes/array.h"
@@ -97,6 +94,10 @@ TEST(Codegen, Codegen) {
   ASSERT_EQ(OkStatus(), pigweed.WriteZiggy(-111));
   ASSERT_EQ(OkStatus(), pigweed.WriteErrorMessage("not a typewriter"));
   ASSERT_EQ(OkStatus(), pigweed.WriteBin(Pigweed::Protobuf::Binary::ZERO));
+  ASSERT_EQ(OkStatus(), pigweed.WriteData(2, [](stream::Writer& data_writer) {
+    PW_TRY(data_writer.Write(std::byte('a')));
+    return data_writer.Write(std::byte{'z'});
+  }));
 
   {
     Pigweed::Pigweed::StreamEncoder pigweed_pigweed =
@@ -170,6 +171,8 @@ TEST(Codegen, Codegen) {
     't', 'y', 'p', 'e', 'w', 'r', 'i', 't', 'e', 'r',
     // pigweed.bin
     0x40, 0x01,
+    // pigweed.data
+    0x5a, 0x02, 'a', 'z',
     // pigweed.pigweed
     0x3a, 0x02,
     // pigweed.pigweed.status

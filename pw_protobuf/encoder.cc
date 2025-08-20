@@ -207,6 +207,28 @@ Status StreamEncoder::WriteLengthDelimitedField(uint32_t field_number,
   return status_;
 }
 
+Status StreamEncoder::WriteLengthDelimitedFieldFromCallback(
+    uint32_t field_number,
+    size_t num_bytes,
+    const Function<Status(stream::Writer&)>& write_func) {
+  if (num_bytes == 0) {
+    return OkStatus();
+  }
+
+  PW_TRY(UpdateStatusForWrite(field_number, WireType::kDelimited, num_bytes));
+  status_.Update(
+      WriteLengthDelimitedKeyAndLengthPrefix(field_number, num_bytes, writer_));
+
+  stream::LimitedStreamWriter write_stream(writer_, num_bytes);
+  status_.Update(write_func(write_stream));
+
+  if (write_stream.bytes_written() != num_bytes) {
+    status_.Update(Status::DataLoss());
+  }
+
+  return status_;
+}
+
 Status StreamEncoder::WriteLengthDelimitedFieldFromStream(
     uint32_t field_number,
     stream::Reader& bytes_reader,

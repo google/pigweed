@@ -12,13 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#undef PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION
-#define PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION 0
-
 #include "pw_protobuf/encoder.h"
 
 #include "pw_bytes/array.h"
 #include "pw_bytes/span.h"
+#include "pw_protobuf/serialized_size.h"
 #include "pw_span/span.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_unit_test/framework.h"
@@ -164,6 +162,85 @@ TEST(StreamEncoder, EncodeInvalidArguments) {
 
   EXPECT_EQ(encoder.WriteBool(19091, false), Status::InvalidArgument());
   ASSERT_EQ(encoder.status(), Status::InvalidArgument());
+}
+
+TEST(StreamEncoder, WriteBytesWithCallback) {
+  constexpr uint32_t kArbitraryFieldNumber = 3;
+  std::array<std::byte, 16> encode_buffer;
+  constexpr auto kData = bytes::Initialized<8>(0xaa);
+
+  MemoryEncoder encoder(encode_buffer);
+  EXPECT_EQ(encoder.WriteBytes(kArbitraryFieldNumber,
+                               kData.size(),
+                               [&kData](stream::Writer& writer) -> Status {
+                                 ConstByteSpan data_span(kData);
+                                 PW_TRY(writer.Write(data_span.first(4)));
+                                 return writer.Write(data_span.subspan(4));
+                               }),
+            OkStatus());
+  EXPECT_EQ(encoder.status(), OkStatus());
+
+  EXPECT_EQ(encoder.size(),
+            SizeOfDelimitedField(kArbitraryFieldNumber, kData.size()));
+}
+
+TEST(StreamEncoder, WriteBytesWithCallbackZeroLength) {
+  constexpr uint32_t kArbitraryFieldNumber = 3;
+  std::array<std::byte, 16> encode_buffer;
+  MemoryEncoder encoder(encode_buffer);
+
+  bool invoked = false;
+  EXPECT_EQ(encoder.WriteBytes(kArbitraryFieldNumber,
+                               0,
+                               [&invoked](stream::Writer&) -> Status {
+                                 invoked = true;
+                                 return OkStatus();
+                               }),
+            OkStatus());
+  EXPECT_EQ(encoder.status(), OkStatus());
+  EXPECT_FALSE(invoked);
+}
+
+TEST(StreamEncoder, WriteBytesWithCallbackForwardsCallbackReturn) {
+  constexpr uint32_t kArbitraryFieldNumber = 3;
+  std::array<std::byte, 16> encode_buffer;
+  MemoryEncoder encoder(encode_buffer);
+
+  EXPECT_EQ(encoder.WriteBytes(kArbitraryFieldNumber,
+                               8,
+                               [](stream::Writer&) -> Status {
+                                 return Status::Unimplemented();
+                               }),
+            Status::Unimplemented());
+  EXPECT_EQ(encoder.status(), Status::Unimplemented());
+}
+
+TEST(StreamEncoder, WriteBytesWithCallbackFailsIfSizeMismatch) {
+  constexpr uint32_t kArbitraryFieldNumber = 3;
+  std::array<std::byte, 16> encode_buffer;
+  constexpr auto kData = bytes::Initialized<8>(0xaa);
+
+  MemoryEncoder encoder1(encode_buffer);
+
+  // Write larger than specified size.
+  EXPECT_EQ(encoder1.WriteBytes(kArbitraryFieldNumber,
+                                kData.size() - 2,
+                                [&kData](stream::Writer& writer) -> Status {
+                                  return writer.Write(kData);
+                                }),
+            Status::OutOfRange());
+  EXPECT_EQ(encoder1.status(), Status::OutOfRange());
+
+  MemoryEncoder encoder2(encode_buffer);
+
+  // Write smaller than specified size.
+  EXPECT_EQ(encoder2.WriteBytes(kArbitraryFieldNumber,
+                                kData.size() + 2,
+                                [&kData](stream::Writer& writer) -> Status {
+                                  return writer.Write(kData);
+                                }),
+            Status::DataLoss());
+  EXPECT_EQ(encoder2.status(), Status::DataLoss());
 }
 
 // clang-format off

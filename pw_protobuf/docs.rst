@@ -1852,13 +1852,17 @@ stream.
 
 Bytes
 =====
-Bytes fields provide the ``WriteData`` code generated method.
+Bytes fields have multiple code generated methods provided.
+The ``write_func`` callback version allows direct writes to the underlying
+stream, eliminating the need for a temporary copy buffer.
 
-.. cpp:function:: Status MyProto::StreamEncoder::WriteData(ConstByteSpan)
+.. cpp:function:: Status MyProto::StreamEncoder::WriteFoo(ConstByteSpan)
+.. cpp:function:: Status MyProto::StreamEncoder::WriteFoo(size_t num_bytes, const pw::Function<pw::Status(pw::stream::Writer&)> write_func);
 
-This can be freely intermixed with the lower-level API method.
+These can be freely intermixed with the lower-level API method.
 
 .. cpp:function:: Status pw::protobuf::StreamEncoder::WriteBytes(uint32_t field_number, ConstByteSpan)
+.. cpp:function:: Status pw::protobuf::StreamEncoder::WriteBytes(size_t num_bytes, const pw::Function<pw::Status(pw::stream::Writer&)> write_func);
 
 And with the API method that can write bytes from another stream.
 

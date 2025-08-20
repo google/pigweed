@@ -2266,6 +2266,22 @@ class BytesWriteMethod(WriteMethod):
         return 'WriteBytes'
 
 
+class BytesCallbackWriteMethod(WriteMethod):
+    """Method which writes a proto bytes value using a callback"""
+
+    def params(self) -> list[tuple[str, str]]:
+        return [
+            ('size_t', 'num_bytes'),
+            (
+                'const pw::Function<pw::Status(pw::stream::Writer&)>&',
+                'write_fn',
+            ),
+        ]
+
+    def _encoder_fn(self) -> str:
+        return 'WriteBytes'
+
+
 class BytesReadMethod(ReadMethod):
     """Method which reads a proto bytes value."""
 
@@ -2751,7 +2767,10 @@ PROTO_FIELD_WRITE_METHODS: dict[int, list] = {
         PackedBoolWriteMethod,
         PackedBoolWriteVectorMethod,
     ],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [BytesWriteMethod],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [
+        BytesWriteMethod,
+        BytesCallbackWriteMethod,
+    ],
     descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [
         StringLenWriteMethod,
         StringWriteMethod,
