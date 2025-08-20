@@ -37,7 +37,7 @@ pw_zephyrize_libraries_ifdef(
   pw_thread_zephyr.id
 )
 
-pw_add_library(pw_thread_zephyr.sleep STATIC
+pw_add_library(pw_thread_zephyr.sleep INTERFACE
   HEADERS
     public/pw_thread_zephyr/sleep_inline.h
     sleep_public_overrides/pw_thread_backend/sleep_inline.h
@@ -47,8 +47,6 @@ pw_add_library(pw_thread_zephyr.sleep STATIC
   PUBLIC_DEPS
     pw_chrono.system_clock
     pw_thread.sleep.facade
-  SOURCES
-    sleep.cc
   PRIVATE_DEPS
     pw_chrono_zephyr.system_clock
     pw_assert.check
