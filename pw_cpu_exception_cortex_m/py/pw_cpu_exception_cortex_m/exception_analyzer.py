@@ -228,8 +228,9 @@ def process_snapshot(
     """Returns the stringified result of a SnapshotCpuStateOverlay message run
     though a CortexMExceptionAnalyzer.
     """
-    snapshot = cpu_state_pb2.SnapshotCpuStateOverlay()
-    snapshot.ParseFromString(serialized_snapshot)
+    snapshot = cpu_state_pb2.SnapshotCpuStateOverlay.FromString(
+        serialized_snapshot
+    )
 
     if snapshot.HasField('armv7m_cpu_state'):
         state_analyzer = CortexMExceptionAnalyzer(
