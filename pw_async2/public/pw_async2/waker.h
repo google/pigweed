@@ -41,7 +41,7 @@ template <typename Callable>
 
 }  // namespace internal
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,core}
 
 /// Attempts to store a waker associated with the current context into
 /// ``waker_or_queue_out``. If the waker cannot be stored into
@@ -127,6 +127,8 @@ template <typename Callable>
                           waker_or_queue_out,                 \
                           wait_reason_string)
 
+/// @}
+
 // Base implementation of the TRY_{STORE,CLONE}_WAKER macros.
 #define _PW_ASYNC_TRY_GET_WAKER(                                        \
     func, source, waker_or_queue_out, wait_reason_string)               \
@@ -138,6 +140,8 @@ template <typename Callable>
             PW_LOG_TOKEN("pw_async2", wait_reason_string);              \
         return func(source, waker_or_queue_out, pw_async2_wait_reason); \
       })
+
+/// @submodule{pw_async2,core}
 
 /// An object which can respond to asynchronous events by queueing work to
 /// be done in response, such as placing a ``Task`` on a ``Dispatcher``
@@ -235,5 +239,7 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   log::Token wait_reason_ = log::kDefaultToken;
 #endif  // PW_ASYNC2_DEBUG_WAIT_REASON
 };
+
+/// @}
 
 }  // namespace pw::async2

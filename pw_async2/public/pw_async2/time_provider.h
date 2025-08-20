@@ -40,7 +40,7 @@ void AssertTimeFutureObjectsAllGone(bool empty);
 
 }  // namespace internal
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,pendables}
 
 template <typename Clock>
 class TimeFuture;
@@ -283,5 +283,7 @@ void TimeProvider<Clock>::RunExpired(typename Clock::time_point now) {
     futures_.pop_front();
   }
 }
+
+/// @}
 
 }  // namespace pw::async2

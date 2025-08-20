@@ -19,7 +19,7 @@
 
 namespace pw::async2 {
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,pendables}
 
 /// A simulated `TimeProvider` suitable for testing APIs which use `Timer`.
 template <typename Clock>
@@ -127,5 +127,7 @@ class SimulatedTimeProvider final : public TimeProvider<Clock> {
   std::optional<typename Clock::time_point> next_wake_time_
       PW_GUARDED_BY(lock_);
 };
+
+/// @}
 
 }  // namespace pw::async2

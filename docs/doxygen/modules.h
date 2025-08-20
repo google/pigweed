@@ -28,7 +28,43 @@
 /// @brief Portable APIs for asynchronous code. Main docs: https://pigweed.dev/pw_async
 
 /// @defgroup pw_async2 pw_async2
-/// @brief Cooperative async tasks for embedded: https://pigweed.dev/pw_async2
+/// @brief Cooperative async tasks for embedded.
+/// @details Main docs: [Home](../../pw_async2/docs.html) |
+/// [Quickstart](../../pw_async2/quickstart.html) |
+/// [Codelab](../../pw_async2/codelab.html) |
+/// [Guides](../../pw_async2/guides.html) |
+/// [Code size analysis](../../pw_async2/code_size.html) |
+/// [Coroutines](../../pw_async2/coroutines.html) |
+/// [Backends](../../pw_async2/backends.html)
+
+/// @defgroup pw_async2_adapters Pendable adapters
+/// @ingroup pw_async2
+/// @brief Pendable wrappers and helpers
+
+/// @defgroup pw_async2_alloc Dynamic allocation
+/// @ingroup pw_async2
+/// @brief Heap allocate space for tasks or functions with `pw::Allocator`
+
+/// @defgroup pw_async2_backends Dispatcher backends
+/// @ingroup pw_async2
+/// @brief Dispatcher implementation interfaces
+
+/// @defgroup pw_async2_combiners Combining tasks
+/// @ingroup pw_async2
+/// @brief Helpers for interacting with multiple pendables
+
+/// @defgroup pw_async2_core Core
+/// @ingroup pw_async2
+/// @brief Core primitives such as tasks, dispatchers, polls, contexts, and wakers
+/// @details Learn more: [Core concepts](../../pw_async2/design.html#core-concepts)
+
+/// @defgroup pw_async2_coroutines Coroutines
+/// @ingroup pw_async2
+/// @brief C++20 coroutine support. Learn more: [Coroutines](../../pw_async2/coroutines.html)
+
+/// @defgroup pw_async2_pendables Built-in pendables
+/// @ingroup pw_async2
+/// @brief Async operations that can be polled for completion and suspended. Learn more: [The pendable function interface](../../pw_async2/design.html#the-pendable-function-interface)
 
 /// @defgroup pw_async_basic pw_async_basic
 /// @brief Main docs: https://pigweed.dev/pw_async_basic

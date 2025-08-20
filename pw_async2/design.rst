@@ -226,20 +226,6 @@ flexibility in how tasks are allocated and stored. Common patterns include:
    Task* task = AllocateTask<MyPendable>(my_allocator, arg1, arg2);
    dispatcher.Post(*task);
 
-Coroutine Memory
-================
-When using C++20 coroutines, the compiler generates code to save the
-coroutine's state (including local variables) across suspension points
-(``co_await``). ``pw_async2`` hooks into this mechanism to control where this
-state is stored.
-
-A :doxylink:`pw::async2::CoroContext`, which holds a
-:doxylink:`pw::Allocator`, must be passed to any function that
-returns a :doxylink:`pw::async2::Coro`. This allocator is used to allocate the
-coroutine frame. If allocation fails, the resulting ``Coro`` will be invalid
-and will immediately return a ``Ready(Status::Internal())`` result when polled.
-This design makes coroutine memory usage explicit and controllable.
-
 ----------------
 Interoperability
 ----------------
@@ -405,28 +391,6 @@ Primitives and Utilities
 ------------------------
 On top of these core concepts, ``pw_async2`` provides a suite of higher-level
 primitives to make asynchronous programming easier and more expressive.
-
-Coroutines (``Coro<T>``)
-========================
-For projects using C++20, ``pw_async2`` provides first-class support for
-coroutines via :doxylink:`pw::async2::Coro`. This allows you to write
-asynchronous logic in a sequential, synchronous style, eliminating the need to
-write explicit state machines. The ``co_await`` keyword is used to suspend
-execution until an asynchronous operation is ``Ready``.
-
-.. code-block:: cpp
-
-   Coro<Status> ReadAndSend(Reader& reader, Writer& writer) {
-     // co_await suspends the coroutine until the Read operation completes.
-     Result<Data> data = co_await reader.Read();
-     if (!data.ok()) {
-       co_return data.status();
-     }
-
-     // The coroutine resumes here and continues.
-     co_await writer.Write(*data);
-     co_return OkStatus();
-   }
 
 Data Passing (``OnceSender`` / ``OnceReceiver``)
 ================================================

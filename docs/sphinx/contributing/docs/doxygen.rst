@@ -29,67 +29,53 @@ Authoring content
 
    .. code-block:: none
 
-      /// @defgroup pw_function pw_function
-      /// @brief Embedded-friendly `std::function`: https://pigweed.dev/pw_function
+      /// @defgroup pw_async2 pw_async2
+      /// @brief Cooperative async tasks for embedded.
+      /// @details Main docs: [Home](../../pw_async2/docs.html) |
+      /// [Quickstart](../../pw_async2/quickstart.html) |
+      /// [Codelab](../../pw_async2/codelab.html) |
+      /// [Guides](../../pw_async2/guides.html) |
+      /// [Code size analysis](../../pw_async2/code_size.html) |
+      /// [Coroutines](../../pw_async2/coroutines.html) |
+      /// [Backends](../../pw_async2/backends.html)
 
-   The ``@defgroup`` line repeats the module name to ensure proper capitalization.
-   ``@defgroup pw_function`` results in Doxygen rendering the module name as
-   ``Pw_function``.
+   ``@defgroup`` repeats the module name to ensure proper capitalization.
 
-   ``@brief`` should match this pattern: ``<tagline>: <url>`` where ``<tagline>``
-   is the module's tagline as defined in ``//docs/sphinx/module_metadata.json``
-   and ``<url>`` is the URL to the module's homepage.
+   ``@brief`` should contain the module's tagline as defined in
+   ``//docs/sphinx/module_metadata.json``.
 
-#. Add a ``@module`` declaration within each header file that you want Doxygen
-   to process.
+   ``@details`` should be a complete list to the module's main docs.
+
+#. Create `@submodule` groups to help further categorize your module's API:
+
+   .. code-block:: none
+
+      /// @defgroup pw_async2_adapters Pendable adapters
+      /// @ingroup pw_async2
+      /// @brief Pendable wrappers and helpers
+
+#. Add a ``@submodule`` declaration within each header file that you want
+   Doxygen to process.
 
    .. code-block:: none
 
       namespace pw {
 
-      /// @module{pw_function}
+      /// @submodule{pw_async2,adapters}
 
       …
 
-   The ``@module`` declaration must be nested within the ``pw`` namespace.
+   The ``@submodule`` declaration must be nested within the ``pw`` namespace.
    It can't be outside of the ``pw`` namespace.
 
-#. If needed, explicitly close the `member group`_ that the ``@module`` declaration
+   The lack of whitespace between ``pw_async2`` and ``adapters`` is important!
+
+#. Explicitly close the `member group`_ that the ``@submodule`` declaration
    created for you behind-the-scenes:
 
    .. code-block:: none
 
       /// @}
-
-   In most cases you can skip this step. You only need to explicitly close the group
-   when the header contains internal APIs that you don't want to publish to
-   the Doxygen site. If there's more public API after the internal block, you can repeat
-   the ``@module`` declaration again. Example:
-
-   .. code-block:: none
-
-      namespace pw {
-
-      /// @module{pw_function)
-
-      <public API stuff>
-
-      /// @}
-
-      namespace internal_stuff {
-
-        <internal stuff>
-
-      }
-
-      /// @module{pw_function)
-
-      <more public API stuff>
-
-   .. tip::
-
-      You can also avoid this step by moving your internal APIs to an internal
-      directory, e.g. ``//pw_function/public/pw_function/internal/``.
 
 #. To be continued…
 

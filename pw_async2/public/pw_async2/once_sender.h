@@ -20,10 +20,7 @@
 
 namespace pw::async2 {
 
-/// @module{pw_async2}
-
-/// @ingroup pw_async2_utilities
-/// @{
+/// @submodule{pw_async2,pendables}
 
 // A lock guarding OnceReceiver and OnceSender member variables.
 //
@@ -392,5 +389,7 @@ void InitializeOnceRefSenderAndReceiver(OnceRefSender<T>& sender,
   receiver.value_ = &value;
   sender.receiver_ = &receiver;
 }
+
+/// @}
 
 }  // namespace pw::async2

@@ -25,7 +25,7 @@
 
 namespace pw::async2 {
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,backends}
 
 // Forward-declare ``Dispatcher``.
 // This concrete type must be provided by a backend.
@@ -206,5 +206,7 @@ class NativeDispatcherBase {
 };
 
 PW_MODIFY_DIAGNOSTICS_POP();
+
+/// @}
 
 }  // namespace pw::async2

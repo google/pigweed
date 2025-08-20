@@ -27,7 +27,11 @@ the License.
 
   <!-- Layout definition for a class page -->
   <class>
-    <briefdescription visible="yes"/>
+    <!-- Hide `briefdescription` because `detaileddescription` displays it for
+         us. I.e. `detaileddescription` is literally the `@brief` block
+         followed by the `@details` block. -->
+    <briefdescription visible="no"/>
+    <detaileddescription title="Overview"/>
     <includes visible="$SHOW_HEADERFILE"/>
     <inheritancegraph visible="$CLASS_GRAPH"/>
     <collaborationgraph visible="$COLLABORATION_GRAPH"/>
@@ -65,7 +69,6 @@ the License.
       <related title="" subtitle=""/>
       <membergroups visible="yes"/>
     </memberdecl>
-    <detaileddescription title=""/>
     <memberdef>
       <inlineclasses title=""/>
       <typedefs title=""/>
@@ -165,16 +168,11 @@ the License.
 
   <!-- Layout definition for a group page -->
   <group>
-    <briefdescription visible="yes"/>
-    <!-- `detaileddescription` repeats the `@brief` content and then displays
-         the `@details` content, if any. We hide `detaileddescription` for a
-         couple reasons:
-
-         * Repeating the `@brief` is noisy
-         * We don't really want Pigweed contributors to use `@details` to provide
-           introductory explanation of a module. That content should go in the
-           module's docs.rst page on the main site. -->
-    <detaileddescription title="" visible="no"/>
+    <!-- Hide `briefdescription` because `detaileddescription` displays it for
+         us. I.e. `detaileddescription` is literally the `@brief` block
+         followed by the `@details` block. -->
+    <briefdescription visible="no"/>
+    <detaileddescription title="Oveview" visible="yes"/>
     <groupgraph visible="$GROUP_GRAPHS"/>
     <memberdecl>
       <nestedgroups visible="yes" title="Submodules"/>

@@ -1447,8 +1447,7 @@ dl.warning, dl.attention {
 dl.pre, dl.post, dl.invariant {
   margin-left: -7px;
   padding-left: 3px;
-  border-left: 4px solid;
-  border-color: #00D000;
+  border: none;
 }
 
 dl.deprecated {

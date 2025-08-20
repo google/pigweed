@@ -1,156 +1,16 @@
-.. _module-pw_async2-quickstart-guides:
+.. _module-pw_async2-guides:
 
-===================
-Quickstart & guides
-===================
+======
+Guides
+======
 .. pigweed-module-subpage::
    :name: pw_async2
 
-.. _module-pw_async2-quickstart:
-
-----------
-Quickstart
-----------
-.. _//pw_async2/examples/count.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/count.cc
-.. _//pw_async2/examples/BUILD.bazel: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/BUILD.bazel
-.. _//pw_async2/examples/BUILD.gn: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/BUILD.gn
-
-This quickstart outlines the general workflow for integrating ``pw_async2``
-into a project. It's based on the following files in upstream Pigweed:
-
-* `//pw_async2/examples/count.cc`_
-* `//pw_async2/examples/BUILD.bazel`_
-* `//pw_async2/examples/BUILD.gn`_
-
-The example app can be built and run in upstream Pigweed with the
-following command:
-
-.. code-block:: sh
-
-   bazelisk run //pw_async2/examples:count --config=cxx20
-
-.. _module-pw_async2-quickstart-rules:
-
-1. Set up build rules
-=====================
-All ``pw_async2`` projects must add a dependency on the ``dispatcher`` target.
-This target defines the :doxylink:`pw::async2::Task` class, an asynchronous
-unit of work analogous to a thread, as well as the
-:doxylink:`pw::async2::Dispatcher` class, an event loop used to run ``Task``
-instances to completion.
-
-.. tab-set::
-
-   .. tab-item:: Bazel
-
-      Add a dependency on ``@pigweed//pw_async2:dispatcher`` in
-      ``BUILD.bazel``:
-
-      .. literalinclude:: examples/BUILD.bazel
-         :language: py
-         :linenos:
-         :emphasize-lines: 10
-         :start-after: count-example-start
-         :end-before: count-example-end
-
-   .. tab-item:: GN
-
-      Add a dependency on ``$dir_pw_async2:dispatcher`` in ``BUILD.gn``:
-
-      .. literalinclude:: examples/BUILD.gn
-         :language: py
-         :linenos:
-         :emphasize-lines: 7
-         :start-after: count-example-start
-         :end-before: count-example-end
-
-.. _module-pw_async2-quickstart-dependencies:
-
-2. Inject dependencies
-======================
-Interfaces which wish to add new tasks to the event loop should accept and
-store a ``Dispatcher&`` reference.
-
-.. literalinclude:: examples/count.cc
-   :language: cpp
-   :linenos:
-   :start-after: examples-constructor-start
-   :end-before: examples-constructor-end
-
-This allows the interface to call ``dispatcher->Post(some_task)`` in order to
-run asynchronous work on the dispatcher's event loop.
-
-.. _module-pw_async2-quickstart-oneshot:
-
-3. Post one-shot work to the dispatcher
-=======================================
-Simple, one-time work can be queued on the dispatcher via
-:doxylink:`pw::async2::EnqueueHeapFunc`.
-
-.. _module-pw_async2-quickstart-tasks:
-
-4. Post tasks to the dispatcher
-===============================
-Async work that involves a series of asynchronous operations should be
-made into a task. This can be done by either implementing a custom task
-(see :ref:`module-pw_async2-guides-implementing-tasks`) or
-by writing a C++20 coroutine (see :doxylink:`pw::async2::Coro`) and storing it
-in a :doxylink:`pw::async2::CoroOrElseTask`.
-
-.. literalinclude:: examples/count.cc
-   :language: cpp
-   :linenos:
-   :start-after: examples-task-start
-   :end-before: examples-task-end
-
-The resulting task must either be stored somewhere that has a lifetime longer
-than the async operations (such as in a static or as a member of a long-lived
-class) or dynamically allocated using :doxylink:`pw::async2::AllocateTask`.
-
-Finally, the interface instructs the dispatcher to run the task by invoking
-:doxylink:`pw::async2::Dispatcher::Post`.
-
-See `//pw_async2/examples/count.cc`_ to view the complete example.
-
-.. _module-pw_async2-quickstart-toolchain:
-
-5. Build with an appropriate toolchain
-======================================
-If using coroutines, remember to build your project with a toolchain
-that supports C++20 at minimum (the first version of C++ with coroutine
-support). For example, in upstream Pigweed a ``--config=cxx20`` must be
-provided when building and running the example:
-
-.. tab-set::
-
-   .. tab-item:: Bazel
-
-      .. code-block:: sh
-
-         bazelisk build //pw_async2/examples:count --config=cxx20
-
-Other examples
-==============
-.. _quickstart/bazel: https://cs.opensource.google/pigweed/quickstart/bazel
-.. _//apps/blinky/: https://cs.opensource.google/pigweed/quickstart/bazel/+/main:apps/blinky/
-.. _//modules/blinky/: https://cs.opensource.google/pigweed/quickstart/bazel/+/main:modules/blinky/
-
-To see another example of ``pw_async2`` working in a minimal project,
-check out the following directories of Pigweed's `quickstart/bazel`_ repo:
-
-* `//apps/blinky/`_
-* `//modules/blinky/`_
-
-.. _module-pw_async2-guides:
-
-------
-Guides
-------
-
 .. _module-pw_async2-guides-implementing-tasks:
 
+------------------
 Implementing tasks
-==================
+------------------
 :doxylink:`pw::async2::Task` instances complete one or more asynchronous
 operations. They are the top-level "thread" primitives of ``pw_async2``.
 
@@ -172,8 +32,9 @@ for more guidance on subclassing.
 
 .. _module-pw_async2-guides-tasks:
 
+------------------------------
 How a dispatcher manages tasks
-==============================
+------------------------------
 The purpose of a :doxylink:`pw::async2::Dispatcher` is to keep track of a set
 of :doxylink:`pw::async2::Task` objects and run them to completion. The
 dispatcher is essentially a scheduler for cooperatively-scheduled
@@ -220,8 +81,9 @@ The following sequence diagram summarizes the basic workflow:
 
 .. _module-pw_async2-guides-pendables:
 
+----------------------------------------------
 Implementing invariants for pendable functions
-==============================================
+----------------------------------------------
 .. _invariants: https://stackoverflow.com/a/112088
 
 Any ``Pend``-like function or method similar to
@@ -241,7 +103,7 @@ following `invariants`_:
 .. _module-pw_async2-guides-pendables-incomplete:
 
 Arranging future completion of incomplete tasks
------------------------------------------------
+===============================================
 When your pendable function can't yet complete:
 
 #. Do one of the following to make sure the task rewakes when it's ready to
@@ -274,14 +136,15 @@ sender has placed a message in a queue.
 .. _module-pw_async2-guides-pendables-complete:
 
 Cleaning up complete tasks
---------------------------
+==========================
 When your pendable function has completed, make sure to return
 :doxylink:`pw::async2::Ready` to signal that the task is complete.
 
 .. _module-pw_async2-guides-passing-data:
 
+--------------------------
 Passing data between tasks
-==========================
+--------------------------
 Astute readers will have noticed that the ``Wake`` method does not take any
 arguments, and ``DoPoll`` does not provide the task being polled with any
 values!
@@ -320,36 +183,11 @@ More primitives (such as ``MultiSender`` and ``MultiReceiver``) are
 in-progress. Users who find that they need other async primitives are
 encouraged to contribute them upstream to ``pw::async2``!
 
-.. _module-pw_async2-guides-coroutines:
-
-Coroutines
-==========
-C++20 users can define tasks using coroutines!
-
-.. literalinclude:: examples/basic.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-basic-coro]
-   :end-before: [pw_async2-examples-basic-coro]
-
-Any value with a ``Poll<T> Pend(Context&)`` method can be passed to
-``co_await``, which will return with a ``T`` when the result is ready. The
-:doxylink:`pw::async2::PendFuncAwaitable` class can also be used to
-``co_await`` on a provided delegate function.
-
-To return from a coroutine, ``co_return <expression>`` must be used instead of
-the usual ``return <expression>`` syntax. Because of this, the
-:c:macro:`PW_TRY` and :c:macro:`PW_TRY_ASSIGN` macros are not usable within
-coroutines. :c:macro:`PW_CO_TRY` and :c:macro:`PW_CO_TRY_ASSIGN` should be
-used instead.
-
-For a more detailed explanation of Pigweed's coroutine support, see
-:doxylink:`pw::async2::Coro`.
-
 .. _module-pw_async2-guides-timing:
 
+------
 Timing
-======
+------
 When using ``pw::async2``, timing functionality should be injected
 by accepting a :doxylink:`pw::async2::TimeProvider` (most commonly
 ``TimeProvider<SystemClock>`` when using the system's built-in ``time_point``
@@ -365,10 +203,12 @@ can be tested with simulated time using
 :doxylink:`pw::async2::SimulatedTimeProvider`. Doing so helps avoid
 timing-dependent test flakes and helps ensure that tests are fast since they
 don't need to wait for real-world time to elapse.
+
 .. _module-pw_async2-guides-callbacks:
 
+------------------------------------------------------------
 Interacting with async2 from non-async2 code using callbacks
-=============================================================
+------------------------------------------------------------
 In a system gradually or partially adopting ``pw_async2``, there are often
 cases where non-async2 code needs to run asynchronous operations built with
 ``pw_async2``.
@@ -396,7 +236,7 @@ The two variants of callback tasks are:
   a stream of values over time, where you want to process each one.
 
 Example
--------
+=======
 .. code-block:: cpp
 
    #include "pw_async2/callback_task.h"
@@ -430,8 +270,9 @@ Example
 
 .. _module-pw_async2-guides-interrupts:
 
+-------------------------
 Interacting with hardware
-=========================
+-------------------------
 A common use case for ``pw_async2`` is interacting with hardware that uses
 interrupts. The following example demonstrates this by creating a fake UART
 device with an asynchronous reading interface and a separate thread that
@@ -465,8 +306,9 @@ A reader task polls the fake UART until it receives data.
 This example shows how to bridge the gap between low-level, interrupt-driven
 hardware and the high-level, cooperative multitasking model of ``pw_async2``.
 
+------------
 Unit testing
-============
+------------
 Unit testing ``pw_async2`` code is different from testing non-async code. Async
 code must be run from a :doxylink:`task <pw::async2::Task>` on a
 :doxylink:`dispatcher <pw::async2::Dispatcher>`.
@@ -512,8 +354,9 @@ The example below runs a task multiple times to test waiting for a
 
 .. _module-pw_async2-guides-inline-async-queue-with-tasks:
 
+------------------------------------------------------
 Using InlineAsyncQueue and InlineAsyncDeque with tasks
-======================================================
+------------------------------------------------------
 When you have two tasks, you may need a way to send data between them. One good
 way to do that is to leverage the async-aware containers
 :doxylink:`pw::InlineAsyncQueue` or :doxylink:`pw::InlineAsyncDeque` from
@@ -582,102 +425,11 @@ Notice how the producer DoPend() function fills up the queue with four values,
 then the consumer ``DoPend()`` gets a chance to empty the queue before the
 writer ``DoPend()`` is invoked again.
 
-.. _module-pw_async2-guides-inline-async-queue-with-coro:
+.. _module-pw_async2-guides-debugging:
 
-Using InlineAsyncQueue and InlineAsyncDeque with coroutine tasks
-================================================================
-If you choose to use C++20 coroutines, you can also use an async2 dispatcher,
-as well as awaiting on the pendable interface for the queue.
-
-The following example can be built and run in upstream Pigweed with the
-following command:
-
-.. code-block:: sh
-
-   bazelisk run //pw_async2/examples:inline-async-queue-with-coro --config=cxx20
-
-The complete code can be found here:
-
-
-.. _//pw_async2/examples/inline_async_queue_with_coro_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/inline_async_queue_with_coro_test.cc
-
-* `//pw_async2/examples/inline_async_queue_with_coro_test.cc`_
-
-The C++ code simulates a producer and consumer task setup, where the producer
-writes to the queue, and the consumer reads it. For purposes of this example,
-the data is just integers, with a fixed sequence sent by the producer.
-
-To start with, here are the basic declarations for the queue and a special
-terminal sentinel value.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-declarations]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-declarations]
-
-To use the :doxylink:`PendHasSpace
-<pw::containers::internal::AsyncCountAndCapacity::PendHasSpace>`, and
-:doxylink:`PendNotEmpty
-<pw::containers::internal::AsyncCountAndCapacity::PendNotEmpty>` functions with
-``co_await``, we need to use :doxylink:`pw::async2::PendFuncAwaitable` as an
-adapter between the async2 polling system and the C++20 coroutine framework.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-adapters]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-adapters]
-
-The producer coroutine just needs to return a ``Coro<Status>`` to turn
-it into a coroutine, and to use the ``QueueHasSpace`` adapter we define
-to wait for there to be space in the queue. Once it is done, it should
-``co_return`` a status value to indicate it is complete.
-
-Compare this to the inline_async_queue_with_task.cc example, where the
-``Producer::DoPend`` function has to be written in a way that allows
-the function to be called fresh at any time, and has to figure out what it
-should do next.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-producer]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-producer]
-
-The consumer coroutine similarly needs to return a ``Coro<Status>``
-value, and to use the ``QueueNotEmpty`` adapter we define to wait there
-to be content in the queue. Once it is done, it should ``co_return`` a status
-value to indicate it is complete.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-consumer]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-consumer]
-
-At that point, it is straightforward to set up the dispatcher to run the two
-coroutines. Notice however that the :doxylink:`pw::async2::CoroContext` also
-needs to allocate memory dynamically when the coroutine is first created. For
-this example, we use :doxylink:`LibCAllocator <pw::allocator::LibCAllocator>`.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-run]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-run]
-
-Running the example should produce the following output.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.expected
-   :start-after: [ RUN      ] ExampleTests.InlineAsyncQueueWithCoro
-   :end-before: [       OK ] ExampleTests.InlineAsyncQueueWithCoro
-
-Notice how the producer fills up the queue with four values, then the consumer
-gets a chance to empty the queue before the writer gets another chance to run.
-
+---------
 Debugging
-=========
+---------
 Tasks registered to a dispatcher can be inspected by calling
 ``Dispatcher::LogRegisteredTasks()``, which outputs logs for each task in the
 dispatcher's pending and sleeping queues.
@@ -689,9 +441,3 @@ If space is a concern, the module configuration option
 :doxylink:`PW_ASYNC2_DEBUG_WAIT_REASON` can be set to ``0``, disabling wait
 reason storage and logging. Under this configuration, only the waker count of a
 sleeping task is logged.
-
-.. _module-pw_async2-guides-faqs:
-
----------------------------------
-Frequently asked questions (FAQs)
----------------------------------

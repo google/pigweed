@@ -7360,7 +7360,7 @@ May 16, 2024
 Highlights (May 2, 2024 to May 16, 2024):
 
 * **Coroutines**: You can now create asynchronous tasks using C++20
-  :ref:`coroutines <module-pw_async2-guides-coroutines>`.
+  :ref:`coroutines <module-pw_async2-coro>`.
 * **Rust with Bazel**: The Rust toolchain can now be used by downstream projects
   using Bazel.
 * **More MCUXpresso support**: Several modules have additional support for
@@ -7405,7 +7405,7 @@ pw_assert
 pw_async2
 ---------
 C++20 users can now define asynchronous tasks using
-:ref:`module-pw_async2-guides-coroutines`.
+:ref:`module-pw_async2-coro`.
 
 * `Move PW_CO_TRY functions
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/209911>`__

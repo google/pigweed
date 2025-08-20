@@ -26,7 +26,7 @@ class Result;
 
 namespace async2 {
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,core}
 
 /// A type whose value indicates that an operation was able to complete (or
 /// was ready to produce an output).
@@ -315,5 +315,7 @@ inline StatusWithSize ToString(const async2::Poll<>& poll, span<char> buffer) {
   }
   return ToString(async2::PendingType{}, buffer);
 }
+
+/// @}
 
 }  // namespace pw

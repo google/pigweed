@@ -63,7 +63,7 @@ class CallbackTask : public Task {
 
 }  // namespace internal
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,adapters}
 
 /// A ``Task`` which pends a pendable function and invokes a provided callback
 /// with its output when it returns ``Ready``.
@@ -126,5 +126,7 @@ RecurringCallbackTask<T> RecurringCallbackTaskFor(Class& obj,
       std::forward<Callback>(callback),
       [&obj](Context& cx) { return std::invoke(kMemberFunc, &obj, cx); });
 }
+
+/// @}
 
 }  // namespace pw::async2

@@ -18,9 +18,11 @@
 #include "pw_chrono/system_clock.h"
 namespace pw::async2 {
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,pendables}
 
 /// Returns a `TimeProvider` using the "real" `SystemClock` and `SystemTimer`.
 TimeProvider<chrono::SystemClock>& GetSystemTimeProvider();
+
+/// @}
 
 }  // namespace pw::async2

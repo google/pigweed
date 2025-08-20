@@ -37,10 +37,7 @@ class AllocatedTask final : public Task {
 
 }  // namespace internal
 
-/// @module{pw_async2}
-
-/// @ingroup pw_async2_utilities
-/// @{
+/// @submodule{pw_async2,alloc}
 
 /// Creates a ``Task`` by dynamically allocating ``Task`` memory from
 /// ``allocator``.
@@ -65,5 +62,7 @@ Task* AllocateTask(pw::allocator::Allocator& allocator, Args&&... args) {
   return allocator.New<internal::AllocatedTask<Pendable>>(
       allocator, std::forward<Args>(args)...);
 }
+
+/// @}
 
 }  // namespace pw::async2

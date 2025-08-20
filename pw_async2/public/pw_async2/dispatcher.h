@@ -42,9 +42,9 @@ class PendableAsTaskWithOutput : public Task {
 
 }  // namespace internal
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,core}
 
-/// A single-threaded cooperatively-scheduled runtime for async tasks.
+/// A single-threaded cooperatively scheduled runtime for async tasks.
 class Dispatcher {
  public:
   /// Constructs a new async Dispatcher.
@@ -140,5 +140,7 @@ class Dispatcher {
  private:
   pw::async2::backend::NativeDispatcher native_;
 };
+
+/// @}
 
 }  // namespace pw::async2

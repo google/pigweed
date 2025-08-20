@@ -43,7 +43,7 @@ class WakerQueueBase;
 
 }  // namespace internal
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,core}
 
 /// Context for an asynchronous ``Task``.
 ///
@@ -83,8 +83,8 @@ class Context {
 
   /// Indicates that the task has not completed, but that it also does not need
   /// to register a waker and go to sleep. This results in the task being
-  // removed from the dispatcher, requiring it to be manually re-posted to run
-  // again.
+  /// removed from the dispatcher, requiring it to be manually re-posted to run
+  /// again.
   template <typename T = ReadyType>
   Poll<T> Unschedule() {
     requires_waker_ = false;
@@ -104,5 +104,7 @@ class Context {
   Waker* waker_;
   bool requires_waker_;
 };
+
+/// @}
 
 }  // namespace pw::async2

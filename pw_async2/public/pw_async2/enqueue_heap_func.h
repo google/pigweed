@@ -37,11 +37,7 @@ class RunHeapFuncTask : public Task {
 
 }  // namespace internal
 
-/// @module{pw_async2}
-
-// TODO: https://pwbug.dev/438818334 - Use `@submodule` alias.
-/// @defgroup pw_async2_utilities Utilities
-/// @{
+/// @submodule{pw_async2,alloc}
 
 /// Heap-allocates space for ``func`` and enqueues it to run on ``dispatcher``.
 ///
@@ -53,5 +49,7 @@ void EnqueueHeapFunc(Dispatcher& dispatcher, Func&& func) {
   return dispatcher.Post(
       internal::RunHeapFuncTask<Func>::New(std::forward<Func>(func)));
 }
+
+/// @}
 
 }  // namespace pw::async2

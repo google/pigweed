@@ -15,7 +15,7 @@
 // Configuration macros for the pw_async2 module.
 #pragma once
 
-/// @module{pw_async2}
+/// @submodule{pw_async2,core}
 
 /// The log level to use for this module. Logs below this level are omitted.
 #ifndef PW_ASYNC2_CONFIG_LOG_LEVEL
@@ -45,3 +45,5 @@
 #ifndef PW_ASYNC2_DEBUG_WAIT_REASON
 #define PW_ASYNC2_DEBUG_WAIT_REASON 1
 #endif  // PW_ASYNC2_DEBUG_WAIT_REASON
+
+/// @}

@@ -49,18 +49,57 @@ Tasks can then be run on a :doxylink:`pw::async2::Dispatcher` using the
 
 .. grid:: 1
 
-   .. grid-item-card:: :octicon:`rocket` Quickstart & guides
-      :link: module-pw_async2-quickstart-guides
+   .. grid-item-card:: :octicon:`rocket` Quickstart
+      :link: module-pw_async2-quickstart
       :link-type: ref
       :class-item: sales-pitch-cta-primary
 
-      How to:
+      How to quickly integrate ``pw_async2`` into your project and start using
+      basic features.
 
-      * Use dispatchers to coordinate tasks
-      * Pass data between tasks
-      * Use coroutines
+.. grid:: 1
 
-      And more.
+   .. grid-item-card:: :octicon:`beaker` Codelab
+      :link: module-pw_async2-codelab
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Learn the core concepts of ``pw_async2`` by building a simple, simulated
+      vending machine.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`rocket` Guides
+      :link: module-pw_async2-guides
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      How to use dispatchers to coordinate tasks, pass data between tasks,
+      and more.
+
+   .. grid-item-card:: :octicon:`code-square` Reference
+      :link: ../doxygen/group__pw__async2.html
+      :link-type: url
+      :class-item: sales-pitch-cta-secondary
+
+      C/C++ API reference for ``Task``, ``Dispatcher``, ``CoRo``, and more.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`pencil` Code size analysis
+      :link: module-pw_async2-size-reports
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Reports on the code size cost of adding ``pw_async2`` to a system.
+
+   .. grid-item-card:: :octicon:`code-square` Backends
+      :link: module-pw_async2-backends
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      You can fulfill the ``pw_async2`` interface with a Pigweed-provided
+      backend or roll your own.
 
 .. grid:: 2
 
@@ -72,43 +111,22 @@ Tasks can then be run on a :doxylink:`pw::async2::Dispatcher` using the
       Core concepts, the pendable function interface, execution
       model, memory model, interoperability, and more.
 
-   .. grid-item-card:: :octicon:`code-square` Reference
-      :link: ../doxygen/group__pw__async2.html
-      :link-type: url
-      :class-item: sales-pitch-cta-secondary
-
-      API reference for:
-
-      * ``Task``
-      * ``Dispatcher``
-      * ``CoRo``
-
-      And more.
-
-.. grid:: 2
-
-   .. grid-item-card:: :octicon:`code-square` Backends
-      :link: module-pw_async2-backends
+   .. grid-item-card:: :octicon:`pencil` Coroutines
+      :link: module-pw_async2-coro
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 
-      You can fulfill the ``pw_async2`` interface with a Pigweed-provided
-      backend or roll your own.
-
-   .. grid-item-card:: :octicon:`pencil` Pigweed blog: C++20 coroutines
-      :link: docs-blog-05-coroutines
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      A blog post on how Pigweed implements coroutines without heap
-      allocation, and challenges encountered along the way.
+      How to define tasks with coroutines, allocate memory, perform async
+      operations from coroutines, and more.
 
 .. toctree::
    :hidden:
    :maxdepth: 1
 
+   quickstart
    codelab
    guides
    design
    backends
    code_size
+   coroutines
