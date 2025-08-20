@@ -13,7 +13,6 @@
 # the License.
 
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
-load("//pw_unit_test:pw_golden_test.bzl", "pw_golden_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,7 +28,7 @@ exports_files(
 )
 
 pw_cc_binary(
-    name = "step1",
+    name = "step2",
     srcs = [
         "main.cc",
         "vending_machine.cc",
@@ -38,12 +37,8 @@ pw_cc_binary(
     deps = [
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
+        "//pw_async2/codelab:coin_slot",
+        "//pw_async2/codelab:hardware",
         "//pw_log",
     ],
-)
-
-pw_golden_test(
-    name = "test",
-    executable = ":step1",
-    expected = ":step1.expected",
 )

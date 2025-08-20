@@ -12,16 +12,33 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "vending_machine.h"
+#include "hardware.h"
 
-#include "pw_async2/try.h"
+#include <cstdio>
+#include <cstdlib>
+#include <thread>
+
 #include "pw_log/log.h"
 
 namespace codelab {
 
-pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context&) {
-  // Fill in your implementation here.
-  return pw::async2::Ready();
+void HardwareLoop() {
+  while (true) {
+    char c = static_cast<char>(std::getchar());
+    if (c == 'c') {
+      coin_inserted_isr();
+    } else if (std::isdigit(c)) {
+      key_press_isr(c - '0');
+    } else if (c == 'q') {
+      // This is a simple exit mechanism for the codelab.
+      std::exit(0);
+    }
+  }
+}
+
+void HardwareInit() {
+  std::thread hardware_thread(HardwareLoop);
+  hardware_thread.detach();
 }
 
 }  // namespace codelab

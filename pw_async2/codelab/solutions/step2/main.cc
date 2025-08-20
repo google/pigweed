@@ -37,7 +37,13 @@ int main() {
   codelab::HardwareInit();
   pw::async2::Dispatcher dispatcher;
 
-  // Fill in your implementation here.
+  codelab::VendingMachineTask task(coin_slot);
+  dispatcher.Post(task);
+
+  // Run the dispatcher until all tasks are complete. The hardware simulation
+  // runs in a background thread and will wake the VendingMachineTask by
+  // calling coin_inserted_isr().
+  dispatcher.RunToCompletion();
 
   return 0;
 }

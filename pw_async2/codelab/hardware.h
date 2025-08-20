@@ -11,17 +11,20 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-#include "vending_machine.h"
+// Interrupt handler function invoked when the user inserts a coin into the
+// vending machine.
+void coin_inserted_isr();
 
-#include "pw_async2/try.h"
-#include "pw_log/log.h"
+// Interrupt handler function invoked when the user presses a key on the
+// machine's keypad. Receives the value of the pressed key (0-9).
+void key_press_isr(int key);
 
 namespace codelab {
 
-pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context&) {
-  // Fill in your implementation here.
-  return pw::async2::Ready();
-}
+// Initializes the simulated hardware, allowing for interactive input via stdin
+// in a background thread.
+void HardwareInit();
 
 }  // namespace codelab

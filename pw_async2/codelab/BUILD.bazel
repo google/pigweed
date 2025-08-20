@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -37,15 +38,28 @@ pw_cc_binary(
         "vending_machine.h",
     ],
     deps = [
+        ":coin_slot",
+        ":hardware",
         "//pw_async2:dispatcher",
+        "//pw_async2:poll",
         "//pw_log",
     ],
+)
+
+cc_library(
+    name = "hardware",
+    srcs = ["hardware.cc"],
+    hdrs = ["hardware.h"],
+    strip_include_prefix = ".",
+    target_compatible_with = incompatible_with_mcu(),
+    deps = ["//pw_log"],
 )
 
 cc_library(
     name = "coin_slot",
     srcs = ["coin_slot.cc"],
     hdrs = ["coin_slot.h"],
+    strip_include_prefix = ".",
     deps = [
         "//pw_async2:dispatcher",
         "//pw_sync:interrupt_spin_lock",

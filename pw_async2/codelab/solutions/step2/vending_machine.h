@@ -11,17 +11,28 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-#include "vending_machine.h"
-
-#include "pw_async2/try.h"
-#include "pw_log/log.h"
+#include "coin_slot.h"
+#include "pw_async2/task.h"
 
 namespace codelab {
 
-pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context&) {
-  // Fill in your implementation here.
-  return pw::async2::Ready();
-}
+// The main task that drives the vending machine.
+class VendingMachineTask : public pw::async2::Task {
+ public:
+  explicit VendingMachineTask(CoinSlot& coin_slot)
+      : pw::async2::Task(PW_ASYNC_TASK_NAME("VendingMachineTask")),
+        coin_slot_(coin_slot),
+        displayed_welcome_message_(false) {}
+
+ private:
+  // This is the core of the asynchronous task. The dispatcher calls this method
+  // to give the task a chance to do work.
+  pw::async2::Poll<> DoPend(pw::async2::Context& cx) override;
+
+  CoinSlot& coin_slot_;
+  bool displayed_welcome_message_;
+};
 
 }  // namespace codelab
