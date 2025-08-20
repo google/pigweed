@@ -67,6 +67,15 @@ message Build {
 
   // Target patterns that should be built/tested by this configuration.
   repeated string targets = 5;
+
+  // A shortcut subcommand that launches this build. For example:
+  //
+  //   # Given rerun_shortcut=build_foo, the following subcommand will be
+  //   # available:
+  //   $ ./pw build_foo
+  //
+  // If this is not set, the assumed way to run this build is `build [name]`.
+  string rerun_shortcut = 6;
 }
 
 // A runnable tool.
@@ -113,6 +122,17 @@ message Tool {
   // the tool is launched in a way that requires behavior that doesn't affect
   // hermeticity.
   repeated string analyzer_friendly_args = 7;
+
+  // A shortcut subcommand that launches this tool. For example:
+  //
+  //   # Given rerun_shortcut=check_formatting, the following subcommand will be
+  //   # available:
+  //   $ ./pw check_formatting
+  //
+  // Note that this always launches the analyzer version of this tool, and is
+  // unsupported for other tool types.
+  // If this is not set, the assumed way to run this analyzer is `check [name]`.
+  string rerun_shortcut = 8;
 }
 
 // A series of builds and analyzers that are launchable as a group to

@@ -129,6 +129,28 @@ class ValidatorTest(unittest.TestCase):
         with self.assertRaises(validator.ValidationError):
             val.check_group_analyzers_exist(group)
 
+    def test_check_general_tools_do_not_set_rerun_shortcut(self):
+        """Test that tools missing analyzer_safe_args do not set shortcut."""
+        workflow_suite = workflows_pb2.WorkflowSuite()
+        general_tool = workflow_suite.tools.add(
+            name='test-tool', rerun_shortcut='test-tool-alt'
+        )
+        val = validator.Validator(workflow_suite, {})
+        with self.assertRaises(validator.ValidationError):
+            val.check_tool_rerun_shortcut_if_hybrid(general_tool)
+
+    def test_check_analyzers_do_not_set_rerun_shortcut(self):
+        """Test analyzers do not use rerun_shortcut."""
+        workflow_suite = workflows_pb2.WorkflowSuite()
+        analyzer = workflow_suite.tools.add(
+            name='test-tool',
+            type=workflows_pb2.Tool.Type.ANALYZER,
+            rerun_shortcut='test-tool-alt',
+        )
+        val = validator.Validator(workflow_suite, {})
+        with self.assertRaises(validator.ValidationError):
+            val.check_tool_rerun_shortcut_if_hybrid(analyzer)
+
     def test_check_group_analyzers_are_tools(self):
         """Test that group analyzers are tools."""
         workflow_suite = workflows_pb2.WorkflowSuite()

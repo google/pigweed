@@ -294,6 +294,7 @@ class WorkflowsManager:
 
             fragment.ClearField('name')
             fragment.ClearField('description')
+            fragment.ClearField('rerun_shortcut')
             fragment.build_config.ClearField('name')
             fragment.build_config.ClearField('description')
             sanitized.jobs.append(sanitized_job)

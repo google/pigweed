@@ -319,6 +319,42 @@ class WorkflowsCli(multitool.MultitoolCli):
                 for g in self.config.groups
             ]
         )
+
+        # Helper to work around mypy bug limitation for the lambda pattern of
+        # argument freezing (https://github.com/python/mypy/issues/12557).
+        def create_build_callback(
+            build: workflows_pb2.Build,
+        ) -> Callable[[Sequence[str]], int]:
+            return lambda _: self._launch_build([build.name])
+
+        for build in self.config.builds:
+            if not build.rerun_shortcut:
+                continue
+            all_plugins.append(
+                _BuiltinPlugin(
+                    name=build.rerun_shortcut,
+                    description=build.description,
+                    callback=create_build_callback(build),
+                )
+            )
+
+        #
+        def create_tool_callback(
+            tool: workflows_pb2.Tool,
+        ) -> Callable[[Sequence[str]], int]:
+            return lambda args: self._launch_analyzer([tool.name, *args])
+
+        for tool in self.config.tools:
+            if not tool.rerun_shortcut:
+                continue
+            all_plugins.append(
+                _BuiltinPlugin(
+                    name=tool.rerun_shortcut,
+                    description=f'(Analyzer) {tool.description}',
+                    callback=create_tool_callback(tool),
+                )
+            )
+
         return all_plugins
 
     def main(self) -> NoReturn:

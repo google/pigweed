@@ -216,6 +216,20 @@ class Validator:
             )
 
     @staticmethod
+    def check_tool_rerun_shortcut_if_hybrid(tool: workflows_pb2.Tool) -> None:
+        if not tool.rerun_shortcut:
+            return
+        if (
+            tool.type != workflows_pb2.Tool.Type.GENERAL
+            or not tool.analyzer_friendly_args
+        ):
+            raise ValidationError(
+                f'Tool `{tool.name}` cannot remap its `rerun_shortcut` because '
+                'it is not a GENERAL tool with `analyzer_friendly_args`. The '
+                'only way it may be invoked is by its name.'
+            )
+
+    @staticmethod
     def check_tool_has_target(tool: workflows_pb2.Tool) -> None:
         if not tool.target:
             raise ValidationError(f'Tool `{tool.name}` has no target.')
