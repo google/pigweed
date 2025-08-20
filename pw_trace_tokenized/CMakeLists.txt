@@ -41,6 +41,18 @@ pw_add_library(pw_trace_tokenized.host_trace_time STATIC
     host_trace_time.cc
 )
 
+if(CONFIG_ZEPHYR_PIGWEED_MODULE)
+  pw_add_library(pw_trace_tokenized.zephyr_trace_time STATIC
+    PRIVATE_DEPS
+      pw_trace_tokenized.config
+    PUBLIC_DEPS
+      zephyr_interface
+    SOURCES
+      zephyr_trace_time.cc
+  )
+  zephyr_append_cmake_library(pw_trace_tokenized.zephyr_trace_time)
+endif()
+
 pw_add_library(pw_trace_tokenized.core STATIC
   HEADERS
     public/pw_trace_tokenized/internal/trace_tokenized_internal.h
