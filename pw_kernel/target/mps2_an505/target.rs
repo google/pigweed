@@ -14,10 +14,12 @@
 #![no_std]
 #![no_main]
 
+use cortex_m_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, ExitStatus, exit};
+
 use arch_arm_cortex_m::Arch;
 #[cfg(test)]
 use integration_tests as _;
-use target_common::{declare_target, TargetInterface};
+use target_common::{TargetInterface, declare_target};
 use {console_backend as _, kernel as _};
 
 pub struct Target {}
@@ -31,29 +33,36 @@ impl TargetInterface for Target {
         // calling `run_all_tests` below.
         unsafe { target_common::run_ctors() };
 
+        let exit_status: ExitStatus;
         #[cfg(not(test))]
         {
             static mut DEMO_STATE: demo::DemoState<Arch> = demo::DemoState::new(Arch);
             // SAFETY: `main` is only executed once, so we never generate more
             // than one `&mut` reference to `DEMO_STATE`.
-            #[allow(static_mut_refs)]
-            demo::main(Arch, unsafe { &mut DEMO_STATE });
+            exit_status = match {
+                #[allow(static_mut_refs)]
+                demo::main(Arch, unsafe { &mut DEMO_STATE })
+            } {
+                Ok(()) => EXIT_SUCCESS,
+                Err(_e) => EXIT_FAILURE,
+            };
         }
 
         #[cfg(test)]
         {
-            use cortex_m_semihosting::debug::*;
             use unittest_core::TestsResult;
 
-            exit(match unittest_core::run_all_tests!() {
+            exit_status = match unittest_core::run_all_tests!() {
                 TestsResult::AllPassed => EXIT_SUCCESS,
                 TestsResult::SomeFailed => EXIT_FAILURE,
-            });
-
-            // `exit` can return under rare circumstances.
-            #[allow(unreachable_code, clippy::empty_loop)]
-            loop {}
+            };
         }
+
+        exit(exit_status);
+
+        // `exit` can return under rare circumstances.
+        #[allow(unreachable_code, clippy::empty_loop)]
+        loop {}
     }
 }
 

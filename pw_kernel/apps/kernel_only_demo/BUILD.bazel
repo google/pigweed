@@ -24,6 +24,7 @@ rust_library(
         "//pw_kernel/config:kernel_config",
         "//pw_kernel/kernel",
         "//pw_kernel/lib/pw_assert",
+        "//pw_kernel/lib/pw_status",
         "//pw_kernel/lib/time",
         "//pw_log/rust:pw_log",
     ],

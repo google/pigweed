@@ -108,6 +108,7 @@ common:k_qemu_virt_riscv32 --platforms=//pw_kernel/target/qemu_virt_riscv32:qemu
 run:k_qemu_virt_riscv32 --run_under="//pw_kernel/tooling:qemu \
   --cpu rv32 \
   --machine virt \
+  --semihosting \
   --image "
 test:k_qemu_virt_riscv32 --run_under="//pw_kernel/tooling:qemu \
   --cpu rv32 \

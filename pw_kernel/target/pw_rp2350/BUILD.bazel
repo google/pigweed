@@ -90,6 +90,7 @@ rust_binary(
     deps = [
         ":console",
         "//pw_kernel/apps/kernel_only_demo:demo",
+        "@rust_crates//:cortex-m-semihosting",
     ] + COMMON_DEPS,
 )
 

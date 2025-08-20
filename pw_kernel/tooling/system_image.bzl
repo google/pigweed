@@ -117,5 +117,34 @@ system_image = rule(
     },
     toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
-    doc = "Assemble a system image combining apps and kernel",
+    doc = "Assemble a system image combining apps and kernel.",
+)
+
+def _system_image_test_impl(ctx):
+    executable_symlink = ctx.actions.declare_file(ctx.label.name)
+    ctx.actions.symlink(
+        output = executable_symlink,
+        target_file = ctx.attr.image[SystemImageInfo].elf,
+    )
+
+    return [
+        DefaultInfo(
+            executable = executable_symlink,
+            runfiles = ctx.attr.image[DefaultInfo].default_runfiles,
+        ),
+    ]
+
+system_image_test = rule(
+    implementation = _system_image_test_impl,
+    test = True,
+    attrs = {
+        "image": attr.label(
+            doc = "The system_image target to test.",
+            mandatory = True,
+            providers = [DefaultInfo],
+            executable = True,
+            cfg = "target",
+        ),
+    },
+    doc = "Defines a test for a system_image target.",
 )
