@@ -210,7 +210,7 @@ impl<K: Kernel> ObjectBase<K> {
         }
 
         let event = Event::new(kernel, EventConfig::ManualReset);
-        let signaler = Event::get_signaler(&event);
+        let signaler = event.get_signaler();
 
         let waiter = ObjectWaiter {
             link: Link::new(),
