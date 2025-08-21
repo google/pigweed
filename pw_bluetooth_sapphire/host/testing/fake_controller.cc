@@ -668,6 +668,100 @@ void FakeController::SendAdvertisingReports() {
   }
 }
 
+void FakeController::SendPeriodicAdvertisingReports() {
+  // Send Periodic Advertising report for each sync
+  for (auto& [sync_handle, sync] : periodic_advertising_syncs_) {
+    auto peer_iter = peers_.find(sync.peer_address);
+    if (peer_iter == peers_.end()) {
+      continue;
+    }
+    FakePeer* peer = peer_iter->second.get();
+
+    if (!peer->HasPeriodicAdvertisement(sync.advertising_sid)) {
+      continue;
+    }
+
+    SendPeriodicAdvertisingReport(*peer, sync_handle, sync.advertising_sid);
+  }
+}
+
+void FakeController::SendPeriodicAdvertisingReport(
+    FakePeer& peer, hci_spec::SyncHandle sync_handle, uint8_t advertising_sid) {
+  PW_CHECK(peer.HasPeriodicAdvertisement(advertising_sid));
+  DynamicByteBuffer report_event =
+      peer.BuildPeriodicAdvertisingReportEvent(sync_handle, advertising_sid);
+  SendCommandChannelPacket(report_event);
+  std::optional<DynamicByteBuffer> big_info_event =
+      peer.BuildBigInfoAdvertisingReportEvent(sync_handle, advertising_sid);
+  if (big_info_event) {
+    SendCommandChannelPacket(*big_info_event);
+  }
+}
+
+void FakeController::MaybeSendPeriodicAdvertisingSyncEstablishedEvent() {
+  if (!le_scan_state_.enabled || !pending_periodic_advertising_create_sync_) {
+    return;
+  }
+  for (auto& entry : periodic_advertiser_list_) {
+    auto peer_iter = peers_.find(entry.address);
+    if (peer_iter == peers_.end()) {
+      continue;
+    }
+
+    if (!peer_iter->second->HasPeriodicAdvertisement(entry.advertising_sid)) {
+      continue;
+    }
+
+    bool already_synced = false;
+    for (auto& [_, sync] : periodic_advertising_syncs_) {
+      if (sync.peer_address == entry.address &&
+          sync.advertising_sid == entry.advertising_sid) {
+        already_synced = true;
+        break;
+      }
+    }
+    if (already_synced) {
+      continue;
+    }
+
+    uint16_t sync_handle = next_periodic_advertising_sync_handle_++;
+
+    periodic_advertising_syncs_.try_emplace(
+        sync_handle,
+        PeriodicAdvertisingSync{
+            .peer_address = entry.address,
+            .advertising_sid = entry.advertising_sid,
+            .duplicate_filtering = pending_periodic_advertising_create_sync_
+                                       ->duplicate_filtering});
+    auto packet = hci::EventPacket::New<
+        pwemb::LEPeriodicAdvertisingSyncEstablishedSubeventV2Writer>(
+        hci_spec::kLEMetaEventCode);
+    auto params = packet.view_t();
+    params.le_meta_event().subevent_code_enum().Write(
+        pw::bluetooth::emboss::LeSubEventCode::
+            PERIODIC_ADVERTISING_SYNC_ESTABLISHED_V2);
+    params.status().Write(pwemb::StatusCode::SUCCESS);
+    params.sync_handle().Write(sync_handle);
+    params.advertising_sid().Write(entry.advertising_sid);
+    params.advertiser_address_type().Write(
+        DeviceAddress::DeviceAddrToLeAddr(entry.address.type()));
+    params.advertiser_address().CopyFrom(entry.address.value().view());
+    params.advertiser_phy().Write(pw::bluetooth::emboss::LEPhy::LE_1M);
+    params.periodic_advertising_interval().Write(0x0006);  // 7.5ms, the minimum
+    params.advertiser_clock_accuracy().Write(pwemb::LEClockAccuracy::PPM_500);
+    params.num_subevents().Write(0);
+    params.subevent_interval().Write(0);      // No subevents
+    params.response_slot_delay().Write(0);    // No response slots
+    params.response_slot_spacing().Write(0);  // No response slots
+    SendCommandChannelPacket(packet.data());
+    pending_periodic_advertising_create_sync_.reset();
+
+    SendPeriodicAdvertisingReport(
+        *peer_iter->second, sync_handle, entry.advertising_sid);
+    break;
+  }
+}
+
 bool FakeController::DataMatchesWithMask(const std::vector<uint8_t>& a,
                                          const std::vector<uint8_t>& b,
                                          const std::vector<uint8_t>& mask) {
@@ -893,6 +987,29 @@ void FakeController::SendScanResponseReport(const FakePeer& peer) {
       return;
     }
   }
+}
+
+void FakeController::LosePeriodicSync(DeviceAddress address,
+                                      uint8_t advertising_sid) {
+  auto iter =
+      std::find_if(periodic_advertising_syncs_.begin(),
+                   periodic_advertising_syncs_.end(),
+                   [&](auto& sync) {
+                     return sync.second.peer_address == address &&
+                            sync.second.advertising_sid == advertising_sid;
+                   });
+  PW_CHECK(iter != periodic_advertising_syncs_.end());
+
+  auto sync_lost =
+      hci::EventPacket::New<pwemb::LEPeriodicAdvertisingSyncLostSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
+  auto view = sync_lost.view_t();
+  view.le_meta_event().subevent_code_enum().Write(
+      pwemb::LeSubEventCode::PERIODIC_ADVERTISING_SYNC_LOST);
+  view.sync_handle().Write(iter->first);
+  SendCommandChannelPacket(sync_lost.data());
+
+  periodic_advertising_syncs_.erase(iter);
 }
 
 void FakeController::NotifyControllerParametersChanged() {
@@ -1443,6 +1560,101 @@ void FakeController::SendConnectionCompleteEvent(
   le_connect_rsp_task_.PostAfter(settings_.le_connection_delay);
 }
 
+void FakeController::OnLEPeriodicAdvertisingCreateSyncCommandReceived(
+    const pw::bluetooth::emboss::LEPeriodicAdvertisingCreateSyncCommandView&
+        params) {
+  if (pending_periodic_advertising_create_sync_) {
+    RespondWithCommandStatus(pwemb::OpCode::LE_PERIODIC_ADVERTISING_CREATE_SYNC,
+                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+  RespondWithCommandStatus(pwemb::OpCode::LE_PERIODIC_ADVERTISING_CREATE_SYNC,
+                           pwemb::StatusCode::SUCCESS);
+
+  PeriodicAdvertisingCreateSync create_sync{
+      .duplicate_filtering =
+          params.options().enable_duplicate_filtering().Read()};
+  pending_periodic_advertising_create_sync_.emplace(create_sync);
+
+  MaybeSendPeriodicAdvertisingSyncEstablishedEvent();
+}
+
+void FakeController::OnLEPeriodicAdvertisingTerminateSyncCommandReceived(
+    const pw::bluetooth::emboss::LEPeriodicAdvertisingTerminateSyncCommandView&
+        params) {
+  hci_spec::SyncHandle sync_handle = params.sync_handle().Read();
+  size_t count = periodic_advertising_syncs_.erase(sync_handle);
+  if (count == 0) {
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_PERIODIC_ADVERTISING_TERMINATE_SYNC,
+        pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
+    return;
+  }
+  RespondWithCommandComplete(
+      pwemb::OpCode::LE_PERIODIC_ADVERTISING_TERMINATE_SYNC,
+      pwemb::StatusCode::SUCCESS);
+}
+
+void FakeController::OnLEAddDeviceToPeriodicAdvertiserListCommandReceived(
+    const pw::bluetooth::emboss::LEAddDeviceToPeriodicAdvertiserListCommandView&
+        params) {
+  if (pending_periodic_advertising_create_sync_) {
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_ADD_DEVICE_TO_PERIODIC_ADVERTISER_LIST,
+        pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
+  DeviceAddress::Type addr_type = DeviceAddress::LeAddrToDeviceAddr(
+      params.advertiser_address_type().Read());
+  const DeviceAddress address(addr_type,
+                              DeviceAddressBytes(params.advertiser_address()));
+  PeriodicAdvertiserListEntry entry;
+  entry.address = address;
+  entry.advertising_sid = params.advertising_sid().Read();
+  if (periodic_advertiser_list_.count(entry)) {
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_ADD_DEVICE_TO_PERIODIC_ADVERTISER_LIST,
+        pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+    return;
+  }
+
+  periodic_advertiser_list_.emplace(entry);
+  RespondWithCommandComplete(
+      pwemb::OpCode::LE_ADD_DEVICE_TO_PERIODIC_ADVERTISER_LIST,
+      pwemb::StatusCode::SUCCESS);
+}
+
+void FakeController::OnLERemoveDeviceFromPeriodicAdvertiserListCommandReceived(
+    const pw::bluetooth::emboss::
+        LERemoveDeviceFromPeriodicAdvertiserListCommandView& params) {
+  if (pending_periodic_advertising_create_sync_) {
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_REMOVE_DEVICE_FROM_PERIODIC_ADVERTISER_LIST,
+        pwemb::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
+  DeviceAddress::Type addr_type = DeviceAddress::LeAddrToDeviceAddr(
+      params.advertiser_address_type().Read());
+  const DeviceAddress address(addr_type,
+                              DeviceAddressBytes(params.advertiser_address()));
+  PeriodicAdvertiserListEntry entry;
+  entry.address = address;
+  entry.advertising_sid = params.advertising_sid().Read();
+  auto node = periodic_advertiser_list_.extract(entry);
+  if (node.empty()) {
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_REMOVE_DEVICE_FROM_PERIODIC_ADVERTISER_LIST,
+        pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
+    return;
+  }
+
+  RespondWithCommandComplete(
+      pwemb::OpCode::LE_REMOVE_DEVICE_FROM_PERIODIC_ADVERTISER_LIST,
+      pwemb::StatusCode::SUCCESS);
+}
+
 void FakeController::OnLEConnectionUpdateCommandReceived(
     const pwemb::LEConnectionUpdateCommandView& params) {
   hci_spec::ConnectionHandle handle = params.connection_handle().Read();
@@ -1691,6 +1903,7 @@ void FakeController::OnLESetExtendedScanEnable(
 
   if (le_scan_state_.enabled) {
     SendAdvertisingReports();
+    MaybeSendPeriodicAdvertisingSyncEstablishedEvent();
   }
 }
 
@@ -5990,6 +6203,14 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLEConnectionUpdate:
     case hci_spec::kLECreateConnection:
     case hci_spec::kLEExtendedCreateConnection:
+    case static_cast<uint16_t>(
+        pwemb::OpCode::LE_PERIODIC_ADVERTISING_CREATE_SYNC):
+    case static_cast<uint16_t>(
+        pwemb::OpCode::LE_PERIODIC_ADVERTISING_TERMINATE_SYNC):
+    case static_cast<uint16_t>(
+        pwemb::OpCode::LE_ADD_DEVICE_TO_PERIODIC_ADVERTISER_LIST):
+    case static_cast<uint16_t>(
+        pwemb::OpCode::LE_REMOVE_DEVICE_FROM_PERIODIC_ADVERTISER_LIST):
     case hci_spec::kLEReadMaximumAdvertisingDataLength:
     case hci_spec::kLEReadNumSupportedAdvertisingSets:
     case hci_spec::kLEReadRemoteFeatures:
@@ -6337,6 +6558,37 @@ void FakeController::HandleReceivedCommandPacket(
       const auto& params =
           command_packet.view<pwemb::LEExtendedCreateConnectionCommandV1View>();
       OnLEExtendedCreateConnectionCommandReceived(params);
+      break;
+    }
+    case static_cast<uint16_t>(
+        pwemb::OpCode::LE_PERIODIC_ADVERTISING_CREATE_SYNC): {
+      const auto& params =
+          command_packet
+              .view<pwemb::LEPeriodicAdvertisingCreateSyncCommandView>();
+      OnLEPeriodicAdvertisingCreateSyncCommandReceived(params);
+      break;
+    }
+    case static_cast<uint16_t>(
+        pwemb::OpCode::LE_PERIODIC_ADVERTISING_TERMINATE_SYNC): {
+      const auto& params =
+          command_packet
+              .view<pwemb::LEPeriodicAdvertisingTerminateSyncCommandView>();
+      OnLEPeriodicAdvertisingTerminateSyncCommandReceived(params);
+      break;
+    }
+    case static_cast<uint16_t>(
+        pwemb::OpCode::LE_ADD_DEVICE_TO_PERIODIC_ADVERTISER_LIST): {
+      const auto& params =
+          command_packet
+              .view<pwemb::LEAddDeviceToPeriodicAdvertiserListCommandView>();
+      OnLEAddDeviceToPeriodicAdvertiserListCommandReceived(params);
+      break;
+    }
+    case static_cast<uint16_t>(
+        pwemb::OpCode::LE_REMOVE_DEVICE_FROM_PERIODIC_ADVERTISER_LIST): {
+      const auto& params = command_packet.view<
+          pwemb::LERemoveDeviceFromPeriodicAdvertiserListCommandView>();
+      OnLERemoveDeviceFromPeriodicAdvertiserListCommandReceived(params);
       break;
     }
     case hci_spec::kLEConnectionUpdate: {

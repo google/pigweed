@@ -18,6 +18,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/big_info.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_gatt_server.h"
@@ -218,6 +219,12 @@ class FakePeer {
   // scan response.
   DynamicByteBuffer BuildExtendedScanResponseEvent() const;
 
+  DynamicByteBuffer BuildPeriodicAdvertisingReportEvent(
+      hci_spec::SyncHandle sync_handle, uint8_t advertising_sid);
+
+  std::optional<DynamicByteBuffer> BuildBigInfoAdvertisingReportEvent(
+      hci_spec::SyncHandle sync_handle, uint8_t advertising_sid) const;
+
   // Populate an LEExtendedAdvertisingReportData as though it was received from
   // this fake peer
   void FillExtendedAdvertisingReport(
@@ -226,8 +233,26 @@ class FakePeer {
       bool is_fragmented,
       bool is_scan_response) const;
 
+  void AddPeriodicAdvertisement(
+      uint8_t advertising_sid,
+      DynamicByteBuffer data,
+      std::optional<hci_spec::BroadcastIsochronousGroupInfo> big_info =
+          std::nullopt);
+
+  void RemovePeriodicAdvertisement(uint8_t advertising_sid);
+
+  bool HasPeriodicAdvertisement(uint8_t advertising_sid) {
+    return periodic_advertisements_.count(advertising_sid);
+  }
+
  private:
   friend class FakeController;
+
+  struct PeriodicAdvertisement {
+    DynamicByteBuffer data;
+    uint16_t event_counter;
+    std::optional<hci_spec::BroadcastIsochronousGroupInfo> big_info;
+  };
 
   // Called by a FakeController when a FakePeer is registered with it.
   void set_controller(FakeController* ctrl) { controller_ = ctrl; }
@@ -287,6 +312,9 @@ class FakePeer {
 
   DynamicByteBuffer advertising_data_;
   DynamicByteBuffer scan_response_;
+
+  std::unordered_map<uint8_t /*SID*/, PeriodicAdvertisement>
+      periodic_advertisements_;
 
   // Open connection handles.
   HandleSet logical_links_;

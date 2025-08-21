@@ -346,6 +346,21 @@ void FakePeer::FillExtendedAdvertisingReport(
   }
 }
 
+void FakePeer::AddPeriodicAdvertisement(
+    uint8_t advertising_sid,
+    DynamicByteBuffer data,
+    std::optional<hci_spec::BroadcastIsochronousGroupInfo> big_info) {
+  auto [_, inserted] = periodic_advertisements_.try_emplace(
+      advertising_sid,
+      PeriodicAdvertisement{
+          .data = std::move(data), .event_counter = 0, .big_info = big_info});
+  PW_CHECK(inserted);
+}
+
+void FakePeer::RemovePeriodicAdvertisement(uint8_t advertising_sid) {
+  PW_CHECK(periodic_advertisements_.erase(advertising_sid));
+}
+
 DynamicByteBuffer FakePeer::BuildExtendedAdvertisingReports(
     const ByteBuffer& data, bool is_scan_response) const {
   namespace LEExtendedAdvertisingReportData =
@@ -413,6 +428,74 @@ DynamicByteBuffer FakePeer::BuildExtendedScanResponseEvent() const {
             hci_spec::kMaxLEExtendedAdvertisingDataLength);
   return BuildExtendedAdvertisingReports(scan_response_,
                                          /*is_scan_response=*/true);
+}
+
+DynamicByteBuffer FakePeer::BuildPeriodicAdvertisingReportEvent(
+    uint16_t sync_handle, uint8_t advertising_sid) {
+  auto iter = periodic_advertisements_.find(advertising_sid);
+  PW_CHECK(iter != periodic_advertisements_.end());
+
+  size_t packet_size =
+      pw::bluetooth::emboss::LEPeriodicAdvertisingReportSubeventV2::
+          MinSizeInBytes() +
+      iter->second.data.size();
+
+  auto event = hci::EventPacket::New<
+      pw::bluetooth::emboss::LEPeriodicAdvertisingReportSubeventV2Writer>(
+      hci_spec::kLEMetaEventCode, packet_size);
+  auto view = event.view_t();
+  view.le_meta_event().subevent_code_enum().Write(
+      pw::bluetooth::emboss::LeSubEventCode::PERIODIC_ADVERTISING_REPORT_V2);
+  view.sync_handle().Write(sync_handle);
+  view.tx_power().Write(tx_power());
+  view.rssi().Write(rssi());
+  view.cte_type().Write(pw::bluetooth::emboss::LECteType::NO_CTE);
+  uint16_t event_counter = iter->second.event_counter++;
+  view.periodic_event_counter().Write(event_counter);
+  view.subevent().Write(0xFF);  // No subevents
+  view.data_status().Write(
+      pw::bluetooth::emboss::LEPeriodicAdvertisingDataStatus::COMPLETE);
+  view.data_length().Write(iter->second.data.size());
+  std::memcpy(view.data().BackingStorage().data(),
+              iter->second.data.data(),
+              iter->second.data.size());
+  return event.release();
+}
+
+std::optional<DynamicByteBuffer> FakePeer::BuildBigInfoAdvertisingReportEvent(
+    hci_spec::SyncHandle sync_handle, uint8_t advertising_sid) const {
+  auto iter = periodic_advertisements_.find(advertising_sid);
+  PW_CHECK(iter != periodic_advertisements_.end());
+  if (!iter->second.big_info.has_value()) {
+    return std::nullopt;
+  }
+  hci_spec::BroadcastIsochronousGroupInfo info = iter->second.big_info.value();
+
+  size_t packet_size =
+      pw::bluetooth::emboss::LEBigInfoAdvertisingReportSubeventView::
+          MinSizeInBytes()
+              .Read();
+
+  auto event = hci::EventPacket::New<
+      pw::bluetooth::emboss::LEBigInfoAdvertisingReportSubeventWriter>(
+      hci_spec::kLEMetaEventCode, packet_size);
+  auto view = event.view_t();
+  view.le_meta_event().subevent_code_enum().Write(
+      pw::bluetooth::emboss::LeSubEventCode::BIG_INFO_ADVERTISING_REPORT);
+  view.sync_handle().Write(sync_handle);
+  view.num_bis().Write(info.num_bis);
+  view.nse().Write(info.nse);
+  view.iso_interval().Write(info.iso_interval);
+  view.bn().Write(info.bn);
+  view.pto().Write(info.pto);
+  view.irc().Write(info.irc);
+  view.max_pdu().Write(info.max_pdu);
+  view.sdu_interval().Write(info.sdu_interval);
+  view.max_sdu().Write(info.max_sdu);
+  view.phy().Write(info.phy);
+  view.framing().Write(info.framing);
+  view.encryption().Write(static_cast<uint8_t>(info.encryption));
+  return event.release();
 }
 
 }  // namespace bt::testing

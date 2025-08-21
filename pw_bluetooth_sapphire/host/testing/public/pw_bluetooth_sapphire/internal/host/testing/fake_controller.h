@@ -248,6 +248,13 @@ class FakeController final : public ControllerTestDoubleBase,
     std::unordered_map<InitiatingPHYs, Parameters> phy_conn_params;
   };
 
+  // The state for an established periodic advertising synchronization.
+  struct PeriodicAdvertisingSync {
+    DeviceAddress peer_address;
+    uint8_t advertising_sid;
+    bool duplicate_filtering;
+  };
+
   // Constructor initializes the controller with the minimal default settings
   // (equivalent to calling Settings::ApplyDefaults()).
   explicit FakeController(pw::async::Dispatcher& pw_dispatcher)
@@ -611,7 +618,34 @@ class FakeController final : public ControllerTestDoubleBase,
     return hci_spec::LESupportedFeatures{settings_.le_features};
   }
 
+  std::vector<PeriodicAdvertisingSync> periodic_advertising_syncs() const {
+    std::vector<PeriodicAdvertisingSync> out;
+    for (auto& [_, sync] : periodic_advertising_syncs_) {
+      out.push_back(sync);
+    }
+    return out;
+  }
+
+  // Send a Periodic Advertising Sync Lost event and delete the sync state.
+  void LosePeriodicSync(DeviceAddress address, uint8_t advertising_sid);
+
  private:
+  struct PeriodicAdvertiserListEntry {
+    DeviceAddress address;
+    uint8_t advertising_sid;
+    bool operator==(const PeriodicAdvertiserListEntry& other) const {
+      return address == other.address &&
+             advertising_sid == other.advertising_sid;
+    }
+  };
+
+  struct PeriodicAdvertiserListEntryHasher {
+    std::size_t operator()(const PeriodicAdvertiserListEntry& e) const {
+      return std::hash<DeviceAddress>{}(e.address) ^
+             std::hash<uint8_t>{}(e.advertising_sid);
+    }
+  };
+
   static bool IsValidAdvertisingHandle(hci_spec::AdvertisingHandle handle) {
     return handle <= hci_spec::kAdvertisingHandleMax;
   }
@@ -680,6 +714,12 @@ class FakeController final : public ControllerTestDoubleBase,
   // the reports are continued to be sent until scan is disabled.
   void SendAdvertisingReports();
 
+  void SendPeriodicAdvertisingReports();
+  void SendPeriodicAdvertisingReport(FakePeer& peer,
+                                     hci_spec::SyncHandle sync_handle,
+                                     uint8_t advertising_sid);
+  void MaybeSendPeriodicAdvertisingSyncEstablishedEvent();
+
   // Notifies |controller_parameters_cb_|.
   void NotifyControllerParametersChanged();
 
@@ -722,6 +762,22 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnLEExtendedCreateConnectionCommandReceived(
       const pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1View&
           params);
+
+  void OnLEPeriodicAdvertisingCreateSyncCommandReceived(
+      const pw::bluetooth::emboss::LEPeriodicAdvertisingCreateSyncCommandView&
+          params);
+
+  void OnLEPeriodicAdvertisingTerminateSyncCommandReceived(
+      const pw::bluetooth::emboss::
+          LEPeriodicAdvertisingTerminateSyncCommandView& params);
+
+  void OnLEAddDeviceToPeriodicAdvertiserListCommandReceived(
+      const pw::bluetooth::emboss::
+          LEAddDeviceToPeriodicAdvertiserListCommandView& params);
+
+  void OnLERemoveDeviceFromPeriodicAdvertiserListCommandReceived(
+      const pw::bluetooth::emboss::
+          LERemoveDeviceFromPeriodicAdvertiserListCommandView& params);
 
   // Called when a HCI_LE_Connection_Update command is received.
   void OnLEConnectionUpdateCommandReceived(
@@ -1350,6 +1406,19 @@ class FakeController final : public ControllerTestDoubleBase,
 
   AdvertisingProcedure advertising_procedure_ = AdvertisingProcedure::kUnknown;
   uint16_t max_advertising_data_length_ = hci_spec::kMaxLEAdvertisingDataLength;
+
+  std::unordered_set<PeriodicAdvertiserListEntry,
+                     PeriodicAdvertiserListEntryHasher>
+      periodic_advertiser_list_;
+  struct PeriodicAdvertisingCreateSync {
+    bool duplicate_filtering;
+  };
+  std::optional<PeriodicAdvertisingCreateSync>
+      pending_periodic_advertising_create_sync_;
+
+  std::unordered_map<uint16_t /*sync_handle*/, PeriodicAdvertisingSync>
+      periodic_advertising_syncs_;
+  uint16_t next_periodic_advertising_sync_handle_ = 1;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };
