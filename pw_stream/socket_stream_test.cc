@@ -42,9 +42,13 @@ void RunConnectTest(const char* hostname) {
   client.Close();
 }
 
+TEST(SocketStreamTest, ConnectLocalhost) { RunConnectTest("localhost"); }
+
 TEST(SocketStreamTest, ConnectIpv4) { RunConnectTest("127.0.0.1"); }
 
 TEST(SocketStreamTest, ConnectIpv6) { RunConnectTest("::1"); }
+
+TEST(SocketStreamTest, ConnectDefault) { RunConnectTest(nullptr); }
 
 TEST(SocketStreamTest, ConnectSpecificPort) {
   // We want to test the "listen on a specific port" functionality,

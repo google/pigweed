@@ -115,23 +115,24 @@ Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
   }
 
   struct addrinfo* rp;
-  int connection_fd;
+  int connection_fd = kInvalidFd;
+  // Try to create and connect to a socket for each addrinfo until one succeeds.
   for (rp = res; rp != nullptr; rp = rp->ai_next) {
     connection_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-    if (connection_fd != kInvalidFd) {
-      break;
+    if (connection_fd == kInvalidFd) {
+      continue;
     }
+
+    ConfigureSocket(connection_fd);
+    if (connect(connection_fd, rp->ai_addr, rp->ai_addrlen) != -1) {
+      break;  // Success
+    }
+
+    close(connection_fd);
+    connection_fd = kInvalidFd;
   }
 
   if (connection_fd == kInvalidFd) {
-    PW_LOG_ERROR("Failed to create a socket: %s", std::strerror(errno));
-    freeaddrinfo(res);
-    return Status::Unknown();
-  }
-
-  ConfigureSocket(connection_fd);
-  if (connect(connection_fd, rp->ai_addr, rp->ai_addrlen) == -1) {
-    close(connection_fd);
     PW_LOG_ERROR(
         "Failed to connect to %s:%d: %s", host, port, std::strerror(errno));
     freeaddrinfo(res);
