@@ -305,59 +305,71 @@ TEST_F(NonMutatingTest, SearchNWithPredicate) {
 }
 
 static constexpr std::array<int, 5> kConstExprTestAllOfValues = {5, 6, 7, 8, 9};
-PW_CONSTEXPR_TEST(ConstExprTest, AllOf, {
+PW_CONSTEXPR_TEST(AlgorithmPolyfill, AllOf, {
   PW_TEST_EXPECT_TRUE(pw::all_of(kConstExprTestAllOfValues.begin(),
                                  kConstExprTestAllOfValues.end(),
-                                 [](auto v) { return v > 2; }))
-      << "all_of was not evaluated at compile time";
-
+                                 [](auto v) { return v > 2; }));
   PW_TEST_EXPECT_TRUE(pw::all_of(kConstExprTestAllOfValues.begin(),
                                  kConstExprTestAllOfValues.end(),
-                                 [](auto v) { return v < 10; }))
-      << "all_of was not evaluated at compile time";
-
+                                 [](auto v) { return v < 10; }));
   PW_TEST_EXPECT_TRUE(!pw::all_of(kConstExprTestAllOfValues.begin(),
                                   kConstExprTestAllOfValues.end(),
-                                  [](auto v) { return v > 10; }))
-      << "all_of was not evaluated at compile time";
+                                  [](auto v) { return v > 10; }));
 });
 
 static constexpr std::array<int, 5> kConstExprTestAnyOfValues = {1, 2, 3, 4, 5};
-PW_CONSTEXPR_TEST(ConstExprTest, AnyOf, {
+PW_CONSTEXPR_TEST(AlgorithmPolyfill, AnyOf, {
   PW_TEST_EXPECT_TRUE(pw::any_of(kConstExprTestAnyOfValues.begin(),
                                  kConstExprTestAnyOfValues.end(),
-                                 [](auto v) { return v > 3; }))
-      << "any_of was not evaluated at compile time";
-
+                                 [](auto v) { return v > 3; }));
   PW_TEST_EXPECT_TRUE(pw::any_of(kConstExprTestAnyOfValues.begin(),
                                  kConstExprTestAnyOfValues.end(),
-                                 [](auto v) { return v == 1; }))
-      << "any_of was not evaluated at compile time";
-
+                                 [](auto v) { return v == 1; }));
   PW_TEST_EXPECT_TRUE(!pw::any_of(kConstExprTestAnyOfValues.begin(),
                                   kConstExprTestAnyOfValues.end(),
-                                  [](auto v) { return v > 10; }))
-      << "any_of was not evaluated at compile time";
+                                  [](auto v) { return v > 10; }));
 });
 
 static constexpr std::array<int, 5> kConstExprTestFindIfValues = {
     1, 2, 3, 4, 5};
-PW_CONSTEXPR_TEST(ConstExprTest, FindIf, {
+PW_CONSTEXPR_TEST(AlgorithmPolyfill, FindIf, {
   constexpr auto it = pw::find_if(kConstExprTestFindIfValues.begin(),
                                   kConstExprTestFindIfValues.end(),
                                   [](auto v) { return v > 3; });
-  PW_TEST_EXPECT_EQ(it, kConstExprTestFindIfValues.begin() + 3)
-      << "find_if was not evaluated at compile time";
+  PW_TEST_EXPECT_EQ(it, kConstExprTestFindIfValues.begin() + 3);
 
   constexpr auto it2 = pw::find_if(kConstExprTestFindIfValues.begin(),
                                    kConstExprTestFindIfValues.end(),
                                    [](auto v) { return v == 1; });
-  PW_TEST_EXPECT_EQ(it2, kConstExprTestFindIfValues.begin())
-      << "find_if was not evaluated at compile time";
+  PW_TEST_EXPECT_EQ(it2, kConstExprTestFindIfValues.begin());
 
   constexpr auto it3 = pw::find_if(kConstExprTestFindIfValues.begin(),
                                    kConstExprTestFindIfValues.end(),
                                    [](auto v) { return v > 10; });
-  PW_TEST_EXPECT_EQ(it3, kConstExprTestFindIfValues.end())
-      << "find_if was not evaluated at compile time";
+  PW_TEST_EXPECT_EQ(it3, kConstExprTestFindIfValues.end());
+});
+
+PW_CONSTEXPR_TEST(AlgorithmPolyfill, Fill, {
+  std::array<int, 5> values = {1, 2, 3, 4, 5};
+  pw::fill(values.begin(), values.end(), 42);
+  PW_TEST_EXPECT_TRUE(
+      pw::all_of(values.begin(), values.end(), [](int v) { return v == 42; }));
+
+  pw::fill(values.begin(), values.begin(), -1);
+  PW_TEST_EXPECT_TRUE(
+      pw::all_of(values.begin(), values.end(), [](int v) { return v == 42; }));
+});
+
+PW_CONSTEXPR_TEST(AlgorithmPolyfill, FillN, {
+  std::array<int, 5> values = {1, 2, 3, 4, 5};
+
+  PW_TEST_EXPECT_EQ(pw::fill_n(values.begin(), 3, 42), values.begin() + 3);
+  PW_TEST_EXPECT_EQ(values[0], 42);
+  PW_TEST_EXPECT_EQ(values[1], 42);
+  PW_TEST_EXPECT_EQ(values[2], 42);
+  PW_TEST_EXPECT_EQ(values[3], 4);
+  PW_TEST_EXPECT_EQ(values[4], 5);
+
+  PW_TEST_EXPECT_EQ(pw::fill_n(values.begin(), 0, -1), values.begin());
+  PW_TEST_EXPECT_EQ(values[0], 42);
 });

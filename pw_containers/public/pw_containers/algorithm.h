@@ -331,13 +331,17 @@ internal_algorithm::ContainerIter<Sequence> SearchN(Sequence& sequence,
 }  // namespace containers
 
 #if defined(__cpp_lib_constexpr_algorithms)
+
+// Use the standard library versions if they are constexpr.
 using std::all_of;
 using std::any_of;
+using std::fill;
+using std::fill_n;
 using std::find_if;
+
 #else
 
-/// Backport of <algorithm>'s `constexprt std::all_of()` so it's available in
-/// C++17.
+/// `constexpr` backport of `<algorithm>`'s `std::all_of` for C++17.
 template <typename InputIt, typename Predicate>
 constexpr bool all_of(InputIt first, InputIt last, Predicate pred) {
   for (; first != last; ++first) {
@@ -348,8 +352,7 @@ constexpr bool all_of(InputIt first, InputIt last, Predicate pred) {
   return true;
 }
 
-/// Backport of <algorithm>'s `constexprt std::any_of()` so it's available in
-/// C++17.
+/// `constexpr` backport of `<algorithm>`'s `std::any_of` for C++17.
 template <typename InputIt, typename Predicate>
 constexpr bool any_of(InputIt first, InputIt last, Predicate pred) {
   for (; first != last; ++first) {
@@ -360,8 +363,7 @@ constexpr bool any_of(InputIt first, InputIt last, Predicate pred) {
   return false;
 }
 
-/// Backport of <algorithm>'s `constexprt std::find_if()` so it's available in
-/// C++17.
+/// `constexpr` backport of `<algorithm>`'s `std::find_if` for C++17.
 template <typename InputIt, typename Predicate>
 constexpr InputIt find_if(InputIt first, InputIt last, Predicate pred) {
   for (; first != last; ++first) {
@@ -371,5 +373,23 @@ constexpr InputIt find_if(InputIt first, InputIt last, Predicate pred) {
   }
   return last;
 }
+
+/// `constexpr` backport of `<algorithm>`'s `std::fill` for C++17.
+template <typename ForwardIt, typename T>
+constexpr void fill(ForwardIt begin, ForwardIt end, const T& value) {
+  for (; begin != end; ++begin) {
+    *begin = value;
+  }
+}
+
+/// `constexpr` backport of `<algorithm>`'s `std::fill_n` for C++17.
+template <typename It, typename Size, typename T>
+constexpr It fill_n(It begin, Size count, const T& value) {
+  for (Size i = 0; i < count; ++i) {
+    *begin++ = value;
+  }
+  return begin;
+}
+
 #endif
 }  // namespace pw
