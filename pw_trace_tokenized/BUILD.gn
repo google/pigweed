@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_thread/backend.gni")
@@ -21,6 +22,41 @@ import("$dir_pw_trace/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 import("$pw_external_nanopb/nanopb.gni")
 import("config.gni")
+import("lock.gni")
+
+pw_source_set("interrupt_spin_lock") {
+  public_configs = [
+    ":public_include_path",
+    ":interrupt_spin_lock_public_overrides_include_path",
+  ]
+  public = [
+    "interrupt_spin_lock_public_overrides/pw_trace_tokenized_backend/lock_native.h",
+    "public/pw_trace_tokenized/internal/interrupt_spin_lock_native.h",
+  ]
+  public_deps = [ "$dir_pw_sync:interrupt_spin_lock" ]
+}
+
+config("interrupt_spin_lock_public_overrides_include_path") {
+  include_dirs = [ "interrupt_spin_lock_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("no_lock") {
+  public_configs = [
+    ":public_include_path",
+    ":no_lock_public_overrides_include_path",
+  ]
+  public = [
+    "no_lock_public_overrides/pw_trace_tokenized_backend/lock_native.h",
+    "public/pw_trace_tokenized/internal/no_lock_native.h",
+  ]
+  public_deps = [ "$dir_pw_sync:no_lock" ]
+}
+
+config("no_lock_public_overrides_include_path") {
+  include_dirs = [ "no_lock_public_overrides" ]
+  visibility = [ ":*" ]
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -228,6 +264,12 @@ pw_source_set("host_trace_time") {
   sources = [ "host_trace_time.cc" ]
 }
 
+pw_facade("lock") {
+  backend = pw_trace_tokenized_LOCK_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_trace_tokenized/internal/lock.h" ]
+}
+
 pw_source_set("core") {
   public_configs = [
     ":backend_config",
@@ -241,9 +283,9 @@ pw_source_set("core") {
   ]
   deps = [
     ":config",
+    ":lock",
     "$dir_pw_assert",
     "$dir_pw_ring_buffer",
-    "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_trace:facade",
     "$dir_pw_varint",
   ]

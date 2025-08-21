@@ -18,6 +18,7 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_build:pw_facade.bzl", "pw_facade")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "nanopb_proto_library",
@@ -74,14 +75,58 @@ cc_library(
     ],
     deps = [
         ":config",
+        ":lock",
         ":trace_time",
         "//pw_log",
         "//pw_status",
-        "//pw_sync:interrupt_spin_lock",
         "//pw_tokenizer",
         "//pw_trace:facade",
         "//pw_varint",
     ],
+)
+
+pw_facade(
+    name = "lock",
+    hdrs = ["public/pw_trace_tokenized/internal/lock.h"],
+    backend = ":lock_backend",
+    strip_include_prefix = "public",
+)
+
+label_flag(
+    name = "lock_backend",
+    build_setting_default = ":interrupt_spin_lock",
+)
+
+cc_library(
+    name = "interrupt_spin_lock",
+    hdrs = [
+        "interrupt_spin_lock_public_overrides/pw_trace_tokenized_backend/lock_native.h",
+    ],
+    strip_include_prefix = "interrupt_spin_lock_public_overrides",
+    deps = [":interrupt_spin_lock_native"],
+)
+
+cc_library(
+    name = "interrupt_spin_lock_native",
+    hdrs = ["public/pw_trace_tokenized/internal/interrupt_spin_lock_native.h"],
+    strip_include_prefix = "public",
+    deps = ["//pw_sync:interrupt_spin_lock"],
+)
+
+cc_library(
+    name = "no_lock",
+    hdrs = [
+        "no_lock_public_overrides/pw_trace_tokenized_backend/lock_native.h",
+    ],
+    strip_include_prefix = "no_lock_public_overrides",
+    deps = [":no_lock_native"],
+)
+
+cc_library(
+    name = "no_lock_native",
+    hdrs = ["public/pw_trace_tokenized/internal/no_lock_native.h"],
+    strip_include_prefix = "public",
+    deps = ["//pw_sync:no_lock"],
 )
 
 label_flag(

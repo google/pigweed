@@ -26,6 +26,9 @@ class PW_LOCKABLE("pw::sync::NoLock") NoLock {
  public:
   constexpr void lock() PW_EXCLUSIVE_LOCK_FUNCTION() {}
   constexpr void unlock() PW_UNLOCK_FUNCTION() {}
+  [[nodiscard]] bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+    return true;
+  }
 };
 
 /// `MaybeLock` is a helper that selects between a real lock type and `NoLock`

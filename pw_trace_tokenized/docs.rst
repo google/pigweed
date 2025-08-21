@@ -146,7 +146,6 @@ not have a group, use ``PW_TRACE_GROUP_LABEL_DEFAULT``.
 .. cpp:function:: PW_TRACE_REF_DATA( \
    event_type, module, label, flags, group, type)
 
-
 -----------
 Time source
 -----------
@@ -197,12 +196,29 @@ bulk transfers. It is the caller's responsibility to disable tracing during
 access to the buffer. The data in the block is defined by the
 prefixed-ring-buffer format without any user-preamble.
 
-
 Added dependencies
 ------------------
 ``pw_ring_buffer``
 ``pw_varint``
 
+-------
+Locking
+-------
+``pw_trace_tokenized`` uses a lock facade to protect access to internal data
+structures. This allows the locking implementation to be replaced depending on
+the application's requirements. The lock facade is configured by setting the
+``pw_trace_tokenized_LOCK_BACKEND`` build variable.
+
+Two backends are provided:
+
+*   **``interrupt_spin_lock`` (Default):** This backend uses a
+    ``pw::sync::InterruptSpinLock`` to provide thread-safe and ISR-safe
+    locking. This is the default and recommended backend for most use cases.
+
+*   **``no_lock``:** This backend provides no locking. It is suitable for
+    single-threaded environments where locking is not required, or when the
+    application can guarantee that tracing functions are not called from
+    multiple threads or ISRs simultaneously.
 
 -------
 Logging

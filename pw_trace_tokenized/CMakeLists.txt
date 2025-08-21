@@ -15,6 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 include($ENV{PW_ROOT}/pw_trace_tokenized/backend.cmake)
+include($ENV{PW_ROOT}/pw_trace_tokenized/lock.cmake)
 
 pw_add_module_config(pw_trace_tokenized_CONFIG)
 
@@ -53,6 +54,39 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
   zephyr_append_cmake_library(pw_trace_tokenized.zephyr_trace_time)
 endif()
 
+set(pw_trace_tokenized_LOCK_BACKEND pw_trace_tokenized.interrupt_spin_lock)
+
+pw_add_library(pw_trace_tokenized.interrupt_spin_lock INTERFACE
+  HEADERS
+    public/pw_trace_tokenized/internal/interrupt_spin_lock_native.h
+    interrupt_spin_lock_public_overrides/pw_trace_tokenized_backend/lock_native.h
+  PUBLIC_INCLUDES
+    public
+    interrupt_spin_lock_public_overrides
+  PUBLIC_DEPS
+    pw_sync.interrupt_spin_lock
+)
+
+pw_add_library(pw_trace_tokenized.no_lock INTERFACE
+  HEADERS
+    public/pw_trace_tokenized/internal/no_lock_native.h
+    no_lock_public_overrides/pw_trace_tokenized_backend/lock_native.h
+  PUBLIC_INCLUDES
+    public
+    no_lock_public_overrides
+  PUBLIC_DEPS
+    pw_sync.no_lock
+)
+
+pw_add_facade(pw_trace_tokenized.lock INTERFACE
+  BACKEND
+    pw_trace_tokenized_LOCK_BACKEND
+  HEADERS
+    public/pw_trace_tokenized/internal/lock.h
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_library(pw_trace_tokenized.core STATIC
   HEADERS
     public/pw_trace_tokenized/internal/trace_tokenized_internal.h
@@ -71,9 +105,9 @@ pw_add_library(pw_trace_tokenized.core STATIC
     trace.cc
   PRIVATE_DEPS
     pw_trace_tokenized.config
+    pw_trace_tokenized.lock
     pw_assert
     pw_ring_buffer
-    pw_sync.interrupt_spin_lock
     pw_trace.facade
     pw_varint
     ${pw_trace_tokenizer_time}

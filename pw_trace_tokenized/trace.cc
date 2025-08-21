@@ -19,17 +19,17 @@
 #include <mutex>
 
 #include "pw_preprocessor/util.h"
-#include "pw_sync/interrupt_spin_lock.h"
+#include "pw_trace_tokenized/internal/lock.h"
 #include "pw_trace_tokenized/trace_callback.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
 #include "pw_varint/varint.h"
 
-namespace pw {
-namespace trace {
-
+namespace pw::trace {
 namespace {
-pw::sync::InterruptSpinLock trace_lock;
-pw::sync::InterruptSpinLock trace_queue_lock;
+
+internal::Lock trace_lock;
+internal::Lock trace_queue_lock;
+
 }  // namespace
 
 Callbacks& GetCallbacks() {
@@ -353,5 +353,4 @@ pw_Status pw_trace_UnregisterEventCallback(
 
 PW_EXTERN_C_END
 
-}  // namespace trace
-}  // namespace pw
+}  // namespace pw::trace
