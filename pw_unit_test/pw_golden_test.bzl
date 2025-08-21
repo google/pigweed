@@ -13,8 +13,8 @@
 # the License.
 """pw_golden_test compares an executable's output to a golden file."""
 
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
-load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 def pw_golden_test(name, executable, expected, args = None, **kwargs):
     """Runs an executable and compares its output to a file.
@@ -36,10 +36,9 @@ def pw_golden_test(name, executable, expected, args = None, **kwargs):
     else:
         args = ["--"] + args
 
-    pw_py_test(
+    native_test(
         name = name,
-        main = "pw_unit_test/py/pw_unit_test/golden_test.py",
-        srcs = ["//pw_unit_test/py:pw_unit_test/golden_test.py"],
+        src = "//pw_unit_test/py:golden_test",
         args = [
             "--executable",
             "$(rootpath " + executable + ")",
@@ -56,10 +55,9 @@ def pw_golden_test(name, executable, expected, args = None, **kwargs):
         **kwargs
     )
 
-    pw_py_binary(
+    native_binary(
         name = name + ".accept",
-        main = "pw_unit_test/py/pw_unit_test/golden_test.py",
-        srcs = ["//pw_unit_test/py:pw_unit_test/golden_test.py"],
+        src = "//pw_unit_test/py:golden_test",
         testonly = True,
         args = [
             "--executable",
