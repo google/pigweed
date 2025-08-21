@@ -228,6 +228,23 @@ pub struct ForeignRc<A: AtomicUsize + 'static, T: ?Sized + 'static> {
     state: &'static ForeignRcState<A, T>,
 }
 
+impl<A: AtomicUsize, T: ?Sized> ForeignRc<A, T> {
+    #[doc(hidden)]
+    /// Map a `ForeignRc` into a compatible type.
+    ///
+    /// # Safety
+    /// The caller must guarantee that the `map` closure returns a reference
+    /// pointing to the same address and byte range as was passed in.
+    pub unsafe fn map<U: ?Sized>(
+        self,
+        map: impl Fn(&ForeignRcState<A, T>) -> &ForeignRcState<A, U>,
+    ) -> ForeignRc<A, U> {
+        ForeignRc {
+            state: map(self.state),
+        }
+    }
+}
+
 impl<A: AtomicUsize, T: ?Sized> Deref for ForeignRc<A, T> {
     type Target = T;
 
@@ -273,6 +290,21 @@ impl<A: AtomicUsize, T: ?Sized> Drop for ForeignRc<A, T> {
             unsafe { ManuallyDrop::drop(md) };
         }
     }
+}
+
+/// Upcasts a [`ForeignRc`] from a concrete type to a `dyn Trait` that the concrete
+/// type implements
+#[macro_export]
+macro_rules! upcast_foreign_rc {
+    ($rc:expr => dyn $trait:ident $(<$($trait_tyvar:ident),*>)? ) => {{
+        use $crate::ForeignRcState;
+        // SAFETY: The closure passed to `.map()` fulfils the precondition that
+        // the returned reference points to the same place as the passed in reference.
+        unsafe {
+            $rc.map(|inner: &ForeignRcState<_, _>|
+                -> &ForeignRcState<_, dyn $trait $(<$($trait_tyvar),*>)?> { inner })
+        }
+    }};
 }
 
 #[cfg(test)]
