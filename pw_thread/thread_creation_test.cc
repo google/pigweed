@@ -57,38 +57,45 @@ class ThreadCreationTest : public ::testing::Test {
   int thread_runs_ = 0;
 };
 
+pw::ThreadContext<1024> context_1024;
+
 TEST_F(ThreadCreationTest, ThreadContext) {
-  pw::ThreadContext<1024> context;
+  pw::Thread(context_1024, kThread1024, TestThread()).join();
 
-  pw::Thread(context, kThread1024, TestThread()).join();
+  pw::Thread(pw::GetThreadOptions<kThread1023>(context_1024), TestThread())
+      .join();
+  pw::Thread(pw::GetThreadOptions(context_1024, kThread1023), TestThread())
+      .join();
 
-  pw::Thread(pw::GetThreadOptions<kThread1023>(context), TestThread()).join();
-  pw::Thread(pw::GetThreadOptions(context, kThread1023), TestThread()).join();
-
-  pw::Thread(pw::GetThreadOptions<kThread1024>(context), TestThread()).join();
-  pw::Thread(pw::GetThreadOptions(context, kThread1024), TestThread()).join();
+  pw::Thread(pw::GetThreadOptions<kThread1024>(context_1024), TestThread())
+      .join();
+  pw::Thread(pw::GetThreadOptions(context_1024, kThread1024), TestThread())
+      .join();
 
 #if PW_NC_TEST(StackTooSmall_TemplateArgument)
   PW_NC_EXPECT(
       "ThreadContext stack is too small for the requested ThreadAttrs");
-  pw::Thread(pw::GetThreadOptions<kThread1025>(context), TestThread()).join();
+  pw::Thread(pw::GetThreadOptions<kThread1025>(context_1024), TestThread())
+      .join();
 #elif PW_NC_TEST(StackTooSmall_FunctionArgument)
   PW_NC_EXPECT(
       "PW_ASSERT\(kContextStackSizeBytes >= "
       "attributes.stack_size_bytes\(\)\);");
   [[maybe_unused]] constexpr auto options =
-      pw::GetThreadOptions(context, kThread1025);
+      pw::GetThreadOptions(context_1024, kThread1025);
 #endif  // PW_NC_TEST
 }
 
-TEST_F(ThreadCreationTest, DefaultThreadContext) {
-  pw::DefaultThreadContext context;
+pw::DefaultThreadContext default_context;
 
-  pw::Thread(context, pw::ThreadAttrs(), TestThread()).join();
+TEST_F(ThreadCreationTest, DefaultThreadContext) {
+  pw::Thread(default_context, pw::ThreadAttrs(), TestThread()).join();
 
   static constexpr pw::ThreadAttrs kDefault;
-  pw::Thread(pw::GetThreadOptions<kDefault>(context), TestThread()).join();
-  pw::Thread(pw::GetThreadOptions(context, pw::ThreadAttrs()), TestThread())
+  pw::Thread(pw::GetThreadOptions<kDefault>(default_context), TestThread())
+      .join();
+  pw::Thread(pw::GetThreadOptions(default_context, pw::ThreadAttrs()),
+             TestThread())
       .join();
 }
 
@@ -110,7 +117,8 @@ TEST_F(ThreadCreationTest, ThreadContextExternalStack) {
 
 TEST_F(ThreadCreationTest,
        ThreadContextWithStackButAttrsWithExternallyAllocatedStack) {
-  pw::ThreadContext<1024> context;
+  // This ThreadContext allocates space for a stack, but it is not used.
+  pw::ThreadContext<128> context;
 
   pw::Thread(pw::GetThreadOptions<kThreadExternal>(context), TestThread())
       .join();
@@ -120,7 +128,7 @@ TEST_F(ThreadCreationTest,
 }
 
 TEST_F(ThreadCreationTest, ThreadContextMinimumSizedExternalStack) {
-  pw::ThreadContext<> context;
+  pw::ThreadContext<> context;  // external stack
 
   pw::Thread(context, kThreadExternalMin, TestThread()).join();
 
@@ -130,12 +138,12 @@ TEST_F(ThreadCreationTest, ThreadContextMinimumSizedExternalStack) {
       .join();
 }
 
+pw::ThreadContextFor<kThread1024> context_for;
+
 TEST_F(ThreadCreationTest, ThreadContextFor) {
-  pw::ThreadContextFor<kThread1024> context;
+  pw::Thread(context_for, TestThread()).join();
 
-  pw::Thread(context, TestThread()).join();
-
-  pw::Thread(pw::GetThreadOptions(context), TestThread()).join();
+  pw::Thread(pw::GetThreadOptions(context_for), TestThread()).join();
 }
 
 TEST_F(ThreadCreationTest, ThreadContextForExternalStack) {
@@ -146,12 +154,12 @@ TEST_F(ThreadCreationTest, ThreadContextForExternalStack) {
   pw::Thread(pw::GetThreadOptions(context), TestThread()).join();
 }
 
+pw::ThreadContextFor<kThread0> context_for_min_stack;
+
 TEST_F(ThreadCreationTest, ThreadContextForMinimumSizedStack) {
-  pw::ThreadContextFor<kThread0> context;
+  pw::Thread(context_for_min_stack, TestThread()).join();
 
-  pw::Thread(context, TestThread()).join();
-
-  pw::Thread(pw::GetThreadOptions(context), TestThread()).join();
+  pw::Thread(pw::GetThreadOptions(context_for_min_stack), TestThread()).join();
 }
 
 #endif  // PW_THREAD_JOINING_ENABLED

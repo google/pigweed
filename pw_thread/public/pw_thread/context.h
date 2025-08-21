@@ -30,13 +30,17 @@ inline constexpr size_t kExternallyAllocatedThreadStack =
 /// Represents the resources required for one thread. May include OS data
 /// structures, the thread stack, or be empty, depending on the platform.
 ///
-/// `ThreadContext` may be reused or deleted if the associated thread is
-/// joined.
+/// `ThreadContext` may be reused or deleted if the associated thread is joined.
 ///
 /// `ThreadContext` takes an optional stack size template parameter. If a stack
 /// size is provided, the context allocates a stack internally, if supported by
 /// the backend. If no stack is is provided (`ThreadContext<>`), the
 /// `ThreadContext` must be paired with a `pw::ThreadStack`.
+///
+/// @warning Avoid creating `ThreadContext` objects on the stack. Instead,
+/// create them in static/global or heap memory. Depending on backend and
+/// configuration, `ThreadContext` may contain the thread's stack. Not all
+/// platforms allow having stack within a stack, so avoid this for portability.
 template <size_t kStackSizeBytes = kExternallyAllocatedThreadStack>
 class ThreadContext {
  public:
