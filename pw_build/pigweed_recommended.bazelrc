@@ -57,3 +57,6 @@ common --host_per_file_copt=external/.*,.*\.pb\.cc@-w
 # any intermixing of the well-known host platform definitions. More info:
 # https://github.com/bazelbuild/bazel/issues/26228
 common --experimental_platform_in_output_dir=True
+
+# Respect the CIPD cache directory environment variable, if set.
+common --repo_env=CIPD_CACHE_DIR

@@ -21,6 +21,11 @@ load(
 )
 
 _CIPD_HOST = "https://chrome-infra-packages.appspot.com"
+_CIPD_CACHE_DIR_ENV_VAR = "CIPD_CACHE_DIR"
+
+# NOTE: the ~ is for convenience here, it is manually expanded inside
+# get_cipd_cache_dir().
+_DEFAULT_CIPD_CACHE_DIR = "~/.cipd_cache_dir"
 
 def platform_normalized(rctx):
     """Normalizes the platform to match CIPDs naming system.
@@ -105,6 +110,32 @@ def get_client_cipd_digest(rctx):
             return digest
     fail("Could not find CIPD digest that matches this platform.")
 
+def get_cipd_cache_dir(rctx):
+    """Returns the CIPD cache directory.
+
+    This may return None if the CIPD cache directory could not be determined.
+
+    Args:
+        rctx: Repository context.
+
+    Returns:
+        str: The CIPD cache directory, or None if undetermined.
+    """
+    cipd_cache_dir = rctx.getenv(_CIPD_CACHE_DIR_ENV_VAR, None)
+    if cipd_cache_dir != None:
+        return cipd_cache_dir
+
+    if "windows" in rctx.os.name:
+        user_home = rctx.getenv("USERPROFILE")
+    else:
+        user_home = rctx.getenv("HOME")
+
+    # If we can't locate $HOME, don't cache.
+    if user_home == None:
+        return None
+
+    return _DEFAULT_CIPD_CACHE_DIR.replace("~", user_home)
+
 def cipd_client_impl(rctx):
     """Initializes the CIPD client repository.
 
@@ -149,7 +180,25 @@ def cipd_repository_base(rctx, packages):
             "%{data}": "\n".join(["%s\t%s" % (pkg, tag) for pkg in packages]),
         },
     )
-    result = rctx.execute([cipd_path, "ensure", "-root", ".", "-ensure-file", ensure_path])
+
+    cache_args = []
+    cipd_cache_dir = get_cipd_cache_dir(rctx)
+    if cipd_cache_dir:
+        cache_args = [
+            "-cache-dir",
+            cipd_cache_dir,
+        ]
+
+    result = rctx.execute(
+        [
+            cipd_path,
+            "ensure",
+            "-root",
+            ".",
+            "-ensure-file",
+            ensure_path,
+        ] + cache_args,
+    )
 
     if result.return_code != 0:
         fail("Failed to fetch CIPD repository `{}`:\n{}".format(rctx.name, result.stderr))
