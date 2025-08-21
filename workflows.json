@@ -80,7 +80,7 @@
       "description": "Work with Gerrit changes and Git commits.",
       "use_config": "bazel_default",
       "target": "@pigweed//:change",
-      "type": "ANALYZER"
+      "type": "GENERAL"
     },
     {
       "name": "format",
@@ -103,14 +103,14 @@
       "description": "Upload the current git branch to Gerrit for review.",
       "use_config": "bazel_default",
       "target": "@pigweed//:push",
-      "type": "ANALYZER"
+      "type": "GENERAL"
     },
     {
       "name": "review",
       "description": "Review the commit at HEAD using Gemini",
       "use_config": "bazel_default",
       "target": "@pigweed//:review",
-      "type": "ANALYZER"
+      "type": "GENERAL"
     }
   ],
   "groups": [
