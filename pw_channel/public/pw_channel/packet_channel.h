@@ -47,6 +47,8 @@ namespace pw::channel {
 template <typename Packet>
 class PendingWrite {
  public:
+  constexpr PendingWrite() : channel_(nullptr), num_packets_(0) {}
+
   PendingWrite(const PendingWrite&) = delete;
   PendingWrite& operator=(const PendingWrite&) = delete;
 
@@ -56,6 +58,7 @@ class PendingWrite {
   constexpr PendingWrite& operator=(PendingWrite&& other) {
     channel_ = other.channel_;
     num_packets_ = cpp20::exchange(other.num_packets_, 0u);
+    return *this;
   }
 
   ~PendingWrite() {

@@ -371,13 +371,17 @@ class WriteFivePackets : public pw::async2::Task {
   Poll<> DoPend(pw::async2::Context& cx) override {
     for (; next_packet_ <= 5; ++next_packet_) {
       PW_TRY_READY_ASSIGN(
-          pw::Result<pw::channel::PendingWrite<TestPacket>> pending,
+          pw::Result<pw::channel::PendingWrite<TestPacket>> result,
           writer_.PendReadyToWrite(cx));
 
-      PW_TEST_EXPECT_OK(pending);
+      PW_TEST_EXPECT_OK(result);
+
+      // Can default construct and assign to a PendingWrite.
+      pw::channel::PendingWrite<TestPacket> pending_write;
+      pending_write = std::move(result).value();
 
       TestPacket packet(next_packet_);
-      pending->Stage(std::move(packet));
+      pending_write.Stage(std::move(packet));
 
       PW_TRY_READY(writer_.PendWrite(cx));
     }
