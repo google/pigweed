@@ -78,6 +78,7 @@ pw_source_set("gap") {
     "low_energy_interrogator.cc",
     "pairing_state_manager.cc",
     "peer_cache.cc",
+    "periodic_advertising_sync_manager.cc",
     "secure_simple_pairing_state.cc",
     "types.cc",
   ]
@@ -108,6 +109,7 @@ pw_source_set("gap") {
     "public/pw_bluetooth_sapphire/internal/host/gap/pairing_delegate.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/pairing_state_manager.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/peer_cache.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/periodic_advertising_sync_manager.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/secure_simple_pairing_state.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/types.h",
   ]
@@ -172,6 +174,7 @@ pw_test("gap_test") {
     "low_energy_interrogator_test.cc",
     "peer_cache_test.cc",
     "peer_test.cc",
+    "periodic_advertising_sync_manager_test.cc",
     "secure_simple_pairing_state_test.cc",
     "types_test.cc",
   ]

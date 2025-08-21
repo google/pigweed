@@ -31,5 +31,14 @@ struct BroadcastIsochronousGroupInfo {
   pw::bluetooth::emboss::IsoPhyType phy;
   pw::bluetooth::emboss::BigFraming framing;
   bool encryption;
+
+  bool operator==(const BroadcastIsochronousGroupInfo& other) const {
+    return num_bis == other.num_bis && nse == other.nse &&
+           iso_interval == other.iso_interval && bn == other.bn &&
+           pto == other.pto && irc == other.irc && max_pdu == other.max_pdu &&
+           sdu_interval == other.sdu_interval && max_sdu == other.max_sdu &&
+           phy == other.phy && framing == other.framing &&
+           encryption == other.encryption;
+  }
 };
 }  // namespace bt::hci_spec
