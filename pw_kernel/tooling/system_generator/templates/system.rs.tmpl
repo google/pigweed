@@ -17,15 +17,18 @@ pub fn start() {
     use core::ptr::NonNull;
 
     use {{ arch_crate_name }} as arch;
-    use kernel::NullObjectTable;
+    use kernel::__private::foreign_box::{ForeignRc, static_foreign_box};
     use kernel::macro_exports::foreign_box::ForeignBox;
+    use kernel::object::{KernelObject, ObjectTable};
+    use kernel::scheduler::timer::TimerCallback;
 
     type MemoryConfig = arch::MemoryConfig;
+    type K = arch::Arch;
+    let kernel = K {};
 
 {%- for (app_name, app) in apps %}
     let start_fn_{{app_name}} = {{app.start_fn_address | to_hex}}_usize;
 
-    static KERNEL_OBJECT_TABLE_{{app_name | uppercase}}: NullObjectTable = NullObjectTable::new();
     const MEMORY_CONFIG_{{app_name | uppercase }}: MemoryConfig = MemoryConfig::const_new(&[
         kernel::MemoryRegion::new(
             kernel::MemoryRegionType::ReadOnlyExecutable,
@@ -39,13 +42,31 @@ pub fn start() {
         ),
     ]);
 
+    {%- for (object_name, object) in app.process.objects %}
+        #[allow(non_snake_case)]
+        let object_{{object_name}} =
+        {% match object %}
+            {% when ObjectConfig::Ticker(ticker) %}{{ticker}}
+        {% endmatch %}
+        ;
+    {%- endfor -%}
+
+    let object_table_{{app_name}}: ForeignBox<dyn ObjectTable<K>> = unsafe {
+        static_foreign_box!(
+            [ForeignRc<<K as kernel::Arch>::AtomicUsize, dyn KernelObject<K>>; {{app.process.objects.len()}}],
+            [
+            {%- for (object_name, object) in app.process.objects %}
+                object_{{object_name}},
+            {%- endfor -%}
+            ]
+        )
+    };
+
+
     let process_{{app_name}} = unsafe { kernel::init_non_priv_process!(
         "{{app.process.name}}",
         MEMORY_CONFIG_{{app_name | uppercase}},
-        // SAFETY: Object table is static lifetime and will always outlive the
-        // foreign box.  Additionally it is never outside of this scope aside from.
-        // within the box.
-        unsafe { ForeignBox::new(NonNull::from_ref(&KERNEL_OBJECT_TABLE_{{app_name | uppercase}})) },
+        object_table_{{app_name}}
     )};
 
 {%- for thread in app.process.threads -%}

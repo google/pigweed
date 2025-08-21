@@ -27,6 +27,7 @@ rust_library(
         "templates/armv8m_app.ld.tmpl",
         "templates/riscv_app.ld.tmpl",
         "templates/system.rs.tmpl",
+        "templates/objects/ticker.rs.tmpl",
     ],
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),

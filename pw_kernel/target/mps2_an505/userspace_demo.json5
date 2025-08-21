@@ -25,6 +25,11 @@
       ram_size_bytes: 65536,    // 64Kb
       process: {
         name: "process one",
+        objects: {
+            TICKER: {
+                type: "ticker"
+            },
+        },
         threads: [
           {
             name: "thread one a",

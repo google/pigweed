@@ -1,0 +1,46 @@
+// Copyright 2025 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+{
+    use kernel::__private::foreign_box::{
+        static_foreign_box, static_foreign_rc, upcast_foreign_rc,
+    };
+    use kernel::__private::time::Duration;
+
+    use kernel::Arch as _;
+    use kernel::object::{KernelObject, TickerCallback, TickerObject};
+    use kernel::scheduler::timer::Timer;
+
+    type AtomicUsize = <K as kernel::Arch>::AtomicUsize;
+
+    // Create the ticker object.
+    let ticker =
+        unsafe { static_foreign_rc!(AtomicUsize, TickerObject<K>, TickerObject::new()) };
+
+    // Create a timer to signal ticker the object every 1 seconds.
+    let ticker_callback: ForeignBox<dyn TimerCallback<K>> =
+        unsafe { static_foreign_box!(TickerCallback<K>, TickerCallback::new(ticker.clone())) };
+    let timer = unsafe {
+        static_foreign_box!(
+            Timer<K>,
+            Timer::new(
+                kernel.now() + Duration::<<K as kernel::Arch>::Clock>::from_secs(1),
+                ticker_callback,
+            )
+        )
+    };
+    kernel::scheduler::timer::schedule_timer(kernel, timer);
+
+    // Upcast the concrete object into a dynamic one.
+    upcast_foreign_rc!(ticker => dyn KernelObject<K>)
+}

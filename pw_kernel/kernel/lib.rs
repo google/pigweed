@@ -13,10 +13,6 @@
 // the License.
 #![no_std]
 
-use core::any::Any;
-use core::ops::Deref;
-
-use foreign_box::{ForeignBox, ForeignRc, ForeignRcState};
 use pw_atomic::AtomicUsize;
 use pw_log::info;
 pub use time::{Duration, Instant};
@@ -40,8 +36,6 @@ use scheduler::{SchedulerState, thread};
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use sync::spinlock::{BareSpinLock, SpinLock, SpinLockGuard};
 
-use crate::object::{KernelObject, TickerObject};
-use crate::scheduler::timer::Timer;
 use crate::scheduler::{PreemptDisableGuard, ThreadLocalState};
 
 pub trait Arch: 'static + Copy + thread::ThreadArg {
@@ -105,13 +99,9 @@ pub trait Kernel: Arch + Sync {
     }
 }
 
-type ObjectRef<K> = ForeignRc<<K as Arch>::AtomicUsize, dyn KernelObject<K>>;
 pub struct KernelState<K: Kernel> {
     scheduler: SpinLock<K, SchedulerState<K>>,
     timer_queue: SpinLock<K, TimerQueue<K>>,
-    // HACK: A global ticker reference that is hard coded into every object
-    // table to allow testing of waiting.
-    ticker: SpinLock<K, Option<ObjectRef<K>>>,
 }
 
 impl<K: Kernel> KernelState<K> {
@@ -120,7 +110,6 @@ impl<K: Kernel> KernelState<K> {
         Self {
             scheduler: SpinLock::new(SchedulerState::new()),
             timer_queue: SpinLock::new(TimerQueue::new()),
-            ticker: SpinLock::new(None),
         }
     }
 }
@@ -170,7 +159,6 @@ macro_rules! static_init_state {
                     // which is only executed once.
                     stack: unsafe { &mut IDLE_STACK },
                 },
-                ticker: $crate::object::TickerObject::new(),
             }
         };
     };
@@ -197,8 +185,6 @@ pub struct InitKernelState<K: Kernel> {
     pub bootstrap_thread: ThreadStorage<K>,
     #[doc(hidden)]
     pub idle_thread: ThreadStorage<K>,
-    #[doc(hidden)]
-    pub ticker: TickerObject<K>,
 }
 
 // Module re-exporting modules into a scope that can be referenced by macros
@@ -214,36 +200,25 @@ pub fn main<K: Kernel>(kernel: K, init_state: &'static mut InitKernelState<K>) -
     target::console_init();
     info!("Welcome to Maize on {}!", target::name() as &str);
 
-    with_static(
-        foreign_box::ForeignRcState::new(object::TickerObject::new()),
-        |ticker_state| {
-            let ticker_state: &mut ForeignRcState<_, dyn KernelObject<K>> = ticker_state;
-            // SAFETY: We haven't called any other methods on `ticker_state`, as
-            // required by `create_first_ref`.
-            let ticker = unsafe { ticker_state.create_first_ref() };
-            *kernel.get_state().ticker.lock(kernel) = Some(ticker);
+    kernel.early_init();
 
-            kernel.early_init();
+    // Prepare the scheduler for thread initialization.
+    scheduler::initialize(kernel);
 
-            // Prepare the scheduler for thread initialization.
-            scheduler::initialize(kernel);
-
-            let bootstrap_thread = thread::init_thread_in(
-                kernel,
-                &mut init_state.bootstrap_thread.thread,
-                init_state.bootstrap_thread.stack,
-                "bootstrap",
-                bootstrap_thread_entry,
-                &mut init_state.idle_thread,
-            );
-            info!("created thread, bootstrapping");
-
-            // special case where we bootstrap the system by half context switching to this thread
-            scheduler::bootstrap_scheduler(kernel, preempt_guard, bootstrap_thread);
-
-            // never get to here
-        },
+    let bootstrap_thread = thread::init_thread_in(
+        kernel,
+        &mut init_state.bootstrap_thread.thread,
+        init_state.bootstrap_thread.stack,
+        "bootstrap",
+        bootstrap_thread_entry,
+        &mut init_state.idle_thread,
     );
+    info!("created thread, bootstrapping");
+
+    // special case where we bootstrap the system by half context switching to this thread
+    scheduler::bootstrap_scheduler(kernel, preempt_guard, bootstrap_thread);
+
+    // never get to here
 }
 
 // completion of main in thread context
@@ -270,30 +245,6 @@ fn bootstrap_thread_entry<K: Kernel>(
     kernel.get_scheduler().lock(kernel).dump_all_threads();
 
     scheduler::start_thread(kernel, idle_thread);
-
-    // HACK: Setup up a timer to signal the ticker object every second.
-    let mut ticker_closure =
-        move |kernel: K, mut callback: ForeignBox<Timer<K>>, now| -> Option<ForeignBox<Timer<K>>> {
-            let ticker = kernel.get_state().ticker.lock(kernel);
-            let Some(ticker_rc) = ticker.as_ref() else {
-                pw_assert::panic!("no ticker object");
-            };
-            let Some(ticker) = (ticker_rc.deref() as &dyn Any).downcast_ref::<TickerObject<K>>()
-            else {
-                pw_assert::panic!("ticker not a TickerObject");
-            };
-            ticker.tick(kernel);
-            callback.set(now + Duration::<K::Clock>::from_secs(1));
-            Some(callback)
-        };
-
-    let mut ticker_callback =
-        Timer::new(kernel.now() + Duration::<K::Clock>::from_secs(1), unsafe {
-            ForeignBox::new_from_ptr(&raw mut ticker_closure)
-        });
-    scheduler::timer::schedule_timer(kernel, unsafe {
-        ForeignBox::new_from_ptr(&raw mut ticker_callback)
-    });
 
     target::main()
 }
@@ -354,15 +305,17 @@ pub mod __private {
     #[macro_export]
     macro_rules! static_mut_ref {
         ($ty:ty = $value:expr) => {{
-            static mut __STATIC: $ty = $value;
+            use $crate::__private::foreign_box::StaticStorage;
+            static mut __STATIC: StaticStorage<$ty> = StaticStorage::new();
+
+            // Alias value to allow nested `unsafe` statements without warning.
+            let value = $value;
+
             // SAFETY: The caller promises that this macro will be executed at
-            // most once, and so taking a `&mut` reference to this global
-            // static, which is defined per-call site, will not violate
-            // aliasing.
-            #[allow(static_mut_refs)]
-            &mut __STATIC
+            // most once fulfilling `StaticStorage`'s precondition.
+            unsafe { __STATIC.init(value) }
         }};
     }
 
-    pub use {foreign_box, kernel_config};
+    pub use {foreign_box, kernel_config, time};
 }

@@ -26,6 +26,10 @@ use crate::Kernel;
 use crate::sync::event::{Event, EventConfig, EventSignaler};
 use crate::sync::spinlock::SpinLock;
 
+mod ticker;
+
+pub use ticker::{TickerCallback, TickerObject};
+
 /// Trait that all kernel objects implement.
 ///
 /// The methods on this trait map directly to the kernel's system calls.
@@ -35,37 +39,6 @@ pub trait KernelObject<K: Kernel>: Any + Send + Sync {
     /// Blocks until any of the signals in `signal_mask` are active on the object
     /// or `deadline` has expired.
     fn object_wait(&self, ctx: K, signal_mask: Signals, deadline: Instant<K::Clock>) -> Result<()>;
-}
-
-/// Demo kernel object that signals based off of a timer.
-pub struct TickerObject<K: Kernel> {
-    base: ObjectBase<K>,
-}
-
-impl<K: Kernel> TickerObject<K> {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            base: ObjectBase::new(),
-        }
-    }
-    pub fn tick(&self, kernel: K) {
-        self.base.signal(kernel, Signals(0x1));
-        self.base.signal(kernel, Signals(0));
-    }
-}
-
-impl<K: Kernel> KernelObject<K> for TickerObject<K> {
-    fn object_wait(
-        &self,
-        kernel: K,
-        signal_mask: Signals,
-        deadline: Instant<K::Clock>,
-    ) -> Result<()> {
-        self.base.wait_until(kernel, signal_mask, deadline).map(|_|
-                 //  wait result TBD
-            ())
-    }
 }
 
 list::define_adapter!(pub ObjectWaiterListAdapter<K: Kernel> => ObjectWaiter<K>::link);
@@ -162,22 +135,22 @@ impl NullObjectTable {
 impl<K: Kernel> ObjectTable<K> for NullObjectTable {
     fn get_object(
         &self,
-        kernel: K,
-        handle: u32,
+        _kernel: K,
+        _handle: u32,
     ) -> Option<ForeignRc<K::AtomicUsize, dyn KernelObject<K>>> {
-        match handle {
-            // For development purposes, we cheat and hard code a ticker object
-            // into every table.  This goes away when "real" objects exist and
-            // we have per process object tables that are configured through the
-            // system generator.
-            0 => kernel
-                .get_state()
-                .ticker
-                .lock(kernel)
-                .as_ref()
-                .map(Clone::clone),
-            _ => None,
-        }
+        None
+    }
+}
+
+impl<const N: usize, K: Kernel> ObjectTable<K>
+    for [ForeignRc<<K>::AtomicUsize, dyn KernelObject<K>>; N]
+{
+    fn get_object(
+        &self,
+        _kernel: K,
+        handle: u32,
+    ) -> Option<ForeignRc<<K>::AtomicUsize, dyn KernelObject<K>>> {
+        self.get(handle as usize).cloned()
     }
 }
 

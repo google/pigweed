@@ -600,9 +600,11 @@ macro_rules! init_thread {
 macro_rules! init_non_priv_process {
     ($name:literal, $memory_config:expr, $object_table:expr $(,)?) => {{
         use $crate::scheduler::thread::Process;
+        use $crate::object::ObjectTable;
+        use $crate::Kernel;
 
         /// SAFETY: This must be executed at most once at run time.
-        unsafe fn __init_non_priv_process() -> &'static mut Process<arch::Arch> {
+        unsafe fn __init_non_priv_process(object_table: ForeignBox<dyn ObjectTable<arch::Arch>>) -> &'static mut Process<arch::Arch> {
             use pw_log::info;
             info!(
                 "allocating non-privileged process: {}",
@@ -614,12 +616,13 @@ macro_rules! init_non_priv_process {
             let proc =
                 unsafe {
                     $crate::static_mut_ref!(Process<arch::Arch> =
-                         Process::new($name, $memory_config, $object_table))
-                };            proc.register(arch::Arch);
+                         Process::new($name, $memory_config, object_table))
+                };
+            proc.register(arch::Arch);
             proc
         }
 
-        __init_non_priv_process()
+        __init_non_priv_process($object_table)
     }};
 }
 

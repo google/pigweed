@@ -65,8 +65,23 @@ pub struct AppConfig {
 #[serde(deny_unknown_fields)]
 pub struct ProcessConfig {
     name: String,
+    #[serde(default)]
+    objects: LinkedHashMap<String, ObjectConfig>,
     threads: Vec<ThreadConfig>,
 }
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+pub enum ObjectConfig {
+    Ticker(TickerConfig),
+}
+
+#[derive(Template)]
+#[template(path = "objects/ticker.rs.tmpl", escape = "none")]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TickerConfig;
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
