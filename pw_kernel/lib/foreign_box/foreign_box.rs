@@ -307,6 +307,81 @@ macro_rules! upcast_foreign_rc {
     }};
 }
 
+/// Helper type to declare a static value with runtime initialization.
+///
+/// # Safety
+/// The user must ensure that [`StaticStorage::init()`] is only called once.
+#[doc(hidden)]
+pub struct StaticStorage<T> {
+    inner: UnsafeCell<core::mem::MaybeUninit<T>>,
+}
+
+impl<T> StaticStorage<T> {
+    /// Initialize a new `StaticStorage`.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            inner: UnsafeCell::new(core::mem::MaybeUninit::uninit()),
+        }
+    }
+
+    /// Initialize the value in the `StaticStorage` and return a mutable
+    /// reference to it.
+    ///
+    /// # Safety
+    /// The user must ensure that this method is only called once.
+    #[allow(clippy::mut_from_ref)]
+    pub unsafe fn init(&self, val: T) -> &mut T {
+        unsafe { (*self.inner.get()).write(val) }
+    }
+}
+
+// SAFETY: By contract, the user will only call `init()` once therefore only
+// creating a single reference to the inner data.
+unsafe impl<T> Sync for StaticStorage<T> {}
+
+/// Declare a [`ForeignBox`] in static storage that is runtime initialized.
+///
+/// # Safety
+/// Caller must ensure that the macro is executed only once.
+#[macro_export]
+macro_rules! static_foreign_box {
+    ($ty:ty, $init:expr) => {{
+        unsafe fn declare_static(val: $ty) -> &'static mut $ty {
+            use $crate::StaticStorage;
+
+            static STORAGE: StaticStorage<$ty> = StaticStorage::new();
+            unsafe { STORAGE.init(val) }
+        }
+        let r = declare_static($init);
+
+        // ForeignBox created outside of function to allow type coercion.
+        $crate::ForeignBox::new(NonNull::from_ref(r))
+    }};
+}
+
+/// Declare a [`ForeignRc`] in static storage that is runtime initialized.
+///
+/// # Safety
+/// Caller must ensure that the macro is executed only once.
+#[macro_export]
+macro_rules! static_foreign_rc {
+    ($atomic_usize:ty, $ty:ty, $init:expr) => {{
+        unsafe fn declare_static() -> $crate::ForeignRc<$atomic_usize, $ty> {
+            use $crate::{ForeignRcState, StaticStorage};
+
+            static STORAGE: StaticStorage<ForeignRcState<$atomic_usize, $ty>> =
+                StaticStorage::new();
+            unsafe {
+                let r = STORAGE.init(ForeignRcState::new($init));
+                r.create_first_ref()
+            }
+        }
+
+        declare_static()
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     // Ensure that the console backend (needed for pw_log) is linked.
