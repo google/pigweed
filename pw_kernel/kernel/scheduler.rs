@@ -93,7 +93,7 @@ pub fn initialize<K: Kernel>(kernel: K) {
     // that they can properly be parented underneath it.
     unsafe {
         let kernel_process = sched_state.kernel_process.get();
-        sched_state.add_process_to_list(kernel_process);
+        sched_state.add_process_to_list(NonNull::new_unchecked(kernel_process));
     }
 }
 
@@ -273,10 +273,8 @@ impl<K: Kernel> SchedulerState<K> {
     /// [`UnsafeList::push_front_unchecked`].
     #[allow(dead_code)]
     #[inline(never)]
-    pub unsafe fn add_process_to_list(&mut self, process: *mut Process<K>) {
-        unsafe {
-            self.process_list.push_front_unchecked(process);
-        }
+    pub unsafe fn add_process_to_list(&mut self, process: NonNull<Process<K>>) {
+        unsafe { self.process_list.push_front_unchecked(process) };
     }
 
     #[allow(dead_code)]

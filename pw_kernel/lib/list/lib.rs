@@ -58,20 +58,16 @@ impl<T, A: Adapter> ForeignList<T, A> {
 
     pub fn push_front(&mut self, element: ForeignBox<T>) {
         let element = element.consume();
-        unsafe { self.list.push_front_unchecked(element.as_ptr()) }
+        unsafe { self.list.push_front_unchecked(element) }
     }
 
     pub fn push_back(&mut self, element: ForeignBox<T>) {
         let element = element.consume();
-        unsafe { self.list.push_back_unchecked(element.as_ptr()) }
+        unsafe { self.list.push_back_unchecked(element) }
     }
 
     pub fn pop_head(&mut self) -> Option<ForeignBox<T>> {
-        unsafe {
-            self.list
-                .pop_head()
-                .map(|element| ForeignBox::new(NonNull::new_unchecked(element)))
-        }
+        unsafe { self.list.pop_head().map(|element| ForeignBox::new(element)) }
     }
 
     pub fn for_each<E, F: FnMut(&T) -> Result<(), E>>(&self, callback: F) -> Result<(), E> {
@@ -104,10 +100,7 @@ impl<T, A: Adapter> ForeignList<T, A> {
         compare: F,
     ) {
         let element = element.consume();
-        unsafe {
-            self.list
-                .sorted_insert_by_unchecked(element.as_ptr(), compare)
-        }
+        unsafe { self.list.sorted_insert_by_unchecked(element, compare) }
     }
 }
 

@@ -14,6 +14,7 @@
 
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
+use core::ptr::NonNull;
 
 use foreign_box::{ForeignBox, ForeignRc};
 use list::*;
@@ -225,13 +226,13 @@ impl<K: Kernel> Process<K> {
             kernel
                 .get_scheduler()
                 .lock(kernel)
-                .add_process_to_list(self);
-        }
+                .add_process_to_list(NonNull::from(self))
+        };
     }
 
     pub fn add_to_thread_list(&mut self, thread: &mut Thread<K>) {
         unsafe {
-            self.thread_list.push_front_unchecked(thread);
+            self.thread_list.push_front_unchecked(NonNull::from(thread));
         }
     }
 
