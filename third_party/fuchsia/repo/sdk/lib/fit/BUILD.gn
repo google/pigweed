@@ -29,6 +29,7 @@ pw_source_set("fit") {
   public_deps = [
     "$pw_external_fuchsia:stdcompat",
     dir_pw_assert,
+    dir_pw_preprocessor,
   ]
   public = [
     "include/lib/fit/function.h",
