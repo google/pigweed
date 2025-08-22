@@ -1,4 +1,4 @@
-// Copyright 2024 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,12 +11,11 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
 #pragma once
 
 /// @submodule{pw_async2,core}
 
-/// Returns `Poll::Pending()` if \a expr is `Poll::Pending()`.
+/// Returns `Poll::Pending()` if `expr` is `Poll::Pending()`.
 #define PW_TRY_READY(expr)            \
   do {                                \
     if ((expr).IsPending()) {         \
@@ -24,15 +23,13 @@
     }                                 \
   } while (0)
 
-/// Returns `Poll::Pending()` if \a expr is `Poll::Pending()`. If expression
-/// is `Poll::Ready()`, assigns the inner value to \a lhs.
+/// Returns `Poll::Pending()` if `expr` is `Poll::Pending()`. If expression
+/// is `Poll::Ready()`, assigns the inner value to `lhs`.
 #define PW_TRY_READY_ASSIGN(lhs, expression) \
   _PW_TRY_READY_ASSIGN(_PW_TRY_READY_UNIQUE(__LINE__), lhs, expression)
 
 /// @}
 
-/// Returns `Poll::Pending()` if \a expr is `Poll::Pending()`. If expression
-/// is `Poll::Ready()`, assigns the inner value to \a lhs.
 #define _PW_TRY_READY_ASSIGN(result, lhs, expr) \
   auto&& result = (expr);                       \
   if (result.IsPending()) {                     \
