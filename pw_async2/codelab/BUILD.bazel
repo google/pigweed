@@ -50,9 +50,18 @@ cc_library(
     name = "hardware",
     srcs = ["hardware.cc"],
     hdrs = ["hardware.h"],
+    implementation_deps = [
+        "//pw_assert:check",
+        "//pw_log",
+        "//pw_status",
+        "//pw_stream:socket_stream",
+        "//pw_stream:sys_io_stream",
+        "//pw_string:string",
+        "//pw_string:util",
+    ],
+    local_defines = ["PW_ASYNC2_CODELAB_WEBUI=0"],
     strip_include_prefix = ".",
     target_compatible_with = incompatible_with_mcu(),
-    deps = ["//pw_log"],
 )
 
 cc_library(

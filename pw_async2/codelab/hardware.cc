@@ -14,25 +14,107 @@
 
 #include "hardware.h"
 
+#include <cctype>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <thread>
 
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
+#include "pw_status/status.h"
+#include "pw_status/try.h"
+#include "pw_stream/socket_stream.h"
+#include "pw_stream/sys_io_stream.h"
+#include "pw_string/string.h"
+#include "pw_string/util.h"
 
 namespace codelab {
+namespace {
+
+using ::pw::Status;
+
+// Events from the vending machine hardware (actually, the Python server).
+enum : char {
+  kCoinReceived = 'c',
+  kKeypress1 = '1',
+  kKeypress2 = '2',
+  kKeypress3 = '3',
+  kKeypress4 = '4',
+  kQuit = 'q',
+};
+
+Status StreamHardwareLoop(pw::stream::Reader& reader) {
+  char command = '\0';
+
+  while (true) {
+    PW_TRY(reader.Read(&command, sizeof(command)));
+    if (std::isspace(command)) {
+      continue;  // ignore space characters
+    }
+
+    switch (command) {
+      case kCoinReceived:
+        coin_inserted_isr();
+        break;
+      case kKeypress1:
+      case kKeypress2:
+      case kKeypress3:
+      case kKeypress4:
+        key_press_isr(static_cast<char>(command) - '0');
+        break;
+      case kQuit:
+        return pw::OkStatus();
+      default:
+        PW_LOG_WARN("Received unexpected command: %c (0x%02x)",
+                    static_cast<char>(command),
+                    static_cast<int>(command));
+        return Status::InvalidArgument();
+    }
+  }
+}
+
+Status CommandLineHardwareLoop() {
+  pw::stream::SysIoReader sys_io_reader;
+  return StreamHardwareLoop(sys_io_reader);
+}
+
+pw::stream::SocketStream webui_socket;
+
+Status WebUiHardwareLoop() {
+  static constexpr const char* kWebUiHost = "localhost";
+  static constexpr uint16_t kWebUiPort = 23320;
+
+  PW_LOG_INFO("Connecting to %s:%d", kWebUiHost, static_cast<int>(kWebUiPort));
+  if (Status status = webui_socket.Connect(kWebUiHost, kWebUiPort);
+      !status.ok()) {
+    PW_LOG_CRITICAL("Connection failed with status %s", status.str());
+    return status;
+  }
+
+  return StreamHardwareLoop(webui_socket);
+}
+
+constexpr bool kUseWebUi = PW_ASYNC2_CODELAB_WEBUI;
 
 void HardwareLoop() {
-  while (true) {
-    char c = static_cast<char>(std::getchar());
-    if (c == 'c') {
-      coin_inserted_isr();
-    } else if (std::isdigit(c)) {
-      key_press_isr(c - '0');
-    } else if (c == 'q') {
-      // This is a simple exit mechanism for the codelab.
-      std::exit(0);
-    }
+  Status status = kUseWebUi ? WebUiHardwareLoop() : CommandLineHardwareLoop();
+  std::exit(status.ok() ? 0 : 1);
+}
+
+}  // namespace
+
+void SetDisplay(std::string_view text) {
+  if (kUseWebUi) {
+    // Format the text as a command to send to the server: "msg:{text}\n".
+    pw::InlineString<4 + kDisplayCharacters + 1> command("msg:");
+    pw::string::Append(command, text).IgnoreError();
+    command.back() = '\n';
+    PW_CHECK_OK(webui_socket.Write(pw::as_bytes(pw::span(command))));
+  } else {
+    pw::InlineString<kDisplayCharacters> contents;
+    pw::string::Append(contents, text).IgnoreError();
+    PW_LOG_INFO("[ %-10s ]", contents.c_str());
   }
 }
 

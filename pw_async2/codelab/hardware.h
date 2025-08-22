@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <string_view>
+
 // Interrupt handler function invoked when the user inserts a coin into the
 // vending machine.
 void coin_inserted_isr();
@@ -22,6 +24,12 @@ void coin_inserted_isr();
 void key_press_isr(int key);
 
 namespace codelab {
+
+// Number of characters on the vending machine's display.
+inline constexpr size_t kDisplayCharacters = 10;
+
+// Call this to set the text on the vending machine's display.
+void SetDisplay(std::string_view text);
 
 // Initializes the simulated hardware, allowing for interactive input via stdin
 // in a background thread.
