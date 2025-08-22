@@ -32,6 +32,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_discovery_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/periodic_advertising_sync_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/types.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
@@ -132,6 +133,10 @@ class Adapter {
   // Interface to the LE features of the adapter.
   class LowEnergy {
    public:
+    using SyncOptions = PeriodicAdvertisingSyncManager::SyncOptions;
+    using PeriodicAdvertisingSyncDelegate =
+        PeriodicAdvertisingSyncManager::Delegate;
+
     virtual ~LowEnergy() = default;
 
     // Allows a caller to claim shared ownership over a connection to the
@@ -254,6 +259,17 @@ class Adapter {
     virtual void StartDiscovery(bool active,
                                 std::vector<hci::DiscoveryFilter> filters,
                                 SessionCallback callback) = 0;
+
+    // Synchronizes to the periodic advertising train identified by |peer| and
+    // |advertising_sid| with the configuration specified by |options|.
+    // Advertising events are reported via |delegate|.
+    // Synchronous errors are returned immediately.
+    // On success, returns a handle that stops synchronization when destroyed.
+    virtual hci::Result<PeriodicAdvertisingSyncHandle>
+    SyncToPeriodicAdvertisement(PeerId peer,
+                                uint8_t advertising_sid,
+                                SyncOptions options,
+                                PeriodicAdvertisingSyncDelegate& delegate) = 0;
 
     // Enable or disable the privacy feature. When enabled, the controller
     // will be configured to use a new random address if it is currently

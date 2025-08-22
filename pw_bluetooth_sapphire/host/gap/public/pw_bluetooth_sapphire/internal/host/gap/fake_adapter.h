@@ -144,6 +144,14 @@ class FakeAdapter final : public Adapter {
                         std::vector<hci::DiscoveryFilter> filters,
                         SessionCallback callback) override;
 
+    hci::Result<PeriodicAdvertisingSyncHandle> SyncToPeriodicAdvertisement(
+        PeerId,
+        uint8_t,
+        SyncOptions,
+        PeriodicAdvertisingSyncDelegate&) override {
+      return fit::error(HostError::kNotSupported);
+    }
+
     void EnablePrivacy(bool enabled) override;
 
     // Returns true if the privacy feature is currently enabled.

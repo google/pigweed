@@ -1809,5 +1809,62 @@ TEST_F(AdapterTest, RemotePublicKeyValidationNotSupported) {
       adapter()->state().IsControllerRemotePublicKeyValidationSupported());
 }
 
+struct PeriodicAdvertisingSyncDelegate
+    : public Adapter::LowEnergy::PeriodicAdvertisingSyncDelegate {
+ public:
+  void OnSyncEstablished(
+      hci::SyncId, PeriodicAdvertisingSyncManager::SyncParameters) override {}
+  void OnSyncLost(hci::SyncId, hci::Error) override {}
+  void OnAdvertisingReport(hci::SyncId,
+                           const PeriodicAdvertisingReport&) override {}
+  void OnBigInfoReport(
+      hci::SyncId, const hci_spec::BroadcastIsochronousGroupInfo&) override {}
+};
+
+TEST_F(AdapterTest, PeriodicAdvertisingSynchronizationSupported) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  settings.le_features |= static_cast<uint64_t>(
+      hci_spec::LESupportedFeature::kSynchronizedReceiver);
+  test_device()->set_settings(settings);
+  EXPECT_TRUE(EnsureInitialized());
+  EXPECT_TRUE(adapter()->state().low_energy_state.IsFeatureSupported(
+      hci_spec::LESupportedFeature::kSynchronizedReceiver));
+
+  Peer* le_peer =
+      adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  uint8_t adv_sid = 8;
+  Adapter::LowEnergy::SyncOptions options{.filter_duplicates = true};
+  PeriodicAdvertisingSyncDelegate delegate;
+
+  hci::Result<PeriodicAdvertisingSyncHandle> result =
+      adapter()->le()->SyncToPeriodicAdvertisement(
+          le_peer->identifier(), adv_sid, options, delegate);
+  EXPECT_TRUE(result.is_ok());
+}
+
+TEST_F(AdapterTest, PeriodicAdvertisingSynchronizationNotSupported) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  settings.le_features &= ~static_cast<uint64_t>(
+      hci_spec::LESupportedFeature::kSynchronizedReceiver);
+  test_device()->set_settings(settings);
+  EXPECT_TRUE(EnsureInitialized());
+  EXPECT_FALSE(adapter()->state().low_energy_state.IsFeatureSupported(
+      hci_spec::LESupportedFeature::kSynchronizedReceiver));
+
+  Peer* le_peer =
+      adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  uint8_t adv_sid = 8;
+  Adapter::LowEnergy::SyncOptions options{.filter_duplicates = true};
+  PeriodicAdvertisingSyncDelegate delegate;
+
+  hci::Result<PeriodicAdvertisingSyncHandle> result =
+      adapter()->le()->SyncToPeriodicAdvertisement(
+          le_peer->identifier(), adv_sid, options, delegate);
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(result.error_value(), Error(HostError::kNotSupported));
+}
+
 }  // namespace
 }  // namespace bt::gap
