@@ -17,6 +17,7 @@
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_kernel/tooling:system_image.bzl", "SystemImageInfo")
 load("//pw_toolchain/action:action_names.bzl", "PW_ACTION_NAMES")
 
 def _code_size_impl(ctx):
@@ -36,8 +37,8 @@ def _code_size_impl(ctx):
 
     binary_files = []
     for binary in ctx.attr.binaries:
-        for file_info in binary[DefaultInfo].files.to_list():
-            binary_files.append(file_info)
+        binary_files.append(binary[SystemImageInfo].elf)
+
     cmd = """
         SECTIONS_TO_CHECK=(
             ".code"
@@ -88,6 +89,7 @@ _code_size = rule(
         "binaries": attr.label_list(
             doc = "Binary files to calculate size of",
             mandatory = True,
+            providers = [SystemImageInfo],
         ),
     },
     doc = "Save the code size of binaries to a csv.",
