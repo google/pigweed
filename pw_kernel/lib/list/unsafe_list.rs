@@ -125,7 +125,7 @@ impl Default for Link {
 // pointers to the base list node.  This means that there are never pointers to
 // `UnsafeList` and the same care is not needed to avoid mutable references as
 // is taken with the `Link` structure.
-pub struct UnsafeList<T, A: Adapter> {
+pub struct UnsafeList<T, A: Adapter<T>> {
     inner: UnsafeListInner,
     _phantom_type: PhantomData<T>,
     _phantom_adapter: PhantomData<A>,
@@ -140,8 +140,19 @@ struct UnsafeListInner {
     tail: Option<NonNull<Link>>,
 }
 
-pub trait Adapter {
+pub trait Adapter<T> {
+    #[doc(hidden)]
     const LINK_OFFSET: usize;
+
+    #[doc(hidden)]
+    #[must_use]
+    unsafe fn get_link(element: NonNull<T>) -> NonNull<Link>;
+    #[doc(hidden)]
+    #[must_use]
+    #[inline(always)]
+    unsafe fn get_element(link: NonNull<Link>) -> NonNull<T> {
+        unsafe { link.byte_sub(Self::LINK_OFFSET).cast::<T>() }
+    }
 }
 
 /// Defines an adapter type and implements [`Adapter`] for it.
@@ -169,14 +180,34 @@ macro_rules! define_adapter {
             )?
         }
 
-        impl $(<$($tyvar $(: $bound)?),*>)? $crate::Adapter for $name $(<$($tyvar),*>)? {
-            // TODO: Assert that the `$link` field actually has type `Link`.
-            const LINK_OFFSET: usize = core::mem::offset_of!($node $(<$($node_tyvar),*>)?, $link);
-        }
+        const _: () = {
+            use core::ptr::NonNull;
+            use core::mem::offset_of;
+
+            impl $(<$($tyvar $(: $bound)?),*>)? $crate::Adapter<$node $(<$($node_tyvar),*>)?> for $name $(<$($tyvar),*>)? {
+                const LINK_OFFSET: usize = offset_of!($node $(<$($node_tyvar),*>)?, $link);
+
+                #[inline(always)]
+                unsafe fn get_link(element: NonNull<$node $(<$($node_tyvar),*>)?>) -> NonNull<$crate::Link> {
+                    // NOTE: There is nothing stopping a caller from providing a
+                    // `$link` field which is not of type `Link`. However, if
+                    // they do this, then this method will fail to compile since
+                    // we annotate `link: *mut Link`. That ensures that `$link:
+                    // Link`.
+                    //
+                    // Note that a previous version of this code didn't have an
+                    // `Adapter::get_link` function, and relied on `LINK_OFFSET`
+                    // for both element -> link and link -> element pointer
+                    // operations. That code was vulnerable to this bug.
+                    let link: *mut $crate::Link = unsafe { core::ptr::addr_of_mut!((*element.as_ptr()).$link) };
+                    unsafe { NonNull::new_unchecked(link) }
+                }
+            }
+        };
     };
 }
 
-impl<T, A: Adapter> UnsafeList<T, A> {
+impl<T, A: Adapter<T>> UnsafeList<T, A> {
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -194,21 +225,13 @@ impl<T, A: Adapter> UnsafeList<T, A> {
         self.inner.is_empty()
     }
 
-    unsafe fn get_link(element: NonNull<T>) -> NonNull<Link> {
-        unsafe { element.cast::<Link>().byte_add(A::LINK_OFFSET) }
-    }
-
-    unsafe fn get_element(link: NonNull<Link>) -> NonNull<T> {
-        unsafe { link.byte_sub(A::LINK_OFFSET).cast::<T>() }
-    }
-
     /// Returns true if element is in **ANY** list that uses this list's adapter.
     ///
     /// # Safety
     /// `element` must be a valid, non-null pointer.
     #[must_use]
     pub unsafe fn is_element_linked(&self, element: NonNull<T>) -> bool {
-        unsafe { Self::get_link(element).as_ref().is_linked() }
+        unsafe { A::get_link(element).as_ref().is_linked() }
     }
 
     /// Unchecked means:
@@ -222,7 +245,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     ///
     /// It is up to the caller to ensure the element is not in a list.
     pub unsafe fn push_front_unchecked(&mut self, element: NonNull<T>) {
-        let link_ptr = unsafe { Self::get_link(element) };
+        let link_ptr = unsafe { A::get_link(element) };
         unsafe { self.inner.push_front_unchecked(link_ptr) };
     }
 
@@ -237,7 +260,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     ///
     /// It is up to the caller to ensure the element is not in a list.
     pub unsafe fn push_back_unchecked(&mut self, element: NonNull<T>) {
-        let link_ptr = unsafe { Self::get_link(element) };
+        let link_ptr = unsafe { A::get_link(element) };
         unsafe { self.inner.push_back_unchecked(link_ptr) };
     }
 
@@ -262,7 +285,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     ///
     /// It is up to the caller to ensure the element is in the list.
     pub unsafe fn unlink_element_unchecked(&mut self, element: NonNull<T>) {
-        let link_ptr = unsafe { Self::get_link(element) };
+        let link_ptr = unsafe { A::get_link(element) };
         unsafe { self.inner.unlink_element_unchecked(link_ptr) };
     }
 
@@ -270,7 +293,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     ///
     /// The caller must ensure that the element points to a valid `T`.
     pub unsafe fn unlink_element(&mut self, element: NonNull<T>) -> Option<NonNull<T>> {
-        let link_ptr = unsafe { Self::get_link(element) };
+        let link_ptr = unsafe { A::get_link(element) };
         unsafe { self.inner.unlink_element(link_ptr).map(|()| element) }
     }
 
@@ -285,7 +308,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
         let mut res = Ok(());
         unsafe {
             self.inner.for_each(&mut |link_ptr| {
-                let element = Self::get_element(link_ptr);
+                let element = A::get_element(link_ptr);
                 callback(element.as_ref()).map_err(|e| res = Err(e))
             })
         };
@@ -305,7 +328,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     pub unsafe fn filter<F: FnMut(&mut T) -> bool>(&mut self, mut callback: F) {
         unsafe {
             self.inner.filter(&mut |link_ptr| {
-                let mut element = Self::get_element(link_ptr);
+                let mut element = A::get_element(link_ptr);
                 callback(element.as_mut())
             })
         }
@@ -320,11 +343,11 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     pub unsafe fn pop_head(&mut self) -> Option<NonNull<T>> {
         self.inner
             .pop_head()
-            .map(|link_ptr| unsafe { Self::get_element(link_ptr) })
+            .map(|link_ptr| unsafe { A::get_element(link_ptr) })
     }
 }
 
-impl<T, A: Adapter> UnsafeList<T, A> {
+impl<T, A: Adapter<T>> UnsafeList<T, A> {
     /// Unchecked means:
     /// * We don't `assert!((*element_ptr.as_ptr()).is_unlinked());`
     /// * We don't check that `element` is non-null.
@@ -340,11 +363,11 @@ impl<T, A: Adapter> UnsafeList<T, A> {
         element: NonNull<T>,
         mut compare: F,
     ) {
-        let link_ptr = unsafe { Self::get_link(element) };
+        let link_ptr = unsafe { A::get_link(element) };
 
         let mut cmp = move |lhs, rhs| {
-            let lhs = unsafe { Self::get_element(lhs) };
-            let rhs = unsafe { Self::get_element(rhs) };
+            let lhs = unsafe { A::get_element(lhs) };
+            let rhs = unsafe { A::get_element(rhs) };
             unsafe { compare(lhs.as_ref(), rhs.as_ref()) }
         };
         unsafe { self.inner.sorted_insert_by_unchecked(link_ptr, &mut cmp) };
@@ -604,7 +627,7 @@ impl UnsafeListInner {
     }
 }
 
-impl<T, A: Adapter> Default for UnsafeList<T, A> {
+impl<T, A: Adapter<T>> Default for UnsafeList<T, A> {
     fn default() -> Self {
         Self::new()
     }
