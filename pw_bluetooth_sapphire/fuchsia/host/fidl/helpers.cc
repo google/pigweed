@@ -62,6 +62,20 @@ const uint8_t BIT_SHIFT_8 = 8;
 const uint8_t BIT_SHIFT_16 = 16;
 
 namespace bthost::fidl_helpers {
+::fuchsia_bluetooth_le::PhysicalLayer IsoPhyToFidl(
+    pw::bluetooth::emboss::IsoPhyType phy) {
+  switch (phy) {
+    case pw::bluetooth::emboss::IsoPhyType::LE_1M:
+      return ::fuchsia_bluetooth_le::PhysicalLayer::kLe1M;
+    case pw::bluetooth::emboss::IsoPhyType::LE_2M:
+      return ::fuchsia_bluetooth_le::PhysicalLayer::kLe2M;
+    case pw::bluetooth::emboss::IsoPhyType::LE_CODED:
+      return ::fuchsia_bluetooth_le::PhysicalLayer::kLeCoded;
+    default:
+      ZX_PANIC("invalid PHY");
+  }
+}
+
 // TODO(fxbug.dev/42076395): Add remaining codecs
 std::optional<android_emb::A2dpCodecType> FidlToCodecType(
     const fbredr::AudioOffloadFeatures& codec) {
@@ -942,6 +956,14 @@ bool AddProtocolDescriptorList(
 
 }  // namespace
 
+std::optional<::fuchsia_bluetooth::Appearance> AppearanceToNewFidl(
+    uint16_t appearance_raw) {
+  if (IsAppearanceValid(appearance_raw)) {
+    return static_cast<::fuchsia_bluetooth::Appearance>(appearance_raw);
+  }
+  return std::nullopt;
+}
+
 std::optional<bt::PeerId> PeerIdFromString(const std::string& id) {
   if (id.empty()) {
     return std::nullopt;
@@ -1759,6 +1781,82 @@ fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(
   }
   zx_time_t timestamp_ns = timestamp.time_since_epoch().count();
   out.set_timestamp(timestamp_ns);
+  return out;
+}
+
+::fuchsia_bluetooth_le::ScanData AdvertisingDataToNewFidlScanData(
+    const bt::AdvertisingData& input, zx::time timestamp) {
+  ::fuchsia_bluetooth_le::ScanData out;
+
+  if (input.tx_power()) {
+    out.tx_power() = input.tx_power().value();
+  }
+
+  if (input.appearance()) {
+    // TODO(fxbug.dev/42145156): Remove this to allow for passing arbitrary
+    // appearance values to clients in a way that's forward-compatible with
+    // future BLE revisions.
+    const uint16_t appearance_raw = input.appearance().value();
+    if (auto appearance = AppearanceToNewFidl(appearance_raw)) {
+      out.appearance() = appearance.value();
+    } else {
+      bt_log(DEBUG,
+             "fidl",
+             "omitting unencodeable appearance %#.4x of peer %s",
+             appearance_raw,
+             input.local_name().has_value() ? input.local_name()->name.c_str()
+                                            : "");
+    }
+  }
+
+  std::unordered_set<bt::UUID> service_uuids = input.service_uuids();
+  if (!service_uuids.empty()) {
+    std::vector<::fuchsia_bluetooth::Uuid> uuids;
+    uuids.reserve(service_uuids.size());
+    for (const bt::UUID& uuid : service_uuids) {
+      uuids.push_back(::fuchsia_bluetooth::Uuid{uuid.value()});
+    }
+    out.service_uuids() = std::move(uuids);
+  }
+
+  if (!input.service_data_uuids().empty()) {
+    std::vector<::fuchsia_bluetooth_le::ServiceData> entries;
+    entries.reserve(input.service_data_uuids().size());
+    for (const bt::UUID& uuid : input.service_data_uuids()) {
+      bt::BufferView data = input.service_data(uuid);
+      ::fuchsia_bluetooth_le::ServiceData entry{
+          ::fuchsia_bluetooth::Uuid{uuid.value()}, data.ToVector()};
+      entries.emplace_back(std::move(entry));
+    }
+    out.service_data() = std::move(entries);
+  }
+
+  if (!input.manufacturer_data_ids().empty()) {
+    std::vector<::fuchsia_bluetooth_le::ManufacturerData> entries;
+    for (const uint16_t& id : input.manufacturer_data_ids()) {
+      bt::BufferView data = input.manufacturer_data(id);
+      ::fuchsia_bluetooth_le::ManufacturerData entry{id, data.ToVector()};
+      entries.emplace_back(std::move(entry));
+    }
+    out.manufacturer_data() = std::move(entries);
+  }
+
+  if (!input.uris().empty()) {
+    out.uris().emplace(input.uris().begin(), input.uris().end());
+  }
+
+  out.timestamp() = timestamp.get();
+  return out;
+}
+
+::fuchsia_bluetooth_le::BroadcastIsochronousGroupInfo
+BroadcastIsochronousGroupInfoToFidl(
+    const bt::hci_spec::BroadcastIsochronousGroupInfo& info) {
+  ::fuchsia_bluetooth_le::BroadcastIsochronousGroupInfo out;
+  out.streams_count() = info.num_bis;
+  out.max_sdu_size() = info.max_sdu;
+  out.phy() = IsoPhyToFidl(info.phy);
+  out.encryption() = info.encryption;
   return out;
 }
 
@@ -2952,6 +3050,34 @@ fble::IsoPacketStatusFlag EmbossIsoPacketStatusFlagToFidl(
     case pw::bluetooth::emboss::IsoDataPacketStatus::LOST_DATA:
       return fble::IsoPacketStatusFlag::LOST_DATA;
   }
+}
+
+::fuchsia_bluetooth_le::SyncReport ReportFrom(
+    const bt::gap::PeriodicAdvertisingReport& report, zx::time timestamp) {
+  ::fuchsia_bluetooth_le::PeriodicAdvertisingReport advertising_report;
+  advertising_report.rssi() = report.rssi;
+  if (report.event_counter.has_value()) {
+    advertising_report.event_counter() = report.event_counter.value();
+  }
+  advertising_report.data() =
+      fidl_helpers::AdvertisingDataToNewFidlScanData(report.data, timestamp);
+  advertising_report.timestamp() = timestamp.get();
+  ::fuchsia_bluetooth_le::SyncReport sync_report =
+      ::fuchsia_bluetooth_le::SyncReport::WithPeriodicAdvertisingReport(
+          std::move(advertising_report));
+  return sync_report;
+}
+
+::fuchsia_bluetooth_le::SyncReport ReportFrom(
+    const bt::hci_spec::BroadcastIsochronousGroupInfo& report,
+    zx::time timestamp) {
+  ::fuchsia_bluetooth_le::BroadcastIsochronousGroupInfoReport big_report;
+  big_report.info() = fidl_helpers::BroadcastIsochronousGroupInfoToFidl(report);
+  big_report.timestamp() = timestamp.get();
+  ::fuchsia_bluetooth_le::SyncReport sync_report =
+      ::fuchsia_bluetooth_le::SyncReport::
+          WithBroadcastIsochronousGroupInfoReport(std::move(big_report));
+  return sync_report;
 }
 
 }  // namespace bthost::fidl_helpers

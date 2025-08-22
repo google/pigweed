@@ -108,6 +108,7 @@ fuchsia_cc_library(
         "@fuchsia_sdk//fidl/fuchsia.bluetooth.gatt:fuchsia.bluetooth.gatt_hlcpp",
         "@fuchsia_sdk//fidl/fuchsia.bluetooth.gatt2:fuchsia.bluetooth.gatt2_hlcpp",
         "@fuchsia_sdk//fidl/fuchsia.bluetooth.host:fuchsia.bluetooth.host_hlcpp",
+        "@fuchsia_sdk//fidl/fuchsia.bluetooth.le:fuchsia.bluetooth.le_cpp",
         "@fuchsia_sdk//fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp",
     ],
 )

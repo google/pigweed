@@ -15,6 +15,7 @@
 #pragma once
 
 #include <fidl/fuchsia.bluetooth.bredr/cpp/fidl.h>
+#include <fidl/fuchsia.bluetooth.le/cpp/natural_types.h>
 #include <fidl/fuchsia.bluetooth/cpp/fidl.h>
 #include <fidl/fuchsia.hardware.bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
@@ -50,6 +51,12 @@ class DiscoveryFilter;
 namespace bthost::fidl_helpers {
 
 namespace android_emb = pw::bluetooth::vendor::android_hci;
+
+::fuchsia_bluetooth_le::PhysicalLayer IsoPhyToFidl(
+    pw::bluetooth::emboss::IsoPhyType phy);
+
+[[nodiscard]] std::optional<::fuchsia_bluetooth::Appearance>
+AppearanceToNewFidl(uint16_t appearance_raw);
 
 // TODO(fxbug.dev/42171179): Temporary logic for converting between the stack
 // identifier type (integer) and FIDL identifier type (string). Remove these
@@ -205,6 +212,12 @@ AdvertisingDataToFidlDeprecated(const bt::AdvertisingData& input);
 fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(
     const bt::AdvertisingData& input,
     pw::chrono::SystemClock::time_point timestamp);
+::fuchsia_bluetooth_le::ScanData AdvertisingDataToNewFidlScanData(
+    const bt::AdvertisingData& input, zx::time timestamp);
+
+::fuchsia_bluetooth_le::BroadcastIsochronousGroupInfo
+BroadcastIsochronousGroupInfoToFidl(
+    const bt::hci_spec::BroadcastIsochronousGroupInfo& info);
 
 // Constructs a fuchsia.bluetooth.le Peer type from the stack representation.
 fuchsia::bluetooth::le::Peer PeerToFidlLe(const bt::gap::Peer& peer);
@@ -336,6 +349,14 @@ bt::DeviceAddress::Type FidlToDeviceAddressType(
 
 fuchsia::bluetooth::le::IsoPacketStatusFlag EmbossIsoPacketStatusFlagToFidl(
     pw::bluetooth::emboss::IsoDataPacketStatus status_in);
+
+::fuchsia_bluetooth_le::SyncReport ReportFrom(
+    const bt::gap::PeriodicAdvertisingReport& report, zx::time timestamp);
+
+::fuchsia_bluetooth_le::SyncReport ReportFrom(
+    const bt::hci_spec::BroadcastIsochronousGroupInfo& report,
+    zx::time timestamp);
+
 }  // namespace bthost::fidl_helpers
 
 // fidl::TypeConverter specializations for ByteBuffer and friends.
