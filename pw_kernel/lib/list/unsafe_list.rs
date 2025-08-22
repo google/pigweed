@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #![allow(dead_code)]
-use core::cell::UnsafeCell;
 use core::cmp::Ordering;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
@@ -37,44 +36,68 @@ use core::ptr::NonNull;
 //   not be accessed directly be the rest of the code.
 //
 // TODO: konkers - Understand if we need to annotate the alignment of LinkInner.
-mod inner {
+mod link {
+    use core::cell::Cell;
     use core::marker::PhantomPinned;
-    use core::mem::offset_of;
     use core::ptr::NonNull;
 
-    use super::Link;
-
     #[repr(C)]
-    pub struct LinkInner {
-        #[allow(dead_code)]
-        next: Option<NonNull<Link>>,
-        #[allow(dead_code)]
-        prev: Option<NonNull<Link>>,
+    pub struct Link {
+        // TODO: The use of `Cell` here is *explicitly* unsound in combination
+        // with the `Send` and `Sync` impls below!
+        next: Cell<Option<NonNull<Link>>>,
+        prev: Cell<Option<NonNull<Link>>>,
         _pin: PhantomPinned,
     }
 
-    impl LinkInner {
-        pub const NEXT_OFFSET: usize = offset_of!(LinkInner, next);
-        pub const PREV_OFFSET: usize = offset_of!(LinkInner, prev);
-        pub const UNLINKED_VALUE: Option<NonNull<Link>> =
+    impl Link {
+        const UNLINKED_VALUE: Option<NonNull<Link>> =
             Some(NonNull::new(usize::MAX as *mut Link).unwrap());
 
+        #[must_use]
         pub const fn new() -> Self {
             Self {
-                next: Self::UNLINKED_VALUE,
-                prev: Self::UNLINKED_VALUE,
+                next: Cell::new(Self::UNLINKED_VALUE),
+                prev: Cell::new(Self::UNLINKED_VALUE),
                 _pin: PhantomPinned,
             }
         }
+
+        pub(super) const fn get_next(&self) -> Option<NonNull<Link>> {
+            self.next.get()
+        }
+
+        pub(super) const fn get_prev(&self) -> Option<NonNull<Link>> {
+            self.prev.get()
+        }
+
+        pub(super) fn set_next(&self, next: Option<NonNull<Link>>) {
+            self.next.set(next);
+        }
+
+        pub(super) fn set_prev(&self, prev: Option<NonNull<Link>>) {
+            self.prev.set(prev);
+        }
+
+        #[inline]
+        #[must_use]
+        pub fn is_unlinked(&self) -> bool {
+            self.get_next() == Link::UNLINKED_VALUE && self.get_prev() == Link::UNLINKED_VALUE
+        }
+
+        #[inline]
+        #[must_use]
+        pub fn is_linked(&self) -> bool {
+            !self.is_unlinked()
+        }
+
+        pub(super) fn set_unlinked(&self) {
+            self.set_next(Link::UNLINKED_VALUE);
+            self.set_prev(Link::UNLINKED_VALUE);
+        }
     }
 }
-use inner::LinkInner;
-
-pub struct Link {
-    // UnsafeCell here is used to allow the code to access the data mutably.
-    // Bare mutable pointer access is unsound without this.
-    inner: UnsafeCell<LinkInner>,
-}
+pub use link::Link;
 
 // SAFETY:
 //
@@ -91,70 +114,6 @@ pub struct Link {
 // RandomAccessForeignList.
 unsafe impl Send for Link {}
 unsafe impl Sync for Link {}
-
-#[inline]
-unsafe fn get_element(inner: &UnsafeCell<LinkInner>, offset: usize) -> Option<NonNull<Link>> {
-    let inner_ptr = inner.get().cast::<Option<NonNull<Link>>>();
-    unsafe {
-        let element_ptr = inner_ptr.byte_add(offset);
-        core::ptr::read(element_ptr)
-    }
-}
-
-#[inline]
-unsafe fn set_element(inner: &UnsafeCell<LinkInner>, offset: usize, value: Option<NonNull<Link>>) {
-    let inner_ptr = inner.get().cast::<Option<NonNull<Link>>>();
-    unsafe {
-        let element_ptr = inner_ptr.byte_add(offset);
-        core::ptr::write(element_ptr, value);
-    }
-}
-
-impl Link {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            inner: UnsafeCell::new(LinkInner::new()),
-        }
-    }
-
-    #[must_use]
-    pub fn is_unlinked(&self) -> bool {
-        self.get_next() == LinkInner::UNLINKED_VALUE && self.get_prev() == LinkInner::UNLINKED_VALUE
-    }
-
-    #[must_use]
-    pub fn is_linked(&self) -> bool {
-        !self.is_unlinked()
-    }
-
-    fn set_unlinked(&mut self) {
-        self.set_next(LinkInner::UNLINKED_VALUE);
-        self.set_prev(LinkInner::UNLINKED_VALUE);
-    }
-
-    #[inline]
-    #[must_use]
-    fn get_next(&self) -> Option<NonNull<Link>> {
-        unsafe { get_element(&self.inner, LinkInner::NEXT_OFFSET) }
-    }
-
-    #[inline]
-    fn set_next(&mut self, value: Option<NonNull<Link>>) {
-        unsafe { set_element(&self.inner, LinkInner::NEXT_OFFSET, value) }
-    }
-
-    #[inline]
-    #[must_use]
-    fn get_prev(&self) -> Option<NonNull<Link>> {
-        unsafe { get_element(&self.inner, LinkInner::PREV_OFFSET) }
-    }
-
-    #[inline]
-    fn set_prev(&mut self, value: Option<NonNull<Link>>) {
-        unsafe { set_element(&self.inner, LinkInner::PREV_OFFSET, value) }
-    }
-}
 
 impl Default for Link {
     fn default() -> Self {
@@ -211,6 +170,7 @@ macro_rules! define_adapter {
         }
 
         impl $(<$($tyvar $(: $bound)?),*>)? $crate::Adapter for $name $(<$($tyvar),*>)? {
+            // TODO: Assert that the `$link` field actually has type `Link`.
             const LINK_OFFSET: usize = core::mem::offset_of!($node $(<$($node_tyvar),*>)?, $link);
         }
     };
@@ -414,17 +374,11 @@ impl UnsafeListInner {
     /// members.
     ///
     /// It is up to the caller to ensure the element is not in a list.
-    pub unsafe fn push_front_unchecked(&mut self, mut link_ptr: NonNull<Link>) {
+    pub unsafe fn push_front_unchecked(&mut self, link_ptr: NonNull<Link>) {
         // Link up the added element.
-        //
-        // Wrap in a block to ensure `link`, which is a `&mut`, doesn't live
-        // long enough to possibly overlap with other `&mut` references to the
-        // same memory.
-        {
-            let link = unsafe { link_ptr.as_mut() };
-            link.set_next(self.head);
-            link.set_prev(None);
-        }
+        let link = unsafe { link_ptr.as_ref() };
+        link.set_next(self.head);
+        link.set_prev(None);
 
         match self.head {
             // If `head` was `None`, the list is empty and `tail` should point
@@ -433,7 +387,7 @@ impl UnsafeListInner {
 
             // If `head` is not `None`, point the previous `head` to the added
             // element.
-            Some(mut head) => unsafe { head.as_mut() }.set_prev(Some(link_ptr)),
+            Some(head) => unsafe { head.as_ref() }.set_prev(Some(link_ptr)),
         }
 
         // Finally point `head` to the added element.
@@ -450,17 +404,11 @@ impl UnsafeListInner {
     /// members.
     ///
     /// It is up to the caller to ensure the element is not in a list.
-    pub unsafe fn push_back_unchecked(&mut self, mut link_ptr: NonNull<Link>) {
+    pub unsafe fn push_back_unchecked(&mut self, link_ptr: NonNull<Link>) {
         // Link up the added element.
-        //
-        // Wrap in a block to ensure `link`, which is a `&mut`, doesn't live
-        // long enough to possibly overlap with other `&mut` references to the
-        // same memory.
-        {
-            let link = unsafe { link_ptr.as_mut() };
-            link.set_next(None);
-            link.set_prev(self.tail);
-        }
+        let link = unsafe { link_ptr.as_ref() };
+        link.set_next(None);
+        link.set_prev(self.tail);
 
         match self.tail {
             // If `tail` was `None`, the list is empty and `head` should point
@@ -469,7 +417,7 @@ impl UnsafeListInner {
 
             // If `tail` is not `None`, point the previous `tail` to the added
             // element.
-            Some(mut tail) => unsafe { tail.as_mut() }.set_next(Some(link_ptr)),
+            Some(tail) => unsafe { tail.as_ref() }.set_next(Some(link_ptr)),
         }
 
         self.tail = Some(link_ptr);
@@ -483,9 +431,9 @@ impl UnsafeListInner {
     /// It is up to the caller to ensure that element_a is not in a list.
     /// It is up to the caller to ensure that element_b is in a list.
     /// It is up to the caller to ensure the element_a and element_b are non-null.
-    unsafe fn insert_before(&mut self, mut element_a: NonNull<Link>, mut element_b: NonNull<Link>) {
-        let a = unsafe { element_a.as_mut() };
-        let b = unsafe { element_b.as_mut() };
+    unsafe fn insert_before(&mut self, element_a: NonNull<Link>, element_b: NonNull<Link>) {
+        let a = unsafe { element_a.as_ref() };
+        let b = unsafe { element_b.as_ref() };
 
         let prev = b.get_prev();
 
@@ -499,7 +447,7 @@ impl UnsafeListInner {
             None => self.head = Some(element_a),
 
             // Element has elements before it in the list.
-            Some(mut prev_ptr) => unsafe { prev_ptr.as_mut() }.set_next(Some(element_a)),
+            Some(prev_ptr) => unsafe { prev_ptr.as_ref() }.set_next(Some(element_a)),
         }
     }
 
@@ -511,12 +459,12 @@ impl UnsafeListInner {
     /// members.
     ///
     /// It is up to the caller to ensure the element is in the list.
-    pub unsafe fn unlink_element_unchecked(&mut self, mut link_ptr: NonNull<Link>) {
+    pub unsafe fn unlink_element_unchecked(&mut self, link_ptr: NonNull<Link>) {
         // Wrap in a block to ensure `link`, which is a `&mut`, doesn't live
         // long enough to possibly overlap with other `&mut` references to the
         // same memory.
         let (prev, next) = {
-            let link = unsafe { link_ptr.as_mut() };
+            let link = unsafe { link_ptr.as_ref() };
             let prev = link.get_prev();
             let next = link.get_next();
             link.set_unlinked();
@@ -528,7 +476,7 @@ impl UnsafeListInner {
             None => self.head = next,
 
             // Element has elements before it in the list.
-            Some(mut prev_ptr) => unsafe { prev_ptr.as_mut() }.set_next(next),
+            Some(prev_ptr) => unsafe { prev_ptr.as_ref() }.set_next(next),
         }
 
         match next {
@@ -536,7 +484,7 @@ impl UnsafeListInner {
             None => self.tail = prev,
 
             // Element has elements after it in the list.
-            Some(mut next_ptr) => unsafe { next_ptr.as_mut() }.set_prev(prev),
+            Some(next_ptr) => unsafe { next_ptr.as_ref() }.set_prev(prev),
         }
     }
 
