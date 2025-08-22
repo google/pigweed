@@ -534,13 +534,8 @@ def zephyr_build(ctx: PresubmitContext) -> None:
     build.install_package(ctx, 'zephyr')
     # Configure the environment
     env = _env_with_zephyr_vars(ctx)
-    sysroot_dir = (
-        ctx.pw_root
-        / 'environment'
-        / 'cipd'
-        / 'packages'
-        / 'pigweed'
-        / 'clang_sysroot'
+    sysroot_dir = Path(
+        os.environ['PW_PIGWEED_CIPD_INSTALL_DIR'], 'clang_sysroot'
     )
     platform_filters = (
         ['-P', 'native_sim']
@@ -559,11 +554,11 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         '--verbose',
         '--coverage',
         '--coverage-basedir',
-        str(ctx.pw_root),
+        str(ctx.root),
         *platform_filters,
         f'-x=SYSROOT_DIR={sysroot_dir}',
         '--testsuite-root',
-        str(ctx.pw_root),
+        str(ctx.root),
         env=env,
     )
     # Find all the raw profile files

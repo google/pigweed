@@ -52,6 +52,16 @@ PRESUBMIT_CHECK_TRACE: ContextVar[
 ] = ContextVar('pw_presubmit_check_trace', default={})
 
 
+# TODO: b/433258471 - Pass in project root rather than getting it from the env.
+def _project_root() -> Path:
+    # Check if running from Bazel
+    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
+        return Path(os.environ['BUILD_WORKSPACE_DIRECTORY']).resolve()
+
+    # Fall back to bootstrapped environment
+    return Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
+
+
 @dataclasses.dataclass(frozen=True)
 class FormatOptions:
     python_formatter: str | None = 'black'
@@ -73,7 +83,7 @@ class FormatOptions:
         )
 
     def filter_paths(self, paths: Iterable[Path]) -> tuple[Path, ...]:
-        root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
+        root = _project_root()
         relpaths = [x.relative_to(root) for x in paths]
 
         for filt in self.exclude:
@@ -490,11 +500,6 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     _failed: bool = False
     dry_run: bool = False
     use_remote_cache: bool = False
-
-    @property
-    def pw_root(self) -> Path:
-        # TODO: b/433258471 - Remove bootstrap assumptions from pw_presubmit.
-        return pw_cli.env.pigweed_environment().PW_ROOT
 
     @property
     def failed(self) -> bool:

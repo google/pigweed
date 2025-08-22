@@ -1100,7 +1100,6 @@ def call(
     tee = kwargs.pop('tee', None)
     propagate_sigterm = kwargs.pop('propagate_sigterm', False)
 
-    env = pw_cli.env.pigweed_environment()
     kwargs.setdefault('stdout', subprocess.PIPE)
     kwargs.setdefault('stderr', subprocess.STDOUT)
 
@@ -1118,7 +1117,7 @@ def call(
 
         previous_signal_handler = signal.signal(signal.SIGTERM, signal_handler)
 
-    if env.PW_PRESUBMIT_DISABLE_SUBPROCESS_CAPTURE:
+    if pw_cli.env.pigweed_environment().PW_PRESUBMIT_DISABLE_SUBPROCESS_CAPTURE:
         while True:
             line = process.stdout.readline().decode(errors='backslashreplace')
             if not line:
