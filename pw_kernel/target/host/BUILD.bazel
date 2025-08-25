@@ -48,7 +48,7 @@ platform(
             "//pw_log/rust:pw_log_backend": "@pigweed//pw_log/rust:pw_log_backend_println",
         },
     ),
-    parents = ["@local_config_platform//:host"],
+    parents = ["@bazel_tools//tools:host_platform"],
     visibility = ["//visibility:private"],
 )
 
