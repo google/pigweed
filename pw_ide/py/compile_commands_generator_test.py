@@ -15,6 +15,7 @@
 
 import unittest
 import os
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -24,6 +25,7 @@ from pw_ide.compile_commands_generator import (
     generate_compile_commands_from_aquery_cquery,
     infer_platform_of_action,
     parse_bazel_build_command,
+    resolve_bazel_out_paths,
     resolve_virtual_includes_to_real_paths,
     CompileCommand,
     LoggerUI,
@@ -255,7 +257,10 @@ class CompileCommandsGeneratorTest(unittest.TestCase):
         with patch('pathlib.Path.exists', return_value=True):
             compile_commands_per_platform = (
                 generate_compile_commands_from_aquery_cquery(
-                    str(self.cwd), [SAMPLE_AQUERY_ACTION], SAMPLE_CQUERY_HEADERS
+                    str(self.cwd),
+                    [SAMPLE_AQUERY_ACTION],
+                    SAMPLE_CQUERY_HEADERS,
+                    Path('/tmp/bazel-out'),
                 )
             )
             self.assertIn(
@@ -267,6 +272,41 @@ class CompileCommandsGeneratorTest(unittest.TestCase):
                 db.db[0].file,
                 fix_path_separator('pw_containers/intrusive_map_test.cc'),
             )
+
+    def test_resolve_bazel_out_paths(self):
+        """Test that bazel-out paths are resolved to real paths."""
+        # Use a platform-specific absolute path for testing.
+        real_bazel_out = Path(os.path.abspath('/real/bazel-out'))
+        if sys.platform == 'win32':
+            real_bazel_out = Path('C:\\real\\bazel-out')
+
+        sample_command = CompileCommand(
+            file='bazel-out/some/file.cc',
+            directory='.',
+            arguments=[
+                'clang++',
+                '-Ibazel-out/include/path',
+                'bazel-out/some/file.cc',
+                '-o',
+                'bazel-out/some/file.o',
+            ],
+        )
+
+        resolved_command = resolve_bazel_out_paths(
+            sample_command, real_bazel_out
+        )
+
+        expected_file = real_bazel_out.joinpath('some', 'file.cc')
+        self.assertEqual(resolved_command.file, str(expected_file))
+
+        expected_args = [
+            'clang++',
+            '-I' + str(real_bazel_out.joinpath('include', 'path')),
+            str(real_bazel_out.joinpath('some', 'file.cc')),
+            '-o',
+            str(real_bazel_out.joinpath('some', 'file.o')),
+        ]
+        self.assertEqual(resolved_command.arguments, expected_args)
 
     @patch('subprocess.run')
     def test_parse_bazel_build_command_single_target_no_args(self, mock_run):
@@ -447,19 +487,23 @@ class CompileCommandsGeneratorTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid bazel command"):
             parse_bazel_build_command("", self.bazel_path, str(self.cwd))
 
+    @patch('subprocess.check_output')
     @patch(
         'pw_ide.compile_commands_generator.'
         'ensure_external_workspaces_link_exists'
     )
-    def test_generate_empty_commands_does_not_delete(self, _mock_link_exists):
+    def test_generate_empty_commands_does_not_delete(
+        self, _mock_link_exists, mock_check_output
+    ):
         """Test that existing compile_commands are not deleted."""
+        mock_check_output.return_value = '/tmp/execroot'
         mock_logger = MockLoggerUI()
 
         def fake_aquery_runner(*_args, **_kwargs):
-            return "", 0
+            return '', 0
 
         def fake_cquery_runner(*_args, **_kwargs):
-            return "", 0
+            return '', 0
 
         # Setup existing compile_commands.json
         cdb_file_dir_name = '.compile_commands_test_dir'
@@ -487,24 +531,26 @@ class CompileCommandsGeneratorTest(unittest.TestCase):
         self.assertTrue(existing_cdb_file_path.exists())
         self.assertEqual(existing_cdb_file_path.read_text(), existing_content)
         self.assertIn(
-            "No compile commands generated.", mock_logger.get_stdout()
+            'No compile commands generated.', mock_logger.get_stdout()
         )
 
+    @patch('subprocess.check_output')
     @patch(
         'pw_ide.compile_commands_generator.'
         'ensure_external_workspaces_link_exists'
     )
     def test_generate_compile_commands_aquery_fails_stops_execution(
-        self, _mock_link_exists
+        self, _mock_link_exists, mock_check_output
     ):
         """Test that aquery failures stop execution."""
+        mock_check_output.return_value = '/tmp/execroot'
         mock_logger = MockLoggerUI()
 
         def fake_aquery_runner_fails(*_args, **_kwargs):
             # Simulate a failure in aquery
-            return "aquery error", 1
+            return 'aquery error', 1
 
-        mock_cquery_runner = MagicMock(return_value=("", 0))
+        mock_cquery_runner = MagicMock(return_value=('', 0))
 
         cdb_file_dir_name = '.compile_commands_test_dir'
         cdb_filename = 'compile_commands.json'
@@ -524,7 +570,7 @@ class CompileCommandsGeneratorTest(unittest.TestCase):
 
         mock_cquery_runner.assert_not_called()
         self.assertIn(
-            "aquery failed for //... with exit code 1",
+            'aquery failed for //... with exit code 1',
             mock_logger.get_stderr(),
         )
 
@@ -539,6 +585,7 @@ class CompileCommandsGeneratorTest(unittest.TestCase):
                     str(self.cwd),
                     [SAMPLE_AQUERY_ACTION],
                     SAMPLE_CQUERY_HEADERS,
+                    Path('/tmp/bazel-out'),
                     mock_logger,
                 )
             )

@@ -24,6 +24,16 @@ import { existsSync } from 'fs';
 
 const createClangdSymlinkTarget =
   '@pigweed//pw_toolchain/host_clang:copy_clangd' as const;
+
+function getBazelExecRoot(): string | undefined {
+  const cmd = getReliableBazelExecutable();
+  if (!cmd) return;
+  const args = ['info', 'execution_root'];
+  logger.info(`Running ${cmd} ${args.join(' ')}`);
+  const result = child_process.spawnSync(cmd, args, { cwd: workingDir.get() });
+  return result.stdout.toString().trim();
+}
+
 export const clangdPath = () => {
   const cmd = getReliableBazelExecutable();
   if (!cmd) return;
@@ -31,11 +41,32 @@ export const clangdPath = () => {
   logger.info(`Running ${cmd} ${args.join(' ')}`);
   const result = child_process.spawnSync(cmd, args, { cwd: workingDir.get() });
   // Sometimes the stdout has more than just path (like in fish shell).
-  const clangPath = result.stdout.toString().trim().split('\n').pop()!;
-  logger.info('clangPath resolves to ' + clangPath);
-  if (existsSync(path.join(workingDir.get(), clangPath))) {
-    return path.join(workingDir.get(), clangPath);
+  const relativeClangdPath = result.stdout.toString().trim().split('\n').pop()!;
+  logger.info('Relative clangd path resolves to ' + relativeClangdPath);
+
+  const execRoot = getBazelExecRoot();
+  if (!execRoot) {
+    logger.error('Could not determine bazel execution root.');
+    return;
   }
+
+  const absoluteClangdPath = path.join(execRoot, relativeClangdPath);
+
+  if (existsSync(absoluteClangdPath)) {
+    return absoluteClangdPath;
+  }
+
+  // Fallback for when the path might be relative to the workspace,
+  // which can happen with the bazel-out symlink.
+  const workspaceRelativePath = path.join(workingDir.get(), relativeClangdPath);
+  if (existsSync(workspaceRelativePath)) {
+    return workspaceRelativePath;
+  }
+
+  logger.error(
+    `Could not find clangd at ${absoluteClangdPath} or in the workspace.`,
+  );
+  return undefined;
 };
 
 /** Create the `clangd` symlink and add it to settings. */

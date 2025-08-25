@@ -150,7 +150,7 @@ class LoggerUI:
 
 
 def ensure_external_workspaces_link_exists(
-    cwd: str, logger: Optional[LoggerUI] = None
+    bazel_cmd: str, cwd: str, logger: Optional[LoggerUI] = None
 ) -> None:
     """Postcondition: Either //external points into Bazel's fullest set of
     external workspaces in output_base, or we've exited with an error that'll
@@ -159,19 +159,24 @@ def ensure_external_workspaces_link_exists(
     is_windows = sys.platform == 'win32'
     source = Path(cwd) / 'external'
 
-    if not (Path(cwd) / 'bazel-out').exists():
-        raise RuntimeError(
-            f"bazel-out is missing at: {Path(cwd) / 'bazel-out'}"
-        )
+    try:
+        # Use `bazel info output_path` to robustly find the output directory,
+        # respecting any user configuration.
+        output_path_str = subprocess.check_output(
+            [bazel_cmd, 'info', 'output_path'],
+            encoding='utf-8',
+            cwd=cwd,
+        ).strip()
+        output_path = Path(output_path_str)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f'Error getting bazel output_path: {e}') from e
+
+    if not output_path.exists():
+        raise RuntimeError(f"Bazel output directory '{output_path}' not found.")
 
     # Traverse into output_base via bazel-out, keeping the workspace
     # position-independent, so it can be moved without rerunning
-    dest = (
-        Path(os.readlink(Path(cwd) / 'bazel-out'))
-        .resolve()
-        .parent.parent.parent
-        / 'external'
-    )
+    dest = output_path.parent.parent.parent / 'external'
 
     if source.exists():
         if logger:
@@ -511,10 +516,38 @@ def apply_virtual_include_fix(
     return action._replace(arguments=new_args)
 
 
+def resolve_bazel_out_paths(
+    command: CompileCommand, real_bazel_out: Path
+) -> CompileCommand:
+    """Replaces bazel-out paths with their real paths."""
+    # Bazel's aquery seems to always use forward slashes, even on Windows.
+    marker = 'bazel-out/'
+    new_args = []
+
+    for arg in command.arguments:
+        if marker in arg:
+            parts = arg.split(marker, 1)
+            prefix = parts[0]
+            suffix = parts[1]
+            new_path = real_bazel_out.joinpath(*suffix.split('/'))
+            new_arg = prefix + str(new_path)
+            new_args.append(new_arg)
+        else:
+            new_args.append(arg)
+
+    new_file = command.file
+    if command.file.startswith(marker):
+        path_suffix = command.file[len(marker) :]
+        new_file = str(real_bazel_out.joinpath(*path_suffix.split('/')))
+
+    return command._replace(arguments=new_args, file=new_file)
+
+
 def generate_compile_commands_from_aquery_cquery(
     cwd: str,
     aquery_actions: List[Dict],
     cquery_json: List[CQueryItem],
+    real_bazel_out: Path,
     tui_manager: Optional[LoggerUI] = None,
 ) -> CompilationDatabaseMap:
     """Generates compile commands from aquery and cquery output."""
@@ -561,7 +594,10 @@ def generate_compile_commands_from_aquery_cquery(
                     arguments=list(command_data['arguments']),
                 )
                 fixed_cmd = apply_virtual_include_fix(cmd, virtual_to_real_map)
-                compile_commands.add(fixed_cmd)
+                resolved_cmd = resolve_bazel_out_paths(
+                    fixed_cmd, real_bazel_out
+                )
+                compile_commands.add(resolved_cmd)
 
         compile_commands_per_platform.set(platform, compile_commands)
         if tui_manager:
@@ -595,24 +631,18 @@ def delete_files_in_subdir(parent_dir_path: str, file_name_to_delete: str):
             )
 
 
-def generate_compile_commands(
+def _run_aquery_in_parallel(
     bazel_cmd: str,
     cwd: str,
-    cdb_file_dir: str,
-    cdb_filename: str,
     bazel_targets: List[str],
     bazel_args: List[str],
     aquery_runner: Callable,
-    cquery_runner: Callable,
-    tui_manager: Optional[LoggerUI] = None,
-) -> None:
-    """Generates compile commands by running aquery and cquery."""
-    start_time = os.times().elapsed
-    ensure_external_workspaces_link_exists(cwd, tui_manager)
-
+    tui_manager: Optional[LoggerUI],
+) -> List[Dict]:
+    """Runs aquery in parallel for all targets and returns the actions."""
     aquery_actions: List[Dict] = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_target: Dict[concurrent.futures.Future, str] = {
+        future_to_target = {
             executor.submit(
                 aquery_runner, bazel_cmd, cwd, target, bazel_args, tui_manager
             ): target
@@ -628,62 +658,128 @@ def generate_compile_commands(
                             f'aquery failed for {target} with exit code '
                             f'{aquery_returncode}.'
                         )
-                    # This is a critical error, so we should stop here.
                     raise RuntimeError(
                         f'aquery failed for {target} with exit code '
                         f'{aquery_returncode}.'
                     )
-
                 aquery_actions.extend(parse_aquery_output(aquery_output))
             except RuntimeError as exc:
                 if tui_manager:
                     tui_manager.add_stderr(
                         f'{target} generated an exception: {exc}'
                     )
-                # Re-raise the exception to stop the entire process
-                raise exc
+                raise
+    return aquery_actions
 
-    cquery_json: List[CQueryItem] = []
+
+def _run_cquery_and_parse(
+    bazel_cmd: str,
+    cwd: str,
+    bazel_targets: List[str],
+    bazel_args: List[str],
+    cquery_runner: Callable,
+    tui_manager: Optional[LoggerUI],
+) -> List[CQueryItem]:
+    """Runs cquery and parses the JSON output."""
     cquery_output, cquery_returncode = cquery_runner(
         bazel_cmd, cwd, bazel_targets, bazel_args, tui_manager
     )
-    if cquery_returncode == 0:
-        try:
-            cquery_json = parse_cquery_output(cquery_output)
-        except json.JSONDecodeError as e:
-            if tui_manager:
-                tui_manager.add_stderr(f'Failed to parse cquery output: {e}')
-    elif tui_manager:
-        tui_manager.add_stderr(
-            f'cquery failed with exit code {cquery_returncode}.'
+    if cquery_returncode != 0:
+        if tui_manager:
+            tui_manager.add_stderr(
+                f'cquery failed with exit code {cquery_returncode}.'
+            )
+        return []
+    try:
+        cquery_items = parse_cquery_output(cquery_output)
+    except json.JSONDecodeError as e:
+        if tui_manager:
+            tui_manager.add_stderr(f'Failed to parse cquery output: {e}')
+        return []
+
+    return cquery_items
+
+
+def _write_compile_commands(
+    cwd: str,
+    cdb_file_dir: str,
+    cdb_filename: str,
+    compile_commands_per_platform: CompilationDatabaseMap,
+    start_time: float,
+    tui_manager: Optional[LoggerUI],
+) -> None:
+    """Writes the compile commands to their respective files."""
+    if not compile_commands_per_platform:
+        if tui_manager:
+            tui_manager.add_stdout('No compile commands generated.')
+        return
+
+    if tui_manager:
+        tui_manager.update_status(
+            f'⏳ Cleaning output directory: {cdb_file_dir}'
         )
+
+    full_cdb_dir_path = Path(cwd) / cdb_file_dir
+    delete_files_in_subdir(str(full_cdb_dir_path), cdb_filename)
+    full_cdb_dir_path.mkdir(exist_ok=True)
+    compile_commands_per_platform.write_all(cwd, cdb_file_dir, cdb_filename)
+
+    if tui_manager:
+        end_time = os.times().elapsed
+        tui_manager.add_stdout(
+            f'Finished generating {cdb_filename} for '
+            f'{len(compile_commands_per_platform)} platforms in '
+            f'{round((end_time - start_time) * 1000)}ms.'
+        )
+
+
+def generate_compile_commands(
+    bazel_cmd: str,
+    cwd: str,
+    cdb_file_dir: str,
+    cdb_filename: str,
+    bazel_targets: List[str],
+    bazel_args: List[str],
+    aquery_runner: Callable,
+    cquery_runner: Callable,
+    tui_manager: Optional[LoggerUI] = None,
+) -> None:
+    """Generates compile commands by running aquery and cquery."""
+    start_time = os.times().elapsed
+    ensure_external_workspaces_link_exists(bazel_cmd, cwd, tui_manager)
+
+    try:
+        execution_root_str = subprocess.check_output(
+            [bazel_cmd, 'info', 'execution_root'],
+            encoding='utf-8',
+            cwd=cwd,
+        ).strip()
+        real_bazel_out = Path(execution_root_str) / 'bazel-out'
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f'Error getting bazel execution_root: {e}') from e
+
+    aquery_actions = _run_aquery_in_parallel(
+        bazel_cmd, cwd, bazel_targets, bazel_args, aquery_runner, tui_manager
+    )
+
+    cquery_json = _run_cquery_and_parse(
+        bazel_cmd, cwd, bazel_targets, bazel_args, cquery_runner, tui_manager
+    )
 
     compile_commands_per_platform = (
         generate_compile_commands_from_aquery_cquery(
-            cwd, aquery_actions, cquery_json, tui_manager
+            cwd, aquery_actions, cquery_json, real_bazel_out, tui_manager
         )
     )
 
-    if len(compile_commands_per_platform) > 0:
-        if tui_manager:
-            tui_manager.update_status(
-                f'⏳ Cleaning output directory: {cdb_file_dir}'
-            )
-        full_cdb_dir_path = Path(cwd) / cdb_file_dir
-        delete_files_in_subdir(str(full_cdb_dir_path), cdb_filename)
-        full_cdb_dir_path.mkdir(exist_ok=True)
-
-        compile_commands_per_platform.write_all(cwd, cdb_file_dir, cdb_filename)
-
-        if tui_manager:
-            end_time = os.times().elapsed
-            tui_manager.add_stdout(
-                f'Finished generating {cdb_filename} for '
-                f'{len(compile_commands_per_platform)} platforms in '
-                f'{round((end_time - start_time) * 1000)}ms.'
-            )
-    elif tui_manager:
-        tui_manager.add_stdout('No compile commands generated.')
+    _write_compile_commands(
+        cwd,
+        cdb_file_dir,
+        cdb_filename,
+        compile_commands_per_platform,
+        start_time,
+        tui_manager,
+    )
 
 
 def _handle_error_and_exit(message: str, tui_manager: LoggerUI) -> None:
