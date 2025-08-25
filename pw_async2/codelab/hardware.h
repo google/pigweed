@@ -15,6 +15,8 @@
 
 #include <string_view>
 
+#include "pw_async2/dispatcher.h"
+
 // Interrupt handler function invoked when the user inserts a coin into the
 // vending machine.
 void coin_inserted_isr();
@@ -31,8 +33,9 @@ inline constexpr size_t kDisplayCharacters = 10;
 // Call this to set the text on the vending machine's display.
 void SetDisplay(std::string_view text);
 
-// Initializes the simulated hardware, allowing for interactive input via stdin
-// in a background thread.
-void HardwareInit();
+// Initializes the simulated hardware, allowing for interactive input and
+// output using a background thread. The given dispatcher is used to dump the
+// current dispatcher state on demand for diagnostic purporses.
+void HardwareInit(pw::async2::Dispatcher* dispatcher);
 
 }  // namespace codelab

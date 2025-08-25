@@ -38,6 +38,8 @@ pw_cc_binary(
     deps = [
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
+        "//pw_async2/codelab:coin_slot",
+        "//pw_async2/codelab:hardware",
         "//pw_log",
     ],
 )

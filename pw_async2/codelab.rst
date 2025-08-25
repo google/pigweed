@@ -27,17 +27,13 @@ By the end of this codelab, you will know how to:
 
 Let's get started!
 
-.. tip::
-
-   We encourage you to implement each step on your own, but if you
-   ever get stuck, a solution is provided at the start of each step.
-
 -----
 Setup
 -----
 The code for this codelab is part of the Pigweed repository. If you haven't
-already, follow the `contributor guide <https://pigweed.dev/contributing/#clone-the-repo>`_
-to clone the Pigweed repository and set up your development environment.
+
+already, follow the :ref:`contributor guide <docs-contributing-setup>` to clone
+the Pigweed repository and set up your development environment.
 
 ---------------------------
 Step 1: Hello, Async World!
@@ -45,6 +41,13 @@ Step 1: Hello, Async World!
 The first step is to create and run a basic asynchronous task. This will
 introduce you to the two most fundamental components of ``pw_async2``: the
 **Task** and the **Dispatcher**.
+
+.. tip::
+
+   We encourage you to implement each step on your own, but if you
+   ever get stuck, a solution is provided at the start of each step.
+
+   The solution for this step is here: `//pw_async2/codelab/solutions/step1`_
 
 What's a Task?
 ==============
@@ -58,7 +61,7 @@ task's logic lives.
 
 Let's look at the code.
 
-1. Open `pw_async2/codelab/vending_machine.h <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.h>`_
+1. Open `//pw_async2/codelab/vending_machine.h`_
 
 You'll see the definition for our ``VendingMachineTask``:
 
@@ -70,7 +73,7 @@ You'll see the definition for our ``VendingMachineTask``:
 It's a simple class that inherits from ``pw::async2::Task``. The important part
 is the ``DoPend`` method, which is where we'll add our logic.
 
-2. Open `pw_async2/codelab/vending_machine.cc <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.cc>`_
+2. Open `//pw_async2/codelab/vending_machine.cc`_
 
 Here you'll find the incomplete implementation of ``DoPend``:
 
@@ -101,7 +104,7 @@ method. If the task returns ``Pending()``, the task is put to sleep until it
 is woken by the operation that blocked it. If it returns ``Ready()``, the
 dispatcher considers it complete and will not run it again.
 
-3. Open `pw_async2/codelab/main.cc <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/main.cc>`_
+3. Open `//pw_async2/codelab/main.cc`_
 
 Here you can see we have a dispatcher, but it's not doing anything yet.
 
@@ -114,7 +117,7 @@ Putting it all together
 =======================
 Now, let's modify the code to print a welcome message.
 
-In `pw_async2/codelab/vending_machine.cc <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.cc>`_, change ``DoPend`` to log the
+In `//pw_async2/codelab/vending_machine.cc`_, change ``DoPend`` to log the
 message:
 
 .. code-block::
@@ -126,7 +129,7 @@ it has logged.
 
 5. Post and Run the Task
 
-In `pw_async2/codelab/main.cc <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/main.cc>`_, create an instance of your vending machine
+In `//pw_async2/codelab/main.cc`_, create an instance of your vending machine
 task and give it to the dispatcher to run.
 
 .. literalinclude:: codelab/solutions/step1/main.cc
@@ -165,12 +168,10 @@ packet to arrive, or, in our case, a user to insert a coin.
 
 In ``pw_async2``, operations that can wait are called **pendable functions**.
 
-.. _//pw_async2/codelab/solutions/step2/: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step2/vending_machine.cc
-
 .. tip::
 
    Solution for this step:
-   `//pw_async2/codelab/solutions/step2/`_
+   `//pw_async2/codelab/solutions/step2`_
 
 What's a Pendable function?
 ===========================
@@ -196,18 +197,18 @@ read the number of coins inserted:
 
 1. Add a ``CoinSlot`` to the vending machine
 ============================================
-First, open `pw_async2/codelab/vending_machine.h <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.h>`_.
-You'll need to include ``coin_slot.h``. Add a reference to a ``CoinSlot`` as a
-member variable of your ``VendingMachineTask`` and update its constructor to
-initialize it.
+First, open `//pw_async2/codelab/vending_machine.h`_. You'll need to include
+``coin_slot.h``. Add a reference to a ``CoinSlot`` as a member variable of your
+``VendingMachineTask`` and update its constructor to initialize it.
 
-In your `pw_async2/codelab/main.cc <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/main.cc>`_,
-we have provided a global ``CoinSlot`` instance. Pass it into your updated task.
+In your `//pw_async2/codelab/main.cc`_, we have provided a global ``CoinSlot``
+instance. Pass it into your updated task.
 
 2. Wait for a coin
 ==================
-Now, let's modify the task's ``DoPend`` in `pw_async2/codelab/vending_machine.cc <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.cc>`_.
-Following your welcome message from Step 1, prompt the user to insert a coin.
+Now, let's modify the task's ``DoPend`` in
+`//pw_async2/codelab/vending_machine.cc`_. Following your welcome message from
+Step 1, prompt the user to insert a coin.
 
 To get a coin from the ``CoinSlot``, you'll call its ``Pend`` method using the
 :doxylink:`PW_TRY_READY_ASSIGN` macro.
@@ -266,8 +267,9 @@ input.
    INF  Please insert a coin.
 
 To simulate inserting a coin, type :kbd:`c` and press :kbd:`Enter` in the same
-terminal. The hardware thread will call the coin slot ISR, which wakes up your
-task. The dispatcher will run it again, and you'll see... an unexpected result:
+terminal. The hardware thread will call the coin slot Interrupt Service Routine
+(ISR), which wakes up your task. The dispatcher will run it again, and you'll
+see... an unexpected result:
 
 .. code-block::
 
@@ -296,16 +298,15 @@ Because a task can be suspended and resumed at any ``Pending()`` return, you
 need a way to remember where you left off. For simple cases like this, a boolean
 flag is sufficient.
 
-Open `pw_async2/codelab/vending_machine.h <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.h>`_
-and add a boolean to track whether the welcome message has been displayed.
-Initialize it to ``false``.
+Open `//pw_async2/codelab/vending_machine.h`_ and add a boolean to track whether
+the welcome message has been displayed. Initialize it to ``false``.
 
-Now, modify ``DoPend`` in `pw_async2/codelab/vending_machine.cc <https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.cc>`_.
-Gate the two log calls for the welcome message behind your new boolean flag.
-Once the message is printed, make sure to set the flag to ``true`` so it won't
-be printed again.
+Now, modify ``DoPend`` in `//pw_async2/codelab/vending_machine.cc`_. Gate the
+two log calls for the welcome message behind your new boolean flag. Once the
+message is printed, make sure to set the flag to ``true`` so it won't be printed
+again.
 
-7. Build and run: Verify the fix
+5. Build and run: Verify the fix
 ================================
 .. code-block:: sh
 
@@ -330,3 +331,14 @@ The task then completes, ``RunToCompletion`` returns, and the program exits.
 You've now implemented a task that can wait for an asynchronous event and
 correctly manages its state! In the next step, you'll learn how to write your
 own pendable functions.
+
+.. The following references shorten the markup above.
+
+.. _`//pw_async2/codelab/BUILD.bazel`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/BUILD.bazel
+.. _`//pw_async2/codelab/coin_slot.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/coin_slot.cc
+.. _`//pw_async2/codelab/main.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/main.cc
+.. _`//pw_async2/codelab/vending_machine.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.cc
+.. _`//pw_async2/codelab/vending_machine.h`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.h
+
+.. _`//pw_async2/codelab/solutions/step1`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step1
+.. _`//pw_async2/codelab/solutions/step2`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step2

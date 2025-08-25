@@ -52,6 +52,7 @@ cc_library(
     hdrs = ["hardware.h"],
     implementation_deps = [
         "//pw_assert:check",
+        "//pw_async2:dispatcher",
         "//pw_log",
         "//pw_status",
         "//pw_stream:socket_stream",
