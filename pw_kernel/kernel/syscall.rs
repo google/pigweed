@@ -104,6 +104,12 @@ pub fn handle_syscall<K: Kernel>(
             info!("{}", c as char);
             Ok(arg0.cast_into())
         }
+        // TODO: Consider adding an feature flagged PowerManager object and move
+        // this shutdown call to it.
+        SysCallId::DebugShutdown => {
+            log_if::debug_if!(SYSCALL_DEBUG, "sycall: Shutdown {}", arg0 as usize);
+            crate::target::shutdown(u32::try_from(arg0).unwrap());
+        }
     };
     log_if::debug_if!(SYSCALL_DEBUG, "syscall: {:#06x} returning", id as usize);
     res

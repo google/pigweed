@@ -91,6 +91,30 @@ rust_binary_no_panics_test(
     tags = ["kernel"],
 )
 
+system_image(
+    name = "ticker",
+    apps = [
+        "//pw_kernel/apps/ticker",
+    ],
+    kernel = ":ticker_target",
+    platform = ":qemu_virt_riscv32",
+    system_config = ":ticker_config",
+    tags = ["kernel"],
+    visibility = ["//visibility:public"],
+)
+
+rust_binary_no_panics_test(
+    name = "ticker_no_panics_test",
+    binary = ":ticker",
+    tags = ["kernel"],
+)
+
+system_image_test(
+    name = "ticker_test",
+    image = ":ticker",
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+)
+
 SRCS = ["target.rs"]
 
 COMMON_DEPS = [
@@ -138,6 +162,32 @@ rust_binary(
         "//pw_kernel/lib/time",
         "//pw_kernel/userspace",
         "//pw_log/rust:pw_log",
+    ] + COMMON_DEPS,
+)
+
+filegroup(
+    name = "ticker_config",
+    srcs = ["ticker.json5"],
+)
+
+system_codegen(
+    name = "ticker_codegen",
+    system_config = ":ticker_config",
+)
+
+rust_binary(
+    name = "ticker_target",
+    srcs = [
+        "ticker_target.rs",
+        ":ticker_codegen",
+    ],
+    tags = ["kernel"],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    deps = [
+        ":console",
+        "//pw_kernel/userspace",
+        "//pw_log/rust:pw_log",
+        "@rust_crates//:riscv-semihosting",
     ] + COMMON_DEPS,
 )
 

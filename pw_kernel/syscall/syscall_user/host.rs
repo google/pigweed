@@ -36,4 +36,9 @@ impl SysCallInterface for SysCall {
     fn debug_putc(_a: u32) -> Result<u32> {
         Err(pw_status::Error::Unimplemented)
     }
+
+    #[inline(always)]
+    fn debug_shutdown(_a: u32) -> Result<()> {
+        Err(pw_status::Error::Unimplemented)
+    }
 }

@@ -11,30 +11,32 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
-unsafe extern "Rust" {
-    fn pw_kernel_target_name() -> &'static str;
-    fn pw_kernel_target_console_init();
-    fn pw_kernel_target_main() -> !;
-    fn pw_kernel_target_shutdown(code: u32) -> !;
-}
-
-#[inline(always)]
-pub fn name() -> &'static str {
-    unsafe { pw_kernel_target_name() }
-}
-
-#[inline(always)]
-pub fn console_init() {
-    unsafe { pw_kernel_target_console_init() }
-}
-
-#[inline(always)]
-pub fn main() -> ! {
-    unsafe { pw_kernel_target_main() }
-}
-
-#[inline(always)]
-pub fn shutdown(code: u32) -> ! {
-    unsafe { pw_kernel_target_shutdown(code) }
+{
+  arch: "riscv",
+  kernel: {
+    flash_start_address: 0x80000000,
+    flash_size_bytes: 261120,        // 255Kb
+    ram_start_address: 0x81000000,
+    ram_size_bytes: 65536,           // 64Kb
+  },
+  apps: {
+    ticker: {
+      flash_size_bytes: 261120, // 255Kb
+      ram_size_bytes: 65536,    // 64Kb
+      process: {
+        name: "ticker process",
+        objects: {
+            TICKER: {
+                type: "ticker"
+            },
+        },
+        threads: [
+          {
+            name: "ticker thread",
+            stack_size_bytes: 1024,
+          },
+        ],
+      },
+    },
+  },
 }

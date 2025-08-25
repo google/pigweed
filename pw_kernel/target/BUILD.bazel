@@ -22,7 +22,8 @@ rust_library(
     srcs = ["target_common.rs"],
     tags = ["kernel"],
     deps = [
-        "@pigweed//pw_log/rust:pw_log",
+        "//pw_kernel/lib/pw_assert",
+        "//pw_log/rust:pw_log",
     ],
 )
 

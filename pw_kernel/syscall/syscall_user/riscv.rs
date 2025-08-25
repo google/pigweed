@@ -38,6 +38,7 @@ syscall_veneer!(ObjectWait, object_wait(handle: u32, signals: u32, deadline: u64
 syscall_veneer!(DebugNoOp, noop());
 syscall_veneer!(DebugAdd, add(a: u32, b: u32));
 syscall_veneer!(DebugPutc, putc(a: u32));
+syscall_veneer!(DebugShutdown, shutdown(a: u32));
 
 impl SysCallInterface for SysCall {
     #[inline(always)]
@@ -58,5 +59,10 @@ impl SysCallInterface for SysCall {
     #[inline(always)]
     fn debug_putc(a: u32) -> Result<u32> {
         SysCallReturnValue(unsafe { putc(a) }).to_result_u32()
+    }
+
+    #[inline(always)]
+    fn debug_shutdown(a: u32) -> Result<()> {
+        SysCallReturnValue(unsafe { shutdown(a) }).to_result_unit()
     }
 }

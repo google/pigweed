@@ -22,6 +22,11 @@ pub trait TargetInterface {
     /// Called at the end of Kernel::main to invoke any target specific
     /// code.
     fn main() -> !;
+
+    /// Shutdown the target.
+    fn shutdown(code: u32) -> ! {
+        pw_assert::panic!("Target shutdown with code {}", code as u32);
+    }
 }
 
 #[macro_export]
@@ -40,6 +45,11 @@ macro_rules! declare_target {
         #[unsafe(no_mangle)]
         pub fn pw_kernel_target_main() -> ! {
             <$target as $crate::TargetInterface>::main();
+        }
+
+        #[unsafe(no_mangle)]
+        pub fn pw_kernel_target_shutdown(code: u32) -> ! {
+            <$target as $crate::TargetInterface>::shutdown(code);
         }
     };
 }

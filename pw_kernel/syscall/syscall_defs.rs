@@ -206,6 +206,7 @@ pub enum SysCallId {
     DebugNoOp = 0xf000,
     DebugAdd = 0xf001,
     DebugPutc = 0xf002,
+    DebugShutdown = 0xf003,
 }
 
 impl TryFrom<u16> for SysCallId {
@@ -214,7 +215,7 @@ impl TryFrom<u16> for SysCallId {
     fn try_from(value: u16) -> core::result::Result<Self, Error> {
         match value {
             // Safety: match
-            0x0000..=0x0000 | 0xf000..=0xf002 => {
+            0x0000..=0x0000 | 0xf000..=0xf003 => {
                 Ok(unsafe { core::mem::transmute::<u16, SysCallId>(value) })
             }
             _ => Err(Error::InvalidArgument),
@@ -424,4 +425,7 @@ pub trait SysCallInterface {
     fn debug_noop() -> Result<()>;
     fn debug_add(a: u32, b: u32) -> Result<u32>;
     fn debug_putc(a: u32) -> Result<u32>;
+    // TODO: Consider adding an feature flagged PowerManager object and move
+    // this shutdown call to it.
+    fn debug_shutdown(a: u32) -> Result<()>;
 }
