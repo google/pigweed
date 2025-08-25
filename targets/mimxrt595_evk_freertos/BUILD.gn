@@ -51,16 +51,6 @@ config("disable_warnings") {
   visibility = [ ":*" ]
 }
 
-config("freestanding") {
-  cflags = [
-    "-ffreestanding",
-    "-fno-builtin",
-  ]
-  asmflags = cflags
-  ldflags = cflags
-  visibility = [ ":*" ]
-}
-
 config("sdk_defines") {
   defines = [
     "BOOT_HEADER_ENABLE=1",
@@ -145,7 +135,6 @@ if (pw_third_party_mcuxpresso_SDK ==
       "$pw_external_freertos",
     ]
     public_configs = [
-      ":freestanding",
       ":sdk_defines",
       ":disable_warnings",
     ]

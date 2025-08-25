@@ -65,12 +65,13 @@ platform(
         "//pw_log/rust:pw_log_backend": "//pw_rust/examples/tokenized_logging:pw_log_backend",
         "//pw_log:backend": "//pw_log_basic",
         "//pw_log:backend_impl": "//pw_log_basic:impl",
-        "//pw_sys_io:backend": "//pw_sys_io_baremetal_lm3s6965evb",
-        "//pw_unit_test:main": "//pw_unit_test:logging_main",
-        "@bazel_tools//tools/cpp:link_extra_libs": ":pre_init",
         # TODO: b/415389061 - While this is being built with newlib nano, malloc
         # needs to be wrapped.
-        "@pigweed//pw_malloc:backend": "//pw_malloc:bucket_block_allocator",
+        "//pw_malloc:backend": "//pw_malloc:bucket_block_allocator",
+        "//pw_sys_io:backend": "//pw_sys_io_baremetal_lm3s6965evb",
+        "//pw_toolchain/arm_gcc:freestanding": "False",
+        "//pw_unit_test:main": "//pw_unit_test:logging_main",
+        "@bazel_tools//tools/cpp:link_extra_libs": ":pre_init",
     }),
 )
 

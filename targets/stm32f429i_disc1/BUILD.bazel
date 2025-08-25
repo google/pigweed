@@ -45,6 +45,7 @@ platform(
         "@pigweed//pw_malloc:backend": "//pw_malloc:bucket_block_allocator",
         "@pigweed//pw_sys_io:backend": "//pw_sys_io_baremetal_stm32f429",
         "@pigweed//pw_system:extra_platform_libs": "//targets/stm32f429i_disc1:extra_platform_libs",
+        "@pigweed//pw_toolchain/arm_gcc:freestanding": "False",
     }),
 )
 

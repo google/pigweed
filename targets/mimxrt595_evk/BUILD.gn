@@ -54,16 +54,6 @@ config("disable_warnings") {
   visibility = [ ":*" ]
 }
 
-config("freestanding") {
-  cflags = [
-    "-ffreestanding",
-    "-fno-builtin",
-  ]
-  asmflags = cflags
-  ldflags = cflags
-  visibility = [ ":*" ]
-}
-
 config("sdk_defines") {
   defines = [
     "BOOT_HEADER_ENABLE=1",
@@ -130,7 +120,6 @@ if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk:mcuxpresso_sdk") {
 
   pw_source_set("mcuxpresso_sdk_config") {
     public_configs = [
-      ":freestanding",
       ":sdk_defines",
       ":disable_warnings",
     ]
