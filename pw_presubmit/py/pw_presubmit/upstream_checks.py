@@ -76,6 +76,7 @@ SOURCE_FILES_FILTER_GN_EXCLUDE = FileFilter(
         r'\bdocs',
         r'\bexamples',
         r'\bpw_bluetooth_sapphire/fuchsia',
+        r'\bpw_kernel',
         # keep-sorted: end
     ),
 )
