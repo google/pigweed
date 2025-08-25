@@ -332,6 +332,424 @@ You've now implemented a task that can wait for an asynchronous event and
 correctly manages its state! In the next step, you'll learn how to write your
 own pendable functions.
 
+--------------------------------------
+Step 3: Writing your own event handler
+--------------------------------------
+In the last step, you created a task to dispense an item after a coin was
+inserted. Most vending machines at least allow you to choose what to buy.
+Let's fix that by handling the keypad input ISR, and using the key press info
+in the task to dispense an item.
+
+Along the way you will learn how to correctly wake up a task that is waiting for
+input like this. You will also gain some experience implementing a ``Pend()``
+function yourself.
+
+The provided hardware simulation will send you a keypad event via an
+asynchronous call to the ``key_press_isr()`` that should already be defined in
+your `//pw_async2/codelab/main.cc`_ file. It will pass you an integer value in
+the range (0-9) to indicate which keypad button was pressed. It is going to be
+up to you to process that keypad event safely, and allow your task to wait for
+the keypad number after receiving a coin to dispense an item.
+
+A single digit should be enough, but if you want an extra challenge, you can
+choose to allow larger numbers to be entered.
+
+.. tip::
+
+   Solution for this step:
+   `//pw_async2/codelab/solutions/step3`_
+
+1. Define a stub ``Keypad`` class
+=================================
+Lets start with a minimal stub implementation. Add the following declaration to
+your `//pw_async2/codelab/vending_machine.h`_ header file:
+
+.. code-block:: cpp
+
+   class Keypad {
+      public:
+         constexpr Keypad() : key_pressed_(kNone) {}
+
+         // Pends until a key has been pressed, returning the key number.
+         //
+         // May only be called by one task.
+         pw::async2::Poll<int> Pend(pw::async2::Context& cx);
+
+         // Record a key press. Typically called from the keypad ISR.
+         void Press(int key);
+
+      private:
+         // A special internal value to indicate no keypad button has yet been
+         // pressed.
+         static constexpr int kNone = -1;
+
+         int key_pressed_;
+   };
+
+Also add these stub implementations to the top of your
+`//pw_async2/codelab/vending_machine.cc`_ file:
+
+.. code-block:: cpp
+
+   pw::async2::Poll<int> Keypad::Pend(pw::async2::Context& cx) {
+      // This is a stub implementation!
+      static_cast<void>(cx);
+      return key_pressed_;
+   }
+
+   void Keypad::Press(int key) {
+      // This is a stub implementation!
+      static_cast<void>(key);
+   }
+
+This should be a good starting stub. Notice how the ``Pend`` member function just
+immediately returns the value of ``key_pressed_``, which is only ever set to
+``kNone``. We will fix that later, but let's integrate the keypad into the rest
+of the code first.
+
+2. Add the ``Keypad`` to the vending machine
+============================================
+In your `//pw_async2/codelab/main.cc`_ file, create a global instance of your
+keypad type next to the coin slot instance, and then update your
+``VendingMachineTask`` constructor to take a reference to it in the constructor,
+and to save the reference as member data.
+
+3. Wait for a key event in your task
+====================================
+At this point, your task's ``DoPend`` function should look something like the
+solution file for step 2 (though not necessarily identical):
+
+.. literalinclude:: codelab/solutions/step2/vending_machine.cc
+  :language: cpp
+  :linenos:
+  :start-after: VendingMachineTask::DoPend
+  :end-at: pw::async2::Ready
+
+The logical place to handle the keypad input is after receiving a coin.
+
+Update the coin received message to remove the "item is being dispensed"
+message. Instead we will wait for the keypad event.
+
+Waiting for a keypad event is going to be very much like waiting for a coin.
+Use the :doxylink:`PW_TRY_READY_ASSIGN` macro to poll ``keypad_.Pend(cx)``. If
+it is ready, log the keypad key that was received, and that an item is
+dispensing before returning ``pw::async2::Ready()`` to finish the task.
+
+4. Build and verify the stub
+============================
+Run your vending machine as before:
+
+.. code-block:: sh
+
+   bazelisk run //pw_async2/codelab
+
+You will see the welcome message, and you can insert a coin by again typing
+:kbd:`c` and pressing :kbd:`Enter`. You should see a message that "-1" was
+pressed. This is expected since the ``KeyPad::DoPend()`` stub implementation
+returns ``key_pressed_``, which was initialized to ``kNone`` (-1).
+
+.. code-block:: sh
+
+   INF  Welcome to the Pigweed Vending Machine!
+   INF  Please insert a coin.
+   c
+   INF  Received 1 coin.
+   INF  Please press a keypad key.
+   INF  Keypad -1 was pressed. Dispensing an item.
+
+So far so good! Next it is time to handle the hardware event, and have your task
+wait for the key press data.
+
+5. Handle the event in your ``Keypad`` implementation
+=====================================================
+The first step should be trivial. Modify the stub ``key_press_isr`` in your
+`//pw_async2/codelab/main.cc`_ to pass the key number to the ``Keypad::Press``
+member function.
+
+.. code-block:: cpp
+
+   void key_press_isr(int raw_key_code) { keypad.Press(raw_key_code); }
+
+The next step is harder, implementing the ``Keypad::Press`` member function
+correctly.
+
+Since the keypad ISR is asynchronous, you will need to synchronize access to
+the stored event data. For this codelab, you we use
+:doxylink:`pw::sync::InterruptSpinLock` which is safe to acquire from an ISR in
+production use. Alternatively you can use atomic operations.
+
+We'll also use ``PW_GUARDED_BY`` to add a compile-time check that the protected
+members are accessed with the lock held.
+
+Normally you would have to add the correct dependencies to the
+`//pw_async2/codelab/BUILD.bazel`_ file, but we've already included them to save
+you some work. But if something went wrong, they are straightforward:
+
+.. code-block:: cpp
+
+   "//pw_sync:interrupt_spin_lock",
+   "//pw_sync:lock_annotations",
+
+1. Add an instance of the spin lock to your ``Keypad`` class, along with a
+   data member to hold the key press data.
+
+   .. code-block:: cpp
+
+      pw::sync::InterruptSpinLock lock_;
+      int key_pressed_ PW_GUARDED_BY(lock_);
+
+   The ``PW_GUARDED_BY(lock_)`` just tells the compiler (clang) that to access
+   ``key_pressed_``, ``lock_`` should be held first, otherwise it should emit a
+   diagnostic.
+
+2. Add two includes at the top of your `//pw_async2/codelab/vending_machine.h`_:
+
+   .. code-block:: cpp
+
+      #include "pw_sync/interrupt_spin_lock.h"
+      #include "pw_sync/lock_annotations.h"
+
+3. Now you can implement ``Keypad::Press`` to save off the event data in a way
+   that it can be safely read by ``Keypad::Pend``.
+
+   .. code-block:: cpp
+
+      std::lock_guard lock(lock_);
+      key_pressed_ = key;
+
+
+4. You can start off with this implementation for ``Keypad::Pend``:
+
+   .. code-block:: cpp
+
+      std::lock_guard lock(lock_);
+      int key = std::exchange(key_pressed_, kNone);
+      if (key != kNone) {
+         return key;
+      }
+      return pw::async2::Pending();
+
+   If you haven't seen ``std::exchange`` used like this before, it just ensures
+   that the key pressed event data is read only once by clearing it out to
+   ``kNone`` (-1) after reading the value of ``key_pressed_``.
+
+It's so simple… what could go wrong?
+
+.. code-block:: sh
+
+   bazelisk run //pw_async2/codelab
+
+   INF  Welcome to the Pigweed Vending Machine!
+   INF  Please insert a coin.
+   c
+   INF  Received 1 coin.
+   INF  Please press a keypad key.
+
+      ▄████▄      ██▀███      ▄▄▄           ██████     ██░ ██
+     ▒██▀ ▀█     ▓██ ▒ ██▒   ▒████▄       ▒██    ▒    ▓██░ ██▒
+     ▒▓█ 💥 ▄    ▓██ ░▄█ ▒   ▒██  ▀█▄     ░ ▓██▄      ▒██▀▀██░
+     ▒▓▓▄ ▄██▒   ▒██▀▀█▄     ░██▄▄▄▄██      ▒   ██▒   ░▓█ ░██
+     ▒ ▓███▀ ░   ░██▓ ▒██▒    ▓█   ▓██▒   ▒██████▒▒   ░▓█▒░██▓
+     ░ ░▒ ▒  ░   ░ ▒▓ ░▒▓░    ▒▒   ▓▒█░   ▒ ▒▓▒ ▒ ░    ▒ ░░▒░▒
+       ░  ▒        ░▒ ░ ▒░     ▒   ▒▒ ░   ░ ░▒  ░ ░    ▒ ░▒░ ░
+     ░             ░░   ░      ░   ▒      ░  ░  ░      ░  ░░ ░
+     ░ ░            ░              ░  ░         ░      ░  ░  ░
+     ░
+
+   pw_async2/dispatcher_base.cc:151: PW_CHECK() or PW_DCHECK() FAILED!
+
+     FAILED ASSERTION
+
+       !task->wakers_.empty()
+
+     FILE & LINE
+
+       pw_async2/dispatcher_base.cc:151
+
+     FUNCTION
+
+       NativeDispatcherBase::RunOneTaskResult pw::async2::NativeDispatcherBase::RunOneTask(Dispatcher &, Task *)
+
+     MESSAGE
+
+       Task 0x7ffd8ddc2f40 returned Pending() without registering a waker
+
+6. Fix the crash: Registering a waker
+=====================================
+The crash message is intentionally blatant about what went wrong. The
+implementation of ``Keypad::Pend`` I told you to write was intentionally
+incomplete to show you what happens if you make this misstep.
+
+.. topic:: When to store a waker
+
+   Generally if you are writing the leaf logic that decides that
+   :doxylink:`pw::async2::Pending` should be returned from your task, then you
+   should also be storing a :doxylink:`pw::async2::Waker` at the same time,
+   so you can wake up the task when the data you are waiting for is available.
+
+   One ``Waker`` wakes up one task. If your code needs to wake up multiple
+   tasks, you should use :doxylink:`pw::async2::WakerQueue` instead of a single
+   waker instance.
+
+Let's set up the waiter.
+
+1. First include ``pw_async2/waker.h`` at the top of your
+   `//pw_async2/codelab/vending_machine.h`_ header.
+
+2. Add an instance as member data to your ``Keypad`` class.
+
+   As this will ultimately be used by both ``Pend()`` and ``Press()``, it needs
+   to be guarded by the spin lock.
+
+   .. code-block:: cpp
+
+      pw::async2::Waker waker_ PW_GUARDED_BY(lock_);
+
+3. Setup the waker right before returning :doxylink:`pw::async2::Pending`
+
+   To do this correctly, you use  :doxylink:`PW_ASYNC_STORE_WAKER`, giving it
+   the context argument passed in to the ``Pend()``, the waker to store to, and
+   a ``wait_reason_string`` to help debug issues.
+
+   .. tip::
+
+      Pass a meaningful string for last ``wait_reason_string``, as this will
+      help you debug issues.
+
+   Here's what the end of ``Keypad::Pend`` should look like:
+
+   .. code-block:: cpp
+
+      PW_ASYNC_STORE_WAKER(cx, waker_, "keypad press");
+      return pw::async2::Pending();
+
+
+We haven't yet modified ``Keypad::Press`` to use the waker yet, and we will need
+to. But first let's show what happens if you forget this step. This time there
+will not be a crash!
+
+8. Forgetting to wake the task
+==============================
+
+Let's see what happens if you forget to wake the task.
+
+Build and run the codelab, and then press :kbd:`c` :kbd:`Enter` :kbd:`1`
+:kbd:`Enter`....
+
+.. code-block:: sh
+
+   bazelisk run //pw_async2/codelab
+
+   INF  Welcome to the Pigweed Vending Machine!
+   INF  Please insert a coin.
+   c
+   INF  Received 1 coin.
+   INF  Please press a keypad key.
+   1
+
+As expected, nothing happens, not even an assertion. ``pw_async2`` has no way of
+knowing itself when the task is ready to be woken up as the pendable is ready.
+
+You might wonder then how you would even debug this problem. Luckily, there is
+a way!
+
+Try pressing :kbd:`d` then :kbd:`Enter`.
+
+.. code-block:: sh
+
+   d
+   INF  pw::async2::Dispatcher
+   INF  Woken tasks:
+   INF  Sleeping tasks:
+   INF    - VendingMachineTask:0x7ffeec48fd90 (1 wakers)
+   INF      * Waker 1: keypad press
+
+This shows the state of all the tasks registered with the dispatcher.
+
+Behind the scenes, the ``hardware.cc`` implementation calls
+:doxylink:`LogRegisteredTasks <pw::async2::Dispatcher::LogRegisteredTasks>` on
+the dispatcher which was registered via the ``HardwareInit()`` function.
+
+You can make this same call yourself to understand why your tasks aren't doing
+anything, and investigate from there.
+
+In this case we know we are sending a keypad press event, but obviously from
+the ``Waker 1: keypad press`` line in the output log, the task wasn't properly
+woken up.
+
+To fix it, let's add the missing ``Wake()`` call to ``Keypad::Press``:
+
+.. code-block:: cpp
+
+   std::lock_guard lock(lock_);
+   key_pressed_ = key;
+   std::move(waker_).Wake();
+
+We move the waker out of ``waker_`` first to consume it. That way the next
+interrupt won't wake the task if the task is actually waiting on something else.
+
+Note it is completely safe to make the ``Wake()`` call if the waker is in
+an "empty" state, such as when no waker has yet been stored using
+``PW_ASYNC_STORE_WAKER``. Doing that is a no-op.
+
+.. tip::
+
+   You can also end up in a "task not waking up" state if you destroy or
+   otherwise clear the ``Waker`` instance that pointed at the task to wake.
+   Again ``LogRegisteredTasks`` will point to a problem waking your task,
+   and give the last reason message, so you know where to start looking.
+
+.. important::
+
+   If you don't see the reason messages, you may have configured
+   :doxylink:`PW_ASYNC2_DEBUG_WAIT_REASON` to ``0`` to disable them.
+   ``LogRegisteredTasks`` will still print out what it can, but for more
+   information you may need to consider enabling them temporarily.
+
+9. Verify your event handler
+============================
+.. code-block:: sh
+
+   bazelisk run //pw_async2/codelab
+
+Does it work as you expect?
+
+.. tip::
+
+   If you suspect you didn't implement your ``Keypad`` class correctly,
+   comparing your solution against the  `//pw_async2/codelab/coin_slot.cc`_
+   implementation might help before looking at the
+   `//pw_async2/codelab/solutions/step3`_ solution.
+
+Well, depending on how you arranged to wait on both the ``CoinSlot`` and
+``Keypad`` in your ``DoPend`` implementation, you could have one more problem.
+
+.. topic:: Spot the bug!
+   :class: tip
+
+   If the end of your ``DoPend()`` function looks like this, you have a bug.
+
+   .. code-block:: cpp
+
+      PW_TRY_READY_ASSIGN(unsigned coins, coin_slot_.Pend(cx));
+      PW_LOG_INFO("Received %u coin%s.", coins, coins > 1 ? "s" : "");
+      PW_LOG_INFO("Please press a keypad key.");
+
+      PW_TRY_READY_ASSIGN(int key, keypad_.Pend(cx));
+      PW_LOG_INFO("Keypad %d was pressed. Dispensing an item.", key);
+
+      return pw::async2::Ready();
+
+   You will find that after typing :kbd:`c` :kbd:`Enter` to insert a coin, then
+   typing :kbd:`1` :kbd:`Enter` to submit a keypad event, you will not see the
+   "Dispensing an item" message.
+
+   Try typing :kbd:`d` :kbd:`Enter`, to see what your task is waiting on. Can
+   you fix it?
+
+We will look at how to better handle multiple pendables in the next step. As a
+hint, you need to start thinking of your task as a state machine.
+
 .. The following references shorten the markup above.
 
 .. _`//pw_async2/codelab/BUILD.bazel`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/BUILD.bazel
@@ -342,3 +760,4 @@ own pendable functions.
 
 .. _`//pw_async2/codelab/solutions/step1`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step1
 .. _`//pw_async2/codelab/solutions/step2`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step2
+.. _`//pw_async2/codelab/solutions/step3`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step3

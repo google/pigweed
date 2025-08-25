@@ -557,6 +557,7 @@ sphinx_docs_library(
         "//pw_async2/codelab:vending_machine.h",
         "//pw_async2/codelab/solutions/step1:main.cc",
         "//pw_async2/codelab/solutions/step2:main.cc",
+        "//pw_async2/codelab/solutions/step2:vending_machine.cc",
         "//pw_async2/examples:docs",
         "//pw_async2/size_report:full_size_report",
         "//pw_async2/size_report:once_sender_size_report",

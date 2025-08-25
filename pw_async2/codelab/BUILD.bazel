@@ -43,6 +43,8 @@ pw_cc_binary(
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
         "//pw_log",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
     ],
 )
 
