@@ -81,43 +81,18 @@ hci_spec::EventCode EventPacket::event_code() const {
 std::optional<pw::bluetooth::emboss::StatusCode> EventPacket::StatusCode()
     const {
   switch (event_code()) {
-    case hci_spec::kAuthenticationCompleteEventCode:
+    case hci_spec::kInquiryCompleteEventCode:
       return StatusCodeFromView<
-          pw::bluetooth::emboss::AuthenticationCompleteEventView>();
-    case hci_spec::kChangeConnectionLinkKeyCompleteEventCode:
-      return StatusCodeFromView<
-          pw::bluetooth::emboss::ChangeConnectionLinkKeyCompleteEventView>();
-    case hci_spec::kCommandCompleteEventCode:
-      return StatusCodeFromView<
-          pw::bluetooth::emboss::SimpleCommandCompleteEventView>();
-    case hci_spec::kCommandStatusEventCode:
-      return StatusCodeFromView<
-          pw::bluetooth::emboss::CommandStatusEventView>();
+          pw::bluetooth::emboss::InquiryCompleteEventView>();
     case hci_spec::kConnectionCompleteEventCode:
       return StatusCodeFromView<
           pw::bluetooth::emboss::ConnectionCompleteEventView>();
     case hci_spec::kDisconnectionCompleteEventCode:
       return StatusCodeFromView<
           pw::bluetooth::emboss::DisconnectionCompleteEventView>();
-    case hci_spec::kEncryptionChangeEventCode:
+    case hci_spec::kAuthenticationCompleteEventCode:
       return StatusCodeFromView<
-          pw::bluetooth::emboss::EncryptionChangeEventV1View>();
-    case hci_spec::kEncryptionKeyRefreshCompleteEventCode:
-      return StatusCodeFromView<
-          pw::bluetooth::emboss::EncryptionKeyRefreshCompleteEventView>();
-    case hci_spec::kInquiryCompleteEventCode:
-      return StatusCodeFromView<
-          pw::bluetooth::emboss::InquiryCompleteEventView>();
-    case hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode:
-      return StatusCodeFromView<
-          pw::bluetooth::emboss::ReadRemoteExtendedFeaturesCompleteEventView>();
-    case hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode:
-      return StatusCodeFromView<
-          pw::bluetooth::emboss::
-              ReadRemoteSupportedFeaturesCompleteEventView>();
-    case hci_spec::kReadRemoteVersionInfoCompleteEventCode:
-      return StatusCodeFromView<
-          pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventView>();
+          pw::bluetooth::emboss::AuthenticationCompleteEventView>();
     case hci_spec::kRemoteNameRequestCompleteEventCode: {
       // Tests expect that a kPacketMalformed status is returned for incomplete
       // events, even if they contain the status field.
@@ -128,16 +103,85 @@ std::optional<pw::bluetooth::emboss::StatusCode> EventPacket::StatusCode()
       }
       return event_view.status().UncheckedRead();
     }
+    case hci_spec::kEncryptionChangeEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::EncryptionChangeEventV1View>();
+    case hci_spec::kChangeConnectionLinkKeyCompleteEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::ChangeConnectionLinkKeyCompleteEventView>();
+    case hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::
+              ReadRemoteSupportedFeaturesCompleteEventView>();
+    case hci_spec::kReadRemoteVersionInfoCompleteEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventView>();
+    case hci_spec::kCommandCompleteEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::SimpleCommandCompleteEventView>();
+    case hci_spec::kCommandStatusEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::CommandStatusEventView>();
     case hci_spec::kRoleChangeEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::RoleChangeEventView>();
     case hci_spec::kModeChangeEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::ModeChangeEventView>();
-    case hci_spec::kSimplePairingCompleteEventCode:
+    case hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode:
       return StatusCodeFromView<
-          pw::bluetooth::emboss::SimplePairingCompleteEventView>();
+          pw::bluetooth::emboss::ReadRemoteExtendedFeaturesCompleteEventView>();
     case hci_spec::kSynchronousConnectionCompleteEventCode:
       return StatusCodeFromView<
           pw::bluetooth::emboss::SynchronousConnectionCompleteEventView>();
+    case hci_spec::kEncryptionKeyRefreshCompleteEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::EncryptionKeyRefreshCompleteEventView>();
+    case hci_spec::kSimplePairingCompleteEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::SimplePairingCompleteEventView>();
+    case hci_spec::kLEMetaEventCode: {
+      hci_spec::EventCode subevent_code =
+          view<pw::bluetooth::emboss::LEMetaEventView>().subevent_code().Read();
+
+      switch (subevent_code) {
+        case hci_spec::kLEConnectionCompleteSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LEConnectionCompleteSubeventView>();
+        }
+        case hci_spec::kLEConnectionUpdateCompleteSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventView>();
+        }
+        case hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::
+                  LEReadRemoteFeaturesCompleteSubeventView>();
+        }
+        case hci_spec::kLEEnhancedConnectionCompleteSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::
+                  LEEnhancedConnectionCompleteSubeventV1View>();
+        }
+        case hci_spec::kLEAdvertisingSetTerminatedSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LEAdvertisingSetTerminatedSubeventView>();
+        }
+        case hci_spec::kLECISEstablishedSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LECISEstablishedSubeventView>();
+        }
+        case hci_spec::kLERequestPeerSCACompleteSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LERequestPeerSCACompleteSubeventView>();
+        }
+        default: {
+          PW_CRASH("Emboss LE meta subevent (%#.2x) not implemented",
+                   subevent_code);
+          break;
+        }
+      }
+
+      break;
+    }
     case hci_spec::kVendorDebugEventCode: {
       hci_spec::EventCode subevent_code =
           view<pw::bluetooth::emboss::VendorDebugEventView>()
@@ -159,52 +203,6 @@ std::optional<pw::bluetooth::emboss::StatusCode> EventPacket::StatusCode()
 
       break;
     }
-
-    case hci_spec::kLEMetaEventCode: {
-      hci_spec::EventCode subevent_code =
-          view<pw::bluetooth::emboss::LEMetaEventView>().subevent_code().Read();
-
-      switch (subevent_code) {
-        case hci_spec::kLECISEstablishedSubeventCode: {
-          return StatusCodeFromView<
-              pw::bluetooth::emboss::LECISEstablishedSubeventView>();
-        }
-        case hci_spec::kLEConnectionCompleteSubeventCode: {
-          return StatusCodeFromView<
-              pw::bluetooth::emboss::LEConnectionCompleteSubeventView>();
-        }
-        case hci_spec::kLEConnectionUpdateCompleteSubeventCode: {
-          return StatusCodeFromView<
-              pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventView>();
-        }
-        case hci_spec::kLEEnhancedConnectionCompleteSubeventCode: {
-          return StatusCodeFromView<
-              pw::bluetooth::emboss::
-                  LEEnhancedConnectionCompleteSubeventV1View>();
-        }
-        case hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode: {
-          return StatusCodeFromView<
-              pw::bluetooth::emboss::
-                  LEReadRemoteFeaturesCompleteSubeventView>();
-        }
-        case hci_spec::kLERequestPeerSCACompleteSubeventCode: {
-          return StatusCodeFromView<
-              pw::bluetooth::emboss::LERequestPeerSCACompleteSubeventView>();
-        }
-        case hci_spec::kLEAdvertisingSetTerminatedSubeventCode: {
-          return StatusCodeFromView<
-              pw::bluetooth::emboss::LEAdvertisingSetTerminatedSubeventView>();
-        }
-        default: {
-          PW_CRASH("Emboss LE meta subevent (%#.2x) not implemented",
-                   subevent_code);
-          break;
-        }
-      }
-
-      break;
-    }
-
     default: {
       PW_CRASH("Emboss event (%#.2x) not implemented", event_code());
       break;
