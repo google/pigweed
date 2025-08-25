@@ -77,11 +77,11 @@ For example, to run tests on the host:
 
    bazelisk test --config k_host //pw_kernel/...
 
-To run tests for the RISC-V QEMU target and see all test output:
+To run unittests tests for the RISC-V QEMU target and see all test output:
 
 .. code-block:: console
 
-   bazelisk test --test_output=all --cache_test_results=no --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32:unittest_runner
+   bazelisk test --test_output=all --cache_test_results=no --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32/unittest_runner
 
 ---------------------
 Run demo applications
@@ -100,13 +100,13 @@ QEMU for MPS2-AN505 (Cortex-M33)
 
       .. code-block:: console
 
-         bazelisk run --config k_qemu_mps2_an505 //pw_kernel/target/mps2_an505:kernel_only_demo
+         bazelisk run --config k_qemu_mps2_an505 //pw_kernel/target/mps2_an505/kernelspace_demo
 
    .. tab-item:: Userspace demo
 
       .. code-block:: console
 
-         bazelisk run --config k_qemu_mps2_an505 //pw_kernel/target/mps2_an505:userspace_demo
+         bazelisk run --config k_qemu_mps2_an505 //pw_kernel/target/mps2_an505/userspace_demo
 
 QEMU for virt (RISC-V)
 ======================
@@ -116,13 +116,13 @@ QEMU for virt (RISC-V)
 
       .. code-block:: console
 
-         bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32:kernel_only_demo
+         bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32/kernelspace_demo
 
    .. tab-item:: Userspace demo
 
       .. code-block:: console
 
-         bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32:userspace_demo
+         bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32/userspace_demo
 
 Raspberry Pi RP2350
 ===================
@@ -136,13 +136,13 @@ Build one of the demos:
 
       .. code-block:: console
 
-         bazelisk build --config k_rp2350 //pw_kernel/target/pw_rp2350:kernel_only_demo
+         bazelisk build --config k_rp2350 //pw_kernel/target/pw_rp2350/kernelspace_demo
 
    .. tab-item:: Userspace demo
 
       .. code-block:: console
 
-         bazelisk build --config k_rp2350 //pw_kernel/target/pw_rp2350:userspace_demo
+         bazelisk build --config k_rp2350 //pw_kernel/target/pw_rp2350/userspace_demo
 
 The output ELF files will be located in the ``bazel-bin/pw_kernel/target/pw_rp2350/`` directory.
 
@@ -168,13 +168,13 @@ Flash one of the demos:
 
       .. code-block:: console
 
-         probe-rs download --chip rp2350 bazel-bin/pw_kernel/target/pw_rp2350/kernel_only_demo.elf && probe-rs reset --chip rp2350
+         probe-rs download --chip rp2350 bazel-bin/pw_kernel/target/pw_rp2350/kernelspace_demo/kernelspace_demo.elf && probe-rs reset --chip rp2350
 
    .. tab-item:: Userspace demo
 
       .. code-block:: console
 
-         probe-rs download --chip rp2350 bazel-bin/pw_kernel/target/pw_rp2350/userspace_demo.elf && probe-rs reset --chip rp2350
+         probe-rs download --chip rp2350 bazel-bin/pw_kernel/target/pw_rp2350/userspace_demo/userspace_demo.elf && probe-rs reset --chip rp2350
 
 Run one of the demos:
 
@@ -184,13 +184,13 @@ Run one of the demos:
 
       .. code-block:: console
 
-         bazelisk run --config k_rp2350 //pw_kernel/target/pw_rp2350:kernel_only_demo -- -d <SERIAL_DEVICE>
+         bazelisk run --config k_rp2350 //pw_kernel/target/pw_rp2350/kernelspace_demo -- -d <SERIAL_DEVICE>
 
    .. tab-item:: Userspace demo
 
       .. code-block:: console
 
-         bazelisk run --config k_rp2350 //pw_kernel/target/pw_rp2350:userspace_demo -- -d <SERIAL_DEVICE>
+         bazelisk run --config k_rp2350 //pw_kernel/target/pw_rp2350/userspace_demo -- -d <SERIAL_DEVICE>
 
 .. tip::
 

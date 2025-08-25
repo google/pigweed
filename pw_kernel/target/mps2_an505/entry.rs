@@ -14,27 +14,7 @@
 #![no_std]
 #![no_main]
 
-use arch_riscv::Arch;
-use console_backend as _;
-use kernel::{self as _, Arch as _, Duration};
-
-use target_common::{declare_target, TargetInterface};
-mod userspace_demo_codegen;
-
-pub struct Target {}
-
-impl TargetInterface for Target {
-    const NAME: &'static str = "QEMU-VIRT-RISCV Userspace Demo";
-
-    fn main() -> ! {
-        userspace_demo_codegen::start();
-        loop {
-            kernel::sleep_until(Arch, Arch.now() + Duration::from_secs(10));
-        }
-    }
-}
-
-declare_target!(Target);
+use arch_arm_cortex_m::Arch;
 
 #[unsafe(no_mangle)]
 #[allow(non_snake_case)]
@@ -43,7 +23,7 @@ pub extern "C" fn pw_assert_HandleFailure() -> ! {
     Arch::panic()
 }
 
-#[riscv_rt::entry]
+#[cortex_m_rt::entry]
 fn main() -> ! {
     kernel::static_init_state!(static mut INIT_STATE: InitKernelState<Arch>);
 

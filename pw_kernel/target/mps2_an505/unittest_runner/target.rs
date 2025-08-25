@@ -16,48 +16,29 @@
 
 use cortex_m_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, exit};
 
-use console_backend as _;
+use unittest_core::TestsResult;
 
-use arch_arm_cortex_m::Arch;
 use target_common::{TargetInterface, declare_target};
-mod ticker_codegen;
+use {console_backend as _, entry as _, integration_tests as _, kernel as _};
 
 pub struct Target {}
 
 impl TargetInterface for Target {
-    const NAME: &'static str = "MPS2-AN505 Ticker";
+    const NAME: &'static str = "MPS2-AN505 Unittest Runner";
 
     fn main() -> ! {
-        ticker_codegen::start();
-        loop {}
-    }
+        // cortex_m_rt does not run ctors, so we do it manually. Note that this
+        // is required in order to register tests, which is a prerequisite to
+        // calling `run_all_tests` below.
+        unsafe { target_common::run_ctors() };
 
-    fn shutdown(code: u32) -> ! {
-        pw_log::info!("Shutting down with code {}", code as u32);
-        let status = match code {
-            0 => EXIT_SUCCESS,
-            _ => EXIT_FAILURE,
+        let exit_status = match unittest_core::run_all_tests!() {
+            TestsResult::AllPassed => EXIT_SUCCESS,
+            TestsResult::SomeFailed => EXIT_FAILURE,
         };
-        exit(status);
+        exit(exit_status);
         loop {}
     }
 }
 
 declare_target!(Target);
-
-#[unsafe(no_mangle)]
-#[allow(non_snake_case)]
-pub extern "C" fn pw_assert_HandleFailure() -> ! {
-    use kernel::Arch as _;
-    Arch::panic()
-}
-
-#[cortex_m_rt::entry]
-fn main() -> ! {
-    kernel::static_init_state!(static mut INIT_STATE: InitKernelState<Arch>);
-
-    // SAFETY: `main` is only executed once, so we never generate more than one
-    // `&mut` reference to `INIT_STATE`.
-    #[allow(static_mut_refs)]
-    kernel::main(Arch, unsafe { &mut INIT_STATE });
-}

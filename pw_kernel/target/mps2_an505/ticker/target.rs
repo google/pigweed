@@ -14,25 +14,20 @@
 #![no_std]
 #![no_main]
 
-use riscv_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, exit};
-
-use arch_riscv::Arch;
-use console_backend as _;
-use kernel::{self as _, Arch as _, Duration};
+use cortex_m_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, exit};
 
 use target_common::{TargetInterface, declare_target};
-mod ticker_codegen;
+use {console_backend as _, entry as _, kernel as _};
+mod codegen;
 
 pub struct Target {}
 
 impl TargetInterface for Target {
-    const NAME: &'static str = "QEMU-VIRT-RISCV Ticker";
+    const NAME: &'static str = "MPS2-AN505 Ticker";
 
     fn main() -> ! {
-        ticker_codegen::start();
-        loop {
-            kernel::sleep_until(Arch, Arch.now() + Duration::from_secs(10));
-        }
+        codegen::start();
+        loop {}
     }
 
     fn shutdown(code: u32) -> ! {
@@ -47,20 +42,3 @@ impl TargetInterface for Target {
 }
 
 declare_target!(Target);
-
-#[unsafe(no_mangle)]
-#[allow(non_snake_case)]
-pub extern "C" fn pw_assert_HandleFailure() -> ! {
-    use kernel::Arch as _;
-    Arch::panic()
-}
-
-#[riscv_rt::entry]
-fn main() -> ! {
-    kernel::static_init_state!(static mut INIT_STATE: InitKernelState<Arch>);
-
-    // SAFETY: `main` is only executed once, so we never generate more than one
-    // `&mut` reference to `INIT_STATE`.
-    #[allow(static_mut_refs)]
-    kernel::main(Arch, unsafe { &mut INIT_STATE });
-}

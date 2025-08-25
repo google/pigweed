@@ -71,10 +71,10 @@ platform_data(
 code_size(
     name = "code_size",
     binaries = [
-        "//pw_kernel/target/mps2_an505:kernel_only_demo",
-        "//pw_kernel/target/mps2_an505:userspace_demo",
-        "//pw_kernel/target/qemu_virt_riscv32:kernel_only_demo",
-        "//pw_kernel/target/qemu_virt_riscv32:userspace_demo",
+        "//pw_kernel/target/mps2_an505/kernelspace_demo:kernelspace_demo",
+        "//pw_kernel/target/mps2_an505/userspace_demo:userspace_demo",
+        "//pw_kernel/target/qemu_virt_riscv32/kernelspace_demo:kernelspace_demo",
+        "//pw_kernel/target/qemu_virt_riscv32/userspace_demo:userspace_demo",
     ],
     tags = ["kernel"],
 )

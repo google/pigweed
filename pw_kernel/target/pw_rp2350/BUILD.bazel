@@ -12,12 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 load("//pw_kernel:flags.bzl", "KERNEL_DEVICE_COMMON_FLAGS")
-load("//pw_kernel/tooling:system_codegen.bzl", "system_codegen")
-load("//pw_kernel/tooling:system_image.bzl", "system_image")
+load("//pw_kernel/target/pw_rp2350:defs.bzl", "TARGET_COMPATIBLE_WITH")
 
 platform(
     name = "pw_rp2350",
@@ -35,136 +34,41 @@ platform(
             "//pw_kernel/target:linker_script": ":linker_script",
         },
     ),
+    visibility = [":__subpackages__"],
 )
 
 constraint_value(
     name = "target_pw_rp2350",
     constraint_setting = "//pw_kernel/target:target",
-    visibility = ["//visibility:public"],
+    visibility = [":__subpackages__"],
 )
 
-TARGET_COMPATIBLE_WITH = select({
-    ":target_pw_rp2350": [],
-    "//conditions:default": ["@platforms//:incompatible"],
-})
-
-system_image(
-    name = "kernel_only_demo",
-    kernel = ":target",
-    platform = ":pw_rp2350",
+rust_library(
+    name = "entry",
+    srcs = ["entry.rs"],
     tags = ["kernel"],
-    visibility = ["//visibility:public"],
-)
-
-system_image(
-    name = "userspace_demo",
-    apps = [
-        "//pw_kernel/apps/one",
-        "//pw_kernel/apps/two",
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    visibility = [":__subpackages__"],
+    deps = [
+        "//pw_kernel/arch/arm_cortex_m:arch_arm_cortex_m",
+        "//pw_kernel/kernel",
+        "@rust_crates//:cortex-m-rt",
+        "@rust_crates//:rp235x-hal",
     ],
-    kernel = ":userspace_target",
-    platform = ":pw_rp2350",
-    system_config = ":userspace_demo_config",
-    tags = ["kernel"],
-    visibility = ["//visibility:public"],
 )
 
-system_image(
-    name = "ticker",
-    apps = [
-        "//pw_kernel/apps/ticker",
-    ],
-    kernel = ":ticker_target",
-    platform = ":pw_rp2350",
-    system_config = ":ticker_config",
-    tags = ["kernel"],
-    visibility = ["//visibility:public"],
-)
-
-SRCS = ["target.rs"]
-
-COMMON_DEPS = [
-    ":linker_script",
-    "//pw_kernel/kernel",
-    "//pw_kernel/arch/arm_cortex_m:arch_arm_cortex_m",
-    "//pw_kernel/target:target_common",
-    "@rust_crates//:cortex-m",
-    "@rust_crates//:cortex-m-rt",
-    "@rust_crates//:panic-halt",
-    "@rust_crates//:rp235x-hal",
-]
-
-rust_binary(
-    name = "target",
-    srcs = SRCS,
+rust_library(
+    name = "console",
+    srcs = ["console.rs"],
+    crate_name = "console_backend",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
-        ":console",
-        "//pw_kernel/apps/kernel_only_demo:demo",
-    ] + COMMON_DEPS,
-)
-
-filegroup(
-    name = "userspace_demo_config",
-    srcs = ["userspace_demo.json5"],
-)
-
-system_codegen(
-    name = "userspace_demo_codegen",
-    system_config = ":userspace_demo_config",
-)
-
-rust_binary(
-    name = "userspace_target",
-    srcs = [
-        "userspace_target.rs",
-        ":userspace_demo_codegen",
-    ],
-    tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-    deps = [
-        ":console",
-        "//pw_log/rust:pw_log",
-    ] + COMMON_DEPS,
-)
-
-filegroup(
-    name = "ticker_config",
-    srcs = ["ticker.json5"],
-)
-
-system_codegen(
-    name = "ticker_codegen",
-    system_config = ":ticker_config",
-)
-
-rust_binary(
-    name = "ticker_target",
-    srcs = [
-        "ticker_target.rs",
-        ":ticker_codegen",
-    ],
-    tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-    deps = [
-        ":console",
-        "//pw_kernel/userspace",
-        "//pw_log/rust:pw_log",
-    ] + COMMON_DEPS,
-)
-
-rust_test(
-    name = "unittest_runner",
-    srcs = SRCS,
-    tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-    use_libtest_harness = False,
-    deps = COMMON_DEPS + [
-        ":console",
-        "//pw_kernel/kernel/tests:integration_tests",
-        "//pw_kernel/lib/unittest:unittest_core",
-        "//pw_log/rust:pw_log",
+        "//pw_kernel/arch/arm_cortex_m:arch_arm_cortex_m",
+        "//pw_kernel/kernel",
+        "//pw_kernel/lib/pw_status",
+        "@rust_crates//:embedded-io",
+        "@rust_crates//:rp235x-hal",
     ],
 )
 
@@ -176,18 +80,6 @@ rust_library(
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
         "//pw_kernel/config:kernel_config_interface",
-    ],
-)
-
-rust_library(
-    name = "console",
-    srcs = ["console.rs"],
-    crate_name = "console_backend",
-    tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-    deps = COMMON_DEPS + [
-        "//pw_kernel/lib/pw_status",
-        "@rust_crates//:embedded-io",
     ],
 )
 

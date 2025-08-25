@@ -12,13 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 load("//pw_kernel:flags.bzl", "KERNEL_DEVICE_COMMON_FLAGS")
-load("//pw_kernel/tooling:system_codegen.bzl", "system_codegen")
-load("//pw_kernel/tooling:system_image.bzl", "system_image", "system_image_test")
-load("//pw_kernel/tooling/panic_detector:rust_binary_no_panics_test.bzl", "rust_binary_no_panics_test")
+load("//pw_kernel/target/qemu_virt_riscv32:defs.bzl", "TARGET_COMPATIBLE_WITH")
 
 platform(
     name = "qemu_virt_riscv32",
@@ -39,170 +37,25 @@ platform(
             "//pw_kernel/target:linker_script": ":linker_script",
         },
     ),
+    visibility = [":__subpackages__"],
 )
 
 constraint_value(
     name = "target_qemu_virt_riscv32",
     constraint_setting = "//pw_kernel/target:target",
-    visibility = ["//visibility:public"],
+    visibility = [":__subpackages__"],
 )
 
-TARGET_COMPATIBLE_WITH = select({
-    ":target_qemu_virt_riscv32": [],
-    "//conditions:default": ["@platforms//:incompatible"],
-})
-
-system_image(
-    name = "kernel_only_demo",
-    kernel = ":target",
-    platform = ":qemu_virt_riscv32",
-    tags = ["kernel"],
-    visibility = ["//visibility:public"],
-)
-
-rust_binary_no_panics_test(
-    name = "kernel_only_demo_no_panics_test",
-    binary = ":kernel_only_demo",
-    tags = ["kernel"],
-)
-
-system_image_test(
-    name = "kernel_only_demo_test",
-    image = ":kernel_only_demo",
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-)
-
-system_image(
-    name = "userspace_demo",
-    apps = [
-        "//pw_kernel/apps/one",
-        "//pw_kernel/apps/two",
-    ],
-    kernel = ":userspace_demo_target",
-    platform = ":qemu_virt_riscv32",
-    system_config = ":userspace_demo_config",
-    tags = ["kernel"],
-    visibility = ["//visibility:public"],
-)
-
-rust_binary_no_panics_test(
-    name = "userspace_demo_no_panics_test",
-    binary = ":userspace_demo",
-    tags = ["kernel"],
-)
-
-system_image(
-    name = "ticker",
-    apps = [
-        "//pw_kernel/apps/ticker",
-    ],
-    kernel = ":ticker_target",
-    platform = ":qemu_virt_riscv32",
-    system_config = ":ticker_config",
-    tags = ["kernel"],
-    visibility = ["//visibility:public"],
-)
-
-rust_binary_no_panics_test(
-    name = "ticker_no_panics_test",
-    binary = ":ticker",
-    tags = ["kernel"],
-)
-
-system_image_test(
-    name = "ticker_test",
-    image = ":ticker",
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-)
-
-SRCS = ["target.rs"]
-
-COMMON_DEPS = [
-    ":linker_script",
-    "//pw_kernel/kernel",
-    "//pw_kernel/arch/riscv:arch_riscv",
-    "//pw_kernel/target:target_common",
-    "@rust_crates//:panic-halt",
-    "@rust_crates//:riscv",
-    "@rust_crates//:riscv-rt",
-]
-
-rust_binary(
-    name = "target",
-    srcs = SRCS,
+rust_library(
+    name = "entry",
+    srcs = ["entry.rs"],
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
+    visibility = [":__subpackages__"],
     deps = [
-        ":console",
-        "//pw_kernel/apps/kernel_only_demo:demo",
-        "@rust_crates//:riscv-semihosting",
-    ] + COMMON_DEPS,
-)
-
-filegroup(
-    name = "userspace_demo_config",
-    srcs = ["userspace_demo.json5"],
-)
-
-system_codegen(
-    name = "userspace_demo_codegen",
-    system_config = ":userspace_demo_config",
-)
-
-rust_binary(
-    name = "userspace_demo_target",
-    srcs = [
-        "userspace_demo_target.rs",
-        ":userspace_demo_codegen",
-    ],
-    tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-    deps = [
-        ":console",
-        "//pw_kernel/lib/time",
-        "//pw_kernel/userspace",
-        "//pw_log/rust:pw_log",
-    ] + COMMON_DEPS,
-)
-
-filegroup(
-    name = "ticker_config",
-    srcs = ["ticker.json5"],
-)
-
-system_codegen(
-    name = "ticker_codegen",
-    system_config = ":ticker_config",
-)
-
-rust_binary(
-    name = "ticker_target",
-    srcs = [
-        "ticker_target.rs",
-        ":ticker_codegen",
-    ],
-    tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-    deps = [
-        ":console",
-        "//pw_kernel/userspace",
-        "//pw_log/rust:pw_log",
-        "@rust_crates//:riscv-semihosting",
-    ] + COMMON_DEPS,
-)
-
-rust_test(
-    name = "unittest_runner",
-    srcs = SRCS,
-    tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
-    use_libtest_harness = False,
-    deps = COMMON_DEPS + [
-        ":console",
-        "//pw_kernel/kernel/tests:integration_tests",
-        "//pw_kernel/lib/unittest:unittest_core",
-        "//pw_log/rust:pw_log",
-        "@rust_crates//:riscv-semihosting",
+        "//pw_kernel/arch/riscv:arch_riscv",
+        "//pw_kernel/kernel",
+        "@rust_crates//:riscv-rt",
     ],
 )
 
@@ -213,9 +66,11 @@ rust_library(
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
+        "//pw_kernel/arch/riscv:arch_riscv",
+        "//pw_kernel/kernel",
         "//pw_kernel/lib/pw_status",
         "@rust_crates//:embedded-io",
-    ] + COMMON_DEPS,
+    ],
 )
 
 rust_library(
