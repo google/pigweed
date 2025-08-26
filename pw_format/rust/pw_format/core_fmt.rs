@@ -17,19 +17,17 @@
 
 use std::collections::HashSet;
 
-use nom::{
-    branch::alt,
-    bytes::complete::{tag, take_till1, take_while},
-    character::complete::{alpha1, alphanumeric1, anychar, digit1},
-    combinator::{map, map_res, opt, recognize, value},
-    multi::{many0, many0_count},
-    sequence::pair,
-    IResult,
-};
+use nom::IResult;
+use nom::branch::alt;
+use nom::bytes::complete::{tag, take_till1, take_while};
+use nom::character::complete::{alpha1, alphanumeric1, anychar, digit1};
+use nom::combinator::{map, map_res, opt, recognize, value};
+use nom::multi::{many0, many0_count};
+use nom::sequence::pair;
 
 use crate::{
-    fixed_width, precision, Alignment, Argument, ConversionSpec, Flag, FormatFragment,
-    FormatString, MinFieldWidth, Precision, Primitive, Style,
+    Alignment, Argument, ConversionSpec, Flag, FormatFragment, FormatString, MinFieldWidth,
+    Precision, Primitive, Style, fixed_width, precision,
 };
 
 /// The `name` in a `{name}` format string.  Matches a Rust identifier.

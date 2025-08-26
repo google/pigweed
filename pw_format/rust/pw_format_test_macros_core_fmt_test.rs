@@ -50,10 +50,9 @@ mod tests {
         core_fmt_format_printf_generator_test_macro,
     };
 
+    use super::*;
     // Create an alias to ourselves so that the proc macro can name our crate.
     use crate as pw_format_test_macros_test;
-
-    use super::*;
 
     #[test]
     fn generate_calls_generator_correctly() {

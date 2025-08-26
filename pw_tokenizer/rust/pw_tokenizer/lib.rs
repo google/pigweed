@@ -71,7 +71,6 @@ pub mod internal;
 // `pw_tokenizer` while still allowing a user to import it under a different
 // name.
 pub mod __private {
-    pub use crate::*;
     pub use pw_bytes::concat_static_strs;
     pub use pw_format_core::{PrintfFormatter, PrintfHexFormatter, PrintfUpperHexFormatter};
     pub use pw_status::Result;
@@ -81,6 +80,8 @@ pub mod __private {
         _token, _tokenize_core_fmt_to_buffer, _tokenize_core_fmt_to_writer,
         _tokenize_printf_to_buffer, _tokenize_printf_to_writer,
     };
+
+    pub use crate::*;
 }
 
 /// Return the [`u32`] token for the specified string and add it to the token
@@ -421,8 +422,9 @@ pub trait MessageWriter {
 mod tests {
     use super::*;
     extern crate self as pw_tokenizer;
-    use pw_stream::{Cursor, Write};
     use std::cell::RefCell;
+
+    use pw_stream::{Cursor, Write};
 
     // This is not meant to be an exhaustive test of tokenization which is
     // covered by `pw_tokenizer_core`'s unit tests.  Rather, this is testing

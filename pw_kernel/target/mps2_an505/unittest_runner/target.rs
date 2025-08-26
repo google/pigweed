@@ -15,10 +15,8 @@
 #![no_main]
 
 use cortex_m_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, exit};
-
-use unittest_core::TestsResult;
-
 use target_common::{TargetInterface, declare_target};
+use unittest_core::TestsResult;
 use {console_backend as _, entry as _, integration_tests as _, kernel as _};
 
 pub struct Target {}

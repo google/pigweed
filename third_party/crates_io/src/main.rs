@@ -12,14 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use std::{
-    collections::{HashMap, HashSet},
-    path::PathBuf,
-};
+use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::path::PathBuf;
 
 use clap::Parser;
 use serde::Deserialize;
-use std::fs;
 
 mod aliases;
 

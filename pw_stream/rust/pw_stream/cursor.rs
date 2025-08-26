@@ -282,7 +282,8 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> crate::WriteVarint for Cursor<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{test_utils::*, ReadInteger, ReadVarint, WriteInteger, WriteVarint};
+    use crate::test_utils::*;
+    use crate::{ReadInteger, ReadVarint, WriteInteger, WriteVarint};
 
     #[test]
     fn cursor_len_returns_total_bytes() {

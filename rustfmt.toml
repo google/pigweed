@@ -13,9 +13,13 @@
 # the License.
 
 edition = "2024"
+style_edition = "2024"
 
 # Prevent carriage returns
 newline_style = "Unix"
 
 imports_granularity = "Module"
 group_imports = "StdExternalCrate"
+
+# Don't try to format generated files.
+skip_children = true

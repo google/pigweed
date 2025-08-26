@@ -14,16 +14,14 @@
 
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
-use quote::{quote, ToTokens};
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input, Expr, Token,
-};
-
 use pw_format::macros::{
-    generate_printf, Arg, CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatStringParser,
+    Arg, CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatStringParser,
     PrintfFormatMacroGenerator, PrintfFormatStringFragment, PrintfFormatStringParser, Result,
+    generate_printf,
 };
+use quote::{ToTokens, quote};
+use syn::parse::{Parse, ParseStream};
+use syn::{Expr, Token, parse_macro_input};
 
 type TokenStream2 = proc_macro2::TokenStream;
 
@@ -138,9 +136,9 @@ impl PrintfFormatMacroGenerator for LogfGenerator<'_> {
             }
             Arg::Expr(_) => {
                 return Err(pw_format::macros::Error::new(&format!(
-                "Expected argument to untyped format (%v) to be a cast expression (e.g. x as i32), but found {}.",
-                expression.to_token_stream()
-              )));
+                    "Expected argument to untyped format (%v) to be a cast expression (e.g. x as i32), but found {}.",
+                    expression.to_token_stream()
+                )));
             }
         }
         Ok(())

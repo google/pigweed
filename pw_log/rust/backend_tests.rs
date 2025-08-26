@@ -15,9 +15,10 @@
 // Untyped prints code rely on as casts to annotate type information.
 #[allow(clippy::unnecessary_cast)]
 mod tests {
-    use crate::run_with_capture;
     use pw_log_backend::{pw_log_backend, pw_logf_backend};
     use pw_log_backend_api::LogLevel;
+
+    use crate::run_with_capture;
 
     #[test]
     fn no_argument_log_line_prints_to_stdout() {

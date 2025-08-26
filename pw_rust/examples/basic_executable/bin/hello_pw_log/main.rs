@@ -67,8 +67,8 @@ pub extern "C" fn main() -> isize {
     pw_log_info!("%d\0".as_ptr() as *const i8, c::value());
 
     pw_log_info!(
-      "%d\0".as_ptr() as *const i8,
-      proc_macro::fn_like_proc_macro!(123)
+        "%d\0".as_ptr() as *const i8,
+        proc_macro::fn_like_proc_macro!(123)
     );
     return 0;
 }

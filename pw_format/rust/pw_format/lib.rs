@@ -73,14 +73,12 @@
 
 use std::collections::HashSet;
 
-use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    character::complete::digit1,
-    combinator::{map, map_res},
-    IResult,
-};
-use quote::{quote, ToTokens};
+use nom::IResult;
+use nom::branch::alt;
+use nom::bytes::complete::tag;
+use nom::character::complete::digit1;
+use nom::combinator::{map, map_res};
+use quote::{ToTokens, quote};
 
 pub mod macros;
 

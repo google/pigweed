@@ -183,7 +183,7 @@ pub fn tokenize_to_writer<W: crate::MessageWriter>(
         // Still finalize the writer even if the buffer
         // is full so as to avoid loosing the entire
         // log message.
-        Ok(_) | Err(Error::OutOfRange) =>  writer.finalize(),
+        Ok(_) | Err(Error::OutOfRange) => writer.finalize(),
         Err(error) => Err(error),
     }
 }
@@ -197,7 +197,7 @@ pub fn tokenize_to_writer_no_args<W: crate::MessageWriter>(token: u32) -> Result
         // Still finalize the writer even if the buffer
         // is full so as to avoid loosing the entire
         // log message.
-        Ok(_) | Err(Error::OutOfRange) =>  writer.finalize(),
+        Ok(_) | Err(Error::OutOfRange) => writer.finalize(),
         Err(error) => Err(error),
     }
 }

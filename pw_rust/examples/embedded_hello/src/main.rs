@@ -16,13 +16,11 @@
 #![no_std]
 
 // Panic handler that halts the CPU on panic.
-use panic_halt as _;
-
 // Cortex M runtime entry macro.
 use cortex_m_rt::entry;
-
 // Semihosting support which is well supported for QEMU targets.
 use cortex_m_semihosting::{debug, hprintln};
+use panic_halt as _;
 
 #[entry]
 fn main() -> ! {

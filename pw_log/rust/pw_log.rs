@@ -50,8 +50,9 @@ pub use pw_log_backend_api::LogLevel;
 // Re-export dependencies of `pw_log` macros to be accessed via `$crate::__private`.
 #[doc(hidden)]
 pub mod __private {
-    pub use crate::*;
     pub use pw_log_backend::{pw_log_backend, pw_logf_backend};
+
+    pub use crate::*;
 }
 
 /// Emit a log message using `core::fmt` format string semantics.

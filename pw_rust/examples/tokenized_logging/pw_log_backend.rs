@@ -24,7 +24,6 @@ pub mod __private {
     use pw_status::Result;
     use pw_stream::{Cursor, Write};
     use pw_tokenizer::MessageWriter;
-
     // Re-export for use by the `pw_logf_backend!` macro.
     pub use pw_tokenizer::{tokenize_core_fmt_to_writer, tokenize_printf_to_writer};
 

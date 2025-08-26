@@ -15,7 +15,6 @@
 #![no_main]
 
 use cortex_m_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, exit};
-
 use target_common::{TargetInterface, declare_target};
 use {console_backend as _, entry as _, kernel as _};
 mod codegen;

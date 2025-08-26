@@ -14,7 +14,7 @@
 
 use kernel::syscall::raw_handle_syscall;
 
-use super::exceptions::{exception, KernelExceptionFrame};
+use super::exceptions::{KernelExceptionFrame, exception};
 use super::regs::Regs;
 
 // Pulls arguments out of the exception frame and calls the arch-independent

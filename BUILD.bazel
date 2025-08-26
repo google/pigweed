@@ -23,19 +23,22 @@ load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 
 licenses(["notice"])
 
-# Needed for releasing //pw_bluetooth_sapphire/fuchsia/bt_host.
-exports_files(
-    ["LICENSE"],
-    visibility = [":__subpackages__"],
-)
-
+# Files visible across Pigweed.
 exports_files(
     [
         "pigweed.json",
+        # Needed for releasing //pw_bluetooth_sapphire/fuchsia/bt_host.
+        "LICENSE",
         "PIGWEED_MODULES",
         "tsconfig.json",
     ],
     visibility = [":__subpackages__"],
+)
+
+# Files that are enumerated so they can be referenced by flags.
+exports_files(
+    ["rustfmt.toml"],
+    visibility = ["//visibility:private"],
 )
 
 filegroup(

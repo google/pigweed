@@ -14,19 +14,16 @@
 
 use std::collections::HashSet;
 
-use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    bytes::complete::take_till1,
-    character::complete::anychar,
-    combinator::{map, map_res},
-    multi::many0,
-    IResult,
-};
+use nom::IResult;
+use nom::branch::alt;
+use nom::bytes::complete::{tag, take_till1};
+use nom::character::complete::anychar;
+use nom::combinator::{map, map_res};
+use nom::multi::many0;
 
 use crate::{
-    precision, width, Alignment, Argument, ConversionSpec, Flag, FormatFragment, FormatString,
-    Length, Primitive, Style,
+    Alignment, Argument, ConversionSpec, Flag, FormatFragment, FormatString, Length, Primitive,
+    Style, precision, width,
 };
 
 fn map_specifier(value: char) -> Result<(Primitive, Style), String> {
@@ -139,9 +136,8 @@ pub(crate) fn format_string(input: &str) -> IResult<&str, FormatString> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{MinFieldWidth, Precision};
-
     use super::*;
+    use crate::{MinFieldWidth, Precision};
 
     #[test]
     fn test_specifier() {

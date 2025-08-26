@@ -142,8 +142,8 @@ pub fn encode_str<'a>(input: &[u8], output_buffer: &'a mut [u8]) -> Result<&'a s
     // in the encode() call.
     unsafe {
         Ok(core::str::from_utf8_unchecked(
-            output_buffer.get(0..encode_len).unwrap_unchecked())
-        )
+            output_buffer.get(0..encode_len).unwrap_unchecked(),
+        ))
     }
 }
 

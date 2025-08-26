@@ -22,9 +22,8 @@
 
 #[doc(hidden)]
 pub mod __private {
-    pub use pw_log_backend_println_macro::{_pw_log_backend, _pw_logf_backend};
-
     use pw_log_backend_api::LogLevel;
+    pub use pw_log_backend_println_macro::{_pw_log_backend, _pw_logf_backend};
 
     pub const fn log_level_tag(level: LogLevel) -> &'static str {
         match level {

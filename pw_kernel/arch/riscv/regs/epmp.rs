@@ -12,9 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use regs::{ro_bool_field, rw_bool_field};
+
 /// Machine Security Configuration Register value
 use crate::rw_csr_reg;
-use regs::{ro_bool_field, rw_bool_field};
 
 #[derive(Copy, Clone, Default)]
 #[repr(transparent)]

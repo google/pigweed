@@ -19,17 +19,15 @@ use std::ffi::CString;
 
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
-use quote::{format_ident, quote, ToTokens};
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input, Expr, LitStr, Token, Type,
-};
-
 use pw_format::macros::{
-    generate_printf, Arg, CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatStringParser,
+    Arg, CoreFmtFormatStringParser, FormatAndArgsFlavor, FormatStringParser,
     PrintfFormatMacroGenerator, PrintfFormatStringFragment, PrintfFormatStringParser, Result,
+    generate_printf,
 };
 use pw_tokenizer_core::TOKENIZER_ENTRY_MAGIC;
+use quote::{ToTokens, format_ident, quote};
+use syn::parse::{Parse, ParseStream};
+use syn::{Expr, LitStr, Token, Type, parse_macro_input};
 
 type TokenStream2 = proc_macro2::TokenStream;
 

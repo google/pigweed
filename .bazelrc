@@ -24,6 +24,7 @@ common --enable_workspace
 common --//pw_presubmit/py:enable_gn_formatter=True
 common --//pw_presubmit/py:enable_go_formatter=True
 common --//pw_presubmit/py:enable_javascript_formatter=True
+common --//pw_presubmit/py:enable_rust_formatter=True
 common --//pw_presubmit/py:enable_typescript_formatter=True
 
 # Default build_tag_filters and test_tag_filters

@@ -48,10 +48,11 @@ fn flush_stdout() {
 fn run_with_capture<F: FnOnce()>(action: F) -> String {
     // Use statements here instead of at the module level to scope them to the
     // above #[cfg(test)]
-    use nix::unistd::{dup, dup2, pipe};
     use std::fs::File;
-    use std::io::{stdout, Read};
+    use std::io::{Read, stdout};
     use std::os::fd::AsRawFd;
+
+    use nix::unistd::{dup, dup2, pipe};
 
     // Capture the output of printf by creating a pipe and replacing
     // `STDOUT_FILENO` with the write side of the pipe.  This only works on

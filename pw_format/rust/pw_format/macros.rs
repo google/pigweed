@@ -37,13 +37,11 @@ use std::collections::VecDeque;
 use std::marker::PhantomData;
 
 use proc_macro2::Ident;
-use quote::{format_ident, quote, ToTokens};
-use syn::{
-    parse::{Parse, ParseStream},
-    punctuated::Punctuated,
-    spanned::Spanned,
-    Expr, ExprCast, LitStr, Token,
-};
+use quote::{ToTokens, format_ident, quote};
+use syn::parse::{Parse, ParseStream};
+use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
+use syn::{Expr, ExprCast, LitStr, Token};
 
 use crate::{
     ConversionSpec, Flag, FormatFragment, FormatString, Length, MinFieldWidth, Precision,
@@ -136,7 +134,7 @@ impl FormatParams {
                 return Err(Error::new(&format!(
                     "formatting untyped conversions with {:?} style is unsupported",
                     self.style
-                )))
+                )));
             }
         };
 
@@ -155,7 +153,7 @@ impl TryFrom<&ConversionSpec> for FormatParams {
             MinFieldWidth::Variable => {
                 return Err(Error::new(
                     "Variable width '*' string formats are not supported.",
-                ))
+                ));
             }
         };
 
@@ -441,7 +439,7 @@ fn handle_conversion(
                 Length::LongDouble => {
                     return Err(Error::new(
                         "Long double length parameter invalid for integer formats",
-                    ))
+                    ));
                 }
             };
             let params = spec.try_into()?;
@@ -640,8 +638,8 @@ impl PrintfFormatStringFragment {
             Self::Expr { arg, format_trait } => {
                 let Arg::ExprCast(cast) = arg else {
                     return Err(Error::new(&format!(
-                      "Expected argument to untyped format (%v/{{}}) to be a cast expression (e.g. x as i32), but found {}.",
-                      arg.to_token_stream(), 
+                        "Expected argument to untyped format (%v/{{}}) to be a cast expression (e.g. x as i32), but found {}.",
+                        arg.to_token_stream(),
                     )));
                 };
                 let ty = &cast.ty;
@@ -721,7 +719,7 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
             _ => {
                 return Err(Error::new(&format!(
                     "printf backend does not support {type_width} bit field width"
-                )))
+                )));
             }
         };
 
@@ -740,7 +738,7 @@ impl<GENERATOR: PrintfFormatMacroGenerator> FormatMacroGenerator for PrintfGener
                 return Err(Error::new(&format!(
                     "printf backend does not support formatting integers with {:?} style",
                     params.style
-                )))
+                )));
             }
         };
 

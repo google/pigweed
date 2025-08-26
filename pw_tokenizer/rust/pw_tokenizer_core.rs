@@ -125,7 +125,7 @@ pub const TOKENIZER_ENTRY_MAGIC: u32 = 0xBAA98DEE;
 
 #[cfg(test)]
 mod tests {
-    use super::{hash_bytes_fixed, Hasher};
+    use super::{Hasher, hash_bytes_fixed};
 
     struct TestCase {
         string: &'static [u8],

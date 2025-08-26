@@ -38,9 +38,8 @@ pub mod __private {
 
     pub use pw_bytes::concat_static_strs;
     pub use pw_format_core::{PrintfHexFormatter, PrintfUpperHexFormatter};
-    pub use pw_log_backend_printf_macro::{_pw_log_backend, _pw_logf_backend};
-
     use pw_log_backend_api::LogLevel;
+    pub use pw_log_backend_printf_macro::{_pw_log_backend, _pw_logf_backend};
 
     pub use crate::varargs::{Arguments, VarArgs};
 
@@ -144,8 +143,9 @@ macro_rules! pw_logf_backend {
 
 #[cfg(test)]
 mod tests {
-    use super::__private::*;
     use core::ffi::c_int;
+
+    use super::__private::*;
 
     #[test]
     fn pushed_args_produce_correct_tuple() {
