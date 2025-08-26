@@ -98,10 +98,12 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "once_send_recv",
-    srcs = ["once_send_recv.cc"],
+    name = "once_send_recv_test",
+    srcs = ["once_send_recv_test.cc"],
     deps = [
+        "//pw_allocator:libc_allocator",
         "//pw_allocator:testing",
+        "//pw_assert:check",
         "//pw_async2:coro",
         "//pw_async2:dispatcher",
         "//pw_async2:once_sender",
@@ -144,11 +146,9 @@ sphinx_docs_library(
         "coro_blinky_loop.cc",
         "count.cc",
         "inline_async_queue_with_coro_test.cc",
-        "inline_async_queue_with_coro_test.expected",
         "inline_async_queue_with_tasks_test.cc",
-        "inline_async_queue_with_tasks_test.expected",
         "interrupt.cc",
-        "once_send_recv.cc",
+        "once_send_recv_test.cc",
         "unit_test.cc",
     ],
     target_compatible_with = incompatible_with_mcu(),

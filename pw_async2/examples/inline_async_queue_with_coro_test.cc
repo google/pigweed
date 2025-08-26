@@ -44,7 +44,6 @@ using ::pw::async2::CoroOrElseTask;
 using ::pw::async2::Dispatcher;
 using ::pw::async2::PendFuncAwaitable;
 
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-declarations]
 // Use a queue with a capacity for at most four integers.
 using Queue = InlineAsyncQueue<int, 4>;
 
@@ -59,34 +58,31 @@ constexpr int kTerminal = -1;
 // This provides confirmation of what was received by the consumer
 Vector<int, 10> received_by_consumer;
 
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-declarations]
-
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-adapters]
-// Constructs a co-awaitable value to wait for the queue to have free space.
+// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-helpers]
 auto QueueHasSpace(Queue& queue) {
   return PendFuncAwaitable(
       [&queue](Context& cx) { return queue.PendHasSpace(cx); });
 }
 
-// Constructs a co-awaitable value to wait for the queue to have content.
 auto QueueNotEmpty(Queue& queue) {
   return PendFuncAwaitable(
       [&queue](Context& cx) { return queue.PendNotEmpty(cx); });
 }
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-adapters]
+// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-helpers]
 
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-producer]
 // A simple producer coroutine that writes a fixed sequence of integers to a
 // queue.
-Coro<Status> Producer(CoroContext&, Queue& queue) {
+Coro<Status> Producer(CoroContext& context, Queue& queue) {
   PW_LOG_INFO("Producer() invoked");
 
   // Loop over all the values to output.
   for (auto value : kProducerExampleData) {
+    // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-space]
     // Wait for there to be space in the queue before writing the next value.
     co_await QueueHasSpace(queue);
-    PW_LOG_INFO("Producer() output %d", value);
     queue.push(value);
+    // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-space]
+    PW_LOG_INFO("Producer() output %d", value);
   }
 
   // Once we are out of values, write the termination sentinel value.
@@ -99,21 +95,20 @@ Coro<Status> Producer(CoroContext&, Queue& queue) {
   PW_LOG_INFO("Producer() complete");
   co_return OkStatus();
 }
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-producer]
 
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-consumer]
 // A simple reader coroutine that reads integers from a queue, and logs them
 // out.
-Coro<Status> Consumer(CoroContext&, Queue& queue) {
+Coro<Status> Consumer(CoroContext& context, Queue& queue) {
   PW_LOG_INFO("Consumer() invoked");
 
   while (true) {
+    // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-values]
     // Wait for there to be something to read.
     co_await QueueNotEmpty(queue);
-
-    // Obtain a value from the queue, and record it.
-    int result = queue.front();
+    const int result = queue.front();
     queue.pop();
+    // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-values]
+
     PW_LOG_INFO("Consumer() input: %d", result);
     received_by_consumer.push_back(result);
 
@@ -128,10 +123,8 @@ Coro<Status> Consumer(CoroContext&, Queue& queue) {
   // The while loop above will return if appropriate.
   PW_UNREACHABLE;
 }
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-consumer]
 
 int main() {
-  // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-run]
   // The dispatcher handles dispatching to all tasks.
   Dispatcher dispatcher;
 
@@ -156,7 +149,6 @@ int main() {
 
   // Run until all tasks consumer `Ready()`.
   dispatcher.RunToCompletion();
-  // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-run]
 
   return 0;
 }
@@ -174,11 +166,11 @@ TEST(ExampleTests, InlineAsyncQueueWithCoro) {
 
   main();
 
-  EXPECT_EQ(examples::received_by_consumer.size(), 9U);
+  EXPECT_EQ(received_by_consumer.size(), 1 + kProducerExampleData.size());
   EXPECT_TRUE(std::equal(kProducerExampleData.begin(),
                          kProducerExampleData.end(),
                          received_by_consumer.begin()));
-  EXPECT_EQ(received_by_consumer[8U], kTerminal);
+  EXPECT_EQ(received_by_consumer[kProducerExampleData.size()], kTerminal);
 }
 
 }  // namespace

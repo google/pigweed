@@ -39,7 +39,6 @@ using ::pw::async2::Poll;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
 
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-declarations]
 // Use a queue with a capacity for at most four values.
 using Queue = InlineAsyncQueue<int, 4>;
 
@@ -84,9 +83,7 @@ class Consumer : public Task {
 
   Queue& queue_;
 };
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-declarations]
 
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-producer-do-pend]
 Poll<> Producer::DoPend(Context& cx) {
   // This task's DoPend() is called repeatedly as long as it returns
   // `Pending().`
@@ -96,28 +93,18 @@ Poll<> Producer::DoPend(Context& cx) {
 
   // Loop while we have values to write, to write them all.
   while (!remaining_.empty()) {
-    // PW_TRY_READY delegates to an existing async2 aware function that
-    // returns a `Poll<>` result.
-    //
-    // If the function delegated to returns `Pending()`, the macro will cause
-    // the current function to return `Pending()`, and this task will go on
-    // the sleeping list. Other tasks that aren't in the sleeping state will
-    // get a chance to run.
-    //
-    // Here `InlineAsyncQueue::PendHasSpace` checks if there is space
-    // available in the queue. If there is no space, it internally will save a
-    // copy of the waker for the task before returning `Pending()`. It will
-    // later invoke the waker once there is room in the queue.
-    PW_TRY_READY(queue_.PendHasSpace(cx));
-
-    // If the previous PW_TRY_READY(...) didn't force a return, it means there
-    // is space in the queue. Write the next item from the remaining data to
-    // the queue.
+    // The next value to write is the value at the start of the span.
     int value = *remaining_.begin();
-    PW_LOG_INFO("Producer: writing: %d", value);
-    queue_.push(value);
 
-    // Update the remaining state
+    // DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-pend-space]
+    // Wait for there to be space in the queue
+    PW_TRY_READY(queue_.PendHasSpace(cx));
+    queue_.push(value);
+    // DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-pend-space]
+
+    PW_LOG_INFO("Producer: wrote: %d", value);
+
+    // Update the remaining state.
     remaining_ = remaining_.subspan(1);
 
     // Continue the while loop to try writing more values to the queue
@@ -133,9 +120,7 @@ Poll<> Producer::DoPend(Context& cx) {
   // Return Ready() to signal this task is done.
   return Ready();
 }
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-producer-do-pend]
 
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-consumer-do-pend]
 Poll<> Consumer::DoPend(Context& cx) {
   // This task's DoPend() is called repeatedly as long as it returns
   // `Pending()`.
@@ -146,27 +131,18 @@ Poll<> Consumer::DoPend(Context& cx) {
   // We loop forever, trying to read values, however really the loop is broken
   // by two conditions....
   while (true) {
-    // As with the producer, this PW_TRY_READY delegates to an existing async2
-    // aware function that is part of the `InlineAsyncQueue` interface.
-    //
-    // Here `InlineAsyncQueue::PendNotEmpty` checks if there are values in the
-    // queue, and returns a `Poll<>` result. If there is no data, it internally
-    // will save a copy of the waker for the task before returning the
-    // `Pending()` state. It will later invoke the waker once something is added
-    // to the queue.
+    // DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-pend-values]
+    // Wait for there to be values in the queue.
     PW_TRY_READY(queue_.PendNotEmpty(cx));
-
-    // If the previous PW_TRY_READY(...) didn't force a return, it means there
-    // are values to read from the queue. Read the next item from the queue.
-
-    // Obtain the value at the front of the queue and record it.
-    int result = queue_.front();
+    const int value = queue_.front();
     queue_.pop();
-    PW_LOG_INFO("Consumer: read %d", result);
-    received_by_consumer.push_back(result);
+    // DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-pend-values]
+
+    PW_LOG_INFO("Consumer: read %d", value);
+    received_by_consumer.push_back(value);
 
     // If we read the termination value, we can stop.
-    if (result == kTerminal) {
+    if (value == kTerminal) {
       PW_LOG_INFO("Consumer: completed");
 
       // Return Ready() to signal this task is done.
@@ -180,10 +156,8 @@ Poll<> Consumer::DoPend(Context& cx) {
   // The while loop above will return if appropriate.
   PW_UNREACHABLE;
 }
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-consumer-do-pend]
 
 int main() {
-  // DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-run]
   // The dispatcher handles dispatching to all tasks.
   Dispatcher dispatcher;
 
@@ -200,7 +174,6 @@ int main() {
 
   // Run until all tasks return `Ready()`.
   dispatcher.RunToCompletion();
-  // DOCSTAG: [pw_async2-examples-inline-async-queue-with-tasks-run]
 
   return 0;
 }
@@ -214,7 +187,7 @@ TEST(ExampleTests, InlineAsyncQueueWithTasks) {
 
   main();
 
-  EXPECT_EQ(examples::received_by_consumer.size(), 9U);
+  EXPECT_EQ(received_by_consumer.size(), 9U);
   EXPECT_TRUE(std::equal(kProducerExampleData.begin(),
                          kProducerExampleData.end(),
                          received_by_consumer.begin()));

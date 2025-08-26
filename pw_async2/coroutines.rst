@@ -71,96 +71,78 @@ coroutine frame. If allocation fails, the resulting ``Coro`` will be invalid
 and will immediately return a ``Ready(Status::Internal())`` result when polled.
 This design makes coroutine memory usage explicit and controllable.
 
-.. _module-pw_async2-coro-queue:
+.. _module-pw_async2-coro-passing-data:
 
-----------------------------------------------------
-Example: using InlineAsyncQueue and InlineAsyncDeque
-----------------------------------------------------
-If you choose to use C++20 coroutines, you can also use an async2 dispatcher,
-as well as awaiting on the pendable interface for the queue.
+-------------------------------
+Passing data between coroutines
+-------------------------------
+Just like when :ref:`module-pw_async2-guides-passing-data`, there are two
+patterns for sending data between coroutines, with very much the same solutions.
 
-The following example can be built and run in upstream Pigweed with the
-following command:
+This section just briefly describes how to ``co_await`` the data, as all the
+details around construction and sending a value are the same as
+:ref:`module-pw_async2-guides-passing-data`.
+
+.. _module-pw_async2-coro-passing-single-values:
+
+Single values
+=============
+As with the non-coroutine case, ``pw_async2`` provides the
+:doxylink:`pw::async2::OnceSender` and :doxylink:`pw::async2::OnceReceiver`
+helpers for sending and receiving a one-time value.
+
+As :doxylink:`pw::async2::OnceReceiver` satisfies the
+:ref:`module-pw_async2-design-pendable-function` requirement, this means your
+coroutine can just ``co_await`` the receiver instance to obtain the value.
+
+.. literalinclude:: examples/once_send_recv_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-once-send-recv-coro-await]
+   :end-before: [pw_async2-examples-once-send-recv-coro-await]
+
+Like in the non-coroutine case, the value is wrapped as a ``Result<T>`` in case
+of error.
+
+.. _module-pw_async2-coro-passing-multiple-values:
+
+Multiple values
+===============
+To use :doxylink:`pw::InlineAsyncQueue` or :doxylink:`pw::InlineAsyncDeque`
+with ``co_await``, an adapter is needed that exposes a ``DoPend`` that invokes
+the correct member function in the containers (either ``PendHasSpace`` or
+``PendNotEmpty``).
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-coro-await-helpers]
+   :end-before: [pw_async2-examples-inline-async-queue-with-coro-await-helpers]
+
+For sending, the producing coroutine has to wait for there to be space before
+trying to add to the queue.
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-coro-await-space]
+   :end-before: [pw_async2-examples-inline-async-queue-with-coro-await-space]
+
+Receiving values is similar. The receiving has to wait for there to be values
+before trying to remove them from the queue.
+
+.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-coro-await-values]
+   :end-before: [pw_async2-examples-inline-async-queue-with-coro-await-values]
+
+A complete example for using :doxylink:`pw::InlineAsyncQueue` this way can be
+found in `//pw_async2/examples/inline_async_queue_with_coro_test.cc`_, and you
+can try it yourself with:
 
 .. code-block:: sh
 
-   bazelisk run //pw_async2/examples:inline-async-queue-with-coro --config=cxx20
-
-The complete code can be found here:
+   bazelisk run --config=cxx20 //pw_async2/examples:inline_async_queue_with_coro_test
 
 .. _//pw_async2/examples/inline_async_queue_with_coro_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/inline_async_queue_with_coro_test.cc
-
-* `//pw_async2/examples/inline_async_queue_with_coro_test.cc`_
-
-The C++ code simulates a producer and consumer task setup, where the producer
-writes to the queue, and the consumer reads it. For purposes of this example,
-the data is just integers, with a fixed sequence sent by the producer.
-
-To start with, here are the basic declarations for the queue and a special
-terminal sentinel value.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-declarations]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-declarations]
-
-To use the :doxylink:`PendHasSpace
-<pw::containers::internal::AsyncCountAndCapacity::PendHasSpace>`, and
-:doxylink:`PendNotEmpty
-<pw::containers::internal::AsyncCountAndCapacity::PendNotEmpty>` functions with
-``co_await``, we need to use :doxylink:`pw::async2::PendFuncAwaitable` as an
-adapter between the async2 polling system and the C++20 coroutine framework.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-adapters]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-adapters]
-
-The producer coroutine just needs to return a ``Coro<Status>`` to turn
-it into a coroutine, and to use the ``QueueHasSpace`` adapter we define
-to wait for there to be space in the queue. Once it is done, it should
-``co_return`` a status value to indicate it is complete.
-
-Compare this to the inline_async_queue_with_task.cc example, where the
-``Producer::DoPend`` function has to be written in a way that allows
-the function to be called fresh at any time, and has to figure out what it
-should do next.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-producer]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-producer]
-
-The consumer coroutine similarly needs to return a ``Coro<Status>``
-value, and to use the ``QueueNotEmpty`` adapter we define to wait there
-to be content in the queue. Once it is done, it should ``co_return`` a status
-value to indicate it is complete.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-consumer]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-consumer]
-
-At that point, it is straightforward to set up the dispatcher to run the two
-coroutines. Notice however that the :doxylink:`pw::async2::CoroContext` also
-needs to allocate memory dynamically when the coroutine is first created. For
-this example, we use :doxylink:`LibCAllocator <pw::allocator::LibCAllocator>`.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-run]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-run]
-
-Running the example should produce the following output.
-
-.. literalinclude:: examples/inline_async_queue_with_coro_test.expected
-   :start-after: [ RUN      ] ExampleTests.InlineAsyncQueueWithCoro
-   :end-before: [       OK ] ExampleTests.InlineAsyncQueueWithCoro
-
-Notice how the producer fills up the queue with four values, then the consumer
-gets a chance to empty the queue before the writer gets another chance to run.

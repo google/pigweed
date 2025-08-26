@@ -9,11 +9,15 @@ write complex, concurrent applications without the overhead of traditional
 preemptive multithreading. The design prioritizes efficiency, minimal resource
 usage (especially memory), and testability.
 
+.. _module-pw_async2-design-core-concepts:
+
 -------------
 Core Concepts
 -------------
 The framework is built upon a few fundamental concepts that work together to
 provide a powerful asynchronous runtime.
+
+.. _module-pw_async2-design-core-concepts-task:
 
 Task
 ====
@@ -23,12 +27,16 @@ machine. Users define tasks by subclassing ``pw::async2::Task`` and
 implementing the ``DoPend`` virtual method. This method contains the core logic
 of the task and is called by the ``Dispatcher`` to advance the task's state.
 
+.. _module-pw_async2-design-core-concepts-dispatcher:
+
 Dispatcher
 ==========
 The :doxylink:`pw::async2::Dispatcher` is the scheduler or event loop. Its
 primary role is to manage a queue of tasks and run them to completion. It polls
 tasks to see if they can make progress and puts them to sleep when they are
 blocked waiting for an event.
+
+.. _module-pw_async2-design-core-concepts-poll:
 
 Poll
 ====
@@ -40,12 +48,16 @@ Asynchronous operations in ``pw_async2`` do not block. Instead, they return a
 * ``Pending()``: The operation has not yet completed. The task should yield
   control back to the ``Dispatcher`` and arrange to be woken up later.
 
+.. _module-pw_async2-design-core-concepts-context:
+
 Context
 =======
 When the ``Dispatcher`` polls a ``Task``, it provides a
 :doxylink:`pw::async2::Context` object. This context contains the necessary
 information for the task to interact with the asynchronous runtime, most
 importantly the ``Waker`` for the current task.
+
+.. _module-pw_async2-design-core-concepts-waker:
 
 Waker
 =====
@@ -57,6 +69,8 @@ fires), the event handler calls ``Wake()`` on the stored ``Waker``. This
 notifies the ``Dispatcher`` to place the corresponding task back on the run
 queue.
 
+.. _module-pw_async2-design-pendable-function:
+
 -------------------------------
 The Pendable Function Interface
 -------------------------------
@@ -64,6 +78,8 @@ Any asynchronous operation in ``pw_async2`` is exposed as a "pendable"
 function. This is any function or method that can be polled for completion and
 may suspend if it cannot make immediate progress. All such functions adhere to
 a specific interface and a set of critical invariants.
+
+.. _module-pw_async2-design-pendable-function-signature:
 
 Signature
 =========
@@ -86,10 +102,14 @@ Where:
 Though not required, the names of these functions are conventionally prefixed
 with ``Pend``.
 
+.. _module-pw_async2-design-pendable-function-invariants:
+
 Invariants
 ==========
 To ensure the correct behavior of the scheduler, all pendable functions must
 adhere to the following rules.
+
+.. _module-pw_async2-design-pendable-function-invariants-pending:
 
 When Returning ``Pending``
 --------------------------
@@ -104,6 +124,8 @@ handler, a timer manager, another task).
 
 Failure to arrange for a wake-up before returning ``Pending()`` is a bug and
 will result in a crash.
+
+.. _module-pw_async2-design-pendable-function-invariants-multiple-callers:
 
 Handling Multiple Callers
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -140,6 +162,8 @@ that is *already* waiting on the operation. In this case, the macros will
 recognize the existing waker and the call will be a no-op, preventing crashes
 or erroneous "busy" states.
 
+.. _module-pw_async2-design-pendable-function-invariants-ready:
+
 When Returning ``Ready``
 ------------------------
 If a pendable function is able to complete, it should return ``Ready(value)``,
@@ -150,6 +174,8 @@ after returning ``Ready``. For a one-shot operation, it may be an error to poll
 it again. For a stream-like operation (e.g., reading from a channel), polling
 again after a ``Ready`` result is the way to receive the next value. This
 behavior should be clearly documented.
+
+.. _module-pw_async2-design-execution-model:
 
 ---------------
 Execution Model
@@ -193,12 +219,16 @@ This cycle of polling, suspending, and waking continues until the task
 completes, allowing many tasks to run concurrently on a single thread without
 blocking.
 
+.. _module-pw_async2-design-memory-model:
+
 -------------
 Memory Model
 -------------
 ``pw_async2`` is designed to be memory-safe and efficient, especially in
 resource-constrained environments. It avoids hidden dynamic memory allocations
 in its core components.
+
+.. _module-pw_async2-design-memory-model-tasks:
 
 Task Lifetime and Storage
 =========================
@@ -226,11 +256,15 @@ flexibility in how tasks are allocated and stored. Common patterns include:
    Task* task = AllocateTask<MyPendable>(my_allocator, arg1, arg2);
    dispatcher.Post(*task);
 
+.. _module-pw_async2-design-interop:
+
 ----------------
 Interoperability
 ----------------
 ``pw_async2`` is designed to integrate smoothly with existing codebases,
 including those that use traditional callback-based asynchronous patterns.
+
+.. _module-pw_async2-design-interop-callbacks:
 
 Integrating with Callback-Based APIs
 ====================================
@@ -272,6 +306,8 @@ asynchronous operations without needing to be structured as a ``Task`` itself.
      // on a semaphore for the callback to signal completion.
    }
 
+.. _module-pw_async2-design-interop-callbacks-considerations:
+
 Considerations for Callback-Based Integration
 ---------------------------------------------
 While ``CallbackTask`` helpers are convenient, there are design implications
@@ -295,6 +331,8 @@ to consider:
   callbacks. This provides a clearer and more efficient interface for external
   consumers.
 
+.. _module-pw_async2-design-time-and-timers:
+
 ---------------
 Time and Timers
 ---------------
@@ -302,6 +340,8 @@ Asynchronous systems often need to interact with time, for example to implement
 timeouts, delays, or periodic tasks. ``pw_async2`` provides a flexible and
 testable mechanism for this through the :doxylink:`pw::async2::TimeProvider`
 interface.
+
+.. _module-pw_async2-design-time-and-timers-time-provider:
 
 ``TimeProvider``
 ================
@@ -320,6 +360,8 @@ fast and deterministic tests without real-world delays. For production code,
 the :doxylink:`pw::async2::GetSystemTimeProvider` function returns a global
 ``TimeProvider`` that uses the configured system clock.
 
+.. _module-pw_async2-design-time-and-timers-time-future:
+
 ``TimeFuture``
 ==============
 A :doxylink:`pw::async2::TimeFuture` is a pendable object that completes at a
@@ -327,6 +369,8 @@ specific time. A task can ``Pend`` on a ``TimeFuture`` to suspend itself until
 the time designated by the future. When the time is reached, the
 ``TimeProvider`` wakes the task, and its next poll of the ``TimeFuture`` will
 return ``Ready(timestamp)``.
+
+.. _module-pw_async2-design-time-and-timers-example:
 
 Example
 =======
@@ -386,11 +430,15 @@ then logs another message.
      pw::async2::TimeFuture<pw::chrono::SystemClock> future_;
    };
 
+.. _module-pw_async2-design-primitives:
+
 ------------------------
 Primitives and Utilities
 ------------------------
 On top of these core concepts, ``pw_async2`` provides a suite of higher-level
 primitives to make asynchronous programming easier and more expressive.
+
+.. _module-pw_async2-design-primitives-data-passing:
 
 Data Passing (``OnceSender`` / ``OnceReceiver``)
 ================================================
@@ -398,6 +446,8 @@ This pair of types provides a simple, single-use channel for passing a value
 from one task to another. The receiving task pends on the
 :doxylink:`pw::async2::OnceReceiver` until the producing task sends a value
 through the :doxylink:`pw::async2::OnceSender`.
+
+.. _module-pw_async2-design-primitives-combinators:
 
 Combinators (``Join`` and ``Select``)
 =====================================
@@ -409,6 +459,8 @@ operations:
 
 * :doxylink:`pw::async2::Select`: Waits for the *first* of a set of pendable
   operations to complete, returning its result.
+
+.. _module-pw_async2-design-primitives-aliases:
 
 Poll aliases
 ============

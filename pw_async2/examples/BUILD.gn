@@ -77,15 +77,17 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     sources = [ "inline_async_queue_with_coro_test.cc" ]
   }
 
-  pw_test("once_send_recv") {
+  pw_test("once_send_recv_test") {
     enable_if = pw_async2_DISPATCHER_BACKEND != ""
     deps = [
+      "$dir_pw_allocator:libc_allocator",
       "$dir_pw_allocator:testing",
+      "$dir_pw_assert:check",
       "$dir_pw_async2:coro",
       "$dir_pw_async2:dispatcher",
       "$dir_pw_async2:once_sender",
     ]
-    sources = [ "once_send_recv.cc" ]
+    sources = [ "once_send_recv_test.cc" ]
   }
 }
 
@@ -132,7 +134,7 @@ pw_test_group("examples") {
       ":basic",
       ":coro_blinky_loop",
       ":inline_async_queue_with_coro_test",
-      ":once_send_recv",
+      ":once_send_recv_test",
     ]
   }
   tests += [ ":inline_async_queue_with_tasks_test" ]

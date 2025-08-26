@@ -50,11 +50,13 @@ if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
       pw_status
   )
 
-  pw_add_test(pw_async2.examples.once_send_recv
+  pw_add_test(pw_async2.examples.once_send_recv_test
     SOURCES
-      once_send_recv.cc
+      once_send_recv_test.cc
     PRIVATE_DEPS
+      pw_allocator.libc_allocator
       pw_allocator.testing
+      pw_assert.check
       pw_async2.coro
       pw_async2.once_sender
   )

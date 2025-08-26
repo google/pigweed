@@ -1,20 +1,20 @@
 [==========] Running all tests.
 [ RUN      ] ExampleTests.InlineAsyncQueueWithTasks
 INF  Producer::DoPend() invoked
-INF  Producer: writing: 1
-INF  Producer: writing: 2
-INF  Producer: writing: 3
-INF  Producer: writing: 4
+INF  Producer: wrote: 1
+INF  Producer: wrote: 2
+INF  Producer: wrote: 3
+INF  Producer: wrote: 4
 INF  Consumer::DoPend() invoked
 INF  Consumer: read 1
 INF  Consumer: read 2
 INF  Consumer: read 3
 INF  Consumer: read 4
 INF  Producer::DoPend() invoked
-INF  Producer: writing: 5
-INF  Producer: writing: 6
-INF  Producer: writing: 7
-INF  Producer: writing: 8
+INF  Producer: wrote: 5
+INF  Producer: wrote: 6
+INF  Producer: wrote: 7
+INF  Producer: wrote: 8
 INF  Consumer::DoPend() invoked
 INF  Consumer: read 5
 INF  Consumer: read 6

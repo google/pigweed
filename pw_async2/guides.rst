@@ -150,38 +150,163 @@ arguments, and ``DoPoll`` does not provide the task being polled with any
 values!
 
 Unlike callback-based interfaces, tasks (and the libraries they use)
-are responsible for storage of the inputs and outputs of events. A common
-technique is for a task implementation to provide storage for outputs of an
-event. Then, upon completion of the event, the outputs will be stored in the
-task before it is woken. The task will then be invoked again by the
-dispatcher and can then operate on the resulting values.
+are responsible for storage of their inputs and outputs, and you are responsible
+for defining how that happens.
 
-This common pattern is implemented by the
-:doxylink:`pw::async2::OnceSender` and
-:doxylink:`pw::async2::OnceReceiver` types (and their ``...Ref`` counterparts).
-These interfaces allow a task to asynchronously wait for a value:
+It is also important to ensure that the receiver puts itself to sleep correctly
+when the it is waiting for a value. The sender likewise must wait for available
+storage before it sends a value.
 
-.. tab-set::
+There are two patterns for doing this, depending on how much data you want to
+send.
 
-   .. tab-item:: Manual ``Task`` State Machine
+.. _module-pw_async2-guides-passing-single-values:
 
-      .. literalinclude:: examples/once_send_recv.cc
-         :language: cpp
-         :linenos:
-         :start-after: [pw_async2-examples-once-send-recv-manual]
-         :end-before: [pw_async2-examples-once-send-recv-manual]
+Single values
+=============
+This pattern is for when you have a task that receives a single, one-time value.
+Once a value is sent, it will never change, and the task can either go on to
+waiting on something else or can complete.
 
-   .. tab-item:: Coroutine Function
+In this pattern, the task would typically hold storage for the value, and you
+would implement some custom interface to set the value once one is available.
+Setting a value would additionally set some internal flag indicating a value was
+set, and also arrange to wake the task via its ``Waker``.
 
-      .. literalinclude:: examples/once_send_recv.cc
-         :language: cpp
-         :linenos:
-         :start-after: [pw_async2-examples-once-send-recv-coro]
-         :end-before: [pw_async2-examples-once-send-recv-coro]
+``pw_async2`` provides helpers for implementing this pattern which add a
+useful layer of abstraction, as well as ensure the pattern is implemented
+correctly.
 
+For the first pair of helpers, the storage for the value is owned by the
+receiver helper :doxylink:`OnceReceiver <pw::async2::OnceReceiver>`, and is
+tightly linked to the paired :doxylink:`OnceSender <pw::async2::OnceSender>`
+which provides the interface for sending a value.
+
+Construct a linked pair of these helpers by calling
+:doxylink:`MakeOnceSenderAndReceiver <pw::async2::MakeOnceSenderAndReceiver>`,
+which is templated on the value type.
+
+Ownership of the receiver is typically transferred to your Task using
+``std::move``. Note that as a side-effect of the move, the linked sender is
+modified to point at the new location of the receiver, maintaining the link.
+
+.. literalinclude:: examples/once_send_recv_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-once-send-recv-construction]
+   :end-before: [pw_async2-examples-once-send-recv-construction]
+
+The sender helper can also be similarly and safely moved to transfer ownership
+of the sender.
+
+The receiving task should use :doxylink:`PW_TRY_READY_ASSIGN` to wait for a
+value of type ``Result<T>``, which will either contain a copy of the value
+received, or will indicate an error if the sender was destroyed without a value
+being sent.
+
+.. literalinclude:: examples/once_send_recv_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-once-send-recv-receiving]
+   :end-before: [pw_async2-examples-once-send-recv-receiving]
+
+A value can be sent to the task via the :doxylink:`emplace()
+<pw::async2::OnceSender>` member function which allows constructing a value in
+place, if that is necessary.
+
+.. literalinclude:: examples/once_send_recv_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-once-send-recv-send-value]
+   :end-before: [pw_async2-examples-once-send-recv-send-value]
+
+If your type is expensive to copy, ``pw_async2`` also provides another pair of
+helpers in the form of :doxylink:`OnceRefSender <pw::async2::OnceRefSender>`
+and :doxylink:`OnceRefReceiver <pw::async2::OnceRefReceiver>`, where the
+storage for the type ``T`` is externally owned.
+
+For :doxylink:`OnceRefReceiver <pw::async2::OnceRefReceiver>`, the receiving
+task will still use :doxylink:`Pend() <pw::async2::OnceRefReceiver::Pend>` to
+get a ``Poll<Status>`` value indicating if the value has been set, but will have
+to actually access the value itself through its own pointer or reference to it.
+
+When the sender uses :doxylink:`OnceRefSender <pw::async2::OnceRefSender>` to
+set the value, do note that it does require making a copy into the external
+value storage, though this can be a shallow copy through a ``std::move`` if
+supported.
+
+A complete example showing how to use these helpers can be found in
+`//pw_async2/examples/once_send_recv_test.cc`_, and you can try it yourself
+with:
+
+.. code-block:: sh
+
+   bazelisk run --config=cxx20 //pw_async2/examples:once_send_recv_test
+
+.. _//pw_async2/examples/once_send_recv_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/once_send_recv_test.cc
+
+.. _module-pw_async2-guides-passing-single-values-other:
+
+Other primitives
+----------------
 More primitives (such as ``MultiSender`` and ``MultiReceiver``) are
 in-progress. Users who find that they need other async primitives are
 encouraged to contribute them upstream to ``pw::async2``!
+
+.. _module-pw_async2-guides-passing-multiple-values:
+
+Multiple values
+===============
+If your tasks need to send or receive multiple values, then you can use the
+awaitable interface of :doxylink:`pw::InlineAsyncQueue` or
+:doxylink:`pw::InlineAsyncDeque` from ``pw_containers``.
+
+If your needs are simple, this is a perfectly good way of handling a simple
+byte stream or message queue.
+
+.. topic:: ``pw_channel``
+
+   If complex data streams or message handling is a key component of your task,
+   consider using :ref:`pw_channel <module-pw_channel>` instead as it
+   implements zero-copy abstractions.
+
+Both queue container types expose two key functions to allow interoperability
+with ``pw_async2``:
+
+.. list-table:: Pendable queue interface
+
+   *  - ``PendHasSpace``
+      - Allows waiting until the queue has space for more values.
+   *  - ``PendNotEmpty``
+      - Allows waiting until the queue has values.
+
+For sending, the producing task has to wait for there to be space before trying
+to add to the queue.
+
+.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-pend-space]
+   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-pend-space]
+
+Receiving values is similar. The receiving task has to wait for there to be
+values before trying to remove them from the queue.
+
+.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-pend-values]
+   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-pend-values]
+
+A complete example for using :doxylink:`pw::InlineAsyncQueue` this way can be
+found in `//pw_async2/examples/inline_async_queue_with_tasks_test.cc`_, and you
+can try it yourself with:
+
+.. code-block:: sh
+
+   bazelisk run //pw_async2/examples:inline_async_queue_with_tasks_test
+
+.. _//pw_async2/examples/inline_async_queue_with_tasks_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/inline_async_queue_with_tasks_test.cc
 
 .. _module-pw_async2-guides-timing:
 
@@ -351,79 +476,6 @@ The example below runs a task multiple times to test waiting for a
    :language: c++
    :start-after: pw_async2-multi-step-test
    :end-before: pw_async2-multi-step-test
-
-.. _module-pw_async2-guides-inline-async-queue-with-tasks:
-
-------------------------------------------------------
-Using InlineAsyncQueue and InlineAsyncDeque with tasks
-------------------------------------------------------
-When you have two tasks, you may need a way to send data between them. One good
-way to do that is to leverage the async-aware containers
-:doxylink:`pw::InlineAsyncQueue` or :doxylink:`pw::InlineAsyncDeque` from
-``pw_containers``, both of which implement a fixed-size deque.
-
-The following example can be built and run in upstream Pigweed with the
-following command:
-
-.. code-block:: sh
-
-   bazelisk run //pw_async2/examples:inline-async-queue-with-tasks
-
-The complete code can be found here:
-
-.. _//pw_async2/examples/inline_async_queue_with_tasks_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/inline_async_queue_with_tasks_test.cc
-
-* `//pw_async2/examples/inline_async_queue_with_tasks_test.cc`_
-
-The C++ code simulates a producer and consumer task setup, where the producer
-writes to the queue, and the consumer reads it. For purposes of this example,
-the data is just integers, with a fixed sequence sent by the producer.
-
-To start with, here are the basic declarations for the queue and the two tasks.
-
-.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-declarations]
-   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-declarations]
-
-The producer ``DoPend()`` member function coordinates writing to the queue, and
-has to ensure there is available space in it for the remaining data. It also
-writes the special ``kTerminal`` value signal that the end of the data stream.
-
-.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-producer-do-pend]
-   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-producer-do-pend]
-
-The consumer ``DoPend()`` member function coordinates reading from the queue,
-and has to ensure there is data to read before reading it.
-
-.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-consumer-do-pend]
-   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-consumer-do-pend]
-
-At that point, it is straightforward to set up the dispatcher to run the two
-tasks.
-
-.. literalinclude:: examples/inline_async_queue_with_tasks_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-tasks-run]
-   :end-before: [pw_async2-examples-inline-async-queue-with-tasks-run]
-
-Running the example should produce the following output.
-
-.. literalinclude:: examples/inline_async_queue_with_tasks_test.expected
-   :start-after: [ RUN      ] ExampleTests.InlineAsyncQueueWithTasks
-   :end-before: [       OK ] ExampleTests.InlineAsyncQueueWithTasks
-
-Notice how the producer DoPend() function fills up the queue with four values,
-then the consumer ``DoPend()`` gets a chance to empty the queue before the
-writer ``DoPend()`` is invoked again.
 
 .. _module-pw_async2-guides-debugging:
 
