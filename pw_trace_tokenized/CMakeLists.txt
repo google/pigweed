@@ -51,7 +51,9 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
     SOURCES
       zephyr_trace_time.cc
   )
-  zephyr_append_cmake_library(pw_trace_tokenized.zephyr_trace_time)
+  if(CONFIG_PIGWEED_TRACE_TOKENIZED_TIME)
+    set(pw_trace_tokenizer_time pw_trace_tokenized.zephyr_trace_time CACHE STRING "Tokenizer trace time implementation" FORCE)
+  endif()
 endif()
 
 set(pw_trace_tokenized_LOCK_BACKEND pw_trace_tokenized.interrupt_spin_lock)
