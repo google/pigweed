@@ -32,3 +32,101 @@ pwpb_rpc_proto_library = _pwpb_rpc_proto_library
 raw_rpc_proto_library = _raw_rpc_proto_library
 nanopb_proto_library = _nanopb_proto_library
 nanopb_rpc_proto_library = _nanopb_rpc_proto_library
+
+def pw_proto_library(
+        *,
+        name,
+        deps,
+        enabled_targets = None,
+        **kwargs):
+    """Generate Pigweed proto C++ code.
+
+    DEPRECATED. This macro is deprecated and will be removed in a future
+    Pigweed version. Please use the single-target macros above.
+
+    Args:
+      name: The name of the target.
+      deps: proto_library targets from which to generate Pigweed C++.
+      enabled_targets: Specifies which libraries should be generated. Libraries
+        will only be generated as needed, but unnecessary outputs may conflict
+        with other build rules and thus cause build failures. This filter allows
+        manual selection of which libraries should be supported by this build
+        target in order to prevent such conflicts. The argument, if provided,
+        should be a subset of ["pwpb", "nanopb", "raw_rpc", "nanopb_rpc"]. All
+        are enabled by default. Note that "nanopb_rpc" relies on "nanopb".
+      **kwargs: Passed on to all proto generation rules.
+
+    Example usage:
+
+      proto_library(
+        name = "benchmark_proto",
+        srcs = [
+          "benchmark.proto",
+        ],
+      )
+
+      pw_proto_library(
+        name = "benchmark_pw_proto",
+        deps = [":benchmark_proto"],
+      )
+
+      pw_cc_binary(
+        name = "proto_user",
+        srcs = ["proto_user.cc"],
+        deps = [":benchmark_pw_proto.pwpb"],
+      )
+
+    The pw_proto_library generates the following targets in this example:
+
+    "benchmark_pw_proto.pwpb": C++ library exposing the "benchmark.pwpb.h" header.
+    "benchmark_pw_proto.pwpb_rpc": C++ library exposing the
+        "benchmark.rpc.pwpb.h" header.
+    "benchmark_pw_proto.raw_rpc": C++ library exposing the "benchmark.raw_rpc.h"
+        header.
+    "benchmark_pw_proto.nanopb": C++ library exposing the "benchmark.pb.h"
+        header.
+    "benchmark_pw_proto.nanopb_rpc": C++ library exposing the
+        "benchmark.rpc.pb.h" header.
+    """
+
+    def is_plugin_enabled(plugin):
+        return (enabled_targets == None or plugin in enabled_targets)
+
+    if is_plugin_enabled("nanopb"):
+        # Use nanopb to generate the pb.h and pb.c files, and the target
+        # exposing them.
+        nanopb_proto_library(
+            name = name + ".nanopb",
+            deps = deps,
+            **kwargs
+        )
+
+    if is_plugin_enabled("pwpb"):
+        pwpb_proto_library(
+            name = name + ".pwpb",
+            deps = deps,
+            **kwargs
+        )
+
+    if is_plugin_enabled("pwpb_rpc"):
+        pwpb_rpc_proto_library(
+            name = name + ".pwpb_rpc",
+            deps = deps,
+            pwpb_proto_library_deps = [":" + name + ".pwpb"],
+            **kwargs
+        )
+
+    if is_plugin_enabled("raw_rpc"):
+        raw_rpc_proto_library(
+            name = name + ".raw_rpc",
+            deps = deps,
+            **kwargs
+        )
+
+    if is_plugin_enabled("nanopb_rpc"):
+        nanopb_rpc_proto_library(
+            name = name + ".nanopb_rpc",
+            deps = deps,
+            nanopb_proto_library_deps = [":" + name + ".nanopb"],
+            **kwargs
+        )
