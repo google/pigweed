@@ -266,10 +266,6 @@ class TransferThread : public thread::ThreadCore {
   friend class transfer::Client;
   friend class Context;
 
-  // Maximum amount of time between transfer thread runs.
-  static constexpr chrono::SystemClock::duration kMaxTimeout =
-      std::chrono::seconds(2);
-
   void UpdateClientTransfer(uint32_t handle_id, size_t transfer_size_bytes);
 
   // Finds an active server or client transfer, matching against its legacy ID.
@@ -344,8 +340,8 @@ class TransferThread : public thread::ThreadCore {
     return next_event_ownership_.try_acquire_for(cfg::kEventProcessingTimeout);
   }
 
-  // Returns the earliest timeout among all active transfers, up to kMaxTimeout.
-  chrono::SystemClock::time_point GetNextTransferTimeout() const;
+  // Returns the earliest timeout among all active transfers, if any.
+  std::optional<chrono::SystemClock::time_point> GetNextTransferTimeout() const;
 
   uint32_t AssignSessionId();
 
