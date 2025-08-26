@@ -12,6 +12,16 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["defs.bzl"])
+
+# This flag disables some strict checks in the compile commands aspect which may
+# allow the apsect to work with versions of Bazel that don't past strict
+# correctness checks.
+bool_flag(
+    name = "strict_errors",
+    build_setting_default = True,
+)
