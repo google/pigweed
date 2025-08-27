@@ -21,9 +21,9 @@ for easy sharing across your team. Try running a snippet now:
    to the previous step, :ref:`showcase-sense-tutorial-pico-rpc-interact`,
    for a refresher on how to launch ``pw_console``.
 
-#. In ``pw_console`` click **File** then click **Insert Repl Snippet**.
+#. In ``pw_console`` click **Edit** then click **Insert Repl Snippet**.
 
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/snippet_v1.png
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/snippet_v2.png
 
 #. Select **Echo RPC** with your keyboard and then press :kbd:`Enter`.
    The command doesn't run yet. It only gets populated into **Python Repl**.
