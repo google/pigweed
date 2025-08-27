@@ -1,8 +1,1 @@
-[35m[1mINF[0m  ==========================================
-[35m[1mINF[0m  Command line HW simulation notes:
-[35m[1mINF[0m    Type 'q' (then enter) to quit.
-[35m[1mINF[0m    Type 'd' to show the dispatcher state.
-[35m[1mINF[0m    Type 'c' to insert a coin.
-[35m[1mINF[0m    Type '0'..'4' to press a keypad key.
-[35m[1mINF[0m  ==========================================
 [35m[1mINF[0m  Welcome to the Pigweed Vending Machine!

@@ -35,7 +35,6 @@ void key_press_isr(int /*key*/) {
 
 int main() {
   pw::async2::Dispatcher dispatcher;
-  codelab::HardwareInit(&dispatcher);
 
   codelab::VendingMachineTask task;
   dispatcher.Post(task);
