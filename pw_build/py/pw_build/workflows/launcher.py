@@ -191,16 +191,32 @@ class WorkflowsCli(multitool.MultitoolCli):
         return WorkflowsCli._load_proto_json(config)
 
     def _dump_textproto(self, plugin_args: Sequence[str]) -> int:
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(
+            description=(
+                'Describes subsets or expanded views of the current '
+                'workflows configuration.'
+            ),
+        )
         parser.add_argument(
             'name',
-            nargs='?',
+            nargs='+',
             default=None,
+            help=(
+                'The name of a build, tool, group, or build configuration to '
+                'inspect. By default, this will emit the requested items as '
+                'TextProto.'
+            ),
         )
         parser.add_argument(
             '--dump-build-requests',
-            action='store_true',
-            help=argparse.SUPPRESS,
+            nargs='?',
+            metavar='FILE_PATH',
+            const=sys.stdout,
+            type=argparse.FileType('w'),
+            help=(
+                'Emits all build driver requests produced by the requested '
+                'items as a TextProto BuildDriverRequest message.'
+            ),
         )
         args = parser.parse_args(plugin_args)
         if self.config is None:
@@ -209,9 +225,13 @@ class WorkflowsCli(multitool.MultitoolCli):
         if not args.name:
             print(self.dump_config())
         elif args.dump_build_requests:
-            print(self.dump_build_request(args.name))
+            print(
+                self.dump_build_request(args.name),
+                file=args.dump_build_requests,
+            )
         else:
-            print(self.dump_fragment(args.name))
+            for name in args.name:
+                print(self.dump_fragment(name))
         return 0
 
     def dump_config(self) -> str:
@@ -221,11 +241,11 @@ class WorkflowsCli(multitool.MultitoolCli):
 
         return text_format.MessageToBytes(self.config).decode()
 
-    def dump_build_request(self, name: str) -> str:
+    def dump_build_request(self, names: Sequence[str]) -> str:
         """Dumps the unified build driver request for this config fragment."""
         assert self._workflows is not None
         return text_format.MessageToBytes(
-            self._workflows.get_unified_driver_request([name], sanitize=False)
+            self._workflows.get_unified_driver_request(names, sanitize=False)
         ).decode()
 
     def dump_fragment(self, fragment_name: str) -> str:
