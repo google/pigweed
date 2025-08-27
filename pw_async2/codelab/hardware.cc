@@ -110,8 +110,19 @@ Status WebUiHardwareLoop() {
 constexpr bool kUseWebUi = PW_ASYNC2_CODELAB_WEBUI;
 
 void HardwareLoop() {
+  // Registering an atexit handler allows us to terminate this thread when
+  // there is a return from main() even when this thread is otherwise blocked
+  // on a read from a stream.
+  //
+  // One consequence is that we don't know what main() returned, so we just
+  // assume it returned zero.
+  //
+  // We also must use something other than std::exit() to terminate.
+  // `std::quick_exit` would have been nice, but isn't available everywhere.
+  std::atexit([]() { std::_Exit(0); });
+
   Status status = kUseWebUi ? WebUiHardwareLoop() : CommandLineHardwareLoop();
-  std::exit(status.ok() ? 0 : 1);
+  std::_Exit(status.ok() ? 0 : 1);
 }
 
 }  // namespace
