@@ -44,12 +44,15 @@ use syn::punctuated::Punctuated;
 use syn::{Ident, ItemFn, Token, parse_macro_input};
 
 #[derive(Eq, PartialEq, Hash, Debug)]
+/// Determines whether the generated exception handler will include code to support userspace.
 enum KernelMode {
     UserSpace,
     KernelOnly,
 }
 
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
+/// Determines whether the generated save/restore frame code will handle an exception from
+/// userspace or the kernel.
 enum FrameType {
     UserSpace,
     Kernel,
@@ -172,7 +175,7 @@ fn stack_pointer_offset(regs: &[(Register, usize)]) -> usize {
         .expect("register set contains stack pointer")
 }
 
-fn save_exception_frame(asm: &mut String, frame_type: FrameType, _kernel_mode: &KernelMode) {
+fn save_exception_frame(asm: &mut String, frame_type: FrameType) {
     asm.push_str(&format!("addi     sp, sp, -{STACK_FRAME_LEN:#x}\n"));
 
     for (reg, offset) in general_purpose_regs(REGS).rev() {
@@ -207,11 +210,11 @@ fn save_exception_frame(asm: &mut String, frame_type: FrameType, _kernel_mode: &
         ));
     } else {
         let sp_offset = stack_pointer_offset(REGS);
-        asm.push_str(&format!("sw    zero, {sp_offset:#x}(sp)"));
+        asm.push_str(&format!("sw    zero, {sp_offset:#x}(sp)\n"));
     }
 }
 
-fn restore_exception_frame(asm: &mut String, frame_type: FrameType, _kernel_mode: &KernelMode) {
+fn restore_exception_frame(asm: &mut String, frame_type: FrameType) {
     let mut loads = Vec::new();
     let mut writes = Vec::new();
 
@@ -273,10 +276,10 @@ fn call_handler(asm: &mut String, handler_name: &str) {
     ));
 }
 
-fn exception_handler(asm: &mut String, kernel_mode: &KernelMode, handler_name: &str) {
-    save_exception_frame(asm, FrameType::Kernel, kernel_mode);
+fn exception_handler(asm: &mut String, frame_type: FrameType, handler_name: &str) {
+    save_exception_frame(asm, frame_type);
     call_handler(asm, handler_name);
-    restore_exception_frame(asm, FrameType::Kernel, kernel_mode);
+    restore_exception_frame(asm, frame_type);
 
     asm.push_str("mret\n");
 }
@@ -308,11 +311,11 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
             ",
         );
     }
-    exception_handler(&mut asm, &kernel_mode, &handler_name);
+    exception_handler(&mut asm, FrameType::Kernel, &handler_name);
 
     if kernel_mode == KernelMode::UserSpace {
         asm.push_str("1:\n");
-        exception_handler(&mut asm, &kernel_mode, &handler_name);
+        exception_handler(&mut asm, FrameType::UserSpace, &handler_name);
     }
 
     quote! {
