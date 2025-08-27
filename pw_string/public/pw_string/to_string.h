@@ -67,8 +67,12 @@
 
 namespace pw {
 
+/// @submodule{pw_string,util}
+
 template <typename T>
 StatusWithSize ToString(const T& value, span<char> buffer);
+
+/// @}
 
 namespace internal {
 
@@ -166,6 +170,8 @@ inline StatusWithSize DurationToString(
 
 }  // namespace internal
 
+/// @submodule{pw_string,util}
+
 // This function provides string printing numeric types, enums, and anything
 // that convertible to a std::string_view, such as std::string.
 template <typename T>
@@ -259,5 +265,7 @@ inline StatusWithSize ToString(
     const std::chrono::duration<Rep, Period>& duration, span<char> buffer) {
   return internal::DurationToString(duration, buffer);
 }
+
+/// @}
 
 }  // namespace pw

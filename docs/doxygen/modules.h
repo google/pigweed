@@ -207,6 +207,29 @@
 /// @defgroup pw_stream_uart_linux pw_stream_uart_linux
 /// @brief Main docs: https://pigweed.dev/pw_stream_uart_linux
 
+/// @defgroup pw_string pw_string
+/// @brief Efficient, easy, and safe string manipulation
+/// @details Main docs: [Home](../../pw_string/docs.html) |
+/// [Get started & guides](../../pw_string/guide.html) |
+/// [Design & roadmap](../../pw_string/design.html) |
+/// [Code size analysis](../../pw_string/code_size.html)
+
+/// @defgroup pw_string_inline InlineString and InlineBasicString
+/// @ingroup pw_string
+/// @brief Safer alternatives to `std::string` and `std::basic_string`
+
+/// @defgroup pw_string_builder StringBuilder
+/// @ingroup pw_string
+/// @brief The flexibility of `std::ostringstream` but with a small footprint
+
+/// @defgroup pw_string_util Utilities
+/// @ingroup pw_string
+/// @brief Safer alternatives to C++ standard library string functions
+
+/// @defgroup pw_string_utf8 UTF-8 helpers
+/// @ingroup pw_string
+/// @brief Basic helpers for reading and writing UTF-8-encoded strings
+
 /// @defgroup pw_sys_io pw_sys_io
 /// @brief Main docs: https://pigweed.dev/pw_sys_io
 

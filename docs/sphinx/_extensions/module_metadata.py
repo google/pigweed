@@ -576,6 +576,7 @@ def should_add_doxygen_link(module_name) -> bool:
         'pw_span',
         'pw_stream',
         'pw_stream_uart_linux',
+        'pw_string',
         'pw_sys_io',
         'pw_system',
         'pw_thread',

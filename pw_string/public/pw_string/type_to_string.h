@@ -193,6 +193,8 @@ constexpr StatusWithSize HandleExhaustedBuffer(span<char> buffer) {
 
 }  // namespace internal
 
+/// @submodule{pw_string,util}
+
 constexpr uint_fast8_t DecimalDigitCount(uint64_t integer) {
   // This fancy piece of code takes the log base 2, then approximates the
   // change-of-base formula by multiplying by 1233 / 4096.

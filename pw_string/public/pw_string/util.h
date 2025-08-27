@@ -50,6 +50,8 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize CopyToSpan(std::string_view source,
 
 }  // namespace internal
 
+/// @submodule{pw_string,util}
+
 /// @brief Safe alternative to the `string_view` constructor that avoids the
 /// risk of an unbounded implicit or explicit use of `strlen`.
 ///
@@ -209,6 +211,8 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize PrintableCopy(std::string_view source,
 
   return copy_result;
 }
+
+/// @}
 
 }  // namespace string
 }  // namespace pw

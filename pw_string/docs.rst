@@ -89,7 +89,6 @@ meets your needs.
    :maxdepth: 1
 
    guide
-   api
    design
    code_size
 
@@ -103,8 +102,8 @@ meets your needs.
       Integrate pw_string into your project and learn common use cases
 
    .. grid-item-card:: :octicon:`code-square` API Reference
-      :link: module-pw_string-api
-      :link-type: ref
+      :link: ../doxygen/group__pw__string.html
+      :link-type: url
       :class-item: sales-pitch-cta-secondary
 
       Detailed description of the pw_string's classes and methods

@@ -16,6 +16,9 @@
 #include <cstdint>
 
 namespace pw::string {
+
+/// @submodule{pw_string,util}
+
 constexpr inline uint16_t kInvalidHexChar = 0x100;
 // Parse a hexadecimal character to a 0-15 number. If the hex char is invalid
 // returns kInvalidHexChar.
@@ -48,5 +51,7 @@ constexpr bool IsHexDigit(char value) {
   return ('a' <= value && value <= 'f') || ('A' <= value && value <= 'F') ||
          ('0' <= value && value <= '9');
 }
+
+/// @}
 
 }  // namespace pw::string

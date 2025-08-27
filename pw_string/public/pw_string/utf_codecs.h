@@ -26,6 +26,9 @@ namespace pw {
 
 /// Provides basic helpers for reading and writing UTF-8-encoded strings.
 namespace utf {
+
+/// @submodule{pw_string,utf8}
+
 /// Checks if the code point is in a valid range.
 ///
 /// Excludes the surrogate code points (`[0xD800, 0xDFFF]`) and
@@ -80,9 +83,15 @@ class CodePointAndSize final {
   static constexpr size_t kSizeShift = sizeof(uint32_t) * 8 - kSizeBits;
   uint32_t code_point_;
 };
+
+/// @}
+
 }  // namespace utf
 
 namespace utf8 {
+
+/// @submodule{pw_string,utf8}
+
 /// @brief Reads the first code point from a UTF-8 encoded `str`.
 ///
 /// This is a very basic decoder without much thought for performance and very
@@ -248,6 +257,8 @@ constexpr Result<EncodedCodePoint> EncodeCodePoint(uint32_t code_point) {
 
 /// Helper that writes a code point to the provided `pw::StringBuilder`.
 Status WriteCodePoint(uint32_t code_point, pw::StringBuilder& output);
+
+/// @}
 
 }  // namespace utf8
 

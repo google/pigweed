@@ -284,7 +284,6 @@ sphinx_docs_library(
         "BUILD.bazel",
         "BUILD.gn",
         "Kconfig",
-        "api.rst",
         "code_size.rst",
         "design.rst",
         "docs.rst",

@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+/// @module{pw_string}
+
 // PW_STRING_ENABLE_DECIMAL_FLOAT_EXPANSION controls whether floating point
 // values passed to the ToString function will be expanded after a decimal
 // point, or just rounded to the nearest int. Enabling decimal expansion may
@@ -24,6 +26,8 @@
 #ifndef PW_STRING_ENABLE_DECIMAL_FLOAT_EXPANSION
 #define PW_STRING_ENABLE_DECIMAL_FLOAT_EXPANSION 0
 #endif
+
+/// @}
 
 namespace pw::string::internal::config {
 

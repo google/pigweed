@@ -43,6 +43,8 @@
 
 namespace pw {
 
+/// @submodule{pw_string,inline}
+
 /// @brief `pw::InlineBasicString` is a fixed-capacity version of
 /// `std::basic_string`. In brief:
 ///
@@ -582,6 +584,8 @@ using InlineString = InlineBasicString<char, kCapacity>;
 /// simple, efficient byte container.
 template <size_t kCapacity = string_impl::kGeneric>
 using InlineByteString = InlineBasicString<std::byte, kCapacity>;
+
+/// @}
 
 // Function implementations
 
