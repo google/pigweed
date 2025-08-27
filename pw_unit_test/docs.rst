@@ -599,6 +599,8 @@ Missing features include:
 * Value-parameterized tests.
 * Stream messages (e.g. ``EXPECT_TRUE(...) << "My message"``) will compile, but
   no message will be logged.
+* SCOPED_TRACE will compile, but trace information will not be added to failure
+  messages.
 
 See :ref:`module-pw_unit_test-upstream` for guidance on using the
 upstream GoogleTest backend (``pw_unit_test:googletest``) instead of

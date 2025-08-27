@@ -178,6 +178,10 @@
 #error "The pw_unit_test framework backend must define SUCCEED()"
 #endif  // SUCCEED
 
+#ifndef SCOPED_TRACE
+#error "The pw_unit_test framework backend must define SCOPED_TRACE"
+#endif  // SCOPED_TRACE
+
 static_assert(std::is_same_v<decltype(RUN_ALL_TESTS()), int>,
               "The pw_unit_test framework backend must define the "
               "int RUN_ALL_TESTS() function");

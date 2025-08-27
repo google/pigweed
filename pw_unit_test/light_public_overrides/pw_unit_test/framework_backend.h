@@ -293,6 +293,11 @@
 #define SUCCEED() GTEST_SUCCEED()
 #endif  // !GTEST_DONT_DEFINE_SUCCEED
 
+/// @def SCOPED_TRACE
+/// SCOPED_TRACE is not supported. This macro does nothing.
+// TODO: https://pwbug.dev/441096262 - Add SCOPED_TRACE support.
+#define SCOPED_TRACE(message)
+
 /// The `pw_unit_test` framework entrypoint. Runs every registered test case
 /// and dispatches the results through the event handler.
 ///

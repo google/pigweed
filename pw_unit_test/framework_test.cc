@@ -469,5 +469,11 @@ TEST_F(Interleaved, Test12) { ASSERT_EQ(suites_running, 1); }
 TEST_F(InterleavedB, Test2) { ASSERT_EQ(suites_running, 1); }
 TEST_F(InterleavedA, Test2) { ASSERT_EQ(suites_running, 1); }
 
+TEST(PigweedTest, ScopedTrace) {
+  // Verify we can call SCOPED_TRACE, even though it is a no-op.
+  // TODO: https://pwbug.dev/441096262 - Add SCOPED_TRACE support.
+  SCOPED_TRACE("text");
+}
+
 }  // namespace
 }  // namespace pw
