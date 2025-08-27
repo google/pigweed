@@ -177,6 +177,33 @@
 /// @defgroup pw_span pw_span
 /// @brief std::span for C++17. Main docs: https://pigweed.dev/pw_span
 
+/// @defgroup pw_stream pw_stream
+/// @brief A foundational interface for streaming data
+/// @details Main docs: [Home](../../pw_stream/docs.html) |
+/// [Backends](../../pw_stream/backends.html) |
+/// [Python](../../pw_stream/py/docs.html)
+
+/// @defgroup pw_stream_interface Interfaces
+/// @ingroup pw_stream
+/// @brief Generic stream interfaces that support a combination of reading,
+/// writing, and seeking
+
+/// @defgroup pw_stream_interface_reader Readers
+/// @ingroup pw_stream_interface
+/// @brief Streams that support reading but not writing
+
+/// @defgroup pw_stream_interface_writer Writers
+/// @ingroup pw_stream_interface
+/// @brief Streams that support writing but not reading
+
+/// @defgroup pw_stream_interface_readerwriter ReaderWriters
+/// @ingroup pw_stream_interface
+/// @brief Streams that support both reading and writing
+
+/// @defgroup pw_stream_concrete Implementations
+/// @ingroup pw_stream
+/// @brief Concrete implementations of stream interfaces for general use
+
 /// @defgroup pw_stream_uart_linux pw_stream_uart_linux
 /// @brief Main docs: https://pigweed.dev/pw_stream_uart_linux
 

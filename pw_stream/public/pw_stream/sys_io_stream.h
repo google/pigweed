@@ -19,6 +19,8 @@
 
 namespace pw::stream {
 
+/// @submodule{pw_stream,concrete}
+
 class SysIoWriter : public NonSeekableWriter {
  private:
   Status DoWrite(ConstByteSpan data) override {
@@ -32,5 +34,7 @@ class SysIoReader : public NonSeekableReader {
     return pw::sys_io::ReadBytes(dest);
   }
 };
+
+/// @}
 
 }  // namespace pw::stream

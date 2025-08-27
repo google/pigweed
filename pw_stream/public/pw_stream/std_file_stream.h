@@ -19,7 +19,9 @@
 
 namespace pw::stream {
 
-// Wraps an std::ifstream with the Reader interface.
+/// @submodule{pw_stream,concrete}
+
+/// Wraps an `std::ifstream` with the `pw::stream::Reader` interface.
 class StdFileReader final : public stream::SeekableReader {
  public:
   StdFileReader(const char* path) : stream_(path, std::ios::binary) {}
@@ -35,7 +37,7 @@ class StdFileReader final : public stream::SeekableReader {
   std::ifstream stream_;
 };
 
-// Wraps an std::ofstream with the Writer interface.
+/// Wraps an `std::ofstream` with the `pw::stream::Writer` interface.
 class StdFileWriter final : public stream::SeekableWriter {
  public:
   StdFileWriter(const char* path)
@@ -50,5 +52,7 @@ class StdFileWriter final : public stream::SeekableWriter {
 
   std::ofstream stream_;
 };
+
+/// @}
 
 }  // namespace pw::stream

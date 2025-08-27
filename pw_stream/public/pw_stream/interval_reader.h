@@ -26,6 +26,8 @@
 
 namespace pw::stream {
 
+/// @submodule{pw_stream,concrete}
+
 // A reader wrapper that reads from a sub-interval of a given seekable
 // source reader. The IntervalReader tracks and maintains its own read offset.
 // It seeks the source reader to its current read offset before reading. In
@@ -95,5 +97,7 @@ class IntervalReader : public SeekableReader {
   size_t current_ = 0;
   Status status_ = OkStatus();
 };
+
+/// @}
 
 }  // namespace pw::stream

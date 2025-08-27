@@ -26,13 +26,14 @@
 #include "pw_status/status_with_size.h"
 #include "pw_toolchain/internal/sibling_cast.h"
 
-/// Streaming data library
 namespace pw::stream {
+
+/// @submodule{pw_stream,interface}
 
 /// A generic stream that may support reading, writing, and seeking, but makes
 /// no guarantees about whether any operations are supported. Unsupported
-/// functions return Status::Unimplemented() Stream serves as the base for the
-/// Reader, Writer, and ReaderWriter interfaces.
+/// functions return `Status::Unimplemented()`. Stream serves as the base for
+/// the Reader, Writer, and ReaderWriter interfaces.
 ///
 /// Stream cannot be extended directly. Instead, work with one of the derived
 /// classes that explicitly supports the required functionality. Stream should
@@ -329,6 +330,10 @@ class Stream {
   Seekability seekability_;
 };
 
+/// @}
+
+/// @submodule{pw_stream,interface_reader}
+
 /// A Stream that supports reading but not writing. The Write() method is
 /// hidden.
 ///
@@ -414,6 +419,10 @@ class NonSeekableReader : public Reader {
 
   Status DoSeek(ptrdiff_t, Whence) final { return Status::Unimplemented(); }
 };
+
+/// @}
+
+/// @submodule{pw_stream,interface_writer}
 
 /// A Stream that supports writing but not reading. The Read() method is hidden.
 ///
@@ -501,6 +510,10 @@ class NonSeekableWriter : public Writer {
 
   Status DoSeek(ptrdiff_t, Whence) final { return Status::Unimplemented(); }
 };
+
+/// @}
+
+/// @submodule{pw_stream,interface_readerwriter}
 
 /// A Stream that supports both reading and writing.
 ///
@@ -660,5 +673,7 @@ class NonSeekableReaderWriter : public ReaderWriter {
 
   Status DoSeek(ptrdiff_t, Whence) final { return Status::Unimplemented(); }
 };
+
+/// @}
 
 }  // namespace pw::stream

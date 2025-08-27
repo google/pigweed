@@ -24,6 +24,15 @@
 
 namespace pw::stream {
 
+/// @submodule{pw_stream,concrete}
+
+/// Implements the `pw::stream::Writer` interface by backing the data
+/// destination with an **externally provided** memory buffer.
+/// `pw::stream::MemoryWriterBuffer` extends `pw::stream::MemoryWriter` to
+/// internally provide a memory buffer.
+///
+/// `MemoryWriter` can be accessed like a standard C++ container. The
+/// contents grow as data is written.
 class MemoryWriter : public SeekableWriter {
  public:
   using difference_type = ptrdiff_t;
@@ -107,6 +116,8 @@ class MemoryWriterBuffer final : public MemoryWriter {
   std::array<std::byte, kSizeBytes> buffer_;
 };
 
+/// Implements the `pw::stream::Reader` interface by backing the data source
+/// with an **externally provided** memory buffer.
 class MemoryReader final : public SeekableReader {
  public:
   constexpr MemoryReader(ConstByteSpan source)
@@ -136,5 +147,7 @@ class MemoryReader final : public SeekableReader {
   ConstByteSpan source_;
   size_t position_;
 };
+
+/// @}
 
 }  // namespace pw::stream

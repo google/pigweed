@@ -18,6 +18,8 @@
 
 namespace pw::stream {
 
+/// @submodule{pw_stream,concrete}
+
 /// Wraps a stream to ensure only a limited number of bytes can be written.
 ///
 /// Write attempts which would exceed the current limit will return
@@ -81,5 +83,7 @@ class LimitedStreamWriter : public NonSeekableWriter {
     }
   }
 };
+
+/// @}
 
 }  // namespace pw::stream

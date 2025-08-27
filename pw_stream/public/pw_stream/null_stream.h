@@ -24,8 +24,10 @@
 
 namespace pw::stream {
 
-// Stream that silently drops written data and returns nothing on reads, similar
-// to /dev/null.
+/// @submodule{pw_stream,concrete}
+
+/// No-op stream implementation, similar to `/dev/null`. Writes are always
+/// dropped. Reads always return `OUT_OF_RANGE`. Seeks have no effect.
 class NullStream final : public SeekableReaderWriter {
  public:
   // Gives access to a global NullStream instance. It is not necessary to have
@@ -41,11 +43,12 @@ class NullStream final : public SeekableReaderWriter {
   Status DoSeek(ptrdiff_t, Whence) final { return OkStatus(); }
 };
 
-// Same as NullStream, but tracks the number of bytes written.
+/// Same as `pw::stream::NullStream`, but tracks the number of bytes written.
 class CountingNullStream final : public SeekableReaderWriter {
  public:
   constexpr CountingNullStream() : bytes_written_(0) {}
 
+  /// @returns The number of bytes provided to previous `Write` calls.
   size_t bytes_written() const { return bytes_written_; }
 
  private:
@@ -59,5 +62,7 @@ class CountingNullStream final : public SeekableReaderWriter {
 
   size_t bytes_written_;
 };
+
+/// @}
 
 }  // namespace pw::stream

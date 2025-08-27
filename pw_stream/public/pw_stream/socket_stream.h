@@ -23,6 +23,12 @@
 
 namespace pw::stream {
 
+/// @submodule{pw_stream,concrete}
+
+/// Wraps POSIX-style TCP sockets with the `pw::stream::Reader`
+/// and `pw::stream::Writer` interfaces. It can be used to connect to a TCP
+/// server, or to communicate with a client via the `pw::stream::ServerSocket`
+/// class.
 class SocketStream : public NonSeekableReaderWriter {
  public:
   SocketStream() = default;
@@ -129,7 +135,7 @@ class SocketStream : public NonSeekableReaderWriter {
   int connection_pipe_w_fd_ PW_GUARDED_BY(connection_mutex_) = kInvalidFd;
 };
 
-/// `ServerSocket` wraps a POSIX-style server socket, producing a `SocketStream`
+/// Wraps a POSIX-style server socket, producing a `pw::stream::SocketStream`
 /// for each accepted client connection.
 ///
 /// Call `Listen` to create the socket and start listening for connections.
@@ -202,5 +208,7 @@ class ServerSocket {
   int socket_pipe_r_fd_ PW_GUARDED_BY(socket_mutex_) = kInvalidFd;
   int socket_pipe_w_fd_ PW_GUARDED_BY(socket_mutex_) = kInvalidFd;
 };
+
+/// @}
 
 }  // namespace pw::stream

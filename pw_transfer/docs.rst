@@ -697,8 +697,6 @@ Protocol errors
 The following table describes the meaning of each status code when sent by the
 sender or the receiver (see `Transfer roles`_).
 
-.. cpp:namespace-push:: pw::stream
-
 +-------------------------+-------------------------+-------------------------+
 | Status                  | Sent by sender          | Sent by receiver        |
 +=========================+=========================+=========================+
@@ -715,17 +713,18 @@ sender or the receiver (see `Transfer roles`_).
 +-------------------------+-------------------------+-------------------------+
 | ``DATA_LOSS``           | Failed to read the data | Failed to write the     |
 |                         | to send. The            | received data. The      |
-|                         | :cpp:class:`Reader`     | :cpp:class:`Writer`     |
+|                         | :doxylink:`Reader       | :doxylink:`Writer       |
+|                         | <pw::stream::Reader>`   | <pw::stream::Writer>`   |
 |                         | returned an error.      | returned an error.      |
 +-------------------------+-------------------------+-------------------------+
 | ``FAILED_PRECONDITION`` | Received chunk for transfer that is not active.   |
-+-------------------------+-------------------------+-------------------------+
++-------------------------+---------------------------------------------------+
 | ``INVALID_ARGUMENT``    | Received a malformed packet.                      |
-+-------------------------+-------------------------+-------------------------+
++-------------------------+---------------------------------------------------+
 | ``INTERNAL``            | An assumption of the protocol was violated.       |
 |                         | Encountering ``INTERNAL`` indicates that there is |
 |                         | a bug in the service or client implementation.    |
-+-------------------------+-------------------------+-------------------------+
++-------------------------+---------------------------------------------------+
 | ``PERMISSION_DENIED``   | The transfer does not support the requested       |
 |                         | operation (either reading or writing).            |
 +-------------------------+-------------------------+-------------------------+
@@ -742,9 +741,6 @@ sender or the receiver (see `Transfer roles`_).
 |                         | requested, but seeking  |                         |
 |                         | is not supported.       |                         |
 +-------------------------+-------------------------+-------------------------+
-
-.. cpp:namespace-pop::
-
 
 Transfer roles
 ==============

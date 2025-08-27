@@ -242,8 +242,16 @@ pw_cc_test(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_stream/interval_reader.h",
         "public/pw_stream/limited_stream.h",
+        "public/pw_stream/memory_stream.h",
+        "public/pw_stream/mpsc_stream.h",
+        "public/pw_stream/null_stream.h",
+        "public/pw_stream/seek.h",
+        "public/pw_stream/socket_stream.h",
+        "public/pw_stream/std_file_stream.h",
         "public/pw_stream/stream.h",
+        "public/pw_stream/sys_io_stream.h",
     ],
 )
 

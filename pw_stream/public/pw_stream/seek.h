@@ -21,6 +21,8 @@
 
 namespace pw::stream {
 
+/// @submodule{pw_stream,interface}
+
 // Adds a seek offset to the specified origin.
 constexpr ptrdiff_t ResolveSeekOffset(ptrdiff_t offset,
                                       Stream::Whence origin,
@@ -55,5 +57,7 @@ constexpr Status CalculateSeek(ptrdiff_t offset,
   current_position = static_cast<size_t>(new_position);
   return OkStatus();
 }
+
+/// @}
 
 }  // namespace pw::stream
