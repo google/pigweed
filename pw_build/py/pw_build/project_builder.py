@@ -425,89 +425,6 @@ def execute_command_with_logging(
     return returncode == 0
 
 
-def log_build_recipe_start(
-    index_message: str,
-    project_builder: ProjectBuilder,
-    cfg: BuildRecipe,
-    logger: logging.Logger = _LOG,
-) -> None:
-    """Log recipe start and truncate the build logfile."""
-    if project_builder.separate_build_file_logging and cfg.logfile:
-        # Truncate the file
-        with open(cfg.logfile, 'w'):
-            pass
-
-    BUILDER_CONTEXT.mark_progress_started(cfg)
-
-    build_start_msg = [
-        index_message,
-        project_builder.color.cyan('Starting ==>'),
-        project_builder.color.blue('Recipe:'),
-        str(cfg.display_name),
-        project_builder.color.blue('Targets:'),
-        str(' '.join(cfg.targets())),
-    ]
-
-    if cfg.logfile:
-        build_start_msg.extend(
-            [
-                project_builder.color.blue('Logfile:'),
-                str(cfg.logfile.resolve()),
-            ]
-        )
-    build_start_str = ' '.join(build_start_msg)
-
-    # Log start to the root log if recipe logs are not sent.
-    if not project_builder.send_recipe_logs_to_root:
-        logger.info(build_start_str)
-    if cfg.logfile:
-        cfg.log.info(build_start_str)
-
-
-def log_build_recipe_finish(
-    index_message: str,
-    project_builder: ProjectBuilder,
-    cfg: BuildRecipe,
-    logger: logging.Logger = _LOG,
-) -> None:
-    """Log recipe finish and any build errors."""
-
-    BUILDER_CONTEXT.mark_progress_done(cfg)
-
-    if BUILDER_CONTEXT.interrupted():
-        level = logging.WARNING
-        tag = project_builder.color.yellow('(ABORT)')
-    elif cfg.status.failed():
-        level = logging.ERROR
-        tag = project_builder.color.red('(FAIL)')
-    else:
-        level = logging.INFO
-        tag = project_builder.color.green('(OK)')
-
-    build_finish_msg = [
-        level,
-        '%s %s %s %s %s',
-        index_message,
-        project_builder.color.cyan('Finished ==>'),
-        project_builder.color.blue('Recipe:'),
-        cfg.display_name,
-        tag,
-    ]
-
-    # Log finish to the root log if recipe logs are not sent.
-    if not project_builder.send_recipe_logs_to_root:
-        logger.log(*build_finish_msg)
-    if cfg.logfile:
-        cfg.log.log(*build_finish_msg)
-
-    if (
-        not BUILDER_CONTEXT.build_stopping()
-        and cfg.status.failed()
-        and (cfg.status.error_count == 0 or cfg.status.has_empty_ninja_errors())
-    ):
-        cfg.status.log_entire_recipe_logfile()
-
-
 class MissingGlobalLogfile(Exception):
     """Exception raised if a global logfile is not specifed."""
 
@@ -1017,6 +934,95 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             logger.info(' ║')
             logger.info(" ╚════════════════════════════════════")
 
+    def log_build_recipe_start(
+        self,
+        index_message: str,
+        cfg: BuildRecipe,
+        logger: logging.Logger | None = None,
+    ) -> None:
+        """Log recipe start and truncate the build logfile."""
+        if logger is None:
+            logger = self.root_logger
+
+        if self.separate_build_file_logging and cfg.logfile:
+            # Truncate the file
+            with open(cfg.logfile, 'w'):
+                pass
+
+        BUILDER_CONTEXT.mark_progress_started(cfg)
+
+        build_start_msg = [
+            index_message,
+            self.color.cyan('Starting ==>'),
+            self.color.blue('Recipe:'),
+            str(cfg.display_name),
+            self.color.blue('Targets:'),
+            str(' '.join(cfg.targets())),
+        ]
+
+        if cfg.logfile:
+            build_start_msg.extend(
+                [
+                    self.color.blue('Logfile:'),
+                    str(cfg.logfile.resolve()),
+                ]
+            )
+        build_start_str = ' '.join(build_start_msg)
+
+        # Log start to the root log if recipe logs are not sent.
+        if not self.send_recipe_logs_to_root:
+            logger.info(build_start_str)
+        if cfg.logfile:
+            cfg.log.info(build_start_str)
+
+    def log_build_recipe_finish(
+        self,
+        index_message: str,
+        cfg: BuildRecipe,
+        logger: logging.Logger | None = None,
+    ) -> None:
+        """Log recipe finish and any build errors."""
+        if logger is None:
+            logger = self.root_logger
+
+        BUILDER_CONTEXT.mark_progress_done(cfg)
+
+        if BUILDER_CONTEXT.interrupted():
+            level = logging.WARNING
+            tag = self.color.yellow('(ABORT)')
+        elif cfg.status.failed():
+            level = logging.ERROR
+            tag = self.color.red('(FAIL)')
+        else:
+            level = logging.INFO
+            tag = self.color.green('(OK)')
+
+        build_finish_msg = [
+            level,
+            '%s %s %s %s %s',
+            index_message,
+            self.color.cyan('Finished ==>'),
+            self.color.blue('Recipe:'),
+            cfg.display_name,
+            tag,
+        ]
+
+        # Log finish to the root log if recipe logs are not sent.
+        if not self.send_recipe_logs_to_root:
+            logger.log(*build_finish_msg)
+        if cfg.logfile:
+            cfg.log.log(*build_finish_msg)
+
+        if (
+            not BUILDER_CONTEXT.build_stopping()
+            and cfg.status.failed()
+            and (
+                cfg.status.error_count == 0
+                or cfg.status.has_empty_ninja_errors()
+            )
+        ):
+            cfg.status.log_entire_recipe_logfile()
+
     def run_recipe(self, index: int, cfg: BuildRecipe, env) -> bool:
         if BUILDER_CONTEXT.interrupted():
             return False
@@ -1028,11 +1034,11 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
 
         result = False
 
-        log_build_recipe_start(index_message, self, cfg, self.root_logger)
+        self.log_build_recipe_start(index_message, cfg)
 
         result = self.run_build(cfg, env, index_message=index_message)
 
-        log_build_recipe_finish(index_message, self, cfg, self.root_logger)
+        self.log_build_recipe_finish(index_message, cfg)
 
         return result
 

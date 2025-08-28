@@ -62,8 +62,6 @@ from pw_build.project_builder import (
     ProjectBuilder,
     execute_command_no_logging,
     execute_command_with_logging,
-    log_build_recipe_start,
-    log_build_recipe_finish,
     ASCII_CHARSET,
     EMOJI_CHARSET,
 )
@@ -277,8 +275,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         num_builds = len(self.project_builder)
         index_message = f'[{index}/{num_builds}]'
 
-        log_build_recipe_start(
-            index_message, self.project_builder, cfg, logger=_LOG
+        self.project_builder.log_build_recipe_start(
+            index_message, cfg, logger=_LOG
         )
 
         self.project_builder.run_build(
@@ -287,9 +285,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             index_message=index_message,
         )
 
-        log_build_recipe_finish(
+        self.project_builder.log_build_recipe_finish(
             index_message,
-            self.project_builder,
             cfg,
             logger=_LOG,
         )
