@@ -151,18 +151,12 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     return packets;
   }
 
-  uint8_t adv_data_length =
-      static_cast<uint8_t>(data.CalculateBlockSize(/*include_flags=*/true));
-  size_t packet_size =
-      android_emb::LEMultiAdvtSetAdvtDataCommandWriter::MinSizeInBytes()
-          .Read() +
-      adv_data_length;
-
   auto packet =
       hci::CommandPacket::New<android_emb::LEMultiAdvtSetAdvtDataCommandWriter>(
-          android_hci::kLEMultiAdvt, packet_size);
+          android_hci::kLEMultiAdvt);
   auto view = packet.view_t();
 
+  uint8_t adv_data_length = data.CalculateBlockSize(/*include_flags=*/true);
   view.vendor_command().sub_opcode().Write(
       android_hci::kLEMultiAdvtSetAdvtDataSubopcode);
   view.adv_data_length().Write(adv_data_length);
@@ -180,11 +174,9 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
 
 CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     AdvertisementId advertisement_id) const {
-  size_t packet_size =
-      android_emb::LEMultiAdvtSetAdvtDataCommandWriter::MinSizeInBytes().Read();
   auto packet =
       hci::CommandPacket::New<android_emb::LEMultiAdvtSetAdvtDataCommandWriter>(
-          android_hci::kLEMultiAdvt, packet_size);
+          android_hci::kLEMultiAdvt);
   auto view = packet.view_t();
 
   view.vendor_command().sub_opcode().Write(
@@ -203,16 +195,12 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
     return packets;
   }
 
-  uint8_t scan_rsp_length = static_cast<uint8_t>(data.CalculateBlockSize());
-  size_t packet_size =
-      android_emb::LEMultiAdvtSetScanRespDataCommandWriter::MinSizeInBytes()
-          .Read() +
-      scan_rsp_length;
   auto packet = hci::CommandPacket::New<
       android_emb::LEMultiAdvtSetScanRespDataCommandWriter>(
-      android_hci::kLEMultiAdvt, packet_size);
+      android_hci::kLEMultiAdvt);
   auto view = packet.view_t();
 
+  uint8_t scan_rsp_length = data.CalculateBlockSize();
   view.vendor_command().sub_opcode().Write(
       android_hci::kLEMultiAdvtSetScanRespSubopcode);
   view.scan_resp_length().Write(scan_rsp_length);
@@ -230,12 +218,9 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
 
 CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     AdvertisementId advertisement_id) const {
-  size_t packet_size =
-      android_emb::LEMultiAdvtSetScanRespDataCommandWriter::MinSizeInBytes()
-          .Read();
   auto packet = hci::CommandPacket::New<
       android_emb::LEMultiAdvtSetScanRespDataCommandWriter>(
-      android_hci::kLEMultiAdvt, packet_size);
+      android_hci::kLEMultiAdvt);
   auto view = packet.view_t();
 
   view.vendor_command().sub_opcode().Write(
