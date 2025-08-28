@@ -90,7 +90,7 @@ def _get_one_compile_command(ctx, src, action):
         arguments = action.argv,
     )
 
-def _get_compile_commands(ctx, target):
+def _get_cpp_compile_commands(ctx, target):
     """Collects C/C++ compile commands for the provided target.
 
     Args:
@@ -100,6 +100,9 @@ def _get_compile_commands(ctx, target):
     Returns:
         List of compile commands `struct` objects.
     """
+    if CcInfo not in target:
+        return []
+
     commands = []
     if not target.actions:
         return commands
@@ -197,10 +200,11 @@ def _compile_commands_aspect_impl(target, ctx):
         lambda command_fragment_info: command_fragment_info.fragments,
     )
 
-    # TODO: https://pwbug.dev/438812970 - Make this scale better. This aspect's
-    # implementation can be reworked into a compile commands aspect factory
-    # that allows the implementation to be shared with other languages.
-    if CcInfo not in target:
+    commands = _get_cpp_compile_commands(
+        ctx,
+        target,
+    )
+    if not commands:
         # No compiled sources, so just forward the transitive fragments.
         transitive_fragments = depset(
             transitive = dep_fragments,
@@ -215,11 +219,6 @@ def _compile_commands_aspect_impl(target, ctx):
             # commands.
             OutputGroupInfo(compile_commands_fragments = transitive_fragments),
         ]
-
-    commands = _get_compile_commands(
-        ctx,
-        target,
-    )
 
     fragment_file = ctx.actions.declare_file(
         ctx.label.name + "." + platform_fragment + ".pw_aspect.compile_commands.json",
