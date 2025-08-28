@@ -90,6 +90,59 @@ def _get_one_compile_command(ctx, src, action):
         arguments = action.argv,
     )
 
+def _get_one_header_compile_command(ctx, target, hdr):
+    """Collects C/C++ compile commands for the provided target.
+
+    This is slightly more fuzzy than the source file handling since C/C++
+    headers inherently have no canonical argument representation. This rule
+    exposes headers in their C++ form as any dependency of the rule will
+    see them.
+
+    Args:
+        ctx: Rule context.
+        target: The target to extract compile commands from.
+        hdr: The header to generate a compile command for
+
+    Returns:
+        A single compile commands struct, or None.
+    """
+    cc_toolchain = find_cc_toolchain(ctx)
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+    )
+    compilation_context = target[CcInfo].compilation_context
+    compiler_exec = cc_common.get_tool_for_action(
+        feature_configuration = feature_configuration,
+        action_name = ACTION_NAMES.cpp_compile,
+    )
+    compile_variables = cc_common.create_compile_variables(
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+        # user_compile_flags - Omitted since these do not propagate.
+        # source_file - Omitted because passing hdr causes a crash.
+        # output_file - Omitted since this is a header.
+        quote_include_directories = compilation_context.quote_includes,
+        include_directories = compilation_context.includes,
+        system_include_directories = compilation_context.system_includes,
+        preprocessor_defines = compilation_context.defines,
+        framework_include_directories = compilation_context.framework_includes,
+    )
+
+    # Assume all headers will be evaluated from C++.
+    base_argv = list(cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = ACTION_NAMES.cpp_compile,
+        variables = compile_variables,
+    ))
+    full_argv = [compiler_exec] + base_argv
+
+    return struct(
+        directory = "__WORKSPACE_ROOT__",
+        file = hdr.path,
+        arguments = full_argv,
+    )
+
 def _get_cpp_compile_commands(ctx, target):
     """Collects C/C++ compile commands for the provided target.
 
@@ -104,13 +157,18 @@ def _get_cpp_compile_commands(ctx, target):
         return []
 
     commands = []
-    if not target.actions:
-        return commands
     for action in target.actions:
-        for f in action.inputs.to_list():
-            result = _get_one_compile_command(ctx, f, action)
+        for src in action.inputs.to_list():
+            result = _get_one_compile_command(ctx, src, action)
             if result != None:
                 commands.append(result)
+
+    cc_info = target[CcInfo]
+    for hdr in cc_info.compilation_context.direct_headers:
+        # TODO: https://pwbug.dev/438812970 - Dedupe/remap _virtual_includes.
+        result = _get_one_header_compile_command(ctx, target, hdr)
+        if result != None:
+            commands.append(result)
 
     return commands
 
