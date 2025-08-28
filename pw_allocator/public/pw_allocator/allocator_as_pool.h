@@ -20,6 +20,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,forwarding}
+
 /// Implementation of ``Pool`` that satisfies requests using an ``Allocator``.
 class AllocatorAsPool : public Pool {
  public:
@@ -42,5 +44,7 @@ class AllocatorAsPool : public Pool {
 
   Allocator& allocator_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

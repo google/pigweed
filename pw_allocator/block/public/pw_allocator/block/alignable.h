@@ -32,6 +32,8 @@ struct AlignableBase {};
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,block_mixins}
+
 /// Mix-in for blocks that can be split on alignment boundaries.
 ///
 /// Block mix-ins are stateless and trivially constructible. See `BasicBlock`
@@ -82,6 +84,8 @@ struct is_alignable : std::is_base_of<internal::AlignableBase, BlockType> {};
 /// Helper variable template for `is_alignable<BlockType>::value`.
 template <typename BlockType>
 constexpr bool is_alignable_v = is_alignable<BlockType>::value;
+
+/// @}
 
 // Template method implementations.
 

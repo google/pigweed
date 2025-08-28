@@ -24,6 +24,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete_block}
+
 /// Alias for a default block type that is compatible with `FirstFitAllocator`.
 template <typename OffsetType>
 using WorstFitBlock = DetailedBlock<OffsetType, GenericFastSortedItem>;
@@ -98,5 +100,7 @@ class WorstFitAllocator : public BlockAllocator<BlockType> {
   SmallBucket small_bucket_;
   LargeBucket large_bucket_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

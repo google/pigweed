@@ -55,6 +55,8 @@ class Owned : public GenericOwned {
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,concrete}
+
 /// Allocator that does not automatically delete.
 ///
 /// A "bump" or "arena" allocator provides memory by simply incrementing a
@@ -142,5 +144,7 @@ class BumpAllocator : public Allocator {
   ByteSpan remaining_;
   internal::GenericOwned* owned_ = nullptr;
 };
+
+/// @}
 
 }  // namespace pw::allocator

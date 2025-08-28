@@ -21,6 +21,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete_block}
+
 /// Alias for a default block type that is compatible with `FirstFitAllocator`.
 template <typename OffsetType>
 using FirstFitBlock = DetailedBlock<OffsetType, SequencedItem>;
@@ -96,5 +98,7 @@ class FirstFitAllocator : public BlockAllocator<BlockType> {
 
   SequencedBucket<BlockType> bucket_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

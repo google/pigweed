@@ -23,6 +23,8 @@
 
 namespace pw {
 
+/// @submodule{pw_allocator,impl}
+
 /// Abstract interface for releasing memory.
 class Deallocator {
  protected:
@@ -373,4 +375,7 @@ namespace allocator {
 using Deallocator = ::pw::Deallocator;
 
 }  // namespace allocator
+
+/// @}
+
 }  // namespace pw

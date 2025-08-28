@@ -25,6 +25,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,block}
+
 /// CRTP-style base class for block implementations with limited code size and
 /// memory overhead.
 ///
@@ -109,5 +111,7 @@ struct SmallBlockBase : public BasicBlock<Derived>,
   T prev_and_free_;
   T next_and_last_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

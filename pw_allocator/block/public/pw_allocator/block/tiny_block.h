@@ -20,6 +20,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,block_impl}
+
 /// A block implementation with only 4 bytes of overhead.
 ///
 /// Like its base class, this block is allocatable with a fixed alignment. This
@@ -31,5 +33,7 @@ class TinyBlock : public SmallBlockBase<TinyBlock, uint16_t, 2> {
   constexpr explicit TinyBlock(size_t outer_size)
       : SmallBlockBase(outer_size) {}
 };
+
+/// @}
 
 }  // namespace pw::allocator

@@ -17,6 +17,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,impl}
+
 /// Hints about optional methods implemented or optional behaviors requested
 /// by an allocator of a derived type.
 ///
@@ -98,5 +100,7 @@ inline constexpr Capabilities operator^(const Capabilities& lhs,
                                         const Capabilities& rhs) {
   return Capabilities(lhs.get() ^ rhs.get());
 }
+
+/// @}
 
 }  // namespace pw::allocator

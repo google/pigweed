@@ -29,6 +29,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,forwarding}
+
 /// This tag type is used to explicitly select the constructor which adds
 /// the tracking allocator's metrics group as a child of the info
 /// allocator it is wrapping.
@@ -209,5 +211,7 @@ void* TrackingAllocator<MetricsType>::DoReallocate(void* ptr,
 // 5. The `TrackingAllocatorImpl<...>` alias will be removed.
 template <typename MetricsType>
 using TrackingAllocatorImpl = TrackingAllocator<MetricsType>;
+
+/// @}
 
 }  // namespace pw::allocator

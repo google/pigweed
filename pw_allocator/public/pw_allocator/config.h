@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+/// @submodule{pw_allocator,config}
+
 #ifndef PW_ALLOCATOR_BLOCK_POISON_INTERVAL
 /// Controls how frequently blocks are poisoned on deallocation.
 ///
@@ -115,3 +117,5 @@
 #ifndef PW_ALLOCATOR_HAS_ATOMICS
 #define PW_ALLOCATOR_HAS_ATOMICS 1
 #endif  // PW_ALLOCATOR_HAS_ATOMICS
+
+/// @}

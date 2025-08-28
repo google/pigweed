@@ -34,6 +34,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,block_impl}
+
 /// Parameters type that encapsulates the block parameters.
 ///
 /// @tparam   OffsetType  Unsigned integral type used to encode offsets. Larger
@@ -208,6 +210,8 @@ class DetailedBlockImpl
 template <typename OffsetType = uintptr_t, typename WhenFree = void>
 using DetailedBlock =
     DetailedBlockImpl<DetailedBlockParameters<OffsetType, WhenFree>>;
+
+/// @}
 
 // Template method implementations.
 

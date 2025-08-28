@@ -21,6 +21,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete}
+
 /// A wrapper around a Pool that allows for asynchronous allocation.
 ///
 /// This class is not thread safe. It should only be used from the dispatcher
@@ -44,5 +46,7 @@ class AsyncPool : public Pool {
   Pool& pool_;
   async2::Waker waker_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

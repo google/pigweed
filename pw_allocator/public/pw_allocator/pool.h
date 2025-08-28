@@ -25,6 +25,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,core}
+
 /// Abstract interface for fixed-layout memory allocation.
 ///
 /// The interface makes no guarantees about its implementation. Consumers of the
@@ -135,5 +137,7 @@ class Pool : public Deallocator {
 
   const Layout layout_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

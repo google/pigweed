@@ -31,6 +31,8 @@ struct AllocatableBase {};
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,block_mixins}
+
 /// Mix-in for blocks that can be allocated and freed.
 ///
 /// Block mix-ins are stateless and trivially constructible. See `BasicBlock`
@@ -241,6 +243,8 @@ struct is_allocatable : std::is_base_of<internal::AllocatableBase, BlockType> {
 /// Helper variable template for `is_allocatable<BlockType>::value`.
 template <typename BlockType>
 constexpr bool is_allocatable_v = is_allocatable<BlockType>::value;
+
+/// @}
 
 // Template method implementations.
 

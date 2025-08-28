@@ -24,6 +24,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete_block}
+
 /// Alias for a default block type that is compatible with `TlsfAllocator`.
 template <typename OffsetType>
 using TlsfBlock = DetailedBlock<OffsetType, GenericFastSortedItem>;
@@ -149,6 +151,8 @@ class TlsfAllocator : public BlockAllocator<BlockType> {
   std::array<Shelf, kNumShelves> shelves_;
   SmallBucket small_bucket_;
 };
+
+/// @}
 
 // Template method implementations.
 

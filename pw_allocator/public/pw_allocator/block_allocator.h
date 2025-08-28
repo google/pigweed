@@ -91,6 +91,8 @@ class BlockAllocatorTest;
 
 }  // namespace test
 
+/// @submodule{pw_allocator,concrete_block}
+
 /// A memory allocator that uses a list of blocks.
 ///
 /// This class does not implement `ChooseBlock` and cannot be used directly.
@@ -282,6 +284,8 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   BlockType* last_ = nullptr;
   uint16_t unpoisoned_ = 0;
 };
+
+/// @}
 
 // Template method implementations
 

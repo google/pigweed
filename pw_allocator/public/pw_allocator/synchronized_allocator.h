@@ -23,6 +23,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,forwarding}
+
 /// Wraps an `Allocator` with a lock to synchronize access.
 ///
 /// Depending on the `LockType`, this object may be thread- and/or interrupt-
@@ -110,5 +112,7 @@ class SynchronizedAllocator : public Allocator {
 /// This can be useful with allocator parameters for module configuration, e.g.
 /// PW_MALLOC_LOCK_TYPE.
 using NoSync = pw::sync::NoLock;
+
+/// @}
 
 }  // namespace pw::allocator

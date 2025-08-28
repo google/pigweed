@@ -44,6 +44,9 @@ CASE_SENSE_NAMES       = NO
 # https://www.doxygen.nl/manual/config.html#cfg_disable_index
 DISABLE_INDEX          = NO
 
+# https://www.doxygen.nl/manual/config.html#cfg_enable_preprocessing
+ENABLE_PREPROCESSING   = YES
+
 # https://www.doxygen.nl/manual/config.html#cfg_extract_package
 EXTRACT_PACKAGE        = YES
 

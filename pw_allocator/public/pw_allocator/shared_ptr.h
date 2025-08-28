@@ -29,6 +29,8 @@
 
 namespace pw {
 
+/// @submodule{pw_allocator,core}
+
 // Forward declarations.
 template <typename T>
 class WeakPtr;
@@ -236,6 +238,8 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
 
   ControlBlock* control_block_ = nullptr;
 };
+
+/// @}
 
 // Template method implementations.
 

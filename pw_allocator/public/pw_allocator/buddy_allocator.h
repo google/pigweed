@@ -109,6 +109,8 @@ class GenericBuddyAllocator final {
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,concrete}
+
 /// Allocator that uses the buddy memory allocation algorithm.
 ///
 /// This allocator allocates blocks of memory whose sizes are powers of two.
@@ -198,5 +200,7 @@ class BuddyAllocator : public Allocator {
   std::array<BucketType, kNumBuckets> buckets_;
   internal::GenericBuddyAllocator impl_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

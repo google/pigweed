@@ -21,6 +21,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete}
+
 /// Typed pool that can be used for slab allocation.
 ///
 /// This class is a special purpose pool designed to allocate objects of one
@@ -105,5 +107,7 @@ class TypedPool : public ChunkPool {
     return UniquePtr<T>(New(std::forward<Args>(args)...), *this);
   }
 };
+
+/// @}
 
 }  // namespace pw::allocator

@@ -38,6 +38,8 @@ constexpr bool is_bounded_array_v<T[kN]> = true;
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,core}
+
 /// Describes the layout of a block of memory.
 ///
 /// Layouts are passed to allocators, and consist of a (possibly padded) size
@@ -114,5 +116,7 @@ inline bool operator==(const Layout& lhs, const Layout& rhs) {
 inline bool operator!=(const Layout& lhs, const Layout& rhs) {
   return !(lhs == rhs);
 }
+
+/// @}
 
 }  // namespace pw::allocator

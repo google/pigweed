@@ -22,6 +22,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,util}
+
 /// Associates a default-constructed type with a memory buffer.
 ///
 /// Although the type is arbitrary, the intended purpose of of this class is to
@@ -75,5 +77,7 @@ struct AlignedBuffer {
 
   alignas(kAlignment) std::array<std::byte, kBufferSize> bytes_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

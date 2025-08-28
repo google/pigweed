@@ -31,6 +31,8 @@
 
 namespace pw::allocator::test {
 
+/// @submodule{pw_allocator,impl_test}
+
 static_assert(Hardening::kIncludesDebugChecks,
               "Tests must use a config that enables strict validation");
 
@@ -175,5 +177,7 @@ class AllocatorForTest : public Allocator {
   size_t resize_old_size_;
   size_t resize_new_size_;
 };
+
+/// @}
 
 }  // namespace pw::allocator::test

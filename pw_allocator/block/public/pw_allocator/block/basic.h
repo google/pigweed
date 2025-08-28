@@ -48,6 +48,8 @@ struct BasicBase {};
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,block_mixins}
+
 /// Base mix-in for block implementations.
 ///
 /// This CRTP-style type can be combined with block mix-in types. Block mix-ins
@@ -189,6 +191,8 @@ struct is_block : std::is_base_of<internal::BasicBase, T> {};
 /// Helper variable template for `is_block<T>::value`.
 template <typename T>
 constexpr bool is_block_v = is_block<T>::value;
+
+/// @}
 
 namespace internal {
 

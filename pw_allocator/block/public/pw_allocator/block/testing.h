@@ -27,6 +27,8 @@
 
 namespace pw::allocator::test {
 
+/// @submodule{pw_allocator,impl_test}
+
 // The size of the memory region used in tests.
 static constexpr size_t kDefaultCapacity = 1024;
 
@@ -134,6 +136,8 @@ class BlockTestUtilities {
   BlockAlignedBuffer<BlockType, kBufferSize> buffer_;
   ByteSpan bytes_;
 };
+
+/// @}
 
 //  Template method implementations.
 

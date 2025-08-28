@@ -23,6 +23,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete}
+
 /// Implementation of ``Pool`` that uses a list of free chunks.
 ///
 /// The first ``sizeof(void*)`` bytes of each free chunk is used to store a
@@ -59,5 +61,7 @@ class ChunkPool : public Pool {
   uintptr_t end_;
   std::byte* next_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

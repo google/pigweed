@@ -25,6 +25,8 @@
 
 namespace pw::allocator::internal {
 
+/// @submodule{pw_allocator,bucket}
+
 /// A container of free blocks.
 ///
 /// Allocators can use buckets to manage their free blocks. This may include
@@ -231,5 +233,7 @@ template <typename T, typename U = size_t>
 constexpr U CountLZero(T t) {
   return static_cast<U>(cpp20::countl_zero(t));
 }
+
+/// @}
 
 }  // namespace pw::allocator::internal

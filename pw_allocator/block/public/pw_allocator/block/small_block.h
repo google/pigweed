@@ -20,6 +20,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,block_impl}
+
 /// A compact block implementation.
 ///
 /// Like its base class, this block is allocatable with a fixed alignment. It is
@@ -31,5 +33,7 @@ class SmallBlock : public SmallBlockBase<SmallBlock, uint32_t, 0> {
   constexpr explicit SmallBlock(size_t outer_size)
       : SmallBlockBase(outer_size) {}
 };
+
+/// @}
 
 }  // namespace pw::allocator

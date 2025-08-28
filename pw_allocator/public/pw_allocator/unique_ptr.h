@@ -24,6 +24,8 @@
 
 namespace pw {
 
+/// @submodule{pw_allocator,core}
+
 /// A `std::unique_ptr<T>`-like type that integrates with `pw::Deallocator`.
 ///
 /// This is a RAII smart pointer that deallocates any memory it points to when
@@ -179,6 +181,8 @@ template <typename T>
 using UniquePtr = PW_ALLOCATOR_DEPRECATED ::pw::UniquePtr<T>;
 
 }  // namespace allocator
+
+/// @}
 
 // Template method implementations.
 

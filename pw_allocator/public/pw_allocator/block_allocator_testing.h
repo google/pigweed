@@ -32,6 +32,8 @@
 
 namespace pw::allocator::test {
 
+/// @submodule{pw_allocator,impl_test}
+
 /// Test fixture responsible for managing a memory region and an allocator that
 /// allocates block of memory from it.
 ///
@@ -150,6 +152,8 @@ class BlockAllocatorTest : public ::testing::Test {
   BlockTestUtilities<BlockType, kCapacity> util_;
   std::array<void*, kNumPtrs> ptrs_;
 };
+
+/// @}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Test fixture template method implementations.

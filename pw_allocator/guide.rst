@@ -87,23 +87,23 @@ more details.
 
 Module configuration options include:
 
-- :ref:`module-pw_allocator-config-block_poison_interval` determines how
-  frequently blocks that implemented the
-  :ref:`module-pw_allocator-api-poisonable_block` mix-in should apply the poison
-  pattern on deallocation.
-- :ref:`module-pw_allocator-config-hardening` allows you to set how many
+- :doxylink:`PW_ALLOCATOR_BLOCK_POISON_INTERVAL` determines
+  how frequently blocks that implemented the :doxylink:`PoisonableBlock
+  <pw::allocator::PoisonableBlock>` mix-in should apply the poison pattern on
+  deallocation.
+- :ref:`` allows you to set how many
   validation checks are enabled. Additional checks can detect more errors at the
   cost of performance and code size.
-- :ref:`module-pw_allocator-config-suppress_deprecated_warnings` allows you to
-  silence warnings about deprecated interfaces. This is a temporary measure. It
-  is strongly advised to migrate away from deprecated interfaces as soon as
-  possible as they will eventually be removed.
+- :doxylink:`PW_ALLOCATOR_SUPPRESS_DEPRECATED_WARNINGS`
+  allows you to silence warnings about deprecated interfaces. This is a
+  temporary measure. It is strongly advised to migrate away from deprecated
+  interfaces as soon as possible as they will eventually be removed.
 
 -----------------
 Inject allocators
 -----------------
 Routines that need to allocate memory dynamically should do so using the generic
-:ref:`module-pw_allocator-api-allocator` interface. By using dependency
+:doxylink:`pw::Allocator` interface. By using dependency
 injection, memory users can be kept decoupled from the details of how memory is
 provided. This yields the most flexibility for modifying or replacing the
 specific allocators.
@@ -133,8 +133,8 @@ instantiated will vary from project to project, but it's likely to be early in a
 program's lifecycle and in a device-specific location of the source tree.
 
 For initial testing on :ref:`target-host`, a simple allocator such as
-:ref:`module-pw_allocator-api-libc_allocator` can be used. This allocator is
-trivally constructed and simply wraps ``malloc`` and ``free``.
+:doxylink:`LibCAllocator <pw::allocator::LibCAllocator>` can be used. This
+allocator is trivally constructed and simply wraps ``malloc`` and ``free``.
 
 Use New and Delete
 ==================
@@ -151,7 +151,7 @@ Use UniquePtr<T>
 ================
 Where possible, using `RAII`_ is a recommended approach for making memory
 management easier and less error-prone.
-:ref:`module-pw_allocator-api-unique_ptr` is a smart pointer that makes
+:doxylink:`UniquePtr <pw::UniquePtr>` is a smart pointer that makes
 allocating and deallocating memory more transparent:
 
 .. literalinclude:: examples/basic.cc
@@ -162,8 +162,8 @@ allocating and deallocating memory more transparent:
 
 Determine an allocation's Layout
 ================================
-Several of the :ref:`module-pw_allocator-api-allocator` methods take a parameter
-of the :ref:`module-pw_allocator-api-layout` type. This type combines the size
+Several of the :doxylink:`pw::Allocator` methods take a parameter of the
+:doxylink:`Layout <pw::allocator::Layout>` type. This type combines the size
 and alignment requirements of an allocation. It can be constructed directly, or
 if allocating memory for a specific type, by using a templated static method:
 
@@ -174,7 +174,7 @@ if allocating memory for a specific type, by using a templated static method:
    :end-before: [pw_allocator-examples-block_allocator-layout_of]
 
 As stated above, you should generally try to keep allocator implementation
-details abstracted behind the :ref:`module-pw_allocator-api-allocator`
+details abstracted behind the :doxylink:`pw::Allocator`
 interface. One exception to this guidance is when integrating allocators into
 existing code that assumes ``malloc`` and ``free`` semantics. Notably, ``free``
 does not take any parameters beyond a pointer describing the memory to be freed.
@@ -196,9 +196,9 @@ object of this type.
 
 While there are
 :ref:`module-pw_allocator-design-differences-with-polymorphic-allocators`, an
-:ref:`module-pw_allocator-api-allocator` can be used with these containers by
+:doxylink:`pw::Allocator` can be used with these containers by
 wrapping them with a PMR adapter type,
-:ref:`module-pw_allocator-api-pmr_allocator`:
+:doxylink:`PmrAllocator <pw::allocator::PmrAllocator>`:
 
 .. literalinclude:: examples/pmr.cc
    :language: cpp
@@ -215,10 +215,10 @@ wrapping them with a PMR adapter type,
 
 .. Warning::
    The standard library containers expect their allocators to throw an exception
-   on allocation failure, and do not check for failure themselves. If
-   exceptions are disabled, :ref:`module-pw_allocator-api-pmr_allocator`
-   instead **asserts** that allocation succeeded. Care must be taken in this
-   case to ensure that memory is not exhausted.
+   on allocation failure, and do not check for failure themselves. If exceptions
+   are disabled, :doxylink:`PmrAllocator <pw::allocator::PmrAllocator>` instead
+   **asserts** that allocation succeeded. Care must be taken in this case to
+   ensure that memory is not exhausted.
 
 --------------------------
 Choose the right allocator
@@ -231,62 +231,64 @@ implement memory allocation for each particular scenario.
 Concrete allocator implementations
 ==================================
 This module provides several allocator implementations. The following is an
-overview. Consult the :ref:`module-pw_allocator-api` for additional details.
+overview. Consult the :doxylink:`API reference <pw_allocator>` for additional
+details.
 
-- :ref:`module-pw_allocator-api-libc_allocator`: Uses ``malloc``, ``realloc``,
-  and ``free``. This should only be used if the ``libc`` in use provides those
-  functions. This allocator is a stateless singleton that may be referenced
-  using ``GetLibCAllocator()``.
-- :ref:`module-pw_allocator-api-null_allocator`: Always fails. This may be
-  useful if allocations should be disallowed under specific circumstances.
-  This allocator is a stateless singleton that may be referenced using
-  ``GetNullAllocator()``.
-- :ref:`module-pw_allocator-api-bump_allocator`: Allocates objects out of a
-  region of memory and only frees them all at once when the allocator is
-  destroyed.
-- :ref:`module-pw_allocator-api-buddy_allocator`: Allocates objects out of a
-  blocks with sizes that are powers of two. Blocks are split evenly for smaller
-  allocations and merged on free.
-- :ref:`module-pw_allocator-api-block_allocator`: Tracks memory using
-  :ref:`module-pw_allocator-api-block`. Derived types use specific strategies
-  for how to choose a block to use to satisfy a request. See also
-  :ref:`module-pw_allocator-design-blocks`. Derived types include:
+- :doxylink:`LibCAllocator <pw::allocator::LibCAllocator>`: Uses ``malloc``,
+  ``realloc``, and ``free``. This should only be used if the ``libc`` in use
+  provides those functions. This allocator is a stateless singleton that may be
+  referenced using ``GetLibCAllocator()``.
+- :doxylink:`NullAllocator <pw::allocator::NullAllocator>`: Always fails. This
+  may be useful if allocations should be disallowed under specific
+  circumstances. This allocator is a stateless singleton that may be referenced
+  using ``GetNullAllocator()``.
+- :doxylink:`BumpAllocator <pw::allocator::BumpAllocator>`: Allocates objects
+  out of a region of memory and only frees them all at once when the allocator
+  is destroyed.
+- :doxylink:`BuddyAllocator <pw::allocator::BuddyAllocator>`: Allocates objects
+  out of a blocks with sizes that are powers of two. Blocks are split evenly for
+  smaller allocations and merged on free.
+- :doxylink:`BlockAllocator <pw::allocator::BlockAllocator>`: Tracks memory
+  using the :doxylink:`Block API <pw_allocator_block>`. Derived types use
+  specific strategies for how to choose a block to use to satisfy a request.
+  See also :ref:`module-pw_allocator-design-blocks`. Derived types include:
 
-  - :ref:`module-pw_allocator-api-first_fit_allocator`: Chooses the first
-    block that's large enough to satisfy a request. This strategy is very fast,
-    but may increase fragmentation.
-  - :ref:`module-pw_allocator-api-best_fit_allocator`: Chooses the
+  - :doxylink:`FirstFitAllocator <pw::allocator::FirstFitAllocator>`: Chooses
+    the first block that's large enough to satisfy a request. This strategy is
+    very fast, but may increase fragmentation.
+  - :doxylink:`BestFitAllocator <pw::allocator::BestFitAllocator>`: Chooses the
     smallest block that's large enough to satisfy a request. This strategy
     maximizes the avilable space for large allocations, but may increase
     fragmentation and is slower.
-  - :ref:`module-pw_allocator-api-worst_fit_allocator`: Chooses the
-    largest block if it's large enough to satisfy a request. This strategy
+  - :doxylink:`WorstFitAllocator <pw::allocator::WorstFitAllocator>`: Chooses
+    the largest block if it's large enough to satisfy a request. This strategy
     minimizes the amount of memory in unusably small blocks, but is slower.
-  - :ref:`module-pw_allocator-api-bucket_block_allocator`: Sorts and stores
-    each free blocks in a :ref:`module-pw_allocator-api-bucket` with a given
-    maximum block inner size.
+  - :doxylink:`BucketAllocator <pw::allocator::BucketAllocator>`:
+    Sorts and stores each free blocks in a :doxylink:`Bucket
+    <pw_allocator_bucket>` with a given maximum block inner size.
 
-- :ref:`module-pw_allocator-api-typed_pool`: Efficiently creates and
+- :doxylink:`TypedPool <pw::allocator::TypedPool>`: Efficiently creates and
   destroys objects of a single given type.
 
 Forwarding allocator implementations
 ====================================
 This module provides several "forwarding" allocators, as described in
 :ref:`module-pw_allocator-design-forwarding`. The following is an overview.
-Consult the :ref:`module-pw_allocator-api` for additional details.
+Consult the :doxylink:`API reference <pw_allocator>` for additional details.
 
-- :ref:`module-pw_allocator-api-fallback_allocator`: Dispatches first to a
-  primary allocator, and, if that fails, to a secondary allocator.
-- :ref:`module-pw_allocator-api-pmr_allocator`: Adapts an allocator to be a
-  ``std::pmr::polymorphic_allocator``, which can be used with standard library
-  containers that `use allocators`_, such as ``std::pmr::vector<T>``.
-- :ref:`module-pw_allocator-api-guarded_allocator`: Inserts guard values before
-  and after allocations, and provides a thread-safe way to check them in order
-  to detect heap overflows.
-- :ref:`module-pw_allocator-api-synchronized_allocator`: Synchronizes access to
-  another allocator, allowing it to be used by multiple threads.
-- :ref:`module-pw_allocator-api-tracking_allocator`: Wraps another allocator and
-  records its usage.
+- :doxylink:`FallbackAllocator <pw::allocator::FallbackAllocator>`: Dispatches
+  first to a primary allocator, and, if that fails, to a secondary allocator.
+- :doxylink:`PmrAllocator <pw::allocator::PmrAllocator>`: Adapts an allocator to
+  be a ``std::pmr::polymorphic_allocator``, which can be used with standard
+  library containers that `use allocators`_, such as ``std::pmr::vector<T>``.
+- :doxylink:`GuardedAllocator <pw::allocator::GuardedAllocator>`: Inserts guard
+  values before and after allocations, and provides a thread-safe way to check
+  them in order to detect heap overflows.
+- :doxylink:`SynchronizedAllocator <pw::allocator::SynchronizedAllocator>`:
+  Synchronizes access to another allocator, allowing it to be used by multiple
+  threads.
+- :doxylink:`TrackingAllocator <pw::allocator::TrackingAllocator>`: Wraps
+  another allocator and records its usage.
 
 .. _module-pw_allocator-guide-custom_allocator:
 
@@ -296,7 +298,7 @@ If none of the allocator implementations provided by this module meet your
 needs, you can implement your allocator and pass it into any routine that uses
 the generic interface.
 
-:ref:`module-pw_allocator-api-allocator` uses an `NVI`_ pattern. To add a custom
+:doxylink:`pw::Allocator` uses an `NVI`_ pattern. To add a custom
 allocator implementation, you must at a miniumum implement the ``DoAllocate``
 and ``DoDeallocate`` methods.
 
@@ -325,8 +327,8 @@ There are also several optional methods you can provide:
 
 Custom allocators can indicate which optional methods they implement and what
 optional behaviors they want from the base class by specifying
-:ref:`module-pw_allocator-api-capabilities` when invoking the base class
-constructor.
+:doxylink:`Capabilities <pw::allocator::Capabilities>` when invoking the base
+class constructor.
 
 .. TODO: b/328076428 - Make Deallocate optional once traits supporting
    MonotonicAllocator are added.
@@ -335,7 +337,7 @@ constructor.
 Measure memory usage
 --------------------
 You can observe how much memory is being used for a particular use case using a
-:ref:`module-pw_allocator-api-tracking_allocator`.
+:doxylink:`TrackingAllocator <pw::allocator::TrackingAllocator>`.
 
 .. literalinclude:: examples/metrics.cc
    :language: cpp
@@ -408,15 +410,15 @@ the same underlying allocator:
 
 Measure fragmentation
 =====================
-
-If you are using a :ref:`module-pw_allocator-api-block_allocator`, you can use
-the ``MeasureFragmentation`` method to examine how fragmented the heap is. This
-method returns a :ref:`module-pw_allocator-api-fragmentation` struct, which
-includes the "sum of squares" and the sum of the inner sizes of the current free
-blocks. On a platform or host with floating point support, you can divide the
-square root of the sum of squares by the sum to obtain a number that ranges from
-0 to 1 to indicate maximal and minimal fragmenation, respectively. Subtracting
-this number from 1 can give a more intuitive "fragmenation score".
+If you are using a :doxylink:`BlockAllocator <pw::allocator::BlockAllocator>`,
+you can use the ``MeasureFragmentation`` method to examine how fragmented the
+heap is. This method returns a :doxylink:`Fragmentation
+<pw::allocator::Fragmentation>` struct, which includes the "sum of squares" and
+the sum of the inner sizes of the current free blocks. On a platform or host
+with floating point support, you can divide the square root of the sum of
+squares by the sum to obtain a number that ranges from 0 to 1 to indicate
+maximal and minimal fragmenation, respectively. Subtracting this number from 1
+can give a more intuitive "fragmenation score".
 
 For example, consider a heap consisting of the following blocks:
 
@@ -441,23 +443,24 @@ to help detect memory corruptions when they happen. On every deallocation they
 will check the integrity of the block header and assert if it has been modified.
 
 Additionally, you can enable poisoning to detect additional memory corruptions
-such as use-after-frees. The :ref:`module-pw_allocator-module-configuration` for
-``pw_allocator`` includes the ``PW_ALLOCATOR_BLOCK_POISON_INTERVAL`` option. If
-a block derives from :ref:`module-pw_allocator-api-poisonable_block`, the
-allocator will "poison" every N-th block it frees. Allocators "poison" blocks by
-writing a set pattern to the usable memory, and later check on allocation that
-the pattern is intact. If it is not, something has illegally modified
-unallocated memory.
+such as use-after-frees. The :doxylink:`configuration <pw_allocator_config>`
+for ``pw_allocator`` includes the
+:doxylink:`PW_ALLOCATOR_BLOCK_POISON_INTERVAL` option. If a block derives from
+:doxylink:`PoisonableBlock <pw::allocator::PoisonableBlock>`, the allocator
+will "poison" every N-th block it frees. Allocators "poison" blocks by writing
+a set pattern to the usable memory, and later check on allocation that the
+pattern is intact. If it is not, something has illegally modified unallocated
+memory.
 
 ----------------------
 Test custom allocators
 ----------------------
 If you create your own allocator implementation, it's strongly recommended that
 you test it as well. If you're creating a forwarding allocator, you can use
-:ref:`module-pw_allocator-api-allocator_for_test`. This simple allocator
-provides its own backing storage and automatically frees any outstanding
-allocations when it goes out of scope. It also tracks the most recent values
-provided as parameters to the interface methods.
+:doxylink:`AllocatorForTest <pw::allocator::test::AllocatorForTest>`. This
+simple allocator provides its own backing storage and automatically frees any
+outstanding allocations when it goes out of scope. It also tracks the most
+recent values provided as parameters to the interface methods.
 
 For example, the following tests the custom allocator from
 :ref:`module-pw_allocator-guide-custom_allocator`:
@@ -468,9 +471,9 @@ For example, the following tests the custom allocator from
    :start-after: [pw_allocator-examples-custom_allocator-unit_test]
    :end-before: [pw_allocator-examples-custom_allocator-unit_test]
 
-You can also extend the :ref:`module-pw_allocator-api-test_harness` to perform
-pseudorandom sequences of allocations and deallocations, e.g. as part of a
-performance test:
+You can also extend the :doxylink:`TestHarness
+<pw::allocator::test::TestHarness>` to perform pseudorandom sequences of
+allocations and deallocations, e.g. as part of a performance test:
 
 .. literalinclude:: examples/public/examples/custom_allocator_test_harness.h
    :language: cpp
@@ -482,10 +485,10 @@ performance test:
    :linenos:
    :start-after: [pw_allocator-examples-custom_allocator-perf_test]
 
-Even better, you can easily add fuzz tests for your allocator. This module
-uses the :ref:`module-pw_allocator-api-test_harness` to integrate with
-:ref:`module-pw_fuzzer` and provide
-:ref:`module-pw_allocator-api-fuzzing_support`.
+Even better, you can easily add fuzz tests for your allocator. This module uses
+the :doxylink:`TestHarness <pw::allocator::test::TestHarness>` to integrate
+with :ref:`module-pw_fuzzer` and provide :doxylink:`FuzzTest support
+<pw_allocator_impl_test_fuzz>`.
 
 .. literalinclude:: examples/custom_allocator_test.cc
    :language: cpp
@@ -499,8 +502,8 @@ Measure custom allocator size
 If you create your own allocator implementation, you may wish to measure its
 code size, similar to measurements in the module's own
 :ref:`module-pw_allocator-size-reports`. You can use ``pw_bloat`` and the
-:ref:`module-pw_allocator-api-size_reports` to create size reports as described
-in :ref:`bloat-howto`.
+:doxylink:`size reports API <pw_allocator_impl_size>` to create size reports as
+described in :ref:`bloat-howto`.
 
 For example, the C++ code for a size report binary might look like:
 

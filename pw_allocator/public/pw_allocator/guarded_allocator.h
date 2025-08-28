@@ -85,6 +85,8 @@ class GenericGuardedAllocator : public Allocator {
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,forwarding}
+
 /// GuardedAllocator that can detect heap overflows in a thread-safe manner.
 ///
 /// This class takes a `BlockAllocator` and manages concurrent access to it.
@@ -168,6 +170,8 @@ class GuardedAllocator : public internal::GenericGuardedAllocator {
   // safety analysis.
   BlockType* block_;
 };
+
+/// @}
 
 // Template method implementations.
 

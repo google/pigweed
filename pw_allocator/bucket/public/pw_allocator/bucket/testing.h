@@ -22,6 +22,8 @@
 
 namespace pw::allocator::test {
 
+/// @submodule{pw_allocator,impl_test}
+
 /// Test fixture for testing Buckets.
 ///
 /// This class contains code both to set up a bucket and a number of free
@@ -193,5 +195,7 @@ class BucketTest : public ::testing::Test {
   std::array<BlockType*, kMaxBlocks> blocks_;
   BlockType* available_ = nullptr;
 };
+
+/// @}
 
 }  // namespace pw::allocator::test

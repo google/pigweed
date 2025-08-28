@@ -214,7 +214,7 @@ working with allocators in a system.
 
 UniquePtr
 ---------
-``pw::allocator::UniquePtr`` is a "smart pointer" analogous to
+``pw::UniquePtr`` is a "smart pointer" analogous to
 ``std::unique_ptr``, designed to work with Pigweed allocators. It owns and
 manages an allocated object, automatically deallocating its memory when it goes
 out of scope.

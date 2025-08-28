@@ -24,6 +24,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete_block}
+
 /// Alias for a default block type that is compatible with
 /// `BucketAllocator`.
 template <typename OffsetType = uintptr_t>
@@ -133,5 +135,7 @@ class BucketAllocator : public BlockAllocator<BlockType> {
 
   std::array<UnorderedBucket<BlockType>, kNumBuckets> buckets_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

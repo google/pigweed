@@ -30,6 +30,8 @@ struct PoisonableBase {};
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,block_mixins}
+
 /// Mix-in for blocks that can be poisoned.
 ///
 /// A poisoned block's usable space contains pattern of data whose integrity can
@@ -129,6 +131,8 @@ struct is_poisonable : std::is_base_of<internal::PoisonableBase, BlockType> {};
 /// Helper variable template for `is_poisonable<BlockType>::value`.
 template <typename BlockType>
 constexpr bool is_poisonable_v = is_poisonable<BlockType>::value;
+
+/// @}
 
 namespace internal {
 

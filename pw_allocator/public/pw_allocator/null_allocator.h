@@ -20,6 +20,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete}
+
 /// A memory allocator that always fails to allocate memory.
 ///
 /// A null allocator may be useful as part of a larger framework if allocation
@@ -48,5 +50,7 @@ class NullAllocator : public Allocator {
 
 /// Returns a reference to the NullAllocator singleton.
 NullAllocator& GetNullAllocator();
+
+/// @}
 
 }  // namespace pw::allocator

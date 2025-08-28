@@ -18,6 +18,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete_block}
+
 /// Alias for a default block type that is compatible with
 /// `DualFirstFitBlockAllocator`.
 template <typename OffsetType>
@@ -27,5 +29,7 @@ using DualFirstFitBlock = FirstFitBlock<OffsetType>;
 template <typename OffsetType = uintptr_t>
 using DualFirstFitBlockAllocator PW_ALLOCATOR_DEPRECATED =
     FirstFitAllocator<DualFirstFitBlock<OffsetType>>;
+
+/// @}
 
 }  // namespace pw::allocator

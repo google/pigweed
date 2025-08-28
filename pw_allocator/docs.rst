@@ -34,7 +34,7 @@ increased shared memory, and reduced large reservations.
 **Want to allocate objects from specific memory like SRAM or PSRAM?**
 
 Use `dependency injection`_! Write your code to take
-:ref:`module-pw_allocator-api-allocator` parameters, and you can quickly and
+:doxylink:`pw::Allocator` parameters, and you can quickly and
 easily change where memory comes from or what additional features are provided
 simply by changing what allocator is passed:
 
@@ -66,7 +66,7 @@ Use a smart pointer!
 **Want to know how much memory has been allocated?**
 
 Pick the metrics you're interested in and track them with a
-:ref:`module-pw_allocator-api-tracking_allocator`:
+:doxylink:`TrackingAllocator <pw::allocator::TrackingAllocator>`:
 
 .. literalinclude:: examples/metrics.cc
    :language: cpp
@@ -82,8 +82,8 @@ Pick the metrics you're interested in and track them with a
 
 **Need to share the allocator with another thread or an interrupt handler?**
 
-Use a :ref:`module-pw_allocator-api-synchronized_allocator` with the lock of
-your choice:
+Use a :doxylink:`SynchronizedAllocator <pw::allocator::SynchronizedAllocator>`
+with the lock of your choice:
 
 .. literalinclude:: examples/spin_lock.cc
    :language: cpp
@@ -124,7 +124,7 @@ capabilities as the platform.
 
 Between these two is a range of complex projects on RTOSes and other platforms.
 These projects may benefit from using the
-:ref:`module-pw_allocator-api-allocator` interface and its implementations to
+:doxylink:`pw::Allocator` interface and its implementations to
 manage memory.
 
 .. toctree::
@@ -132,7 +132,6 @@ manage memory.
    :maxdepth: 1
 
    guide
-   api
    design
    code_size
 
@@ -146,8 +145,8 @@ manage memory.
       Integrate pw_allocator into your project and learn common use cases
 
    .. grid-item-card:: :octicon:`code-square` API reference
-      :link: module-pw_allocator-api
-      :link-type: ref
+      :link: ../doxygen/group__pw__allocator.html
+      :link-type: url
       :class-item: sales-pitch-cta-secondary
 
       Detailed description of the pw_allocator's API

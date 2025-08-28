@@ -24,6 +24,8 @@
 
 namespace pw::allocator::test {
 
+/// @submodule{pw_allocator,impl_test}
+
 /// Represents a request to allocate some memory.
 struct AllocationRequest {
   size_t size = 0;
@@ -192,5 +194,7 @@ class TestHarness {
   /// previous request's size.
   std::optional<size_t> max_size_;
 };
+
+/// @}
 
 }  // namespace pw::allocator::test

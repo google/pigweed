@@ -66,6 +66,8 @@ class MemoryResource final : public pw::pmr::memory_resource {
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,forwarding}
+
 /// Implementation of C++'s abstract polymorphic allocator interface that uses
 /// a pw::Allocator.
 ///
@@ -86,5 +88,7 @@ class PmrAllocator final : public pw::pmr::polymorphic_allocator<std::byte> {
  private:
   internal::MemoryResource memory_resource_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

@@ -17,6 +17,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,util}
+
 // inclusive-language: disable
 
 /// Information that can be used to represent the fragmentation of the block
@@ -61,5 +63,7 @@ struct Fragmentation {
 /// This step includes manipulating floating point numbers, and as such it may
 /// be desirable to avoid performing this step on device.
 float CalculateFragmentation(const Fragmentation& fragmentation);
+
+/// @}
 
 }  // namespace pw::allocator

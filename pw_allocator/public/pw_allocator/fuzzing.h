@@ -21,6 +21,8 @@
 
 namespace pw::allocator::test {
 
+/// @submodule{pw_allocator,impl_test_fuzz}
+
 /// Returns a FuzzTest domain for producing arbitrary allocator requests.
 ///
 /// This method integrates with FuzzTest to use code coverage to produce guided
@@ -99,5 +101,7 @@ inline constexpr size_t kMaxSize = 2048;
 inline auto DefaultArbitraryRequests() {
   return pw::allocator::test::ArbitraryRequests<kMaxRequests, kMaxSize>();
 }
+
+/// @}
 
 }  // namespace pw::allocator::test

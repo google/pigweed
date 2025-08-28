@@ -20,6 +20,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,bucket}
+
 /// Intrusive item type corresponding to a `SortedBucket`.
 ///
 /// When free blocks are added to a bucket, their usable space is used to store
@@ -181,5 +183,7 @@ class ReverseSortedBucket
     return BlockType::FromUsableSpace(&(*iter));
   }
 };
+
+/// @}
 
 }  // namespace pw::allocator

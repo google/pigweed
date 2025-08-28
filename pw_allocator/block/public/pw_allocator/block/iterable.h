@@ -23,6 +23,8 @@ struct IterableBase {};
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,block_mixins}
+
 /// Mix-in for blocks that allows creating forward iterators over block ranges.
 ///
 /// Block mix-ins are stateless and trivially constructible. See `BasicBlock`
@@ -97,5 +99,7 @@ struct is_iterable : std::is_base_of<internal::IterableBase, BlockType> {};
 /// Helper variable template for `is_iterable<BlockType>::value`.
 template <typename BlockType>
 constexpr bool is_iterable_v = is_iterable<BlockType>::value;
+
+/// @}
 
 }  // namespace pw::allocator

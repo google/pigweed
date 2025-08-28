@@ -21,6 +21,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,bucket}
+
 /// Intrusive item type corresponding to a `FastSortedBucket`.
 ///
 /// When free blocks are added to a bucket, their usable space is used to store
@@ -186,5 +188,7 @@ class ReverseFastSortedBucket
   FastSortedBucket<BlockType> impl_;
   IntrusiveMultiMap<size_t, FastSortedItem<BlockType>>& items_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

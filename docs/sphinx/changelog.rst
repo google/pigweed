@@ -1140,10 +1140,10 @@ Nov 27, 2024
 ------------
 Highlights (Nov 15, 2024 to Nov 27, 2024):
 
-* **pw_allocator updates**: The :ref:`module-pw_allocator-api-bucket` class
-  has been refactored to be more flexible and the :ref:`block API
-  <module-pw_allocator-api-block>` has been refactored to support static
-  polymorphism.
+* **pw_allocator updates**: The :doxylink:`BucketBase
+  <pw::allocator::internal::BucketBase>` class has been refactored to be more
+  flexible and the :doxylink:`Block <pw_allocator_block>` API has been
+  refactored to support static polymorphism.
 
 .. _docs-changelog-2024-11-27-Modules:
 
@@ -1160,21 +1160,21 @@ Changes:
 
 * ``BestFitBlockAllocator`` was renamed to ``BestFitAllocator`` and
   ``WorstFitBlockAllocator`` was renamed to ``WorstFitAllocator``. These
-  classes have been refactored to use :ref:`buckets
-  <module-pw_allocator-api-bucket>`. Commit: `Refactor best- and worst-fit
+  classes have been refactored to use :doxylink:`buckets
+  <pw_allocator_bucket>`. Commit: `Refactor best- and worst-fit
   allocators to use buckets <https://pwrev.dev/234817>`__.
 
 .. 0766dbaf5305202c6f67e18184bb165df8426713
 
 * ``FirstFitBlockAllocator``, ``LastFitBlockAllocator``, and
   ``DualFirstFitBlockAllocator`` were merged into a single class:
-  :ref:`module-pw_allocator-api-first_fit_allocator`. Commit: `Refactor
-  first fit allocators <https://pwrev.dev/234816>`__.
+  :doxylink:`FirstFitAllocator <pw::allocator::FirstFitAllocator>`. Commit:
+  `Refactor first fit allocators <https://pwrev.dev/234816>`__.
 
 .. 3bfdac7a7826a4e2a1dc7a7174fd8d6276546c26
 
-* The :ref:`module-pw_allocator-api-bucket` class has been refactored to
-  be more flexible. Commit: `Refactor Bucket
+* The :doxylink:`BucketBase <pw::allocator::internal::BucketBase>` class has
+  been refactored to be more flexible. Commit: `Refactor Bucket
   <https://pwrev.dev/234815>`__.
 
 .. 65b5e336df018fbc9d124ca09d71a5dcccd1a8c0
@@ -1191,7 +1191,7 @@ Changes:
 
 .. 6417a523b06e03dce3453e96c3a1bec6ab511768
 
-* The :ref:`block API <module-pw_allocator-api-block>` has been
+* The :doxylink:`block API <pw_allocator_block>` has been
   refactored to support static polymorphism. Commit: `Add static
   polymorphism to Block <https://pwrev.dev/232214>`__.
 
@@ -8632,7 +8632,7 @@ Modules
 
 pw_allocator
 ------------
-The new :ref:`module-pw_allocator-api-capabilities` API lets derived allocators
+The new :doxylink:`pw::allocator::Capabilities` API lets derived allocators
 describe what optional features they support. ``pw::Allocator::GetLayout()``
 has begun to be deprecated and replaced by ``pw::Allocator::GetRequestedLayout``,
 ``pw::Allocator::GetUsableLayout()``, and ``pw::Allocator::GetAllocatedLayout()``
@@ -13368,7 +13368,7 @@ Highlights (Oct 5, 2023 to Oct 20, 2023):
   See :ref:`seed-0108` for background.
 * :ref:`module-pw_log-tokenized-args` are now supported. See :ref:`seed-0105`
   for background.
-* The new :cpp:class:`pw::allocator::UniquePtr` class offers a safer, simpler
+* The new :cpp:class:`pw::UniquePtr` class offers a safer, simpler
   RAII API for allocating individual values within an allocator.
 * A few SEEDs were accepted: :ref:`seed-0105`, :ref:`seed-0109`, and
   :ref:`seed-0111`.
@@ -13394,7 +13394,7 @@ Modules
 
 pw_allocator
 ------------
-The new :cpp:class:`pw::allocator::UniquePtr` class offers a safer, simpler
+The new :cpp:class:`pw::UniquePtr` class offers a safer, simpler
 RAII API for allocating individual values within an allocator.
 
 * `Fix SplitFreeListAllocator region alignment <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175232>`__

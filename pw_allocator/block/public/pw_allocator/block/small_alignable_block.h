@@ -21,6 +21,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,block_impl}
+
 /// An alignable version of `SmallBlock`.
 class SmallAlignableBlock
     : public SmallBlockBase<SmallAlignableBlock, uint32_t, 0>,
@@ -51,5 +53,7 @@ class SmallAlignableBlock
     return Alignable::DoAllocLast(std::move(block), layout);
   }
 };
+
+/// @}
 
 }  // namespace pw::allocator

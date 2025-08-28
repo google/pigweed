@@ -16,10 +16,97 @@
 // TODO: b/426012010 - Auto-generate this file from the metadata provided
 // in //docs/sphinx/module_metadata.json.
 
+// TODO: b/441319784 - Move each module's content into that module's directory.
+// E.g. the pw_allocator content should go into //pw_allocator/doxygen.h
+
 // clang-format off
 
 /// @defgroup pw_alignment pw_alignment
 /// @brief Natural object alignment, guaranteed. Main docs: https://pigweed.dev/pw_alignment
+
+/// @defgroup pw_allocator pw_allocator
+/// @brief Flexible, safe, and measurable memory allocation
+/// @details Main docs: [Home](../../pw_allocator/docs.html) |
+/// [Guides](../../pw_allocator/guide.html) |
+/// [Design & roadmap](../../pw_allocator/design.html) |
+/// [Code size analysis](../../pw_allocator/code_size.html)
+
+/// @defgroup pw_allocator_block Blocks
+/// @ingroup pw_allocator
+/// @brief An allocatable region of memory
+/// @details Blocks are the fundamental type managed by several of the
+/// @ref pw_allocator_concrete_block
+
+/// @defgroup pw_allocator_block_impl Block implementations
+/// @ingroup pw_allocator_block
+/// @brief The following combine block mix-ins and provide both the methods
+/// they require as well as a concrete representation of the data those methods
+/// need
+
+/// @brief Blocks are defined using several stateless “mix-in” interface types
+/// @details These provide specific functionality, while deferring the detailed
+/// representation of a block to a derived type.
+
+/// @defgroup pw_allocator_block_mixins Block mix-ins
+/// @ingroup pw_allocator_block
+/// @brief Blocks are defined using several stateless “mix-in” interface types
+/// @details These provide specific functionality, while deferring the detailed
+/// representation of a block to a derived type.
+
+/// @defgroup pw_allocator_bucket Buckets
+/// @ingroup pw_allocator
+/// @brief Data structures that track free blocks
+
+/// @defgroup pw_allocator_config Configuration
+/// @ingroup pw_allocator
+/// @brief Options for controlling block poisoning intervals, validation
+/// checks, and deprecation warnings
+
+/// @defgroup pw_allocator_concrete Concrete allocators
+/// @ingroup pw_allocator
+/// @brief Concrete allocator implementations that provide memory dynamically
+
+/// @defgroup pw_allocator_concrete_block Block allocators
+/// @ingroup pw_allocator_concrete
+
+/// @defgroup pw_allocator_core Core interfaces
+/// @ingroup pw_allocator
+/// @brief Generic allocator interfaces that can be injected into routines that
+/// need dynamic memory
+/// @details These include `Allocator`, as well as the `Layout` type that is
+/// passed to it and the managed smart pointer types, such as `UniquePtr`, that
+/// can be returned from it.
+
+/// @defgroup pw_allocator_forwarding Forwarding allocators
+/// @ingroup pw_allocator
+/// @brief Allocator implementations that don’t allocate memory directly
+/// and instead rely on other allocators while providing additional behaviors
+/// @details Learn more: [Forwarding allocator
+/// concept](../../pw_allocator/design.html#module-pw-allocator-design-forwarding)
+
+/// @defgroup pw_allocator_impl_test_fuzz FuzzTest support
+/// @ingroup pw_allocator_impl_test
+
+/// @defgroup pw_allocator_impl Implementation interfaces
+/// @ingroup pw_allocator
+/// @brief Interfaces for allocator implementers
+/// @details These interfaces are intended for allocator implementers, not for
+/// `pw_allocator` consumers.
+
+/// @defgroup pw_allocator_impl_size Size reports
+/// @ingroup pw_allocator_impl
+/// @brief Generate code size reports for allocator implementations
+
+/// @defgroup pw_allocator_impl_test Testing and debugging
+/// @ingroup pw_allocator_impl
+/// @brief Test utilities for allocator implementers
+/// @details These facilitate writing unit tests and fuzz tests for both
+/// concrete and forwarding allocator implementations. They are not intended to
+/// be used by module consumers.
+
+/// @defgroup pw_allocator_util Utilities
+/// @ingroup pw_allocator
+/// @brief Helpers for metrics, fragmentation, and buffer management
 
 /// @defgroup pw_analog pw_analog
 /// @brief Analog-to-digital converter libraries and utilities. Main docs: https://pigweed.dev/pw_analog

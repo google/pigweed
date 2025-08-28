@@ -26,6 +26,8 @@
 
 namespace pw::allocator::size_report {
 
+/// @submodule{pw_allocator,impl_size}
+
 /// Default block type to use for tests.
 using BlockType = SmallBlock;
 
@@ -88,6 +90,8 @@ int MeasureAllocator(Allocator& allocator, uint32_t mask);
 /// @param[in]  mask        A bitmap that can be passed to `PW_BLOAT_COND` and
 ///                         `PW_BLOAT_EXPR`. See those macros for details.
 int MeasureBlockAllocator(BlockAllocator<BlockType>& allocator, uint32_t mask);
+
+/// @}
 
 // Template method implementations.
 

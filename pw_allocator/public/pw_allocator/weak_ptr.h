@@ -27,6 +27,8 @@
 
 namespace pw {
 
+/// @submodule{pw_allocator,core}
+
 /// A `std::weak_ptr<T>`-like type that integrates with `pw::SharedPtr`.
 ///
 /// @tparam   T   The type being pointed to. This may be an array type, e.g.
@@ -201,6 +203,8 @@ SharedPtr<T> WeakPtr<T>::Lock() const noexcept {
   auto* t = std::launder(reinterpret_cast<element_type*>(data));
   return SharedPtr<T>(t, control_block_);
 }
+
+/// @}
 
 }  // namespace pw
 

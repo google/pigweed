@@ -22,6 +22,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,util}
+
 /// Applies the given macro to each metric.
 ///
 /// This macro helps ensure consistency between definitions that involve every
@@ -263,6 +265,8 @@ inline uint32_t ClampU32(size_t size) {
   return static_cast<uint32_t>(std::min(
       size, static_cast<size_t>(std::numeric_limits<uint32_t>::max())));
 }
+
+/// @}
 
 // Template method implementations.
 

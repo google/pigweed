@@ -103,6 +103,8 @@ class GenericBlockResult {
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,block_mixins}
+
 /// Extends `GenericBlockResult` to include a pointer to a block.
 ///
 /// The included pointer is to the block affected by the operation that produced
@@ -149,5 +151,7 @@ class [[nodiscard]] BlockResult : public internal::GenericBlockResult {
  private:
   BlockType* block_ = nullptr;
 };
+
+/// @}
 
 }  // namespace pw::allocator

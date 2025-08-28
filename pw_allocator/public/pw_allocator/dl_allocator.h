@@ -24,6 +24,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete_block}
+
 /// Alias for a default block type that is compatible with `DlAllocator`.
 template <typename OffsetType>
 using DlBlock = DetailedBlock<OffsetType, GenericFastSortedItem>;
@@ -131,6 +133,8 @@ class DlAllocator : public BlockAllocator<BlockType> {
   std::array<LargeBin, kNumLargeBins> large_bins_;
   std::array<uintptr_t, kNumBitmaps> bitmaps_;
 };
+
+/// @}
 
 // Template method implementations.
 

@@ -1258,7 +1258,6 @@ pw_size_table(
 sphinx_docs_library(
     name = "docs",
     srcs = [
-        "api.rst",
         "code_size.rst",
         "design.rst",
         "docs.rst",

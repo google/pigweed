@@ -22,6 +22,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,forwarding}
+
 /// This class simply dispatches between a primary and secondary allocator. Any
 /// attempt to allocate memory will first be handled by the primary allocator.
 /// If it cannot allocate memory, e.g. because it is out of memory, the
@@ -56,5 +58,7 @@ class FallbackAllocator : public Allocator {
   Allocator& primary_;
   Allocator& secondary_;
 };
+
+/// @}
 
 }  // namespace pw::allocator

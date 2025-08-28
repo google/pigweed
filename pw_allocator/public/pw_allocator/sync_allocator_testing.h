@@ -28,6 +28,8 @@
 
 namespace pw::allocator::test {
 
+/// @submodule{pw_allocator,impl_test}
+
 // Test fixtures.
 
 /// Thread body that repeatedly performs some action during a test.
@@ -92,6 +94,8 @@ class SyncAllocatorTest : public ::testing::Test {
   void TestResize();
   void TestReallocate();
 };
+
+/// @}
 
 }  // namespace pw::allocator::test
 

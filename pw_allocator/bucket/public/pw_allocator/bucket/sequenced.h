@@ -22,6 +22,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,bucket}
+
 /// Intrusive item type corresponding to a `SequencedBucket`.
 ///
 /// When free blocks are added to a bucket, their usable space is used to store
@@ -143,5 +145,7 @@ class SequencedBucket : public internal::BucketBase<SequencedBucket<BlockType>,
   containers::future::IntrusiveList<SequencedItem> items_;
   size_t threshold_ = 0;
 };
+
+/// @}
 
 }  // namespace pw::allocator

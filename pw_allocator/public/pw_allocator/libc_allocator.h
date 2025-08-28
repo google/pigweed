@@ -20,6 +20,8 @@
 
 namespace pw::allocator {
 
+/// @submodule{pw_allocator,concrete}
+
 /// Memory allocator that uses `malloc` and `free`.
 ///
 /// TODO: b/301930507 - `aligned_alloc` is not portable. As a result, this
@@ -52,5 +54,7 @@ class LibCAllocator final : public Allocator {
 
 /// Returns a reference to the LibCAllocator singleton.
 LibCAllocator& GetLibCAllocator();
+
+/// @}
 
 }  // namespace pw::allocator

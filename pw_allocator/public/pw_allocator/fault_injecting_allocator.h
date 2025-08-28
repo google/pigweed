@@ -18,6 +18,8 @@
 
 namespace pw::allocator::test {
 
+/// @submodule{pw_allocator,impl_test}
+
 /// Forwarding allocator for injecting failures. Forwards calls to a real
 /// allocator implementation, or artificially fails if requested.
 ///
@@ -85,5 +87,7 @@ class FaultInjectingAllocator : public Allocator {
   bool allow_resize_;
   bool allow_reallocate_;
 };
+
+/// @}
 
 }  // namespace pw::allocator::test

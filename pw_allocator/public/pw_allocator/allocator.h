@@ -26,6 +26,8 @@
 
 namespace pw {
 
+/// @submodule{pw_allocator,core}
+
 /// Abstract interface for variable-layout memory allocation.
 ///
 /// The interface makes no guarantees about its implementation. Consumers of the
@@ -410,4 +412,7 @@ namespace allocator {
 using Allocator = ::pw::Allocator;
 
 }  // namespace allocator
+
+/// @}
+
 }  // namespace pw

@@ -26,6 +26,8 @@ struct ContiguousBase {};
 
 }  // namespace internal
 
+/// @submodule{pw_allocator,block_mixins}
+
 /// Mix-in for blocks that collectively represent a contiguous region of memory.
 ///
 /// Contiguous blocks can be split into smaller blocks and merged when adjacent.
@@ -130,6 +132,8 @@ struct is_contiguous : std::is_base_of<internal::ContiguousBase, BlockType> {};
 /// Helper variable template for `is_contiguous<BlockType>::value`.
 template <typename BlockType>
 constexpr bool is_contiguous_v = is_contiguous<BlockType>::value;
+
+/// @}
 
 namespace internal {
 
