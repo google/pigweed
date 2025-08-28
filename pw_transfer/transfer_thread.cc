@@ -597,6 +597,8 @@ void TransferThread::HandleSetStreamEvent(TransferStream stream) {
 void TransferThread::EnqueueResourceEvent(uint32_t resource_id,
                                           ResourceStatusCallback&& callback) {
   if (!TryWaitForEventToProcess()) {
+    internal::ResourceStatus stats;
+    callback(Status::Unavailable(), stats);
     return;
   }
 
@@ -630,6 +632,8 @@ void TransferThread::GetResourceState(uint32_t resource_id) {
   } else {
     resource_status_callback_(Status::NotFound(), stats);
   }
+
+  resource_status_callback_ = nullptr;
 }
 
 rpc::Writer& TransferThread::stream_for(TransferStream stream) {

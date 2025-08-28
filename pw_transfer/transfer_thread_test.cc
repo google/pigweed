@@ -398,5 +398,67 @@ TEST_F(TransferThreadTest, SetStream_TerminatesActiveTransfers) {
   transfer_thread_.RemoveTransferHandler(handler);
 }
 
+class LongRunningHandler final : public ReadOnlyHandler {
+ public:
+  LongRunningHandler(uint32_t session_id, ConstByteSpan data)
+      : ReadOnlyHandler(session_id), reader_(data) {}
+
+  Status PrepareRead() final {
+    set_reader(reader_);
+    notification.acquire();
+    return OkStatus();
+  }
+
+  void FinalizeRead(Status) final {}
+
+  sync::ThreadNotification notification;
+
+ private:
+  stream::MemoryReader reader_;
+};
+
+TEST_F(TransferThreadTest,
+       EnqueueResourceEvent_InvokesCallbackIfUnableToStageEvent) {
+  auto reader_writer = ctx_.reader_writer();
+  transfer_thread_.SetServerReadStream(reader_writer, [](ConstByteSpan) {});
+
+  LongRunningHandler handler(3, kData);
+  transfer_thread_.AddTransferHandler(handler);
+
+  transfer_thread_.StartServerTransfer(
+      internal::TransferType::kTransmit,
+      ProtocolVersion::kLegacy,
+      3,
+      3,
+      EncodeChunk(
+          Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
+              .set_session_id(3)
+              .set_window_end_offset(8)
+              .set_max_chunk_size_bytes(8)
+              .set_offset(0)),
+      max_parameters_,
+      kNeverTimeout,
+      3,
+      10);
+
+  // Try to enqueue a resource status request while the `LongRunningHandler` is
+  // blocked. This will result in a timeout waiting for it to process. The
+  // callback should be invoked with an error status.
+  Status resource_status = Status::Unknown();
+  transfer_thread_.EnqueueResourceEvent(
+      3, [&](Status status, const internal::ResourceStatus&) {
+        resource_status = status;
+      });
+
+  EXPECT_EQ(resource_status, Status::Unavailable());
+
+  // Allow the start request to complete.
+  handler.notification.release();
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  transfer_thread_.RemoveTransferHandler(handler);
+  transfer_thread_.WaitUntilEventIsProcessed();
+}
+
 }  // namespace
 }  // namespace pw::transfer::test
