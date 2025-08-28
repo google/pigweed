@@ -73,7 +73,7 @@ would normally, as well as standard library functions like ``strdup`` and
 built-in routines like ``new`` that use those functions.
 
 If you configured a ``PW_MALLOC_METRICS_TYPE``, you can retrieve metrics using
-``pw::malloc::GetSystemMetrics()``.
+``pw::malloc::UpdateSystemMetrics()``.
 
 .. toctree::
    :maxdepth: 1
