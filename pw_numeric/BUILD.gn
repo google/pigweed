@@ -25,7 +25,6 @@ config("public_include_path") {
 pw_source_set("checked_arithmetic") {
   public = [ "public/pw_numeric/checked_arithmetic.h" ]
   public_configs = [ ":public_include_path" ]
-  public_deps = [ dir_pw_preprocessor ]
 }
 
 pw_test("checked_arithmetic_test") {

@@ -13,12 +13,39 @@
 // the License.
 #pragma once
 
+/// `PW_ADD_OVERFLOW` adds two integers while checking for overflow.
+///
+/// Returns true if the result of `a + b` overflows the type of `out`; otherwise
+/// stores the result in `out` and returns false.
+///
+/// For C++ code, use @cpp_func{pw::CheckedAdd} or
+/// @cpp_func{pw::CheckedIncrement} instead.
+#define PW_ADD_OVERFLOW(a, b, out) __builtin_add_overflow(a, b, out)
+
+/// `PW_SUB_OVERFLOW` subtracts an integer from another while checking for
+/// overflow.
+///
+/// Returns true if the result of `a - b` overflows the type of `out`; otherwise
+/// stores the result in `out` and returns false.
+///
+/// For C++ code, use @cpp_func{pw::CheckedSub} or
+/// @cpp_func{pw::CheckedDecrement} instead.
+#define PW_SUB_OVERFLOW(a, b, out) __builtin_sub_overflow(a, b, out)
+
+/// `PW_MUL_OVERFLOW` multiplies two integers while checking for overflow.
+///
+/// Returns true if the result of `a * b` overflows the type of `out`; otherwise
+/// stores the result in `out` and returns false.
+///
+/// For C++ code, use @cpp_func{pw::CheckedMul} instead.
+#define PW_MUL_OVERFLOW(a, b, out) __builtin_mul_overflow(a, b, out)
+
+#ifdef __cplusplus
+
 #include <cstdint>
 #include <limits>
 #include <optional>
 #include <type_traits>
-
-#include "pw_preprocessor/compiler.h"
 
 namespace pw {
 
@@ -213,3 +240,5 @@ template <typename T, typename A, typename B>
 }
 
 }  // namespace pw
+
+#endif  // __cplusplus

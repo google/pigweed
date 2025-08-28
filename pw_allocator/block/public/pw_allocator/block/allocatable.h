@@ -276,7 +276,7 @@ constexpr StatusWithSize AllocatableBlock<Derived>::DoCanAlloc(
   }
   size_t extra = derived()->InnerSize();
   size_t new_inner_size = AlignUp(layout.size(), Derived::kAlignment);
-  if (PW_SUB_OVERFLOW(extra, new_inner_size, &extra)) {
+  if (!CheckedSub(extra, new_inner_size, extra)) {
     return StatusWithSize::ResourceExhausted();
   }
   return StatusWithSize(extra);

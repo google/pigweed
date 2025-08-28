@@ -52,7 +52,7 @@ namespace pw {
 template <typename T>
 constexpr T add_sat(T lhs, T rhs) noexcept {
   static_assert(std::is_integral_v<T>);
-  if (T sum = 0; !PW_ADD_OVERFLOW(lhs, rhs, &sum)) {
+  if (T sum = 0; CheckedAdd(lhs, rhs, sum)) {
     return sum;
   }
   if constexpr (std::is_unsigned_v<T>) {
@@ -74,7 +74,7 @@ constexpr T add_sat(T lhs, T rhs) noexcept {
 template <typename T>
 constexpr T mul_sat(T lhs, T rhs) noexcept {
   static_assert(std::is_integral_v<T>);
-  if (T product = 0; !PW_MUL_OVERFLOW(lhs, rhs, &product)) {
+  if (T product = 0; CheckedMul(lhs, rhs, product)) {
     return product;
   }
   if constexpr (std::is_unsigned_v<T>) {

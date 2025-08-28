@@ -25,7 +25,6 @@ cc_library(
     name = "checked_arithmetic",
     hdrs = ["public/pw_numeric/checked_arithmetic.h"],
     strip_include_prefix = "public",
-    deps = ["//pw_preprocessor"],
 )
 
 pw_cc_test(

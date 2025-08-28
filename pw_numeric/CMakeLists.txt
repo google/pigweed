@@ -19,8 +19,6 @@ pw_add_library(pw_numeric.checked_arithmetic INTERFACE
     public/pw_numeric/checked_arithmetic.h
   PUBLIC_INCLUDES
     public
-  PUBLIC_DEPS
-    pw_preprocessor
 )
 
 pw_add_test(pw_numeric.checked_arithmetic_test

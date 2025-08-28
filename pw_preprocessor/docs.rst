@@ -107,15 +107,6 @@ code. Use :doxylink:`PW_MODIFY_DIAGNOSTICS_PUSH`, use
 
 .. _module-pw_preprocessor-integer-overflow:
 
-Integer with Overflow Checking
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``pw_preprocessor/compiler.h`` provides macros for performing arithmetic
-operations and checking whether it overflowed.
-
-- :doxylink:`PW_ADD_OVERFLOW`
-- :doxylink:`PW_SUB_OVERFLOW`
-- :doxylink:`PW_MUL_OVERFLOW`
-
 pw_preprocessor/concat.h
 ------------------------
 Defines the ``PW_CONCAT(...)`` macro, which expands its arguments if they are
