@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-menu "pw_thread"
+menu "pw_i2c"
 
 config PIGWEED_I2C
   bool "Link the pw_i2c_zephyr module"
-  select PIGWED_SYNC_MUTEX
+  select PIGWEED_SYNC_MUTEX
   select PIGWEED_CHRONO_SYSTEM_CLOCK
   help
     Link the library allowing I2C instantiation for Zephyr drivers.
