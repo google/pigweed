@@ -567,6 +567,84 @@ DynamicByteBuffer LERejectCisRequestCommandPacket(
   );
 }
 
+DynamicByteBuffer LESetCIGParametersCommandPacket(
+    uint8_t cig_id,
+    uint32_t sdu_interval_c_to_p,
+    uint32_t sdu_interval_p_to_c,
+    pw::bluetooth::emboss::LESleepClockAccuracyRange worst_case_sca,
+    pw::bluetooth::emboss::LECISPacking packing,
+    pw::bluetooth::emboss::LECISFraming framing,
+    uint16_t max_transport_latency_c_to_p,
+    uint16_t max_transport_latency_p_to_c,
+    pw::span<const bt::iso::CisConfigParams> cis_params) {
+  constexpr size_t kStaticSize = 18;
+  constexpr size_t kSizePerCis = 9;
+  constexpr size_t kCisCountMax = 0xEF;
+
+  constexpr uint8_t kAllPhys = 0b00000111;
+  constexpr uint8_t kRetransmissionCount = 2;
+
+  auto packet_size = kStaticSize + kSizePerCis * cis_params.size();
+  auto params_size =
+      packet_size -
+      pw::bluetooth::emboss::CommandHeader::IntrinsicSizeInBytes();
+
+  PW_CHECK(cis_params.size() <= kCisCountMax);
+  PW_CHECK(params_size <= std::numeric_limits<uint8_t>::max());
+
+  auto sdu_interval_c_to_p_bytes = ToBytes(sdu_interval_c_to_p);
+  auto sdu_interval_p_to_c_bytes = ToBytes(sdu_interval_p_to_c);
+
+  StaticByteBuffer static_part(
+      LowerBits(hci_spec::kLESetCIGParameters),  // Command Code ...
+      UpperBits(hci_spec::kLESetCIGParameters),  //
+      static_cast<uint8_t>(params_size),         // Params size
+      cig_id,                                    // CIG Id
+      sdu_interval_c_to_p_bytes[0],              // SDU interval ...
+      sdu_interval_c_to_p_bytes[1],              // Central -> Peripheral ...
+      sdu_interval_c_to_p_bytes[2],              //
+      sdu_interval_p_to_c_bytes[0],              // SDU Interval ...
+      sdu_interval_p_to_c_bytes[1],              // Peripheral -> Central ...
+      sdu_interval_p_to_c_bytes[2],              //
+      static_cast<uint8_t>(worst_case_sca),      // Worst-case clock accuracy
+      static_cast<uint8_t>(packing),             // CIS packing
+      static_cast<uint8_t>(framing),             // CIS framing
+      LowerBits(max_transport_latency_c_to_p),   // Max latency ...
+      UpperBits(max_transport_latency_c_to_p),   // Central -> Peripheral
+      LowerBits(max_transport_latency_p_to_c),   // Max latency ...
+      UpperBits(max_transport_latency_p_to_c),   // Peripheral -> Central
+      static_cast<uint8_t>(cis_params.size())    // CIS count
+  );
+
+  static_assert(static_part.static_size() == kStaticSize);
+
+  DynamicByteBuffer packet(packet_size);
+
+  size_t next_cis_pos = kStaticSize;
+  static_part.Copy(&packet);
+  for (const auto& cis_param : cis_params) {
+    StaticByteBuffer next_cis(
+        cis_param.cis_id,                     // CIS ID
+        LowerBits(cis_param.max_sdu_c_to_p),  // Max SDU size ...
+        UpperBits(cis_param.max_sdu_c_to_p),  // Central -> Peripheral
+        LowerBits(cis_param.max_sdu_p_to_c),  // Max SDU size ...
+        UpperBits(cis_param.max_sdu_p_to_c),  // Peripheral -> Central
+        kAllPhys,                             // Allow all PHYs C -> P
+        kAllPhys,                             // Allow all PHYs P -> C
+        kRetransmissionCount,                 // Retransmission count C -> P
+        kRetransmissionCount                  // Retransmission count P -> C
+    );
+
+    static_assert(next_cis.static_size() == kSizePerCis);
+    auto dest = packet.mutable_view(next_cis_pos, kSizePerCis);
+    next_cis.Copy(&dest);
+    next_cis_pos += kSizePerCis;
+  }
+
+  PW_CHECK(next_cis_pos == packet.size());
+  return packet;
+}
+
 DynamicByteBuffer LERequestPeerScaCompletePacket(
     hci_spec::ConnectionHandle conn,
     pw::bluetooth::emboss::LESleepClockAccuracyRange sca) {

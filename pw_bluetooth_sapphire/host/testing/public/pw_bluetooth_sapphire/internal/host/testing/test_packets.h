@@ -19,6 +19,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/iso/iso_common.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/a2dp_offload_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_packet.h"
@@ -152,6 +153,17 @@ DynamicByteBuffer LEAcceptCisRequestCommandPacket(
 DynamicByteBuffer LERejectCisRequestCommandPacket(
     hci_spec::ConnectionHandle cis_handle,
     pw::bluetooth::emboss::StatusCode reason);
+
+DynamicByteBuffer LESetCIGParametersCommandPacket(
+    uint8_t cig_id,
+    uint32_t sdu_interval_c_to_p,
+    uint32_t sdu_interval_p_to_c,
+    pw::bluetooth::emboss::LESleepClockAccuracyRange worst_case_sca,
+    pw::bluetooth::emboss::LECISPacking packing,
+    pw::bluetooth::emboss::LECISFraming framing,
+    uint16_t max_transport_latency_c_to_p,
+    uint16_t max_transport_latency_p_to_c,
+    pw::span<const bt::iso::CisConfigParams> cis_params);
 
 DynamicByteBuffer LECisEstablishedEventPacket(
     pw::bluetooth::emboss::StatusCode status,

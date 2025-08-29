@@ -57,6 +57,7 @@ cc_library(
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/gap:definitions",
         "//pw_bluetooth_sapphire/host/hci-spec",
+        "//pw_bluetooth_sapphire/host/iso",
         "//pw_bluetooth_sapphire/host/l2cap",
         "//pw_bluetooth_sapphire/host/transport",
     ],
