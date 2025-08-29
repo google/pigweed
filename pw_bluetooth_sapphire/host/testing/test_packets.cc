@@ -645,6 +645,52 @@ DynamicByteBuffer LESetCIGParametersCommandPacket(
   return packet;
 }
 
+DynamicByteBuffer LESetCIGParametersCompletePacket(
+    uint8_t cig_id,
+    const std::vector<hci_spec::ConnectionHandle>& cis_handles,
+    pw::bluetooth::emboss::StatusCode status) {
+  constexpr size_t kStaticSize = 8;
+  constexpr size_t kSizePerCis = 2;
+  constexpr size_t kCisCountMax = 0xEF;
+  constexpr uint8_t kNumHciCommandPacketsAllowed = 240;
+
+  auto packet_size = kStaticSize + kSizePerCis * cis_handles.size();
+  auto params_size =
+      packet_size - pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes();
+
+  PW_CHECK(cis_handles.size() <= kCisCountMax);
+  PW_CHECK(params_size <= std::numeric_limits<uint8_t>::max());
+  StaticByteBuffer static_part(
+      hci_spec::kCommandCompleteEventCode,       // Event code
+      params_size,                               // Params size
+      kNumHciCommandPacketsAllowed,              // Command packets allowed
+      LowerBits(hci_spec::kLESetCIGParameters),  // Command code ...
+      UpperBits(hci_spec::kLESetCIGParameters),  //
+      status,                                    // Status code
+      cig_id,                                    // CIG ID
+      cis_handles.size()                         // CIS count
+  );
+
+  static_assert(kStaticSize ==
+                pw::bluetooth::emboss::LESetCIGParametersCommandCompleteEvent::
+                    MinSizeInBytes());
+  static_assert(static_part.static_size() == kStaticSize);
+  DynamicByteBuffer packet(packet_size);
+
+  size_t next_cis_pos = kStaticSize;
+  static_part.Copy(&packet, 0, next_cis_pos);
+  for (const auto& cis_handle : cis_handles) {
+    StaticByteBuffer next_cis(LowerBits(cis_handle), UpperBits(cis_handle));
+
+    static_assert(next_cis.static_size() == kSizePerCis);
+    auto dest = packet.mutable_view(next_cis_pos, kSizePerCis);
+    next_cis.Copy(&dest);
+    next_cis_pos += kSizePerCis;
+  }
+
+  return packet;
+}
+
 DynamicByteBuffer LERequestPeerScaCompletePacket(
     hci_spec::ConnectionHandle conn,
     pw::bluetooth::emboss::LESleepClockAccuracyRange sca) {

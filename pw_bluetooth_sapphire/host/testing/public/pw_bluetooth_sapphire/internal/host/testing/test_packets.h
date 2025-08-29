@@ -165,6 +165,12 @@ DynamicByteBuffer LESetCIGParametersCommandPacket(
     uint16_t max_transport_latency_p_to_c,
     pw::span<const bt::iso::CisConfigParams> cis_params);
 
+DynamicByteBuffer LESetCIGParametersCompletePacket(
+    uint8_t cig_id,
+    const std::vector<hci_spec::ConnectionHandle>& cis_handles,
+    pw::bluetooth::emboss::StatusCode status =
+        pw::bluetooth::emboss::StatusCode::SUCCESS);
+
 DynamicByteBuffer LECisEstablishedEventPacket(
     pw::bluetooth::emboss::StatusCode status,
     hci_spec::ConnectionHandle connection_handle,
