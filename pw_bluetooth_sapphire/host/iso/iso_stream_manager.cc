@@ -87,6 +87,24 @@ AcceptCisStatus IsoStreamManager::AcceptCis(CigCisIdentifier id,
   return AcceptCisStatus::kSuccess;
 }
 
+IsoStream::WeakPtr IsoStreamManager::CreateCisConfiguration(
+    CigCisIdentifier id,
+    hci_spec::ConnectionHandle cis_handle,
+    CisEstablishedCallback on_established_cb,
+    pw::Callback<void()> on_closed_cb) {
+  auto cis = IsoStream::Create(id.cig_id(),
+                               id.cis_id(),
+                               cis_handle,
+                               hci_,
+                               std::move(on_established_cb),
+                               std::move(on_closed_cb),
+                               wake_lease_provider_,
+                               clock_);
+  auto result = cis->GetWeakPtr();
+  streams_.emplace(id, std::move(cis));
+  return result;
+}
+
 void IsoStreamManager::OnCisRequest(const hci::EventPacket& event) {
   PW_CHECK(event.event_code() == hci_spec::kLEMetaEventCode);
 

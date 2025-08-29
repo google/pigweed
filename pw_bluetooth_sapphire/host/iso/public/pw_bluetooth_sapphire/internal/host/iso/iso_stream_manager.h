@@ -27,7 +27,7 @@ namespace bt::iso {
 // single LE connection.
 // When operating as a Central, establishes an outgoing streams. When operating
 // as a Peripheral, processes incoming stream requests .
-class IsoStreamManager final {
+class IsoStreamManager final : public CigStreamCreator {
  public:
   explicit IsoStreamManager(
       hci_spec::ConnectionHandle handle,
@@ -44,6 +44,16 @@ class IsoStreamManager final {
   // of establishing a channel and on success the associated channel parameters.
   [[nodiscard]] AcceptCisStatus AcceptCis(CigCisIdentifier id,
                                           CisEstablishedCallback cb);
+
+  // Create an isochronous stream configuration as a Central. This creates the
+  // IsoStream object for stream bookkeeping, but does not issue any HCI
+  // commands, which will be done by IsoGroup, thus this only represents the CIS
+  // configuration stored in a CIG.
+  IsoStream::WeakPtr CreateCisConfiguration(
+      CigCisIdentifier id,
+      hci_spec::ConnectionHandle cis_handle,
+      CisEstablishedCallback on_established_cb,
+      pw::Callback<void()> on_closed_cb) override;
 
   // Indicates if we are currently waiting on a connection for the specified
   // CIG/CIS combination

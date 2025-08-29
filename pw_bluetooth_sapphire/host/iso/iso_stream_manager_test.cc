@@ -268,4 +268,36 @@ TEST_F(IsoStreamManagerTest, DisconnectCIS) {
   RunUntilIdle();
 }
 
+TEST_F(IsoStreamManagerTest, CreateCisConfiguration) {
+  const CigCisIdentifier kId(0x14, 0x04);
+  const hci_spec::ConnectionHandle kCisHandle = 0x123;
+
+  bool on_established_cb_called = false;
+  bool on_closed_cb_called = false;
+
+  IsoStream::WeakPtr stream = iso_stream_manager()->CreateCisConfiguration(
+      kId,
+      kCisHandle,
+      [&](pw::bluetooth::emboss::StatusCode status,
+          std::optional<WeakSelf<IsoStream>::WeakPtr> iso_weak_ptr,
+          const std::optional<CisEstablishedParameters>& params) {
+        on_established_cb_called = true;
+        EXPECT_EQ(status, pw::bluetooth::emboss::StatusCode::SUCCESS);
+        EXPECT_TRUE(iso_weak_ptr.has_value());
+        EXPECT_TRUE(params.has_value());
+      },
+      [&]() { on_closed_cb_called = true; });
+
+  ASSERT_TRUE(stream.is_alive());
+  EXPECT_EQ(stream->cis_handle(), kCisHandle);
+
+  DynamicByteBuffer le_cis_established_packet =
+      LECisEstablishedPacketWithDefaultValues(kCisHandle);
+  test_device()->SendCommandChannelPacket(le_cis_established_packet);
+  RunUntilIdle();
+
+  EXPECT_TRUE(on_established_cb_called);
+  EXPECT_FALSE(on_closed_cb_called);
+}
+
 }  // namespace bt::iso

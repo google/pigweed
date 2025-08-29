@@ -117,6 +117,21 @@ class CigCisIdentifier {
   hci_spec::CisIdentifier cis_id_;
 };
 
+// An interface for types which can create streams for an isochronous group. In
+// production this is IsoStreamManager to centralize ISO stream management.
+class CigStreamCreator {
+ public:
+  virtual ~CigStreamCreator() = default;
+
+  virtual WeakSelf<IsoStream>::WeakPtr CreateCisConfiguration(
+      CigCisIdentifier id,
+      hci_spec::ConnectionHandle cis_handle,
+      CisEstablishedCallback on_established_cb,
+      pw::Callback<void()> on_closed_cb) = 0;
+
+  using WeakPtr = WeakSelf<CigStreamCreator>::WeakPtr;
+};
+
 }  // namespace bt::iso
 
 namespace std {
