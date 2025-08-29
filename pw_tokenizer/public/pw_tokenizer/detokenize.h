@@ -40,8 +40,7 @@
 
 namespace pw::tokenizer {
 
-/// @defgroup pw_tokenizer_detokenize
-/// @{
+/// @submodule{pw_tokenizer,detokenize}
 
 class Detokenizer;
 

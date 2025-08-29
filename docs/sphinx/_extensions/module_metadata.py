@@ -582,6 +582,7 @@ def should_add_doxygen_link(module_name) -> bool:
         'pw_sys_io',
         'pw_system',
         'pw_thread',
+        'pw_tokenizer',
         'pw_toolchain',
         'pw_trace_tokenized',
         'pw_transfer',

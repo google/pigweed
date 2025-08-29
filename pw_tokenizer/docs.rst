@@ -65,7 +65,6 @@ Why tokenize strings?
 
       Detailed reference information about the pw_tokenizer API.
 
-
 .. _module-pw_tokenizer-tokenized-logging-example:
 
 ---------------------------
@@ -99,7 +98,7 @@ resources:
 A quick overview of how the tokenized version works:
 
 * You tokenize ``"Battery Voltage: %d mV"`` with a macro like
-  :c:macro:`PW_TOKENIZE_STRING`. You can use :ref:`module-pw_log_tokenized`
+  `PW_TOKENIZE_STRING`_. You can use :ref:`module-pw_log_tokenized`
   to handle the tokenization automatically.
 * After tokenization, ``"Battery Voltage: %d mV"`` becomes ``d9 28 47 8e``.
 * The first 4 bytes sent over the wire is the tokenized version of
@@ -117,4 +116,7 @@ A quick overview of how the tokenized version works:
    tokenization
    token_databases
    detokenization
-   API reference <api>
+   api
+
+.. TODO: b/441605063 - Replace with Doxylink after variadic macro bug is fixed.
+.. _PW_TOKENIZE_STRING: ../doxygen/group__pw__tokenizer__tokenize.html#define-members

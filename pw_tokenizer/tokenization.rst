@@ -101,13 +101,13 @@ Tokenize string literals outside of expressions
 ``pw_tokenizer`` provides macros for tokenizing string literals with no
 arguments:
 
-* :c:macro:`PW_TOKENIZE_STRING`
-* :c:macro:`PW_TOKENIZE_STRING_DOMAIN`
-* :c:macro:`PW_TOKENIZE_STRING_MASK`
+* `PW_TOKENIZE_STRING`_
+* :doxylink:`PW_TOKENIZE_STRING_DOMAIN`
+* :doxylink:`PW_TOKENIZE_STRING_MASK`
 
 The tokenization macros above cannot be used inside other expressions.
 
-.. admonition:: **Yes**: Assign :c:macro:`PW_TOKENIZE_STRING` to a ``constexpr`` variable.
+.. admonition:: **Yes**: Assign `PW_TOKENIZE_STRING`_ to a ``constexpr`` variable.
   :class: checkmark
 
   .. code-block:: cpp
@@ -118,7 +118,7 @@ The tokenization macros above cannot be used inside other expressions.
        constexpr uint32_t local_token = PW_TOKENIZE_STRING("Wowee Zowee?");
      }
 
-.. admonition:: **No**: Use :c:macro:`PW_TOKENIZE_STRING` in another expression.
+.. admonition:: **No**: Use `PW_TOKENIZE_STRING`_ in another expression.
   :class: error
 
   .. code-block:: cpp
@@ -127,7 +127,7 @@ The tokenization macros above cannot be used inside other expressions.
        ProcessToken(PW_TOKENIZE_STRING("This won't compile!"));
      }
 
-  Use :c:macro:`PW_TOKENIZE_STRING_EXPR` instead.
+  Use `PW_TOKENIZE_STRING_EXPR`_ instead.
 
 Tokenize inside expressions
 ===========================
@@ -136,16 +136,16 @@ use of lambda functions, so while they can be used inside expressions, they
 require C++ and cannot be assigned to constexpr variables or be used with
 special function variables like ``__func__``.
 
-* :c:macro:`PW_TOKENIZE_STRING_EXPR`
-* :c:macro:`PW_TOKENIZE_STRING_DOMAIN_EXPR`
-* :c:macro:`PW_TOKENIZE_STRING_MASK_EXPR`
+* `PW_TOKENIZE_STRING_EXPR`_
+* :doxylink:`PW_TOKENIZE_STRING_DOMAIN_EXPR`
+* :doxylink:`PW_TOKENIZE_STRING_MASK_EXPR`
 
 .. admonition:: When to use these macros
 
-  Use :c:macro:`PW_TOKENIZE_STRING` and related macros to tokenize string
+  Use `PW_TOKENIZE_STRING`_ and related macros to tokenize string
   literals that do not need %-style arguments encoded.
 
-.. admonition:: **Yes**: Use :c:macro:`PW_TOKENIZE_STRING_EXPR` within other expressions.
+.. admonition:: **Yes**: Use `PW_TOKENIZE_STRING_EXPR`_ within other expressions.
   :class: checkmark
 
   .. code-block:: cpp
@@ -154,16 +154,16 @@ special function variables like ``__func__``.
        ProcessToken(PW_TOKENIZE_STRING_EXPR("This will compile!"));
      }
 
-.. admonition:: **No**: Assign :c:macro:`PW_TOKENIZE_STRING_EXPR` to a ``constexpr`` variable.
+.. admonition:: **No**: Assign `PW_TOKENIZE_STRING_EXPR`_ to a ``constexpr`` variable.
   :class: error
 
   .. code-block:: cpp
 
      constexpr uint32_t wont_work = PW_TOKENIZE_STRING_EXPR("This won't compile!"));
 
-  Instead, use :c:macro:`PW_TOKENIZE_STRING` to assign to a ``constexpr`` variable.
+  Instead, use `PW_TOKENIZE_STRING`_ to assign to a ``constexpr`` variable.
 
-.. admonition:: **No**: Tokenize ``__func__`` in :c:macro:`PW_TOKENIZE_STRING_EXPR`.
+.. admonition:: **No**: Tokenize ``__func__`` in `PW_TOKENIZE_STRING_EXPR`_.
   :class: error
 
   .. code-block:: cpp
@@ -174,13 +174,13 @@ special function variables like ``__func__``.
        constexpr uint32_t wont_work = PW_TOKENIZE_STRING_EXPR(__func__);
      }
 
-  Instead, use :c:macro:`PW_TOKENIZE_STRING` to tokenize ``__func__`` or similar macros.
+  Instead, use `PW_TOKENIZE_STRING`_ to tokenize ``__func__`` or similar macros.
 
 Tokenize a message with arguments to a buffer
 =============================================
-* :c:macro:`PW_TOKENIZE_TO_BUFFER`
-* :c:macro:`PW_TOKENIZE_TO_BUFFER_DOMAIN`
-* :c:macro:`PW_TOKENIZE_TO_BUFFER_MASK`
+* `PW_TOKENIZE_TO_BUFFER`_
+* `PW_TOKENIZE_TO_BUFFER_DOMAIN`_
+* `PW_TOKENIZE_TO_BUFFER_MASK`_
 
 .. admonition:: Why use this macro
 
@@ -199,7 +199,7 @@ Encoding ``%s`` string arguments is inefficient, since ``%s`` strings are
 encoded 1:1, with no tokenization. Tokens can therefore be used to replace
 string arguments to tokenized format strings.
 
-* :c:macro:`PW_TOKEN_FMT`
+* `PW_TOKEN_FMT`_
 
 .. admonition:: Logging nested tokens
 
@@ -283,26 +283,26 @@ Logging enums is one common special case where tokenization is particularly
 appropriate: enum values are conceptually already tokens mapping to their
 names, assuming no duplicate values.
 
-:c:macro:`PW_TOKENIZE_ENUM` will take in a fully qualified enum name along with all
+:doxylink:`PW_TOKENIZE_ENUM` will take in a fully qualified enum name along with all
 of the associated enum values. This macro will create database entries that
 include the domain name (fully qualified enum name), enum value, and a tokenized
 form of the enum value.
 
 The macro also supports returing the string version of the enum value in the
 case that there is a non-tokenizing backend, using
-:cpp:func:`pw::tokenizer::EnumToString`.
+:doxylink:`EnumToString <pw::tokenizer::EnumToString>`.
 
 All enum values in the enum declaration must be present in the macro, and the
 macro must be in the same namespace as the enum to be able to use the
-:cpp:func:`pw::tokenizer::EnumToString` function and avoid compiler errors.
+:doxylink:`EnumToString <pw::tokenizer::EnumToString>` function and avoid compiler errors.
 
 .. literalinclude: enum_test.cc
    :language: cpp
    :start-after: [pw_tokenizer-examples-enum]
    :end-before: [pw_tokenizer-examples-enum]
 
-:c:macro:`PW_TOKENIZE_ENUM_CUSTOM` is an alternative version of
-:c:macro:`PW_TOKENIZE_ENUM` to tokenized a custom strings instead of a
+:doxylink:`PW_TOKENIZE_ENUM_CUSTOM` is an alternative version of
+:doxylink:`PW_TOKENIZE_ENUM` to tokenized a custom strings instead of a
 stringified form of the enum value name. It will take in a fully qualified enum
 name along with all the associated enum values and custom string for these
 values. This macro will create database entries that include the domain name
@@ -322,15 +322,15 @@ data to a global handler function. A project's custom tokenization macro can
 handle tokenized data in a function of their choosing. The function may accept
 any arguments, but its final arguments must be:
 
-* The 32-bit token (:cpp:type:`pw_tokenizer_Token`)
-* The argument types (:cpp:type:`pw_tokenizer_ArgTypes`)
+* The 32-bit token (:doxylink:`pw_tokenizer_Token`)
+* The argument types (``pw_tokenizer_ArgTypes``)
 * Variadic arguments, if any
 
 ``pw_tokenizer`` provides two low-level macros to help projects create custom
 tokenization macros:
 
-* :c:macro:`PW_TOKENIZE_FORMAT_STRING`
-* :c:macro:`PW_TOKENIZER_REPLACE_FORMAT_STRING`
+* `PW_TOKENIZE_FORMAT_STRING`_
+* `PW_TOKENIZE_REPLACE_FORMAT_STRING`_
 
 .. caution::
 
@@ -341,13 +341,9 @@ Use these macros to invoke an encoding function with the token, argument types,
 and variadic arguments. The function can then encode the tokenized message to a
 buffer using helpers in ``pw_tokenizer/encode_args.h``:
 
-.. Note: pw_tokenizer_EncodeArgs is a C function so you would expect to
-.. reference it as :c:func:`pw_tokenizer_EncodeArgs`. That doesn't work because
-.. it's defined in a header file that mixes C and C++.
-
-* :cpp:func:`pw::tokenizer::EncodeArgs`
-* :cpp:class:`pw::tokenizer::EncodedMessage`
-* :cpp:func:`pw_tokenizer_EncodeArgs`
+* :doxylink:`EncodeArgs <pw::tokenizer::EncodeArgs>`
+* :doxylink:`EncodedMessage <pw::tokenizer::EncodedMessage>`
+* :doxylink:`pw_tokenizer_EncodeArgs`
 
 Example
 -------
@@ -380,8 +376,8 @@ The following example implements a custom tokenization macro similar to
 
 In this example, the ``EncodeTokenizedMessage`` function would handle encoding
 and processing the message. Encoding is done by the
-:cpp:class:`pw::tokenizer::EncodedMessage` class or
-:cpp:func:`pw::tokenizer::EncodeArgs` function from
+:doxylink:`EncodedMessage <pw::tokenizer::EncodedMessage>` class or
+:doxylink:`EncodeArgs <pw::tokenizer::EncodeArgs>` function from
 ``pw_tokenizer/encode_args.h``. The encoded message can then be transmitted or
 stored as needed.
 
@@ -421,7 +417,7 @@ char*`` string. Unlike ``%s``, the string does not have to be null terminated.
 ``pw_tokenizer`` does not yet support the ``%.*s`` specifier (see `b/408040194
 <http://pwbug.dev/408040194>`_). To tokenize a length-delimited string, make a
 local null-terminated copy first. This can be done with a temporary
-:cpp:type:`pw::InlineString` sized to fit the string.
+:doxylink:`pw::InlineString` sized to fit the string.
 
 .. literalinclude:: tokenize_test.cc
    :language: c++
@@ -450,7 +446,7 @@ concatentated with string literals. For example, ``printf(__func__ ": %d",
 
 Calculate minimum required buffer size
 ======================================
-See :cpp:func:`pw::tokenizer::MinEncodingBufferSizeBytes`.
+See :doxylink:`MinEncodingBufferSizeBytes <pw::tokenizer::MinEncodingBufferSizeBytes>`.
 
 .. _module-pw_tokenizer-base64-format:
 
@@ -508,9 +504,9 @@ This makes it trivial to decode tokens that use fewer than 32 bits.
 
 Masking functionality is provided through the ``*_MASK`` versions of the macros:
 
-* :c:macro:`PW_TOKENIZE_STRING_MASK`
-* :c:macro:`PW_TOKENIZE_STRING_MASK_EXPR`
-* :c:macro:`PW_TOKENIZE_TO_BUFFER_MASK`
+* :doxylink:`PW_TOKENIZE_STRING_MASK`
+* :doxylink:`PW_TOKENIZE_STRING_MASK_EXPR`
+* `PW_TOKENIZE_TO_BUFFER_MASK`_
 
 For example, the following generates 16-bit tokens and packs them into an
 existing value.
@@ -816,3 +812,13 @@ Decoding tooling deployment
    * Integrate detokenization everywhere it is needed. Integrating the tools
      takes just a few lines of code, and token databases can be embedded in APKs
      or binaries.
+
+.. TODO: b/441605063 - Replace with Doxylinks after variadic macro bug is fixed
+.. _PW_TOKEN_FMT: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_FORMAT_STRING: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_REPLACE_FORMAT_STRING: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_STRING: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_STRING_EXPR: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_TO_BUFFER: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_TO_BUFFER_DOMAIN: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_TO_BUFFER_MASK: ../doxygen/group__pw__tokenizer__tokenize.html#define-members

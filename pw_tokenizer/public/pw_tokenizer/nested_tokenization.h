@@ -20,10 +20,14 @@
 #include "pw_preprocessor/arguments.h"
 #include "pw_tokenizer/config.h"
 
+/// @submodule{pw_tokenizer,tokenize}
+
 #define PW_TOKENIZER_NESTED_PREFIX PW_TOKENIZER_NESTED_PREFIX_STR[0]
 
 /// Format specifier for a token argument.
 #define PW_TOKEN_FMT(...) PW_DELEGATE_BY_ARG_COUNT(_PW_TOKEN_FMT_, __VA_ARGS__)
+
+/// @}
 
 // Case: no argument (no specified domain)
 #define _PW_TOKEN_FMT_0() PW_TOKENIZER_NESTED_PREFIX_STR "#%08" PRIx32
@@ -34,6 +38,8 @@
   "{" domain_value                    \
   "}"                                 \
   "#%08" PRIx32
+
+/// @submodule{pw_tokenizer,tokenize}
 
 /// Format specifier for a doubly-nested token argument.
 /// Doubly-nested token arguments are useful when the domain and/or token may
@@ -56,6 +62,8 @@
 /// @endcode
 #define PW_NESTED_TOKEN_FMT(...) \
   PW_DELEGATE_BY_ARG_COUNT(_PW_NESTED_TOKEN_FMT_, __VA_ARGS__)
+
+/// @}
 
 // Case: no argument (no specified domain)
 #define _PW_NESTED_TOKEN_FMT_0()                                    \

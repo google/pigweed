@@ -53,6 +53,8 @@ constexpr size_t ArgEncodedSizeBytes() {
 
 }  // namespace internal
 
+/// @submodule{pw_tokenizer,tokenize}
+
 /// Calculates the minimum buffer size to allocate that is guaranteed to support
 /// encoding the specified arguments.
 ///
@@ -74,11 +76,11 @@ constexpr size_t MinEncodingBufferSizeBytes() {
 }
 
 /// Encodes a tokenized string's arguments to a buffer. The
-/// @cpp_type{pw_tokenizer_ArgTypes} parameter specifies the argument types, in
+/// `pw_tokenizer_ArgTypes` parameter specifies the argument types, in
 /// place of a format string.
 ///
-/// Most tokenization implementations should use the @cpp_class{EncodedMessage}
-/// class.
+/// Most tokenization implementations should use the
+/// `pw::tokenizer::EncodedMessage` class.
 size_t EncodeArgs(pw_tokenizer_ArgTypes types,
                   va_list args,
                   span<std::byte> output);
@@ -136,14 +138,18 @@ class EncodedMessage {
   size_t size_;
 };
 
+/// @}
+
 }  // namespace pw::tokenizer
 
 #endif  // __cplusplus
 
 PW_EXTERN_C_START
 
+/// @submodule{pw_tokenizer,tokenize}
+
 /// C function that encodes arguments to a tokenized buffer. Use the
-/// @cpp_func{pw::tokenizer::EncodeArgs} function from C++.
+/// `pw::tokenizer::EncodeArgs` function from C++.
 size_t pw_tokenizer_EncodeArgs(pw_tokenizer_ArgTypes types,
                                va_list args,
                                void* output_buffer,
@@ -166,5 +172,7 @@ static inline size_t pw_tokenizer_EncodeInt64(int64_t value,
   return pw_varint_Encode64(
       pw_varint_ZigZagEncode64(value), output, output_size_bytes);
 }
+
+/// @}
 
 PW_EXTERN_C_END

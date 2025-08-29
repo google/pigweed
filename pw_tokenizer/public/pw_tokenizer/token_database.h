@@ -20,6 +20,8 @@
 
 namespace pw::tokenizer {
 
+/// @submodule{pw_tokenizer,database}
+
 /// Reads entries from a v0 binary token string database. This class does not
 /// copy or modify the contents of the database.
 ///
@@ -42,7 +44,7 @@ namespace pw::tokenizer {
 /// (`0xFF` or `0xFFFF`) if they are unset. With this format, dates may be
 /// compared naturally as unsigned integers.
 ///
-/// @rst
+/// @code{.unparsed}
 ///   ======  ====  =========================
 ///   Header (16 bytes)
 ///   ---------------------------------------
@@ -64,7 +66,7 @@ namespace pw::tokenizer {
 ///        5     1  Removal month (1-12, 255 if unset)
 ///        6     2  Removal year (65535 if unset)
 ///   ======  ====  ==================================
-/// @endrst
+/// @endcode
 ///
 /// Entries are sorted by token. A string table with a null-terminated string
 /// for each entry in order follows the entries.
@@ -376,5 +378,7 @@ class TokenDatabase {
     const signed char* signed_data;
   } begin_, end_;
 };
+
+/// @}
 
 }  // namespace pw::tokenizer

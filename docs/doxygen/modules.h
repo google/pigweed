@@ -375,6 +375,30 @@
 /// @defgroup pw_thread pw_thread
 /// @brief Main docs: https://pigweed.dev/pw_thread
 
+/// @defgroup pw_tokenizer pw_tokenizer
+/// @brief Compress strings to shrink logs by +75%
+/// @details Main docs: [Home](../../pw_tokenizer/docs.html) |
+/// [Quickstart](../../pw_tokenizer/get_started.html) |
+/// [Tokenization](../../pw_tokenizer/tokenization.html) |
+/// [Token databases](../../pw_tokenizer/token_databases.html) |
+/// [Detokenization](../../pw_tokenizer/detokenization.html)
+
+/// @defgroup pw_tokenizer_tokenize Tokenization
+/// @ingroup pw_tokenizer
+/// @brief Convert string literals to tokens
+
+/// @defgroup pw_tokenizer_detokenize Detokenization
+/// @ingroup pw_tokenizer
+/// @brief Expand a token to the string it represents and decode its arguments
+
+/// @defgroup pw_tokenizer_database Token databases
+/// @ingroup pw_tokenizer
+/// @brief Store a mapping of tokens to the strings they represent
+
+/// @defgroup pw_tokenizer_config Configuration
+/// @ingroup pw_tokenizer
+/// @brief Tokenization customization options
+
 /// @defgroup pw_toolchain pw_toolchain
 /// @brief Embedded toolchains for GN-based Pigweed projects. Main docs: https://pigweed.dev/pw_toolchain
 

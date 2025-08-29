@@ -19,10 +19,12 @@
 
 namespace pw::tokenizer {
 
+/// @submodule{pw_tokenizer,tokenize}
+
 /// @brief Tokenizes a given enumerator value. Used in the vase of a tokenizing
 /// log backend.
 /// @param value enumerator value
-/// @return The 32-bit token (@cpp_type{pw_tokenizer_Token})
+/// @return The 32-bit token (`pw_tokenizer_Token`)
 template <typename T>
 constexpr auto EnumToToken(T value) {
   static_assert(std::is_enum_v<T>, "Must be an enum");
@@ -40,7 +42,11 @@ constexpr const char* EnumToString(T value) {
   return PwTokenizerEnumToString(value);
 }
 
+/// @}
+
 }  // namespace pw::tokenizer
+
+/// @submodule{pw_tokenizer,tokenize}
 
 /// Tokenizes the given values within an enumerator. All values of the
 /// enumerator must be present to compile and have the enumerator be tokenized
@@ -87,3 +93,5 @@ constexpr const char* EnumToString(T value) {
     return "Unknown " #fully_qualified_name " value";             \
   }                                                               \
   static_assert(true)
+
+/// @}

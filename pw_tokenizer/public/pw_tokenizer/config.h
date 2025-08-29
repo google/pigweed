@@ -15,6 +15,8 @@
 // Configuration macros for the tokenizer module.
 #pragma once
 
+/// @submodule{pw_tokenizer,config}
+
 /// For a tokenized string with arguments, the types of the arguments are
 /// encoded in either 4 bytes (`uint32_t`) or 8 bytes (`uint64_t`). 4 bytes
 /// supports up to 14 tokenized string arguments; 8 bytes supports up to 29
@@ -52,19 +54,21 @@
 
 /// `PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES` is deprecated. It is used as
 /// the default value for pw_log_tokenized's
-/// @c_macro{PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES}. This value should not
-/// be configured; set @c_macro{PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES}
+/// `PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES`. This value should not
+/// be configured; set `PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES`
 /// instead.
 #ifndef PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
 #define PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES 52
 #endif  // PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
 
-// This character is used to mark the start of all tokenized messages. For
-// consistency, it is recommended to always use $ if possible.
-// If required, a different non-Base64 character may be used as a prefix.
-//
-// A string version of the character is required for format-string-literal
-// concatenation.
+/// This character is used to mark the start of all tokenized messages. For
+/// consistency, it is recommended to always use $ if possible.
+/// If required, a different non-Base64 character may be used as a prefix.
+///
+/// A string version of the character is required for format-string-literal
+/// concatenation.
 #ifndef PW_TOKENIZER_NESTED_PREFIX_STR
 #define PW_TOKENIZER_NESTED_PREFIX_STR "$"
 #endif  // PW_TOKENIZER_NESTED_PREFIX_STR
+
+/// @}

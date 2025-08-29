@@ -14833,9 +14833,9 @@ The ``pw_system.device.Device`` Python class can now be used as a
 pw_tokenizer
 ------------
 ``pw_tokenizer`` now has Rust support. The ``pw_tokenizer`` C++ config API
-is now documented at :ref:`module-pw_tokenizer-api-configuration` and
+is now documented at :doxylink:`pw_tokenizer_config` and
 the C++ token database API is now documented at
-:ref:`module-pw_tokenizer-api-token-databases`. When creating a token
+:doxylink:`pw_tokenizer_database`. When creating a token
 database, parent directories are now automatically created if they don't
 already exist. ``PrefixedMessageDecoder`` has been renamed to
 ``NestedMessageDecoder``.

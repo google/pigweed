@@ -34,16 +34,18 @@
 #include "pw_tokenizer/internal/argument_types.h"
 #include "pw_tokenizer/internal/tokenize_string.h"
 
+/// @submodule{pw_tokenizer,tokenize}
+
 /// The type of the 32-bit token used in place of a string. Also available as
 /// `pw::tokenizer::Token`.
 typedef uint32_t pw_tokenizer_Token;
 
-// Strings may optionally be tokenized to a domain. Strings in different
-// domains can be processed separately by the token database tools. Each domain
-// in use must have a corresponding section declared in the linker script. See
-// `pw_tokenizer_linker_sections.ld` for more details.
-//
-// The default domain is an empty string.
+/// Strings may optionally be tokenized to a domain. Strings in different
+/// domains can be processed separately by the token database tools. Each domain
+/// in use must have a corresponding section declared in the linker script. See
+/// `pw_tokenizer_linker_sections.ld` for more details.
+///
+/// The default domain is an empty string.
 #define PW_TOKENIZER_DEFAULT_DOMAIN ""
 
 /// Converts a string literal to a `pw_tokenizer_Token` (`uint32_t`) token in a
@@ -65,11 +67,15 @@ typedef uint32_t pw_tokenizer_Token;
 #define PW_TOKENIZE_STRING(...) \
   PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZE_STRING_, __VA_ARGS__)
 
+/// @}
+
 #define _PW_TOKENIZE_STRING_1(string_literal) \
   PW_TOKENIZE_STRING_DOMAIN(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
 
 #define _PW_TOKENIZE_STRING_2(domain, string_literal) \
   PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)
+
+/// @submodule{pw_tokenizer,tokenize}
 
 /// Converts a string literal to a ``uint32_t`` token within an expression.
 /// Requires C++.
@@ -86,6 +92,8 @@ typedef uint32_t pw_tokenizer_Token;
 #define PW_TOKENIZE_STRING_EXPR(...) \
   PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZE_STRING_EXPR_, __VA_ARGS__)
 
+/// @}
+
 #define _PW_TOKENIZE_STRING_EXPR_1(string_literal) \
   _PW_TOKENIZE_STRING_EXPR_2(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
 
@@ -96,13 +104,21 @@ typedef uint32_t pw_tokenizer_Token;
     return lambda_ret_token;                               \
   }()
 
+/// @submodule{pw_tokenizer,tokenize}
+
+// clang-format off
 /// Tokenizes a string literal in a standalone statement using the specified
-/// @rstref{domain<module-pw_tokenizer-domains>}. C and C++ compatible.
+/// [domain](../../pw_tokenizer/tokenization.html#keep-tokens-from-different-sources-separate-with-domains).
+/// C and C++ compatible.
+// clang-format on
 #define PW_TOKENIZE_STRING_DOMAIN(domain, string_literal) \
   PW_TOKENIZE_STRING_MASK(domain, UINT32_MAX, string_literal)
 
-/// Tokenizes a string literal using the specified @rstref{domain
-/// <module-pw_tokenizer-domains>} within an expression. Requires C++.
+// clang-format off
+/// Tokenizes a string literal using the specified
+/// [domain](../../pw_tokenizer/tokenization.html#keep-tokens-from-different-sources-separate-with-domains)
+/// within an expression. Requires C++.
+// clang-format on
 #define PW_TOKENIZE_STRING_DOMAIN_EXPR(domain, string_literal) \
   [&] {                                                        \
     constexpr uint32_t lambda_ret_token =                      \
@@ -110,9 +126,12 @@ typedef uint32_t pw_tokenizer_Token;
     return lambda_ret_token;                                   \
   }()
 
+// clang-format off
 /// Tokenizes a string literal in a standalone statement using the specified
-/// @rstref{domain <module-pw_tokenizer-domains>} and @rstref{bit mask
-/// <module-pw_tokenizer-masks>}. C and C++ compatible.
+/// [domain](../../pw_tokenizer/tokenization.html#keep-tokens-from-different-sources-separate-with-domains)
+/// and [bit mask](../../pw_tokenizer/tokenization.html#module-pw-tokenizer-masks).
+/// C and C++ compatible.
+// clang-format on
 #define PW_TOKENIZE_STRING_MASK(domain, mask, string_literal)                \
   /* assign to a variable */ _PW_TOKENIZER_MASK_TOKEN(mask, string_literal); \
                                                                              \
@@ -122,9 +141,12 @@ typedef uint32_t pw_tokenizer_Token;
   PW_TOKENIZER_DEFINE_TOKEN(                                                 \
       _PW_TOKENIZER_MASK_TOKEN(mask, string_literal), domain, string_literal)
 
-/// Tokenizes a string literal using the specified @rstref{domain
-/// <module-pw_tokenizer-domains>} and @rstref{bit mask
-/// <module-pw_tokenizer-masks>} within an expression. Requires C++.
+// clang-format off
+/// Tokenizes a string literal using the specified
+/// [domain](../../pw_tokenizer/tokenization.html#keep-tokens-from-different-sources-separate-with-domains)
+/// and [bit mask](../../pw_tokenizer/tokenization.html#module-pw-tokenizer-masks)
+/// within an expression. Requires C++.
+// clang-format on
 #define PW_TOKENIZE_STRING_MASK_EXPR(domain, mask, string_literal) \
   [&] {                                                            \
     constexpr uint32_t lambda_ret_token =                          \
@@ -132,8 +154,12 @@ typedef uint32_t pw_tokenizer_Token;
     return lambda_ret_token;                                       \
   }()
 
+/// @}
+
 #define _PW_TOKENIZER_MASK_TOKEN(mask, string_literal) \
   ((pw_tokenizer_Token)(mask) & PW_TOKENIZER_STRING_TOKEN(string_literal))
+
+/// @submodule{pw_tokenizer,tokenize}
 
 /// Encodes a tokenized string and arguments to the provided buffer. The size of
 /// the buffer is passed via a pointer to a `size_t`. After encoding is
@@ -141,7 +167,7 @@ typedef uint32_t pw_tokenizer_Token;
 ///
 /// The macro's arguments are equivalent to the following function signature:
 ///
-/// @code
+/// @code{.cpp}
 ///
 ///   TokenizeToBuffer(void* buffer,
 ///                    size_t* buffer_size_pointer,
@@ -172,15 +198,18 @@ typedef uint32_t pw_tokenizer_Token;
                                format,                                  \
                                __VA_ARGS__)
 
-/// Same as @c_macro{PW_TOKENIZE_TO_BUFFER}, but tokenizes to the specified
-/// @rstref{domain <module-pw_tokenizer-domains>}.
+// clang-format off
+/// Same as `PW_TOKENIZE_TO_BUFFER`, but tokenizes to the specified
+/// [domain](../../pw_tokenizer/tokenization.html#keep-tokens-from-different-sources-separate-with-domains).
+// clang-format on
 #define PW_TOKENIZE_TO_BUFFER_DOMAIN(                 \
     domain, buffer, buffer_size_pointer, format, ...) \
   PW_TOKENIZE_TO_BUFFER_MASK(                         \
       domain, UINT32_MAX, buffer, buffer_size_pointer, format, __VA_ARGS__)
 
-/// Same as @c_macro{PW_TOKENIZE_TO_BUFFER_DOMAIN}, but applies a
-/// @rstref{bit mask <module-pw_tokenizer-masks>} to the token.
+/// Same as `PW_TOKENIZE_TO_BUFFER_DOMAIN`, but applies a
+/// [bit mask](../../pw_tokenizer/tokenization.html#module-pw-tokenizer-masks)
+/// to the token.
 #define PW_TOKENIZE_TO_BUFFER_MASK(                                          \
     domain, mask, buffer, buffer_size_pointer, format, ...)                  \
   do {                                                                       \
@@ -195,8 +224,8 @@ typedef uint32_t pw_tokenizer_Token;
 /// Functions that work with tokenized format strings must take the following
 /// arguments:
 ///
-/// - The 32-bit token (@cpp_type{pw_tokenizer_Token})
-/// - The 32- or 64-bit argument types (@cpp_type{pw_tokenizer_ArgTypes})
+/// - The 32-bit token (`pw_tokenizer_Token`)
+/// - The 32- or 64-bit argument types (`pw_tokenizer_ArgTypes`)
 /// - Variadic arguments, if any
 ///
 /// This macro expands to those arguments. Custom tokenization macros should use
@@ -215,12 +244,16 @@ typedef uint32_t pw_tokenizer_Token;
 #define PW_TOKENIZER_REPLACE_FORMAT_STRING(...) \
   _PW_TOKENIZER_REPLACE_FORMAT_STRING(PW_EMPTY_ARGS(__VA_ARGS__), __VA_ARGS__)
 
+/// @}
+
 #define _PW_TOKENIZER_REPLACE_FORMAT_STRING(empty_args, ...) \
   _PW_CONCAT_2(_PW_TOKENIZER_REPLACE_FORMAT_STRING_, empty_args)(__VA_ARGS__)
 
 #define _PW_TOKENIZER_REPLACE_FORMAT_STRING_1() _pw_tokenizer_token, 0u
 #define _PW_TOKENIZER_REPLACE_FORMAT_STRING_0(...) \
   _pw_tokenizer_token, PW_TOKENIZER_ARG_TYPES(__VA_ARGS__), __VA_ARGS__
+
+/// @submodule{pw_tokenizer,tokenize}
 
 /// Converts a series of arguments to a compact format that replaces the format
 /// string literal. Evaluates to a `pw_tokenizer_ArgTypes` value.
@@ -229,10 +262,12 @@ typedef uint32_t pw_tokenizer_Token;
 /// store the number of arguments and the remaining bits store the types, two
 /// bits per type. The arguments are not evaluated; only their types are used.
 ///
-/// In general, @c_macro{PW_TOKENIZER_ARG_TYPES} should not be used directly.
-/// Instead, use @c_macro{PW_TOKENIZER_REPLACE_FORMAT_STRING}.
+/// In general, `PW_TOKENIZER_ARG_TYPES` should not be used directly.
+/// Instead, use `PW_TOKENIZER_REPLACE_FORMAT_STRING`.
 #define PW_TOKENIZER_ARG_TYPES(...) \
   PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZER_TYPES_, __VA_ARGS__)
+
+/// @}
 
 PW_EXTERN_C_START
 
@@ -254,40 +289,43 @@ static inline void pw_tokenizer_CheckFormatString(const char* format, ...) {
 
 PW_EXTERN_C_END
 
+/// @submodule{pw_tokenizer,tokenize}
+
+// clang-format off
 /// Tokenizes a format string with optional arguments and sets the
 /// `_pw_tokenizer_token` variable to the token. Must be used in its own scope,
 /// since the same variable is used in every invocation.
 ///
-/// The tokenized string uses the specified @rstref{tokenization domain
-/// <module-pw_tokenizer-domains>}. Use `PW_TOKENIZER_DEFAULT_DOMAIN` for the
-/// default. The token also may be masked; use `UINT32_MAX` to keep all bits.
+/// The tokenized string uses the specified
+/// [domain](../../pw_tokenizer/tokenization.html#keep-tokens-from-different-sources-separate-with-domains).
+/// Use `PW_TOKENIZER_DEFAULT_DOMAIN` for the default. The token also may be
+/// masked; use `UINT32_MAX` to keep all bits.
 ///
 /// This macro checks that the printf-style format string matches the arguments
-/// and that no more than @c_macro{PW_TOKENIZER_MAX_SUPPORTED_ARGS} are
+/// and that no more than `PW_TOKENIZER_MAX_SUPPORTED_ARGS` are
 /// provided. It then stores the format string in a special section, and
 /// calculates the string's token at compile time.
-// clang-format off
-#define PW_TOKENIZE_FORMAT_STRING(domain, mask, format, ...)                   \
+// clang-format on
+#define PW_TOKENIZE_FORMAT_STRING(domain, mask, format, ...)                     \
   static_assert(                                                               \
       PW_FUNCTION_ARG_COUNT(__VA_ARGS__) <= PW_TOKENIZER_MAX_SUPPORTED_ARGS,   \
       "Tokenized strings cannot have more than "                               \
       PW_STRINGIFY(PW_TOKENIZER_MAX_SUPPORTED_ARGS) " arguments; "             \
       PW_STRINGIFY(PW_FUNCTION_ARG_COUNT(__VA_ARGS__))                         \
-      " arguments were used for " #format " (" #__VA_ARGS__ ")");              \
+      " arguments were used for " #format " (" #__VA_ARGS__ ")"); \
   PW_TOKENIZE_FORMAT_STRING_ANY_ARG_COUNT(domain, mask, format, __VA_ARGS__)
-// clang-format on
 
 /// Equivalent to `PW_TOKENIZE_FORMAT_STRING`, but supports any number of
 /// arguments.
 ///
 /// This is a low-level macro that should rarely be used directly. It is
-/// intended for situations when @cpp_type{pw_tokenizer_ArgTypes} is not used.
-/// There are two situations where @cpp_type{pw_tokenizer_ArgTypes} is
+/// intended for situations when `pw_tokenizer_ArgTypes` is not used.
+/// There are two situations where `pw_tokenizer_ArgTypes` is
 /// unnecessary:
 ///
 /// - The exact format string argument types and count are fixed.
 /// - The format string supports a variable number of arguments of only one
-///   type. In this case, @c_macro{PW_FUNCTION_ARG_COUNT} may be used to pass
+///   type. In this case, `PW_FUNCTION_ARG_COUNT` may be used to pass
 ///   the argument count to the function.
 ///
 /// NOTE: The `%.*s` format specifier cannot be used. See
@@ -305,12 +343,16 @@ PW_EXTERN_C_END
                                                                                \
   PW_TOKENIZER_DEFINE_TOKEN(_pw_tokenizer_token, domain, format)
 
+/// @}
+
 // Creates unique names to use for tokenized string entries and linker sections.
 #define _PW_TOKENIZER_UNIQUE(prefix) PW_CONCAT(prefix, __LINE__, _, __COUNTER__)
 
 #ifdef __cplusplus
 
 #define _PW_TOKENIZER_CONST constexpr
+
+/// @submodule{pw_tokenizer,tokenize}
 
 /// Records the original token, domain and string directly.
 ///
@@ -326,6 +368,8 @@ PW_EXTERN_C_END
   alignas(1) static constexpr auto _PW_TOKENIZER_SECTION _PW_TOKENIZER_UNIQUE( \
       _pw_tokenizer_string_entry_) =                                           \
       ::pw::tokenizer::internal::MakeEntry(token, domain, string)
+
+/// @}
 
 // Validates the format string provided to PW_TOKENIZE_FORMAT_STRING and
 // friends.
