@@ -460,18 +460,8 @@ class BasicMultiBuf {
   /// @}
 
   /// Attempts to reserves memory to hold metadata for the given number of total
-  /// chunks.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK:                  The object has space for the chunks.
-  ///
-  ///    RESOURCE_EXHAUSTED:  Out of memory; cannot add the chunks.
-  ///
-  /// @endrst
-  [[nodiscard]] bool TryReserveChunks(size_type num_chunks) {
+  /// chunks. Returns whether the memory was successfully allocated.
+  [[nodiscard]] bool TryReserveChunks(size_t num_chunks) {
     return generic().TryReserveChunks(num_chunks);
   }
 
@@ -1058,6 +1048,18 @@ class BasicMultiBuf {
     return generic().NumLayers();
   }
 
+  /// Attempts to reserves memory to hold metadata for the given number of
+  /// layers and chunks.
+  ///
+  /// For example, assume you know your MultiBuf needs to hold layers for
+  /// Ethernet, and IP. If separate chunks for the headers, the payload,
+  /// and the Ethernet footer, then you can preallocate the structure by calling
+  /// `TryReserveLayers(2, 3).
+  [[nodiscard]] bool TryReserveLayers(size_t num_layers,
+                                      size_t num_chunks = 1) {
+    return generic().TryReserveLayers(num_layers, num_chunks);
+  }
+
   /// Adds a layer.
   ///
   /// Each layer provides a span-like view of memory. An empty MultiBuf has no
@@ -1286,7 +1288,7 @@ class GenericMultiBuf final
   bool IsCompatible(const ControlBlock* other) const;
 
   /// @copydoc BasicMultiBuf<>::TryReserveChunks
-  [[nodiscard]] bool TryReserveChunks(size_type num_chunks);
+  [[nodiscard]] bool TryReserveChunks(size_t num_chunks);
 
   /// @copydoc BasicMultiBuf<>::TryReserveForInsert
   /// @{
@@ -1360,6 +1362,9 @@ class GenericMultiBuf final
 
   /// @copydoc BasicMultiBuf<>::NumLayers
   constexpr size_type NumLayers() const { return depth_ - 1; }
+
+  /// @copydoc BasicMultiBuf<>::TryReserveLayers
+  [[nodiscard]] bool TryReserveLayers(size_t num_layers, size_t num_chunks = 1);
 
   /// @copydoc BasicMultiBuf<>::AddLayer
   [[nodiscard]] bool AddLayer(size_t offset, size_t length = dynamic_extent);

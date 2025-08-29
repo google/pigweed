@@ -2077,6 +2077,43 @@ TEST_F(MultiBufTest, NumLayersMatchesAddedLayers) {
   EXPECT_EQ(mb->NumLayers(), 3u);
 }
 
+TEST_F(MultiBufTest, TryReserveLayersWithNumLayersEqualToZero) {
+  ConstMultiBuf::Instance mb(allocator_);
+  allocator_.ResetParameters();
+  EXPECT_TRUE(mb->TryReserveLayers(0, 3));
+  EXPECT_EQ(allocator_.allocate_size(), 0u);
+}
+
+TEST_F(MultiBufTest, TryReserveLayersWithNumChunksEqualToZero) {
+  ConstMultiBuf::Instance mb(allocator_);
+  allocator_.ResetParameters();
+  EXPECT_TRUE(mb->TryReserveLayers(3, 0));
+  EXPECT_EQ(allocator_.allocate_size(), 0u);
+}
+
+TEST_F(MultiBufTest, TryReserveLayersWhenAlreadyReserved) {
+  ConstMultiBuf::Instance mb(allocator_);
+  EXPECT_TRUE(mb->TryReserveLayers(3, 4));
+
+  // No additional memory needed.
+  allocator_.ResetParameters();
+  EXPECT_TRUE(mb->TryReserveLayers(2, 3));
+  EXPECT_EQ(allocator_.allocate_size(), 0u);
+}
+
+TEST_F(MultiBufTest, TryReserveLayers) {
+  ConstMultiBuf::Instance mb(allocator_);
+  allocator_.ResetParameters();
+  EXPECT_TRUE(mb->TryReserveLayers(2, 3));
+  EXPECT_NE(allocator_.allocate_size(), 0u);
+}
+
+TEST_F(MultiBufTest, TryReserveLayersWithAllocationFailure) {
+  ConstMultiBuf::Instance mb(allocator_);
+  allocator_.Exhaust();
+  EXPECT_FALSE(mb->TryReserveLayers(1, 1));
+}
+
 TEST_F(MultiBufTest, IterateChunksOverLayers) {
   ConstMultiBuf::Instance mbi(allocator_);
   AddLayers(mbi);

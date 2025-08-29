@@ -33,14 +33,8 @@ GenericMultiBuf& GenericMultiBuf::operator=(GenericMultiBuf&& other) {
   return *this;
 }
 
-bool GenericMultiBuf::TryReserveChunks(size_type num_chunks) {
-  size_type current_chunks = deque_.size() / depth_;
-  if (num_chunks <= current_chunks) {
-    return true;
-  }
-  size_type num_entries = num_chunks - current_chunks;
-  PW_CHECK(CheckedMul(num_entries, depth_, num_entries));
-  return TryReserveEntries(num_entries);
+bool GenericMultiBuf::TryReserveChunks(size_t num_chunks) {
+  return TryReserveLayers(NumLayers(), num_chunks);
 }
 
 bool GenericMultiBuf::TryReserveForInsert(const_iterator pos,
@@ -322,6 +316,19 @@ void GenericMultiBuf::Clear() {
     observer_->Notify(MultiBufObserver::Event::kBytesRemoved, num_bytes);
     observer_ = nullptr;
   }
+}
+
+bool GenericMultiBuf::TryReserveLayers(size_t num_layers, size_t num_chunks) {
+  if (num_layers == 0 || num_chunks == 0) {
+    return true;
+  }
+  size_type num_entries = 0;
+  PW_CHECK(CheckedIncrement(num_layers, 1u));
+  PW_CHECK(CheckedMul(num_layers, num_chunks, num_entries));
+  if (num_entries <= deque_.size()) {
+    return true;
+  }
+  return TryReserveEntries(num_entries - deque_.size());
 }
 
 bool GenericMultiBuf::AddLayer(size_t offset, size_t length) {
