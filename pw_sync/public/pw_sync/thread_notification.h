@@ -17,11 +17,13 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// The `ThreadNotification` is a synchronization primitive that can be used to
 /// permit a SINGLE thread to block and consume a latching, saturating
 /// notification from multiple notifiers.
 ///
-/// IMPORTANT: This is a single consumer/waiter, multiple producer/notifier API!
+/// @important This is a single consumer/waiter, multiple producer/notifier API!
 /// The acquire APIs must only be invoked by a single consuming thread. As a
 /// result, having multiple threads receiving notifications via the acquire API
 /// is unsupported.
@@ -49,7 +51,7 @@ class ThreadNotification {
   ///
   /// Clears the notification latch.
   ///
-  /// @b IMPORTANT: This should only be used by a single consumer thread.
+  /// @important This should only be used by a single consumer thread.
   void acquire();
 
   /// Returns whether the thread has been notified, i.e. whether the notificion
@@ -60,7 +62,7 @@ class ThreadNotification {
   /// Returns true if the thread was notified, meaning the the internal latch
   /// was reset successfully.
   ///
-  /// @b IMPORTANT: This should only be used by a single consumer thread.
+  /// @important This should only be used by a single consumer thread.
   [[nodiscard]] bool try_acquire();
 
   /// Notifies the thread in a saturating manner, setting the notification
@@ -80,6 +82,8 @@ class ThreadNotification {
   /// This may be a wrapper around a native type with additional members.
   backend::NativeThreadNotification native_type_;
 };
+
+/// @}
 
 }  // namespace pw::sync
 

@@ -21,12 +21,12 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// Checks if a type is a basic lock.
 ///
 /// If `Lock` satisfies \em BasicLockable, provides the member constant value
 /// equal to true. Otherwise value is false.
-///
-/// @{
 template <typename Lock, typename = void>
 struct is_basic_lockable : std::false_type {};
 
@@ -35,7 +35,6 @@ struct is_basic_lockable<Lock,
                          std::void_t<decltype(std::declval<Lock>().lock()),
                                      decltype(std::declval<Lock>().unlock())>>
     : std::true_type {};
-/// @}
 
 /// Helper variable template for `is_basic_lockable<Lock>::value`.
 template <typename Lock>
@@ -45,15 +44,12 @@ inline constexpr bool is_basic_lockable_v = is_basic_lockable<Lock>::value;
 ///
 /// If `Lock` satisfies C++'s \em Lockable named requirement, provides the
 /// member constant value equal to true. Otherwise value is false.
-///
-/// @{
 template <typename Lock, typename = void>
 struct is_lockable : std::false_type {};
 
 template <typename Lock>
 struct is_lockable<Lock, std::void_t<decltype(std::declval<Lock>().try_lock())>>
     : is_basic_lockable<Lock> {};
-/// @}
 
 /// Helper variable template for `is_lockable<Lock>::value`.
 template <typename Lock>
@@ -64,8 +60,6 @@ inline constexpr bool is_lockable_v = is_lockable<Lock>::value;
 /// If `Lock` has a valid `try_lock_for` method, as described by C++'s
 /// \em TimedLockable named requirement, provides the member constant value
 /// equal to true. Otherwise value is false.
-///
-/// @{
 template <typename Lock, typename Duration, typename = void>
 struct is_lockable_for : std::false_type {};
 
@@ -74,7 +68,6 @@ struct is_lockable_for<Lock,
                        Duration,
                        std::void_t<decltype(std::declval<Lock>().try_lock_for(
                            std::declval<Duration>()))>> : is_lockable<Lock> {};
-/// @}
 
 /// Helper variable template for `is_lockable_for<Lock, Duration>::value`.
 template <typename Lock, typename Duration>
@@ -86,8 +79,6 @@ inline constexpr bool is_lockable_for_v =
 /// If `Lock` has a valid `try_lock_until` method, as described by C++'s
 /// \em TimedLockable named requirement, provides the member constant value
 /// equal to true. Otherwise value is false.
-///
-/// @{
 template <typename Lock, typename TimePoint, typename = void>
 struct is_lockable_until : std::false_type {};
 
@@ -97,7 +88,6 @@ struct is_lockable_until<
     TimePoint,
     std::void_t<decltype(std::declval<Lock>().try_lock_until(
         std::declval<TimePoint>()))>> : is_lockable<Lock> {};
-/// @}
 
 /// Helper variable template for `is_lockable_until<Lock, TimePoint>::value`.
 template <typename Lock, typename TimePoint>
@@ -119,5 +109,7 @@ struct is_timed_lockable
 template <typename Lock, typename Clock>
 inline constexpr bool is_timed_lockable_v =
     is_timed_lockable<Lock, Clock>::value;
+
+/// @}
 
 }  // namespace pw::sync

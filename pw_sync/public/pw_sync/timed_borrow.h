@@ -24,8 +24,10 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// `TimedBorrowable` extends `Borrowable` with additional methods to borrow
-/// an object guarded by a lock that implements the \em TimedLockable C++ named
+/// an object guarded by a lock that implements the @em TimedLockable C++ named
 /// requirement.
 template <typename GuardedType,
           typename LockType = pw::sync::VirtualBasicLockable>
@@ -45,8 +47,9 @@ class TimedBorrowable : public Borrowable<GuardedType, LockType> {
       : Base(other) {}
 
   /// Tries to borrow the object. Blocks until the specified timeout has elapsed
-  /// or the object has been borrowed, whichever comes first. Returns a
-  /// `BorrowedPointer` on success, otherwise `std::nullopt` (nothing).
+  /// or the object has been borrowed, whichever comes first.
+  ///
+  /// @returns `BorrowedPointer` on success, otherwise `std::nullopt` (nothing).
   std::optional<BorrowedPointer<GuardedType, LockType>> try_acquire_for(
       chrono::SystemClock::duration timeout) const PW_NO_LOCK_SAFETY_ANALYSIS {
     if (!Base::lock_->try_lock_for(timeout)) {
@@ -56,8 +59,8 @@ class TimedBorrowable : public Borrowable<GuardedType, LockType> {
   }
 
   /// Tries to borrow the object. Blocks until the specified deadline has passed
-  /// or the object has been borrowed, whichever comes first. Returns a
-  /// `BorrowedPointer` on success, otherwise `std::nullopt` (nothing).
+  /// or the object has been borrowed, whichever comes first.
+  /// @returns `BorrowedPointer` on success, otherwise `std::nullopt` (nothing).
   std::optional<BorrowedPointer<GuardedType, LockType>> try_acquire_until(
       chrono::SystemClock::time_point deadline) const
       PW_NO_LOCK_SAFETY_ANALYSIS {
@@ -67,5 +70,7 @@ class TimedBorrowable : public Borrowable<GuardedType, LockType> {
     return Base::Borrow();
   }
 };
+
+/// @}
 
 }  // namespace pw::sync

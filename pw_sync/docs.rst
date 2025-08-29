@@ -71,11 +71,6 @@ and `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_.
 
 C++
 ---
-.. doxygenclass:: pw::sync::Mutex
-   :members:
-
-.. cpp:namespace-push:: pw::sync::Mutex
-
 .. list-table::
    :header-rows: 1
    :widths: 70 10 10 10
@@ -84,29 +79,26 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:class:`pw::sync::Mutex::Mutex`
+   * - Constructor
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::Mutex::~Mutex`
+   * - Destructor
      - ✔
      -
      -
-   * - :cpp:func:`lock`
+   * - :doxylink:`lock <pw::sync::Mutex::lock>`
      - ✔
      -
      -
-   * - :cpp:func:`try_lock`
+   * - :doxylink:`try_lock <pw::sync::Mutex::try_lock>`
      - ✔
      -
      -
-   * - :cpp:func:`unlock`
+   * - :doxylink:`unlock <pw::sync::Mutex::unlock>`
      - ✔
      -
      -
-
-.. cpp:namespace-pop::
-
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -143,10 +135,6 @@ C
 The Mutex must be created in C++, however it can be passed into C using the
 ``pw_sync_Mutex`` opaque struct alias.
 
-.. doxygenfunction:: pw_sync_Mutex_Lock
-.. doxygenfunction:: pw_sync_Mutex_TryLock
-.. doxygenfunction:: pw_sync_Mutex_Unlock
-
 .. list-table::
    :header-rows: 1
    :widths: 70 10 10 10
@@ -155,15 +143,15 @@ The Mutex must be created in C++, however it can be passed into C using the
      - Thread
      - Interrupt
      - NMI
-   * - ``void pw_sync_Mutex_Lock``
+   * - :doxylink:`pw_sync_Mutex_Lock`
      - ✔
      -
      -
-   * - ``bool pw_sync_Mutex_TryLock``
+   * - :doxylink:`pw_sync_Mutex_TryLock`
      - ✔
      -
      -
-   * - ``void pw_sync_Mutex_Unlock``
+   * - :doxylink:`pw_sync_Mutex_Unlock`
      - ✔
      -
      -
@@ -186,24 +174,21 @@ Example in C
 
 TimedMutex
 ==========
-.. cpp:namespace-push:: pw::sync
+The :doxylink:`TimedMutex <pw::sync::TimedMutex>` is an extension of the Mutex
+which offers timeout and deadline based semantics.
 
-The :cpp:class:`TimedMutex` is an extension of the Mutex which offers timeout
-and deadline based semantics.
-
-The :cpp:class:`TimedMutex`'s API is C++11 STL
+The :doxylink:`TimedMutex <pw::sync::TimedMutex>`'s API is C++11 STL
 `std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_ like,
 meaning it is a
 `BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_,
 `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_, and
 `TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_.
 
-Note that the :cpp:class:`TimedMutex` is a derived :cpp:class:`Mutex` class,
-meaning that a :cpp:class:`TimedMutex` can be used by someone who needs the
-basic :cpp:class:`Mutex`. This is in contrast to the C++ STL's
+Note that the :doxylink:`TimedMutex <pw::sync::TimedMutex>` is a derived
+:doxylink:`Mutex <pw::sync::Mutex>` class, meaning that a :doxylink:`TimedMutex
+<pw::sync::TimedMutex>` can be used by someone who needs the basic
+:doxylink:`Mutex <pw::sync::Mutex>`. This is in contrast to the C++ STL's
 `std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_.
-
-.. cpp:namespace-pop::
 
 .. list-table::
    :header-rows: 1
@@ -225,11 +210,6 @@ basic :cpp:class:`Mutex`. This is in contrast to the C++ STL's
 
 C++
 ---
-.. doxygenclass:: pw::sync::TimedMutex
-   :members:
-
-.. cpp:namespace-push:: pw::sync::TimedMutex
-
 .. list-table::
    :header-rows: 1
    :widths: 70 10 10 10
@@ -238,37 +218,34 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:class:`pw::sync::TimedMutex::TimedMutex`
+   * - Constructor
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::TimedMutex::~TimedMutex`
+   * - Destructor
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::Mutex::lock`
+   * - ``lock``
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::Mutex::try_lock`
+   * - ``try_lock``
      - ✔
      -
      -
-   * - :cpp:func:`try_lock_for`
+   * - :doxylink:`try_lock_for <pw::sync::TimedMutex::try_lock_for>`
      - ✔
      -
      -
-   * - :cpp:func:`try_lock_until`
+   * - :doxylink:`try_lock_until <pw::sync::TimedMutex::try_lock_until>`
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::Mutex::unlock`
+   * - ``unlock``
      - ✔
      -
      -
-
-.. cpp:namespace-pop::
-
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -315,9 +292,6 @@ C
 The TimedMutex must be created in C++, however it can be passed into C using the
 ``pw_sync_TimedMutex`` opaque struct alias.
 
-.. doxygenfile:: timed_mutex.h
-   :sections: func
-
 .. list-table::
    :header-rows: 1
    :widths: 70 10 10 10
@@ -326,23 +300,23 @@ The TimedMutex must be created in C++, however it can be passed into C using the
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:func:`pw_sync_TimedMutex_Lock`
+   * - :doxylink:`pw_sync_TimedMutex_Lock`
      - ✔
      -
      -
-   * - :cpp:func:`pw_sync_TimedMutex_TryLock`
+   * - :doxylink:`pw_sync_TimedMutex_TryLock`
      - ✔
      -
      -
-   * - :cpp:func:`pw_sync_TimedMutex_TryLockFor`
+   * - :doxylink:`pw_sync_TimedMutex_TryLockFor`
      - ✔
      -
      -
-   * - :cpp:func:`pw_sync_TimedMutex_TryLockUntil`
+   * - :doxylink:`pw_sync_TimedMutex_TryLockUntil`
      - ✔
      -
      -
-   * - :cpp:func:`pw_sync_TimedMutex_Unlock`
+   * - :doxylink:`pw_sync_TimedMutex_Unlock`
      - ✔
      -
      -
@@ -376,12 +350,12 @@ Pigweed.
 
 InterruptSpinLock
 =================
-The InterruptSpinLock is a synchronization primitive that can be used to protect
-shared data from being simultaneously accessed by multiple threads and/or
-interrupts as a targeted global lock, with the exception of Non-Maskable
-Interrupts (NMIs). It offers exclusive, non-recursive ownership semantics where
-IRQs up to a backend defined level of "NMIs" will be masked to solve
-priority-inversion.
+:doxylink:`InterruptSpinLock <pw::sync::InterruptSpinLock>` is a synchronization
+primitive that can be used to protect shared data from being simultaneously
+accessed by multiple threads and/or interrupts as a targeted global lock, with
+the exception of Non-Maskable Interrupts (NMIs). It offers exclusive,
+non-recursive ownership semantics where IRQs up to a backend defined level of
+"NMIs" will be masked to solve priority-inversion.
 
 This InterruptSpinLock relies on built-in local interrupt masking to make it
 interrupt safe without requiring the caller to separately mask and unmask
@@ -418,11 +392,6 @@ and
 
 C++
 ---
-.. doxygenclass:: pw::sync::InterruptSpinLock
-   :members:
-
-.. cpp:namespace-push:: pw::sync::InterruptSpinLock
-
 .. list-table::
    :widths: 70 10 10 10
    :header-rows: 1
@@ -431,28 +400,26 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:class:`pw::sync::InterruptSpinLock::InterruptSpinLock`
+   * - Constructor
      - ✔
      - ✔
      -
-   * - :cpp:func:`pw::sync::InterruptSpinLock::~InterruptSpinLock`
+   * - Destructor
      - ✔
      - ✔
      -
-   * - :cpp:func:`lock`
+   * - :doxylink:`lock <pw::sync::InterruptSpinLock::lock>`
      - ✔
      - ✔
      -
-   * - :cpp:func:`try_lock`
+   * - :doxylink:`try_lock <pw::sync::InterruptSpinLock::try_lock>`
      - ✔
      - ✔
      -
-   * - :cpp:func:`unlock`
+   * - :doxylink:`unlock <pw::sync::InterruptSpinLock::unlock>`
      - ✔
      - ✔
      -
-
-.. cpp:namespace-pop::
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -487,12 +454,8 @@ Alternatively you can use C++'s RAII helpers to ensure you always unlock.
 
 C
 -
-The InterruptSpinLock must be created in C++, however it can be passed into C using the
-``pw_sync_InterruptSpinLock`` opaque struct alias.
-
-.. doxygenfunction:: pw_sync_InterruptSpinLock_Lock
-.. doxygenfunction:: pw_sync_InterruptSpinLock_TryLock
-.. doxygenfunction:: pw_sync_InterruptSpinLock_Unlock
+The InterruptSpinLock must be created in C++, however it can be passed into C
+using the ``pw_sync_InterruptSpinLock`` opaque struct alias.
 
 .. list-table::
    :widths: 70 10 10 10
@@ -502,15 +465,15 @@ The InterruptSpinLock must be created in C++, however it can be passed into C us
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:func:`pw_sync_InterruptSpinLock_Lock`
+   * - :doxylink:`pw_sync_InterruptSpinLock_Lock`
      - ✔
      - ✔
      -
-   * - :cpp:func:`pw_sync_InterruptSpinLock_TryLock`
+   * - :doxylink:`pw_sync_InterruptSpinLock_TryLock`
      - ✔
      - ✔
      -
-   * - :cpp:func:`pw_sync_InterruptSpinLock_Unlock`
+   * - :doxylink:`pw_sync_InterruptSpinLock_Unlock`
      - ✔
      - ✔
      -
@@ -534,15 +497,15 @@ Example in C
 
 Optional locking
 ================
-:doxylink:`pw::sync::NoLock` is a no-op lock that can be used to satisfy a lock
-interface without providing any synchronization. This can be useful for
-templated code that is lock-agnostic, but may be used in a context that does not
-require any synchronization. ``NoLock`` is a `BasicLockable
+:doxylink:`NoLock <pw::sync::NoLock>` is a no-op lock that can be used to
+satisfy a lock interface without providing any synchronization. This can be
+useful for templated code that is lock-agnostic, but may be used in a context
+that does not require any synchronization. ``NoLock`` is a `BasicLockable
 <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_.
 
-:doxylink:`pw::sync::MaybeLock` selects between a real lock type and ``NoLock``
-based on a boolean template parameter. This may be helpful when locking is
-conditionally enabled by a config macro.
+:doxylink:`MaybeLock <pw::sync::MaybeLock>` selects between a real lock type and
+``NoLock`` based on a boolean template parameter. This may be helpful when
+locking is conditionally enabled by a config macro.
 
 Thread Safety Lock Annotations
 ==============================
@@ -562,8 +525,8 @@ More information on Clang's thread safety analysis system can be found
 Enabling Clang's Analysis
 -------------------------
 In order to enable the analysis, Clang requires that the ``-Wthread-safety``
-compilation flag be used. To also enable ``PW_ACQUIRED_AFTER`` and/or
-``PW_ACQUIRED_BEFORE``, it also requires the ``-Wthread-safety-beta``
+compilation flag be used. To also enable `PW_ACQUIRED_AFTER`_ and/or
+`PW_ACQUIRED_BEFORE`_, it also requires the ``-Wthread-safety-beta``
 compilation flag. And if any STL components like ``std::lock_guard`` are used,
 the STL's built in annotations should be manually enabled, typically by setting
 the ``_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS`` macro.
@@ -571,8 +534,6 @@ the ``_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS`` macro.
 If using GN, the ``pw_build:clang_thread_safety_warnings`` config is provided
 to do all of the above for you, when added to your clang toolchain definition's
 default configs.
-
-
 
 Why use lock annotations?
 -------------------------
@@ -595,24 +556,24 @@ you want to refer to is not in scope, you may use a member pointer
 
 Annotating Lock Usage
 ^^^^^^^^^^^^^^^^^^^^^
-.. doxygendefine:: PW_GUARDED_BY
-.. doxygendefine:: PW_PT_GUARDED_BY
-.. doxygendefine:: PW_ACQUIRED_AFTER
-.. doxygendefine:: PW_ACQUIRED_BEFORE
-.. doxygendefine:: PW_EXCLUSIVE_LOCKS_REQUIRED
-.. doxygendefine:: PW_SHARED_LOCKS_REQUIRED
-.. doxygendefine:: PW_LOCKS_EXCLUDED
-.. doxygendefine:: PW_LOCK_RETURNED
-.. doxygendefine:: PW_LOCKABLE
-.. doxygendefine:: PW_SCOPED_LOCKABLE
-.. doxygendefine:: PW_EXCLUSIVE_LOCK_FUNCTION
-.. doxygendefine:: PW_SHARED_LOCK_FUNCTION
-.. doxygendefine:: PW_UNLOCK_FUNCTION
-.. doxygendefine:: PW_EXCLUSIVE_TRYLOCK_FUNCTION
-.. doxygendefine:: PW_SHARED_TRYLOCK_FUNCTION
-.. doxygendefine:: PW_ASSERT_EXCLUSIVE_LOCK
-.. doxygendefine:: PW_ASSERT_SHARED_LOCK
-.. doxygendefine:: PW_NO_LOCK_SAFETY_ANALYSIS
+* :doxylink:`PW_GUARDED_BY`
+* :doxylink:`PW_PT_GUARDED_BY`
+* `PW_ACQUIRED_AFTER`_
+* `PW_ACQUIRED_BEFORE`_
+* `PW_EXCLUSIVE_LOCKS_REQUIRED`_
+* `PW_SHARED_LOCKS_REQUIRED`_
+* `PW_LOCKS_EXCLUDED`_
+* :doxylink:`PW_LOCK_RETURNED`
+* :doxylink:`PW_LOCKABLE`
+* :doxylink:`PW_SCOPED_LOCKABLE`
+* `PW_EXCLUSIVE_LOCK_FUNCTION`_
+* `PW_SHARED_LOCK_FUNCTION`_
+* `PW_UNLOCK_FUNCTION`_
+* `PW_EXCLUSIVE_TRYLOCK_FUNCTION`_
+* `PW_SHARED_TRYLOCK_FUNCTION`_
+* `PW_ASSERT_EXCLUSIVE_LOCK`_
+* `PW_ASSERT_SHARED_LOCK`_
+* :doxylink:`PW_NO_LOCK_SAFETY_ANALYSIS`
 
 Annotating Lock Objects
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -752,9 +713,9 @@ The ``VirtualBasicLockable`` interface meets the
 named requirement. Our critical section lock primitives offer optional virtual
 versions, including:
 
-* :cpp:func:`pw::sync::VirtualMutex`
-* :cpp:func:`pw::sync::VirtualTimedMutex`
-* :cpp:func:`pw::sync::VirtualInterruptSpinLock`
+* :doxylink:`VirtualMutex <pw::sync::VirtualMutex>`
+* :doxylink:`VirtualTimedMutex <pw::sync::VirtualTimedMutex>`
+* :doxylink:`VirtualInterruptSpinLock <pw::sync::VirtualInterruptSpinLock>`
 
 .. _module-pw_sync-genericbasiclockable:
 
@@ -777,7 +738,8 @@ Borrowable
 which is guarded by a lock, enabling a containerized style of external locking.
 
 Users who need access to the guarded object can ask to acquire a
-``BorrowedPointer`` which permits access while the lock is held.
+:doxylink:`BorrowedPointer <pw::sync::BorrowedPointer>` which permits access
+while the lock is held.
 
 This class is compatible with locks which comply with
 `BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_,
@@ -876,9 +838,10 @@ This is why ``Borrowable`` exists.
 
 Why use Borrowable?
 -------------------
-``Borrowable`` offers code-size efficient way to enable external locking that is
-easy and safe to use. It is effectively a container which holds references to a
-protected instance and its lock which provides RAII-style access.
+:doxylink:`Borrowable <pw::sync::Borrowable>` offers code-size efficient way to
+enable external locking that is easy and safe to use. It is effectively a
+container which holds references to a protected instance and its lock which
+provides RAII-style access.
 
 .. code-block:: cpp
 
@@ -905,17 +868,6 @@ you do exactly this if you provide access to the I2c bus through a
    ``Borrowable`` has semantics similar to a pointer and should be passed by
    value. Furthermore, a ``Borrowable<U>`` can be assigned to a
    ``Borrowable<T>`` if ``U`` is a subclass of ``T``.
-
-C++
----
-.. doxygenclass:: pw::sync::BorrowedPointer
-   :members:
-
-.. doxygenclass:: pw::sync::Borrowable
-   :members:
-
-.. doxygenclass:: pw::sync::TimedBorrowable
-   :members:
 
 Example in C++
 ^^^^^^^^^^^^^^
@@ -953,19 +905,20 @@ Example in C++
 
 InlineBorrowable
 =================
-``InlineBorrowable`` is a helper to simplify the common use case where an object
-is wrapped in a ``Borrowable`` for its entire lifetime. The InlineBorrowable
-owns the guarded object and the lock object.
+:doxylink:`InlineBorrowable <pw::sync::InlineBorrowable>` is a helper to
+simplify the common use case where an object is wrapped in a
+:doxylink:`Borrowable <pw::sync::Borrowable>` for its entire lifetime. The
+``InlineBorrowable`` owns the guarded object and the lock object.
 
-InlineBorrowable has a separate parameter for the concrete lock type
-that is instantiated and a (possibly virtual) lock interface type that is
-referenced by users of the guarded object. The default lock is
-``pw::sync::VirtualMutex`` and the default lock interface is
-``pw::sync::VirtualBasicLockable``.
+``InlineBorrowable`` has a separate parameter for the concrete lock type that is
+instantiated and a (possibly virtual) lock interface type that is referenced by
+users of the guarded object. The default lock is :doxylink:`VirtualMutex
+<pw::sync::VirtualMutex>` and the default lock interface is
+:doxylink:`VirtualBasicLockable <pw::sync::VirtualBasicLockable>`.
 
-An InlineBorrowable is a Borrowable with the same guarded object and lock
-interface types, and it can be passed directly to APIs that expect a Borrowable
-reference.
+An ``InlineBorrowable`` is a ``Borrowable`` with the same guarded object and
+lock interface types, and it can be passed directly to APIs that expect a
+Borrowable reference.
 
 Why use InlineBorrowable?
 -------------------------
@@ -978,8 +931,8 @@ Constructing objects in-place
 -----------------------------
 The guarded object and its lock are constructed in-place by the
 InlineBorrowable, and any constructor parameters required by the object or
-its lock must be passed through the InlineBorrowable constructor. There are
-several ways to do this:
+its lock must be passed through the :doxylink:`InlineBorrowable
+<pw::sync::InlineBorrowable>` constructor. There are several ways to do this:
 
 * Pass the parameters for the guarded object inline to the constructor. This is
   the recommended way to construct the object when the lock does not require any
@@ -1015,11 +968,6 @@ several ways to do this:
 
   .. note:: It is possible to construct and return objects that are not copyable
     or movable, thanks to mandatory copy ellision (return value optimization).
-
-C++
----
-.. doxygenclass:: pw::sync::InlineBorrowable
-   :members:
 
 Example in C++
 ^^^^^^^^^^^^^^
@@ -1071,22 +1019,21 @@ efficiently as possible for the platform that it is used on.
 This simpler but highly portable class of signaling primitives is intended to
 ensure that a portability efficiency tradeoff does not have to be made up front.
 Today this is class of simpler signaling primitives is limited to the
-:cpp:class:`pw::sync::ThreadNotification` and
-:cpp:class:`pw::sync::TimedThreadNotification`.
+:doxylink:`ThreadNotification <pw::sync::ThreadNotification>` and
+:doxylink:`TimedThreadNotification <pw::sync::TimedThreadNotification>`.
 
 ThreadNotification
 ==================
-.. cpp:namespace-push:: pw::sync
-
-The :cpp:class:`ThreadNotification` is a synchronization primitive that can be used to
-permit a SINGLE thread to block and consume a latching, saturating
-notification from multiple notifiers.
+The :doxylink:`ThreadNotification <pw::sync::ThreadNotification>` is a
+synchronization primitive that can be used to permit a SINGLE thread to block
+and consume a latching, saturating notification from multiple notifiers.
 
 .. Note::
-   Although only a single thread can block on a :cpp:class:`ThreadNotification`
-   at a time, many instances may be used by a single thread just like binary
-   semaphores.  This is in contrast to some native RTOS APIs, such as direct
-   task notifications, which re-use the same state within a thread's context.
+   Although only a single thread can block on a :doxylink:`ThreadNotification
+   <pw::sync::ThreadNotification>` at a time, many instances may be used by a
+   single thread just like binary semaphores.  This is in contrast to some
+   native RTOS APIs, such as direct task notifications, which re-use the same
+   state within a thread's context.
 
 .. Warning::
    This is a single consumer/waiter, multiple producer/notifier API!
@@ -1094,8 +1041,9 @@ notification from multiple notifiers.
    result, having multiple threads receiving notifications via the acquire API
    is unsupported.
 
-This is effectively a subset of the :cpp:class:`BinarySemaphore` API, except
-that only a single thread can be notified and block at a time.
+This is effectively a subset of the :doxylink:`BinarySemaphore
+<pw::sync::BinarySemaphore>` API, except that only a single thread can be
+notified and block at a time.
 
 The single consumer aspect of the API permits the use of a smaller and/or
 faster native APIs such as direct thread signaling. This should be
@@ -1103,19 +1051,17 @@ backed by the most efficient native primitive for a target, regardless of
 whether that is a semaphore, event flag group, condition variable, or something
 else.
 
-The :cpp:class:`ThreadNotification` is initialized to being empty (latch is not
-set).
-
-.. cpp:namespace-pop::
+The :doxylink:`ThreadNotification <pw::sync::ThreadNotification>` is initialized
+to being empty (latch is not set).
 
 Generic BinarySemaphore-based Backend
 -------------------------------------
-This module provides a generic backend for
-:cpp:class:`pw::sync::ThreadNotification` via
+This module provides a generic backend for :doxylink:`ThreadNotification
+<pw::sync::ThreadNotification>` via
 ``pw_sync:binary_semaphore_thread_notification`` which uses a
-:cpp:class:`pw::sync::BinarySemaphore` as the backing primitive. See
-:ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for backend
-availability.
+:doxylink:`BinarySemaphore <pw::sync::BinarySemaphore>` as the backing
+primitive. See :ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for
+backend availability.
 
 Optimized Backend
 -----------------
@@ -1141,11 +1087,6 @@ Optimized Backend
 
 C++
 ---
-.. doxygenclass:: pw::sync::ThreadNotification
-   :members:
-
-.. cpp:namespace-push:: pw::sync::ThreadNotification
-
 .. list-table::
    :widths: 70 10 10 10
    :header-rows: 1
@@ -1154,29 +1095,26 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:class:`pw::sync::ThreadNotification::ThreadNotification`
+   * - Constructor
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::ThreadNotification::~ThreadNotification`
+   * - Destructor
      - ✔
      -
      -
-   * - :cpp:func:`acquire`
+   * - :doxylink:`acquire <pw::sync::ThreadNotification::acquire>`
      - ✔
      -
      -
-   * - :cpp:func:`try_acquire`
+   * - :doxylink:`try_acquire <pw::sync::ThreadNotification::try_acquire>`
      - ✔
      -
      -
-   * - :cpp:func:`release`
+   * - :doxylink:`release <pw::sync::ThreadNotification::release>`
      - ✔
      - ✔
      -
-
-.. cpp:namespace-pop::
-
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -1208,12 +1146,13 @@ Examples in C++
 
 TimedThreadNotification
 =======================
-The :cpp:class:`TimedThreadNotification` is an extension of the
-:cpp:class:`ThreadNotification` which offers timeout and deadline based
+The :doxylink:`TimedThreadNotification <pw::sync::TimedThreadNotification>` is
+an extension of the :doxylink:`ThreadNotification
+<pw::sync::ThreadNotification>` which offers timeout and deadline based
 semantics.
 
-The :cpp:class:`TimedThreadNotification` is initialized to being empty (latch is
-not set).
+The :doxylink:`TimedThreadNotification <pw::sync::TimedThreadNotification>` is
+initialized to being empty (latch is not set).
 
 .. Warning::
    This is a single consumer/waiter, multiple producer/notifier API!  The
@@ -1223,12 +1162,12 @@ not set).
 
 Generic BinarySemaphore-based Backend
 -------------------------------------
-This module provides a generic backend for
-:cpp:class:`pw::sync::TimedThreadNotification` via
+This module provides a generic backend for :doxylink:`TimedThreadNotification
+<pw::sync::TimedThreadNotification>` via
 ``pw_sync:binary_semaphore_timed_thread_notification`` which uses a
-:cpp:class:`pw::sync::BinarySemaphore` as the backing primitive. See
-:ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for backend
-availability.
+:doxylink:`BinarySemaphore <pw::sync::BinarySemaphore>` as the backing
+primitive. See :ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for
+backend availability.
 
 Optimized Backend
 -----------------
@@ -1252,11 +1191,6 @@ Optimized Backend
 
 C++
 ---
-.. doxygenclass:: pw::sync::TimedThreadNotification
-   :members:
-
-.. cpp:namespace-push:: pw::sync::TimedThreadNotification
-
 .. list-table::
    :widths: 70 10 10 10
    :header-rows: 1
@@ -1265,36 +1199,36 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:class:`pw::sync::TimedThreadNotification::TimedThreadNotification`
+   * - Constructor
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::TimedThreadNotification::~TimedThreadNotification`
+   * - Destructor
      - ✔
      -
      -
-   * - :cpp:func:`acquire`
+   * - ``acquire``
      - ✔
      -
      -
-   * - :cpp:func:`try_acquire`
+   * - ``try_acquire``
      - ✔
      -
      -
-   * - :cpp:func:`try_acquire_for`
+   * - :doxylink:`try_acquire_for
+       <pw::sync::TimedThreadNotification::try_acquire_for>`
      - ✔
      -
      -
-   * - :cpp:func:`try_acquire_until`
+   * - :doxylink:`try_acquire_until
+       <pw::sync::TimedThreadNotification::try_acquire_until>`
      - ✔
      -
      -
-   * - :cpp:func:`release`
+   * - ``release``
      - ✔
      - ✔
      -
-
-.. cpp:namespace-pop::
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -1329,27 +1263,25 @@ Examples in C++
 
 CountingSemaphore
 =================
-.. cpp:namespace-push:: pw::sync
+The :doxylink:`CountingSemaphore <pw::sync::CountingSemaphore>` is a
+synchronization primitive that can be used for counting events and/or resource
+management where receiver(s) can block on acquire until notifier(s) signal by
+invoking release.
 
-The :cpp:class:`CountingSemaphore` is a synchronization primitive that can be
-used for counting events and/or resource management where receiver(s) can block
-on acquire until notifier(s) signal by invoking release.
+Note that unlike :doxylink:`Mutex <pw::sync::Mutex>`, priority inheritance is
+not used by semaphores meaning semaphores are subject to unbounded priority
+inversions. Due to this, Pigweed does not recommend semaphores for mutual
+exclusion.
 
-Note that unlike :cpp:class:`Mutex`, priority inheritance is not used by
-semaphores meaning semaphores are subject to unbounded priority inversions. Due
-to this, Pigweed does not recommend semaphores for mutual exclusion.
-
-The :cpp:class:`CountingSemaphore` is initialized to being empty or having no
-tokens.
+The :doxylink:`CountingSemaphore <pw::sync::CountingSemaphore>` is initialized
+to being empty or having no tokens.
 
 The entire API is thread safe, but only a subset is interrupt safe.
 
 .. Note::
    If there is only a single consuming thread, use a
-   :cpp:class:`ThreadNotification` instead which can be much more efficient on
-   some RTOSes such as FreeRTOS.
-
-.. cpp:namespace-pop::
+   :doxylink:`ThreadNotification <pw::sync::ThreadNotification>` instead which
+   can be much more efficient on some RTOSes such as FreeRTOS.
 
 .. Warning::
    Releasing multiple tokens is often not natively supported, meaning you may
@@ -1376,11 +1308,6 @@ The entire API is thread safe, but only a subset is interrupt safe.
 
 C++
 ---
-.. doxygenclass:: pw::sync::CountingSemaphore
-   :members:
-
-.. cpp:namespace-push:: pw::sync::CountingSemaphore
-
 .. list-table::
    :widths: 70 10 10 10
    :header-rows: 1
@@ -1389,40 +1316,40 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:class:`pw::sync::CountingSemaphore::CountingSemaphore`
+   * - Constructor
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::CountingSemaphore::~CountingSemaphore`
+   * - Destructor
      - ✔
      -
      -
-   * - :cpp:func:`acquire`
+   * - :doxylink:`acquire <pw::sync::CountingSemaphore::acquire>`
      - ✔
      -
      -
-   * - :cpp:func:`try_acquire`
+   * - :doxylink:`try_acquire <pw::sync::CountingSemaphore::try_acquire>`
      - ✔
      - ✔
      -
-   * - :cpp:func:`try_acquire_for`
+   * - :doxylink:`try_acquire_for
+       <pw::sync::CountingSemaphore::try_acquire_for>`
      - ✔
      -
      -
-   * - :cpp:func:`try_acquire_until`
+   * - :doxylink:`try_acquire_until
+       <pw::sync::CountingSemaphore::try_acquire_until>`
      - ✔
      -
      -
-   * - :cpp:func:`release`
+   * - :doxylink:`release <pw::sync::CountingSemaphore::release>`
      - ✔
      - ✔
      -
-   * - :cpp:func:`max`
+   * - :doxylink:`max <pw::sync::CountingSemaphore::max>`
      - ✔
      - ✔
      - ✔
-
-.. cpp:namespace-pop::
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -1467,26 +1394,23 @@ you detect whether you ever fall behind.
 
 BinarySemaphore
 ===============
-.. cpp:namespace-push:: pw::sync
-
-:cpp:class:`BinarySemaphore` is a specialization of CountingSemaphore with an
+:doxylink:`BinarySemaphore <pw::sync::BinarySemaphore>` is a specialization of
+:doxylink:`CountingSemaphore <pw::sync::CountingSemaphore>` with an
 arbitrary token limit of 1. Note that that ``max()`` is >= 1, meaning it may be
 released up to ``max()`` times but only acquired once for those N releases.
 
-Implementations of :cpp:class:`BinarySemaphore` are typically more
-efficient than the default implementation of :cpp:class:`CountingSemaphore`.
+Implementations of ``BinarySemaphore`` are typically more
+efficient than the default implementation of ``CountingSemaphore``.
 
-The :cpp:class:`BinarySemaphore` is initialized to being empty or having no
+``BinarySemaphore`` is initialized to being empty or having no
 tokens.
-
-.. cpp:namespace-pop::
 
 The entire API is thread safe, but only a subset is interrupt safe.
 
 .. Note::
    If there is only a single consuming thread, use a
-   :cpp:class:`ThreadNotification` instead which can be much more efficient on
-   some RTOSes such as FreeRTOS.
+   :doxylink:`ThreadNotification <pw::sync::ThreadNotification>` instead which
+   can be much more efficient on some RTOSes such as FreeRTOS.
 
 .. list-table::
    :header-rows: 1
@@ -1508,11 +1432,6 @@ The entire API is thread safe, but only a subset is interrupt safe.
 
 C++
 ---
-.. doxygenclass:: pw::sync::BinarySemaphore
-   :members:
-
-.. cpp:namespace-push:: pw::sync::BinarySemaphore
-
 .. list-table::
    :widths: 70 10 10 10
    :header-rows: 1
@@ -1521,40 +1440,39 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :cpp:class:`pw::sync::BinarySemaphore::BinarySemaphore`
+   * - Constructor
      - ✔
      -
      -
-   * - :cpp:func:`pw::sync::BinarySemaphore::~BinarySemaphore`
+   * - Destructor
      - ✔
      -
      -
-   * - :cpp:func:`acquire`
+   * - :doxylink:`acquire <pw::sync::BinarySemaphore::acquire>`
      - ✔
      -
      -
-   * - :cpp:func:`try_acquire`
+   * - :doxylink:`try_acquire <pw::sync::BinarySemaphore::try_acquire>`
      - ✔
      - ✔
      -
-   * - :cpp:func:`try_acquire_for`
+   * - :doxylink:`try_acquire_for <pw::sync::BinarySemaphore::try_acquire_for>`
      - ✔
      -
      -
-   * - :cpp:func:`try_acquire_until`
+   * - :doxylink:`try_acquire_until
+       <pw::sync::BinarySemaphore::try_acquire_until>`
      - ✔
      -
      -
-   * - :cpp:func:`release`
+   * - :doxylink:`release <pw::sync::BinarySemaphore::release>`
      - ✔
      - ✔
      -
-   * - :cpp:func:`max`
+   * - :doxylink:`max <pw::sync::BinarySemaphore::max>`
      - ✔
      - ✔
      - ✔
-
-.. cpp:namespace-pop::
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -1591,7 +1509,9 @@ Examples in C++
 
 Condition Variables
 =====================
-:cpp:class:`pw::sync::ConditionVariable` provides a condition variable
+.. _ConditionVariable: https://cs.opensource.google/pigweed/pigweed/+/main:pw_sync/public/pw_sync/condition_variable.h
+
+`ConditionVariable`_ provides a condition variable
 implementation that provides semantics and an API very similar to
 `std::condition_variable
 <https://en.cppreference.com/w/cpp/thread/condition_variable>`_ in the C++
@@ -1628,8 +1548,27 @@ The second approach leads to spurious wakeups in a thread context as well. The
 first approach may also have spurious wakeups if the condition changes between
 signaling the waiter and the waiter reacquiring its lock.
 
+-------------
+API reference
+-------------
+Moved: :doxylink:`pw_sync`
+
 .. toctree::
    :hidden:
    :maxdepth: 1
 
    backends
+
+.. TODO: b/441605063 - Replace with Doxylinks after variadic macro bug is fixed
+.. _PW_ACQUIRED_AFTER: ../doxygen/group__pw__sync.html#define-members
+.. _PW_ACQUIRED_BEFORE: ../doxygen/group__pw__sync.html#define-members
+.. _PW_ASSERT_EXCLUSIVE_LOCK: ../doxygen/group__pw__sync.html#define-members
+.. _PW_ASSERT_SHARED_LOCK: ../doxygen/group__pw__sync.html#define-members
+.. _PW_EXCLUSIVE_LOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
+.. _PW_EXCLUSIVE_LOCKS_REQUIRED: ../doxygen/group__pw__sync.html#define-members
+.. _PW_EXCLUSIVE_TRYLOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
+.. _PW_LOCKS_EXCLUDED: ../doxygen/group__pw__sync.html#define-members
+.. _PW_SHARED_LOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
+.. _PW_SHARED_LOCKS_REQUIRED: ../doxygen/group__pw__sync.html#define-members
+.. _PW_SHARED_TRYLOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
+.. _PW_UNLOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members

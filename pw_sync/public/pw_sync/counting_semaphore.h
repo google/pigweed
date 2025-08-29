@@ -25,6 +25,8 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// The `CountingSemaphore` is a synchronization primitive that can be used for
 /// counting events and/or resource management where receiver(s) can block on
 /// acquire until notifier(s) signal by invoking release.
@@ -33,13 +35,11 @@ namespace pw::sync {
 /// Pigweed does not recommend semaphores for mutual exclusion. The entire API
 /// is thread safe but only a subset is IRQ safe.
 ///
-/// @rst
-/// .. WARNING::
-///    In order to support global statically constructed ``CountingSemaphores``
-///    the user and/or backend MUST ensure that any initialization required in
-///    your environment is done prior to the creation and/or initialization of
-///    the native synchronization primitives (e.g. kernel initialization).
-/// @endrst
+/// @warning In order to support global statically constructed
+/// `CountingSemaphores` the user and/or backend MUST ensure that any
+/// initialization required in your environment is done prior to the creation
+/// and/or initialization of the native synchronization primitives (e.g.
+/// kernel initialization).
 ///
 /// The `CountingSemaphore` is initialized to being empty or having no tokens.
 class CountingSemaphore {
@@ -58,9 +58,9 @@ class CountingSemaphore {
   /// in acquire, will subsequently be unblocked.
   /// This is IRQ safe.
   ///
-  /// @b Precondition: update >= 0
+  /// @pre `update >= 0`
   ///
-  /// @b Precondition: update <= max() - counter
+  /// @pre `update <= max() - counter`
   void release(ptrdiff_t update = 1);
 
   /// Decrements the internal counter by 1 or blocks indefinitely until it can.
@@ -103,6 +103,8 @@ class CountingSemaphore {
   /// This may be a wrapper around a native type with additional members.
   backend::NativeCountingSemaphore native_type_;
 };
+
+/// @}
 
 }  // namespace pw::sync
 

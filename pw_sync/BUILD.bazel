@@ -617,6 +617,7 @@ filegroup(
         "public/pw_sync/inline_borrowable.h",
         "public/pw_sync/interrupt_spin_lock.h",
         "public/pw_sync/lock_annotations.h",
+        "public/pw_sync/lock_traits.h",
         "public/pw_sync/mutex.h",
         "public/pw_sync/no_lock.h",
         "public/pw_sync/thread_notification.h",

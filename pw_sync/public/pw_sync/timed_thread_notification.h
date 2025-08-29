@@ -18,12 +18,14 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// The `TimedThreadNotification` is a synchronization primitive that can be
 /// used to permit a SINGLE thread to block and consume a latching, saturating
 /// notification from  multiple notifiers.
 ///
-/// @b IMPORTANT: This is a single consumer/waiter, multiple producer/notifier
-/// API!  The acquire APIs must only be invoked by a single consuming thread. As
+/// @important This is a single consumer/waiter, multiple producer/notifier
+/// API! The acquire APIs must only be invoked by a single consuming thread. As
 /// a result, having multiple threads receiving notifications via the acquire
 /// API is unsupported.
 ///
@@ -50,10 +52,10 @@ class TimedThreadNotification : public ThreadNotification {
   ///
   /// Clears the notification latch.
   ///
-  /// Returns true if the thread was notified, meaning the the internal latch
+  /// @returns `true` if the thread was notified, meaning the internal latch
   /// was reset successfully.
   ///
-  /// @b IMPORTANT: This should only be used by a single consumer thread.
+  /// @important This should only be used by a single consumer thread.
   [[nodiscard]] bool try_acquire_for(chrono::SystemClock::duration timeout);
 
   /// Blocks until the specified deadline time has been reached the thread has
@@ -62,13 +64,15 @@ class TimedThreadNotification : public ThreadNotification {
   ///
   /// Clears the notification latch.
   ///
-  /// Returns true if the thread was notified, meaning the the internal latch
+  /// @returns `true` if the thread was notified, meaning the internal latch
   /// was reset successfully.
   ///
-  /// @b IMPORTANT: This should only be used by a single consumer thread.
+  /// @important This should only be used by a single consumer thread.
   [[nodiscard]] bool try_acquire_until(
       chrono::SystemClock::time_point deadline);
 };
+
+/// @}
 
 }  // namespace pw::sync
 

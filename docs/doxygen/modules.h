@@ -363,6 +363,9 @@
 /// @ingroup pw_string
 /// @brief Basic helpers for reading and writing UTF-8-encoded strings
 
+/// @defgroup pw_sync pw_sync
+/// @brief Main docs: [Home](../../pw_sync/docs.html)
+
 /// @defgroup pw_sys_io pw_sys_io
 /// @brief Main docs: https://pigweed.dev/pw_sys_io
 

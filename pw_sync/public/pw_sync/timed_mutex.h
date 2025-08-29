@@ -26,6 +26,8 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// The `TimedMutex` is a synchronization primitive that can be used to protect
 /// shared data from being simultaneously accessed by multiple threads with
 /// timeouts and deadlines, extending the `Mutex`. It offers exclusive,
@@ -33,13 +35,10 @@ namespace pw::sync {
 /// solve the classic priority-inversion problem. This is thread safe, but NOT
 /// IRQ safe.
 ///
-/// @rst
-/// .. warning::
-///    In order to support global statically constructed TimedMutexes, the user
-///    and/or backend MUST ensure that any initialization required in your
-///    environment is done prior to the creation and/or initialization of the
-///    native synchronization primitives (e.g. kernel initialization).
-/// @endrst
+/// @warning In order to support global statically constructed TimedMutexes, the
+/// user and/or backend MUST ensure that any initialization required in your
+/// environment is done prior to the creation and/or initialization of the
+/// native synchronization primitives (e.g. kernel initialization).
 class TimedMutex : public Mutex {
  public:
   TimedMutex() = default;
@@ -53,9 +52,8 @@ class TimedMutex : public Mutex {
   /// the lock is acquired, whichever comes first.
   /// Returns true if the mutex was successfully acquired.
   ///
-  /// @b PRECONDITION:
-  ///   The lock isn't already held by this thread. Recursive locking is
-  ///   undefined behavior.
+  /// @pre The lock isn't already held by this thread. Recursive locking is
+  /// undefined behavior.
   [[nodiscard]] bool try_lock_for(chrono::SystemClock::duration timeout)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
@@ -63,9 +61,8 @@ class TimedMutex : public Mutex {
   /// or the lock is acquired, whichever comes first.
   /// Returns true if the mutex was successfully acquired.
   ///
-  /// @b PRECONDITION:
-  ///   The lock isn't already held by this thread. Recursive locking is
-  ///   undefined behavior.
+  /// @pre The lock isn't already held by this thread. Recursive locking is
+  /// undefined behavior.
   [[nodiscard]] bool try_lock_until(chrono::SystemClock::time_point deadline)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 };
@@ -86,6 +83,8 @@ class PW_LOCKABLE("pw::sync::VirtualTimedMutex") VirtualTimedMutex final
   }
 };
 
+/// @}
+
 }  // namespace pw::sync
 
 #include "pw_sync_backend/timed_mutex_inline.h"
@@ -99,6 +98,8 @@ typedef struct pw_sync_TimedMutex pw_sync_TimedMutex;
 #endif  // __cplusplus
 
 PW_EXTERN_C_START
+
+/// @module{pw_sync}
 
 /// Invokes the `TimedMutex::lock` member function on the given `mutex`.
 void pw_sync_TimedMutex_Lock(pw_sync_TimedMutex* mutex)
@@ -122,5 +123,7 @@ bool pw_sync_TimedMutex_TryLockUntil(pw_sync_TimedMutex* mutex,
 /// Invokes the `TimedMutex::unlock` member function on the given `mutex`.
 void pw_sync_TimedMutex_Unlock(pw_sync_TimedMutex* mutex)
     PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// @}
 
 PW_EXTERN_C_END

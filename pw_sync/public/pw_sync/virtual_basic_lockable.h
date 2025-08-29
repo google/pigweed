@@ -18,6 +18,8 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// The `VirtualBasicLockable` is a virtual lock abstraction for locks which
 /// meet the C++ named BasicLockable requirements of lock() and unlock().
 ///
@@ -70,8 +72,8 @@ class PW_LOCKABLE("pw::sync::NoOpLock") NoOpLock final
   void DoLockOperation(Operation) override {}
 };
 
-/// Templated base class to facilitate making "Virtual{LockType}" from a
-/// "LockType" class that provides `lock()` and `unlock()` methods.
+/// Templated base class to facilitate making `Virtual{LockType}` from a
+/// `LockType` class that provides `lock()` and `unlock()` methods.
 /// The resulting classes will derive from `VirtualBasicLockable`.
 template <typename LockType>
 class GenericBasicLockable : public VirtualBasicLockable {
@@ -97,12 +99,11 @@ class GenericBasicLockable : public VirtualBasicLockable {
   LockType impl_;
 };
 
-/// Templated base class to facilitate making "Virtual{LockType}" from a
-/// "LockType" class that derives from `VirtualBasicLockable`, and also meets
+/// Templated base class to facilitate making `Virtual{LockType}` from a
+/// `LockType` class that derives from `VirtualBasicLockable`, and also meets
 /// the C++ named Lockable requirements by providing try_lock().
 ///
-/// Example:
-///   class VirtualMutex : public GenericLockable<Mutex> {};
+/// Example: `class VirtualMutex : public GenericLockable<Mutex> {};`
 template <typename LockType>
 class PW_LOCKABLE("pw::sync::GenericLockable") GenericLockable
     : public GenericBasicLockable<LockType> {
@@ -111,5 +112,7 @@ class PW_LOCKABLE("pw::sync::GenericLockable") GenericLockable
     return GenericBasicLockable<LockType>::impl().try_lock();
   }
 };
+
+/// @}
 
 }  // namespace pw::sync

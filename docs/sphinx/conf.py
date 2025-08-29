@@ -310,6 +310,8 @@ doxygen_site_path = "./doxygen"
 doxylink = {
     "doxylink": (tagfile_path, doxygen_site_path),
 }
+# TODO: b/441605063 - Remove after variadic macro bug is fixed.
+doxylink_parse_error_ignore_regexes = [r"\.\.\."]
 
 breathe_projects = {
     # Assuming doxygen output is at out/docs/doxygen/

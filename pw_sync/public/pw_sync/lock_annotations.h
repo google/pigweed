@@ -34,8 +34,8 @@
 
 #include "pw_preprocessor/compiler.h"
 
-/// @def PW_GUARDED_BY
-///
+/// @module{pw_sync}
+
 /// Documents if a shared field or global variable needs to be protected by a
 /// lock. `PW_GUARDED_BY()` allows the user to specify a particular lock that
 /// should be held when accessing the annotated variable.
@@ -60,8 +60,6 @@
 #define PW_GUARDED_BY(x)
 #endif
 
-/// @def PW_PT_GUARDED_BY
-///
 /// Documents if the memory location pointed to by a pointer should be guarded
 /// by a lock when dereferencing the pointer.
 ///
@@ -91,9 +89,6 @@
 #define PW_PT_GUARDED_BY(x)
 #endif
 
-/// @def PW_ACQUIRED_AFTER
-/// @def PW_ACQUIRED_BEFORE
-///
 /// Documents the acquisition order between locks that can be held
 /// simultaneously by a thread. For any two locks that need to be annotated
 /// to establish an acquisition order, only one of them needs the annotation.
@@ -121,9 +116,6 @@
 #define PW_ACQUIRED_BEFORE(...)
 #endif
 
-/// @def PW_EXCLUSIVE_LOCKS_REQUIRED
-/// @def PW_SHARED_LOCKS_REQUIRED
-///
 /// Documents a function that expects a lock to be held prior to entry.
 /// The lock is expected to be held both on entry to, and exit from, the
 /// function.
@@ -161,8 +153,6 @@
 #define PW_SHARED_LOCKS_REQUIRED(...)
 #endif
 
-/// @def PW_LOCKS_EXCLUDED
-///
 /// Documents that the caller must not hold the given lock. This annotation is
 /// often used to prevent deadlocks. Pigweed's mutex implementation is not
 /// re-entrant, so a deadlock will occur if the function acquires the mutex a
@@ -186,8 +176,6 @@
 #define PW_LOCKS_EXCLUDED(...)
 #endif
 
-/// @def PW_LOCK_RETURNED
-///
 /// Documents a function that returns a lock without acquiring it.  For example,
 /// a public getter method that returns a pointer to a private lock should
 /// be annotated with `PW_LOCK_RETURNED()`.
@@ -209,8 +197,6 @@
 #define PW_LOCK_RETURNED(x)
 #endif
 
-/// @def PW_LOCKABLE
-///
 /// Documents if a class/type is a lockable type (such as the `pw::sync::Mutex`
 /// class). The name is used in the warning messages. This can also be useful on
 /// classes which have locking like semantics but aren't actually locks.
@@ -222,8 +208,6 @@
 #define PW_LOCKABLE(name)
 #endif
 
-/// @def PW_SCOPED_LOCKABLE
-///
 /// Documents if a class does RAII locking. The name is used in the warning
 /// messages.
 ///
@@ -237,8 +221,6 @@
 #define PW_SCOPED_LOCKABLE
 #endif
 
-/// @def PW_EXCLUSIVE_LOCK_FUNCTION
-///
 /// Documents functions that acquire a lock in the body of a function, and do
 /// not release it.
 #if PW_HAVE_ATTRIBUTE(exclusive_lock_function)
@@ -248,8 +230,6 @@
 #define PW_EXCLUSIVE_LOCK_FUNCTION(...)
 #endif
 
-/// @def PW_SHARED_LOCK_FUNCTION
-///
 /// Documents functions that acquire a shared (reader) lock in the body of a
 /// function, and do not release it.
 #if PW_HAVE_ATTRIBUTE(shared_lock_function)
@@ -259,8 +239,6 @@
 #define PW_SHARED_LOCK_FUNCTION(...)
 #endif
 
-/// @def PW_UNLOCK_FUNCTION
-///
 /// Documents functions that expect a lock to be held on entry to the function,
 /// and release it in the body of the function.
 #if PW_HAVE_ATTRIBUTE(unlock_function)
@@ -269,9 +247,6 @@
 #define PW_UNLOCK_FUNCTION(...)
 #endif
 
-/// @def PW_EXCLUSIVE_TRYLOCK_FUNCTION
-/// @def PW_SHARED_TRYLOCK_FUNCTION
-///
 /// Documents functions that try to acquire a lock, and return success or
 /// failure (or a non-boolean value that can be interpreted as a boolean). The
 /// first argument should be `true` for functions that return `true` on success,
@@ -292,9 +267,6 @@
 #define PW_SHARED_TRYLOCK_FUNCTION(...)
 #endif
 
-/// @def PW_ASSERT_EXCLUSIVE_LOCK
-/// @def PW_ASSERT_SHARED_LOCK
-///
 /// Documents functions that dynamically check to see if a lock is held, and
 /// fail if it is not held.
 #if PW_HAVE_ATTRIBUTE(assert_exclusive_lock)
@@ -311,8 +283,6 @@
 #define PW_ASSERT_SHARED_LOCK(...)
 #endif
 
-/// @def PW_NO_LOCK_SAFETY_ANALYSIS
-///
 /// Turns off thread safety checking within the body of a particular function.
 /// This annotation is used to mark functions that are known to be correct, but
 /// the locking behavior is more complicated than the analyzer can handle.
@@ -321,3 +291,5 @@
 #else
 #define PW_NO_LOCK_SAFETY_ANALYSIS
 #endif
+
+/// @}

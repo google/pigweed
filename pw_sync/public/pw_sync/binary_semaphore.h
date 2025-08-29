@@ -25,6 +25,8 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// `BinarySemaphore` is a specialization of `CountingSemaphore` with an
 /// arbitrary token limit of 1. Note that that max() is >= 1, meaning it may be
 /// released up to `max()` times but only acquired once for those `N` releases.
@@ -32,7 +34,7 @@ namespace pw::sync {
 /// default implementation of `CountingSemaphore`. The entire API is thread safe
 /// but only a subset is IRQ safe.
 ///
-/// WARNING: In order to support global statically constructed BinarySemaphores,
+/// @warning In order to support global statically constructed BinarySemaphores,
 /// the user and/or backend MUST ensure that any initialization required in your
 /// environment is done prior to the creation and/or initialization of the
 /// native synchronization primitives (e.g. kernel initialization).
@@ -58,7 +60,7 @@ class BinarySemaphore {
   /// between acquires because many RTOS implementations internally
   /// increment the counter past one where it is only cleared when acquired.
   ///
-  /// @b PRECONDITION: `1 <= max() - counter`
+  /// @pre `1 <= max() - counter`
   void release();
 
   /// Decrements the internal counter to 0 or blocks indefinitely until it can.
@@ -93,7 +95,7 @@ class BinarySemaphore {
       chrono::SystemClock::time_point deadline);
 
   /// @retval backend::kBinarySemaphoreMaxValue the internal counter's maximum
-  ///                                           possible value.
+  /// possible value.
   [[nodiscard]] static constexpr ptrdiff_t max() noexcept {
     return backend::kBinarySemaphoreMaxValue;
   }
@@ -104,6 +106,8 @@ class BinarySemaphore {
   /// This may be a wrapper around a native type with additional members.
   backend::NativeBinarySemaphore native_type_;
 };
+
+/// @}
 
 }  // namespace pw::sync
 

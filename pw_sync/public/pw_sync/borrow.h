@@ -23,6 +23,8 @@
 
 namespace pw::sync {
 
+/// @module{pw_sync}
+
 /// The `BorrowedPointer` is an RAII handle which wraps a pointer to a borrowed
 /// object along with a held lock which is guarding the object. When destroyed,
 /// the lock is released.
@@ -37,16 +39,16 @@ class BorrowedPointer {
     }
   }
 
-  /// Move-constructs a ``BorrowedPointer<T>`` from a ``BorrowedPointer<U>``.
+  /// Move-constructs a `BorrowedPointer<T>` from a `BorrowedPointer<U>`.
   ///
   /// This allows not only pure move construction where
-  /// ``GuardedType == G`` and ``Lock == L``, but also
-  /// converting construction where ``GuardedType`` is a base class of
-  /// ``OtherType`` and ``Lock`` is a base class of ``OtherLock``, like
-  /// ``BorrowedPointer<Base> base_ptr(derived_borrowable.acquire());`
+  /// `GuardedType == G` and `Lock == L`, but also
+  /// converting construction where `GuardedType` is a base class of
+  /// `OtherType` and `Lock` is a base class of `OtherLock`, like
+  /// `BorrowedPointer<Base> base_ptr(derived_borrowable.acquire());`
   ///
-  /// @b Postcondition: The other BorrowedPointer is no longer valid and will
-  ///     assert if the GuardedType is accessed.
+  /// @post The other BorrowedPointer is no longer valid and will assert if the
+  /// GuardedType is accessed.
   template <typename G, typename L>
   BorrowedPointer(BorrowedPointer<G, L>&& other)
       : lock_(other.lock_), object_(other.object_) {
@@ -61,13 +63,13 @@ class BorrowedPointer {
     other.object_ = nullptr;
   }
 
-  /// Move-assigns a ``BorrowedPointer<T>`` from a ``BorrowedPointer<U>``.
+  /// Move-assigns a `BorrowedPointer<T>` from a `BorrowedPointer<U>`.
   ///
   /// This allows not only pure move construction where
-  /// ``GuardedType == OtherType`` and ``Lock == OtherLock``, but also
-  /// converting construction where ``GuardedType`` is a base class of
-  /// ``OtherType`` and ``Lock`` is a base class of ``OtherLock``, like
-  /// ``BorrowedPointer<Base> base_ptr = derived_borrowable.acquire();`
+  /// `GuardedType == OtherType` and `Lock == OtherLock`, but also
+  /// converting construction where `GuardedType` is a base class of
+  /// `OtherType` and `Lock` is a base class of `OtherLock`, like
+  /// `BorrowedPointer<Base> base_ptr = derived_borrowable.acquire();`
   ///
   /// @b Postcondition: The other BorrowedPointer is no longer valid and will
   ///     assert if the GuardedType is accessed.
@@ -103,15 +105,11 @@ class BorrowedPointer {
 
   /// Provides access to the borrowed object directly.
   ///
-  /// @rst
-  /// .. note::
-  ///    The member of pointer member access operator, ``operator->()``, is
-  ///    recommended over this API as this is prone to leaking references.
-  ///    However, this is sometimes necessary.
+  /// @note The member of pointer member access operator, `operator->()`, is
+  /// recommended over this API as this is prone to leaking references. However,
+  /// this is sometimes necessary.
   ///
-  /// .. warning:
-  ///    Be careful not to leak references to the borrowed object!
-  /// @endrst
+  /// @warning Be careful not to leak references to the borrowed object!
   GuardedType& operator*() {
     PW_ASSERT(object_ != nullptr);  // Ensure this isn't a stale moved instance.
     return *object_;
@@ -140,6 +138,7 @@ class BorrowedPointer {
   friend class BorrowedPointer;
 };
 
+// clang-format off
 /// The `Borrowable` is a helper construct that enables callers to borrow an
 /// object which is guarded by a lock.
 ///
@@ -148,17 +147,18 @@ class BorrowedPointer {
 ///
 /// Thread-safety analysis is not supported for this class, as the
 /// `BorrowedPointer`s it creates conditionally releases the lock. See also
-/// https://clang.llvm.org/docs/ThreadSafetyAnalysis.html#no-conditionally-held-locks
+/// [No conditionally held locks](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html#no-conditionally-held-locks).
 ///
-/// This class is compatible with locks which comply with \em BasicLockable C++
+/// This class is compatible with locks which comply with @em BasicLockable C++
 /// named requirement. A `try_acquire` method is conditionally available if the
-/// lock also meets the \em Lockable requirement. This class is further extended
-/// by `TimedBorrowable` for locks that meet the \em TimedLockable requirement.
+/// lock also meets the @em Lockable requirement. This class is further extended
+/// by `TimedBorrowable` for locks that meet the @em TimedLockable requirement.
 ///
 /// `Borrowable<T>` is covariant with respect to `T`, so that `Borrowable<U>`
 /// can be converted to `Borrowable<T>`, if `U` is a subclass of `T`.
 ///
 /// `Borrowable` has pointer-like semantics and should be passed by value.
+// clang-format on
 template <typename GuardedType,
           typename LockType = pw::sync::VirtualBasicLockable>
 class Borrowable {
@@ -213,5 +213,7 @@ class Borrowable {
   LockType* lock_;
   GuardedType* object_;
 };
+
+/// @}
 
 }  // namespace pw::sync
