@@ -171,6 +171,13 @@ DynamicByteBuffer LESetCIGParametersCompletePacket(
     pw::bluetooth::emboss::StatusCode status =
         pw::bluetooth::emboss::StatusCode::SUCCESS);
 
+struct CreateCisHandles {
+  hci_spec::ConnectionHandle cis_handle;
+  hci_spec::ConnectionHandle acl_handle;
+};
+DynamicByteBuffer LECreateCISCommandPacket(
+    pw::span<const CreateCisHandles> cis_handles);
+
 DynamicByteBuffer LECisEstablishedEventPacket(
     pw::bluetooth::emboss::StatusCode status,
     hci_spec::ConnectionHandle connection_handle,

@@ -691,6 +691,48 @@ DynamicByteBuffer LESetCIGParametersCompletePacket(
   return packet;
 }
 
+DynamicByteBuffer LECreateCISCommandPacket(
+    pw::span<const CreateCisHandles> cis_handles) {
+  constexpr size_t kStaticSize = 4;
+  constexpr size_t kSizePerCis = 4;
+  constexpr size_t kCisCountMax = 0xEF;
+
+  auto packet_size = kStaticSize + kSizePerCis * cis_handles.size();
+  auto params_size =
+      packet_size -
+      pw::bluetooth::emboss::CommandHeader::IntrinsicSizeInBytes();
+
+  PW_CHECK(cis_handles.size() <= kCisCountMax);
+  PW_CHECK(params_size <= std::numeric_limits<uint8_t>::max());
+  StaticByteBuffer static_part(
+      LowerBits(hci_spec::kLECreateCIS),        // Command Code ...
+      UpperBits(hci_spec::kLECreateCIS),        //
+      static_cast<uint8_t>(params_size),        // Params size
+      static_cast<uint8_t>(cis_handles.size())  // CIS Count
+  );
+
+  static_assert(kStaticSize ==
+                pw::bluetooth::emboss::LECreateCISCommand::MinSizeInBytes());
+  static_assert(static_part.static_size() == kStaticSize);
+  DynamicByteBuffer packet(packet_size);
+
+  size_t next_cis_pos = kStaticSize;
+  static_part.Copy(&packet, 0, next_cis_pos);
+  for (const auto& handles : cis_handles) {
+    StaticByteBuffer next_cis(LowerBits(handles.cis_handle),   // CIS handle ...
+                              UpperBits(handles.cis_handle),   //
+                              LowerBits(handles.acl_handle),   // ACL handle ...
+                              UpperBits(handles.acl_handle));  //
+
+    static_assert(next_cis.static_size() == kSizePerCis);
+    auto dest = packet.mutable_view(next_cis_pos, kSizePerCis);
+    next_cis.Copy(&dest);
+    next_cis_pos += kSizePerCis;
+  }
+
+  return packet;
+}
+
 DynamicByteBuffer LERequestPeerScaCompletePacket(
     hci_spec::ConnectionHandle conn,
     pw::bluetooth::emboss::LESleepClockAccuracyRange sca) {
