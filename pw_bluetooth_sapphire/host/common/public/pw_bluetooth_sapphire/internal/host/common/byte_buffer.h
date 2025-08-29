@@ -448,6 +448,9 @@ class StaticByteBuffer : public MutableByteBuffer {
   uint8_t* mutable_data() override { return buffer_.data(); }
   void Fill(uint8_t value) override { buffer_.fill(value); }
 
+  // `constexpr virtual` is a C++20 feature, so no constexpr `size()` yet.
+  constexpr size_t static_size() const { return buffer_.size(); }
+
  private:
   // Value-initialize to 0.
   std::array<uint8_t, BufferSize> buffer_{};
