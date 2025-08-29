@@ -1115,6 +1115,14 @@ inline constexpr OpCode kLESetupISODataPath = LEControllerCommandOpCode(0x006E);
 inline constexpr OpCode kLESetHostFeature = LEControllerCommandOpCode(0x0074);
 
 // =========================================
+// LE Set CIG Parameters Command (v5.2) (LE)
+inline constexpr OpCode kLESetCIGParameters = LEControllerCommandOpCode(0x0062);
+
+// =================================
+// LE Create CIS Command (v5.2) (LE)
+inline constexpr OpCode kLECreateCIS = LEControllerCommandOpCode(0x0064);
+
+// =========================================
 // LE Accept CIS Request Command (v5.2) (LE)
 inline constexpr OpCode kLEAcceptCISRequest = LEControllerCommandOpCode(0x0066);
 
