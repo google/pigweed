@@ -25,7 +25,7 @@ _CIPD_CACHE_DIR_ENV_VAR = "CIPD_CACHE_DIR"
 
 # NOTE: the ~ is for convenience here, it is manually expanded inside
 # get_cipd_cache_dir().
-_DEFAULT_CIPD_CACHE_DIR = "~/.cipd_cache_dir"
+_DEFAULT_CIPD_CACHE_DIR = "~/.cipd-cache-dir"
 
 def platform_normalized(rctx):
     """Normalizes the platform to match CIPDs naming system.
