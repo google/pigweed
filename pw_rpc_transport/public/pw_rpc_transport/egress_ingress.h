@@ -116,8 +116,8 @@ class RpcIngress : public RpcIngressHandler {
   Status ProcessIncomingData(ConstByteSpan buffer) override {
     return decoder_.Decode(buffer, [this](ConstByteSpan packet) {
       const auto packet_meta = rpc::PacketMeta::FromBuffer(packet);
+      ++num_total_packets_;
       if (tracker_) {
-        ++num_total_packets_;
         tracker_->PacketProcessed(packet);
       }
       if (!packet_meta.ok()) {
