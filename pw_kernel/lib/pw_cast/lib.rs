@@ -152,6 +152,7 @@ impl_cast_from!(
     u16 => usize,
     u16 => u32,
     u32 => usize,
+    u32 => u64,
     usize => u32,
     usize => u64,
 );
@@ -164,6 +165,7 @@ impl_cast_from!(
     u16 => usize,
     u16 => u32,
     u32 => usize,
+    u32 => u64,
     u64 => usize,
     usize => u64,
 );
