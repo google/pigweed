@@ -21,12 +21,14 @@ config("public_include_path") {
 
 pw_source_set("iso") {
   sources = [
+    "iso_group.cc",
     "iso_inbound_packet_assembler.cc",
     "iso_stream.cc",
     "iso_stream_manager.cc",
   ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/iso/iso_common.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_group.h",
     "public/pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h",
     "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
     "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
@@ -55,6 +57,7 @@ pw_source_set("testing") {
 pw_test("iso_test") {
   sources = [
     "iso_common_test.cc",
+    "iso_group_test.cc",
     "iso_inbound_packet_assembler_test.cc",
     "iso_stream_manager_test.cc",
     "iso_stream_test.cc",
@@ -62,6 +65,7 @@ pw_test("iso_test") {
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":iso",
+    ":testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
     "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
     "$dir_pw_chrono:simulated_system_clock",

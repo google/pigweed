@@ -26,12 +26,14 @@ package(
 cc_library(
     name = "iso",
     srcs = [
+        "iso_group.cc",
         "iso_inbound_packet_assembler.cc",
         "iso_stream.cc",
         "iso_stream_manager.cc",
     ],
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_common.h",
+        "public/pw_bluetooth_sapphire/internal/host/iso/iso_group.h",
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h",
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
@@ -71,6 +73,7 @@ pw_cc_test(
     name = "iso_test",
     srcs = [
         "iso_common_test.cc",
+        "iso_group_test.cc",
         "iso_inbound_packet_assembler_test.cc",
         "iso_stream_manager_test.cc",
         "iso_stream_test.cc",
@@ -79,6 +82,7 @@ pw_cc_test(
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":iso",
+        ":testing",
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:mock_controller",
         "//pw_chrono:simulated_system_clock",
