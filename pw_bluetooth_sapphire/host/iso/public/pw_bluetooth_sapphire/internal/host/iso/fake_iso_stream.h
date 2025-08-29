@@ -28,20 +28,24 @@ class FakeIsoStream : public IsoStream {
   FakeIsoStream() : weak_self_(this) {}
 
   // IsoStream overrides
-  bool OnCisEstablished(const hci::EventPacket& event) override { return true; }
+  bool OnCisEstablished(const hci::EventPacket& /*event*/) override {
+    return true;
+  }
 
   void SetupDataPath(
-      pw::bluetooth::emboss::DataPathDirection direction,
-      const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
-      const std::optional<std::vector<uint8_t>>& codec_configuration,
-      uint32_t controller_delay_usecs,
+      pw::bluetooth::emboss::DataPathDirection /*direction*/,
+      const bt::StaticPacket<
+          pw::bluetooth::emboss::CodecIdWriter>& /*codec_id*/,
+      const std::optional<std::vector<uint8_t>>& /*code_configuration*/,
+      uint32_t /*controller_delay_usecs*/,
       SetupDataPathCallback&& on_complete_cb,
       IncomingDataHandler&& on_incoming_data_available_cb) override {
     on_incoming_data_available_cb_ = std::move(on_incoming_data_available_cb);
     on_complete_cb(setup_data_path_status_);
   }
 
-  void ReceiveInboundPacket(const pw::span<const std::byte> packet) override {}
+  void ReceiveInboundPacket(
+      const pw::span<const std::byte> /*packet*/) override {}
 
   std::optional<DynamicByteBuffer> GetNextOutboundPdu() override {
     return std::nullopt;
@@ -94,8 +98,10 @@ class FakeIsoStream : public IsoStream {
   std::optional<IncomingDataHandler> on_incoming_data_available_cb_;
   std::queue<IsoDataPacket> incoming_packet_queue_;
   size_t incoming_packet_requests_ = 0;
-  WeakSelf<FakeIsoStream> weak_self_;
   std::queue<std::vector<std::byte>> sent_data_queue_;
+
+  // Keep last, must be destroyed before any other member.
+  WeakSelf<FakeIsoStream> weak_self_;
 };
 
 }  // namespace bt::iso::testing
