@@ -295,7 +295,37 @@ copying your files to the correct directory, run this command:
 
 .. code-block:: console
 
-   $ bazelisk build //docs/sphinx:_docs/_sources
+   $ bazelisk build //docs:sources
+
+The full list of docs sources will be logged:
+
+.. code-block:: text
+
+   bazel-bin/docs/sphinx/_docs/_sources/conf.py
+   bazel-bin/docs/sphinx/_docs/_sources/_extensions/bug.py
+   bazel-bin/docs/sphinx/_docs/_sources/_extensions/kconfig.py
+   bazel-bin/docs/sphinx/_docs/_sources/_extensions/module_metadata.py
+   bazel-bin/docs/sphinx/_docs/_sources/_extensions/modules_index.py
+   bazel-bin/docs/sphinx/_docs/_sources/_extensions/pigweed_live.py
+   bazel-bin/docs/sphinx/_docs/_sources/_extensions/pw_status_codes.py
+   bazel-bin/docs/sphinx/_docs/_sources/_extensions/seed_metadata.py
+   bazel-bin/docs/sphinx/_docs/_sources/_extensions/sitemap.py
+   bazel-bin/docs/sphinx/_docs/_sources/automated_analysis.rst
+   bazel-bin/docs/sphinx/_docs/_sources/bazel_compatibility.rst
+   bazel-bin/docs/sphinx/_docs/_sources/build_system.rst
+   bazel-bin/docs/sphinx/_docs/_sources/changelog.rst
+   bazel-bin/docs/sphinx/_docs/_sources/index.rst
+   …
+   bazel-bin/docs/sphinx/_docs/_sources/third_party/nanopb/docs.rst
+   bazel-bin/docs/sphinx/_docs/_sources/third_party/perfetto/docs.rst
+   bazel-bin/docs/sphinx/_docs/_sources/third_party/tinyusb/docs.rst
+
+Often times, the Sphinx build fails because a file was not copied to the
+correct directory. Listing all docs sources can help you track down where
+exactly the file is being incorrectly copied to. You can use the ``prefix`` and
+``strip_prefix`` features of ``sphinx_docs_library`` to fix the output path.
+Note that ``prefix`` and ``strip_prefix`` are finicky and sometimes don't work
+for unknown reasons.
 
 .. _contrib-docs-build-debug:
 

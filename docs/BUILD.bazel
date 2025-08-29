@@ -23,3 +23,12 @@ alias(
     actual = "//docs/sphinx:docs.serve",
     tags = ["manual"],
 )
+
+# This references a hidden target with no stability guarantee so if it breaks
+# it's our problem.
+alias(
+    name = "sources",
+    actual = "//docs/sphinx:_docs/_sources",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
