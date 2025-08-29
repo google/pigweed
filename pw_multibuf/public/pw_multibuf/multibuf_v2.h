@@ -56,8 +56,7 @@ class GenericMultiBuf;
 
 }  // namespace multibuf_impl
 
-/// @defgroup pw_multibuf
-/// @{
+/// @submodule{pw_multibuf,v2}
 
 // Type aliases for convenience, listed here for easier discoverability.
 
@@ -1690,6 +1689,8 @@ class Instance {
 };
 
 }  // namespace multibuf_impl
+
+/// @}
 
 /// @}
 

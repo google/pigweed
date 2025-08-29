@@ -25,6 +25,8 @@
 
 namespace pw::multibuf {
 
+/// @submodule{pw_multibuf,v1_impl}
+
 /// A `ChunkRegionTracker` that uses inline memory to create a single `Chunk`
 /// with the only caveat that the provided `Chunk` cannot be split. All attempts
 /// will result in `std::nullopt`.
@@ -81,5 +83,7 @@ class PW_MULTIBUF_DEPRECATED SingleChunkRegionTracker
   std::atomic<bool> chunk_in_use_ = false;
   alignas(Chunk) std::array<std::byte, sizeof(Chunk)> chunk_storage_;
 };
+
+/// @}
 
 }  // namespace pw::multibuf

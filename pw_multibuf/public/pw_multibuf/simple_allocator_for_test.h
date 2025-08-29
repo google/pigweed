@@ -26,6 +26,8 @@
 
 namespace pw::multibuf::test {
 
+/// @submodule{pw_multibuf,v1_test}
+
 /// Simple, self-contained `pw::multibuf::MultiBufAllocator` for test use.
 template <size_t kDataSizeBytes = 1024, size_t kMetaSizeBytes = kDataSizeBytes>
 class PW_MULTIBUF_DEPRECATED SimpleAllocatorForTest : public SimpleAllocator {
@@ -49,5 +51,7 @@ class PW_MULTIBUF_DEPRECATED SimpleAllocatorForTest : public SimpleAllocator {
   allocator::test::AllocatorForTest<kMetaSizeBytes> alloc_;
   allocator::SynchronizedAllocator<sync::Mutex> meta_alloc_;
 };
+
+/// @}
 
 }  // namespace pw::multibuf::test

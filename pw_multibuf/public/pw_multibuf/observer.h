@@ -17,6 +17,8 @@
 
 namespace pw {
 
+/// @submodule{pw_multibuf,v2}
+
 /// Base class for a subscriber that can be notified when a MultiBuf changes.
 ///
 /// As an example, one possible usage is as part of a flow control scheme:
@@ -56,5 +58,7 @@ class MultiBufObserver {
  private:
   virtual void DoNotify(Event event, size_t value) = 0;
 };
+
+/// @}
 
 }  // namespace pw

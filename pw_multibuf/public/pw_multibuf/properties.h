@@ -18,6 +18,8 @@
 
 namespace pw {
 
+/// @submodule{pw_multibuf,v2}
+
 /// Basic properties of a MultiBuf.
 enum class MultiBufProperty : uint8_t {
   /// Indicates the data contained within the MultiBuf is read-only. Note the
@@ -110,4 +112,7 @@ static constexpr void AssertIsConvertible() {
 }
 
 }  // namespace multibuf_impl
+
+/// @}
+
 }  // namespace pw

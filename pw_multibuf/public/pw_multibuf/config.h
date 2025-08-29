@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+/// @module{pw_multibuf}
+
 #ifndef PW_MULTIBUF_VERSION
 /// Sets the version of MultiBuf provided by this module.
 ///
@@ -61,3 +63,5 @@
 #else
 #define PW_MULTIBUF_DEPRECATED
 #endif  // PW_MULTIBUF_WARN_DEPRECATED
+
+/// @}

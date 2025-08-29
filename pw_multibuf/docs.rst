@@ -53,104 +53,10 @@ and instead using ``MultiBuf`` to present different logical, span-like views of
 sequences of buffers. This version is currently experimental, but we welcome
 feedback on the direction it is taking!
 
------------
-MultiBuf v1
------------
-
-API Reference
-=============
-Most users of ``pw_multibuf`` will start by allocating a ``MultiBuf`` using
-a ``MultiBufAllocator`` class, such as the ``SimpleAllocator``.
-
-``MultiBuf`` s consist of a number of ``Chunk`` s of contiguous memory regions.
-``Chunk`` s can be grown or shrunk which allows ``MultiBuf`` s to be grown or
-shrunk. This allows, for example, lower layers to reserve part of a
-``MultiBuf`` for a header or footer (see ``Chunk`` for more details).
-
-``MultiBuf`` exposes an ``std::byte`` iterator interface as well as a ``Chunk``
-iterator available through the ``Chunks()`` method. It allows extracting a
-``Chunk`` as an RAII-style ``OwnedChunk`` which manages its own lifetime.
-
-.. doxygenclass:: pw::multibuf::Chunk
-   :members:
-
-.. doxygenclass:: pw::multibuf::OwnedChunk
-   :members:
-
-.. doxygenclass:: pw::multibuf::MultiBuf
-   :members:
-
-.. doxygenfunction:: pw::multibuf::FromSpan
-
-.. doxygenclass:: pw::multibuf::MultiBufChunks
-   :members:
-
-.. doxygenclass:: pw::multibuf::MultiBufAllocator
-   :members:
-
-.. doxygenclass:: pw::multibuf::MultiBufAllocatorAsync
-   :members:
-
-.. doxygenclass:: pw::multibuf::MultiBufAllocationFuture
-   :members:
-
-.. doxygenclass:: pw::multibuf::SimpleAllocator
-   :members:
-
-.. doxygenclass:: pw::multibuf::Stream
-   :members:
-
-Test-only features
-------------------
-.. doxygenclass:: pw::multibuf::test::SimpleAllocatorForTest
-   :members:
-
-Allocator Implementors' API
-===========================
-Some users will need to directly implement the ``MultiBufAllocator`` interface
-in order to provide allocation out of a particular region, provide particular
-allocation policy, fix Chunks to some size (such as MTU size - header for
-socket implementations), or specify other custom behavior.
-
-These users will also need to understand and implement the following APIs:
-
-.. doxygenclass:: pw::multibuf::ChunkRegionTracker
-   :members:
-
-A simple implementation of a ``ChunkRegionTracker`` is provided, called
-``HeaderChunkRegionTracker``. It stores its ``Chunk`` and region metadata in a
-``Allocator`` allocation alongside the data. The allocation process is
-synchronous, making this class suitable for testing. The allocated region or
-``Chunk`` must not outlive the provided allocator.
-
-.. doxygenclass:: pw::multibuf::HeaderChunkRegionTracker
-   :members:
-
-Another ``ChunkRegionTracker`` specialization is the lightweight
-``SingleChunkRegionTracker``, which does not rely on ``Allocator`` and uses the
-provided memory view to create a single chunk. This is useful when a single
-``Chunk`` is sufficient at no extra overhead. However, the user needs to own
-the provided memory and know when a new ``Chunk`` can be requested.
-
-.. doxygenclass:: pw::multibuf::SingleChunkRegionTracker
-   :members:
-
------------
-MultiBuf v2
------------
-Everything in this section is experimental and subject to change without
-warning!
-
-API Reference
-=============
-.. doxygengroup:: pw_multibuf
-   :content-only:
-   :members:
-
-.. doxygenenum:: pw::MultiBufProperty
-
-.. doxygenclass:: pw::MultiBufObserver
-   :members:
+-------------
+API reference
+-------------
+Moved: :doxylink:`pw_multibuf`
 
 .. toctree::
    :hidden:

@@ -21,6 +21,8 @@
 
 namespace pw::multibuf {
 
+/// @submodule{pw_multibuf,v1}
+
 /// A readable, writable, and seekable ``Stream`` implementation backed by a
 /// ``MultiBuf``.
 class PW_MULTIBUF_DEPRECATED Stream : public stream::SeekableReaderWriter {
@@ -53,5 +55,7 @@ class PW_MULTIBUF_DEPRECATED Stream : public stream::SeekableReaderWriter {
   MultiBuf::iterator iterator_;
   size_t multibuf_offset_;
 };
+
+/// @}
 
 }  // namespace pw::multibuf

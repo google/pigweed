@@ -24,6 +24,8 @@
 
 namespace pw::multibuf {
 
+/// @submodule{pw_multibuf,v1_impl}
+
 /// A ``ChunkRegionTracker`` which stores its ``Chunk`` and region metadata
 /// in a ``allocator::Allocator`` allocation alongside the data.
 ///
@@ -100,5 +102,7 @@ class PW_MULTIBUF_DEPRECATED HeaderChunkRegionTracker final
   HeaderChunkRegionTracker(ByteSpan region, allocator::Allocator& alloc)
       : region_(region), alloc_(&alloc) {}
 };
+
+/// @}
 
 }  // namespace pw::multibuf

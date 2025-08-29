@@ -19,6 +19,8 @@
 
 namespace pw::multibuf {
 
+/// @submodule{pw_multibuf,v1}
+
 /// Creates a multibuf from an existing span and a ``deleter`` callback.
 ///
 /// The provided allocator is used to allocate storage for the chunk-tracking
@@ -31,5 +33,7 @@ namespace pw::multibuf {
 std::optional<MultiBuf> FromSpan(pw::Allocator& metadata_allocator,
                                  ByteSpan region,
                                  pw::Function<void(ByteSpan)>&& deleter);
+
+/// @}
 
 }  // namespace pw::multibuf

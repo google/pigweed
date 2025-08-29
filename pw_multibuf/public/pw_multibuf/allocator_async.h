@@ -22,6 +22,8 @@
 
 namespace pw::multibuf {
 
+/// @submodule{pw_multibuf,v1}
+
 class MultiBufAllocationFuture;
 
 class PW_MULTIBUF_DEPRECATED MultiBufAllocatorAsync {
@@ -154,5 +156,7 @@ class PW_MULTIBUF_DEPRECATED MultiBufAllocationFuture
   size_t desired_size_;
   ContiguityRequirement contiguity_requirement_;
 };
+
+/// @}
 
 }  // namespace pw::multibuf

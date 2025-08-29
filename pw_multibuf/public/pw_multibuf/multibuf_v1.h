@@ -23,6 +23,8 @@
 
 namespace pw::multibuf {
 
+/// @submodule{pw_multibuf,v1}
+
 class MultiBuf;
 
 /// A `Chunk`-oriented view of a `MultiBuf`.
@@ -672,5 +674,7 @@ class PW_MULTIBUF_DEPRECATED MultiBuf : private MultiBufChunks {
                                                size_t position,
                                                bool truncate);
 };
+
+/// @}
 
 }  // namespace pw::multibuf

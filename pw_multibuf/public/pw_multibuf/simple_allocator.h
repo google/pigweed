@@ -56,6 +56,8 @@ class PW_MULTIBUF_DEPRECATED LinkedRegionTracker final
 
 }  // namespace internal
 
+/// @submodule{pw_multibuf,v1}
+
 /// A simple first-fit ``MultiBufAllocator``.
 class PW_MULTIBUF_DEPRECATED SimpleAllocator : public MultiBufAllocator {
  public:
@@ -172,5 +174,7 @@ class PW_MULTIBUF_DEPRECATED SimpleAllocator : public MultiBufAllocator {
 
   friend class internal::LinkedRegionTracker;
 };
+
+/// @}
 
 }  // namespace pw::multibuf

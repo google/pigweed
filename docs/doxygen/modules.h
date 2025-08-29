@@ -241,7 +241,53 @@
 /// @brief Replacement interface for standard libc dynamic memory operations. Main docs: https://pigweed.dev/pw_malloc
 
 /// @defgroup pw_multibuf pw_multibuf
-/// @brief A buffer API optimized for zero-copy messaging. Main docs: https://pigweed.dev/pw_multibuf
+/// @brief A buffer API optimized for zero-copy messaging.
+/// @details Main docs: [Home](../../pw_multibuf/docs.html) |
+/// [Code size analysis](../../pw_multibuf/code_size.html)
+
+/// @defgroup pw_multibuf_v1 Legacy v1 API
+/// @ingroup pw_multibuf
+/// @brief Interfaces that will eventually be deprecated
+/// @details Most users of `pw_multibuf` will start by allocating a `MultiBuf`
+/// using a `MultiBufAllocator` class, such as the `SimpleAllocator`.
+///
+/// A `MultiBuf` consists of a number of `Chunk` instances representing
+/// contiguous memory regions. A `Chunk` can be grown or shrunk which allows
+/// `MultiBuf` to be grown or shrunk. This allows, for example, lower layers to
+/// reserve part of a `MultiBuf` for a header or footer. See `Chunk` for more
+/// details.
+///
+/// `MultiBuf` exposes an `std::byte` iterator interface as well as a `Chunk`
+/// iterator available through the `Chunks()` method. It allows extracting a
+/// `Chunk` as an RAII-style `OwnedChunk` which manages its own lifetime.
+
+/// @defgroup pw_multibuf_v1_impl Allocator implementation API
+/// @ingroup pw_multibuf_v1
+/// @details Some users will need to directly implement the `MultiBufAllocator`
+/// interface in order to provide allocation out of a particular region,
+/// provide particular allocation policy, fix chunks to some size (such as MTU
+/// size - header for socket implementations), or specify other custom behavior.
+/// These users will also need to understand and implement the
+/// `ChunkRegionTracker` API.
+///
+/// A simple implementation of a `ChunkRegionTracker` is provided, called
+/// `HeaderChunkRegionTracker`. It stores its `Chunk` and region metadata in a
+/// `Allocator` allocation alongside the data. The allocation process is
+/// synchronous, making this class suitable for testing. The allocated region or
+/// `Chunk` must not outlive the provided allocator.
+///
+/// Another `ChunkRegionTracker` specialization is the lightweight
+/// `SingleChunkRegionTracker`, which does not rely on `Allocator` and uses the
+/// provided memory view to create a single chunk. This is useful when a single
+/// `Chunk` is sufficient at no extra overhead. However, the user needs to own
+/// the provided memory and know when a new `Chunk` can be requested.
+
+/// @defgroup pw_multibuf_v1_test Test-only features
+/// @ingroup pw_multibuf_v1
+
+/// @defgroup pw_multibuf_v2 Experimental v2 API
+/// @ingroup pw_multibuf
+/// @brief Experimental API that separates out the concern of memory allocation
 
 /// @defgroup pw_numeric pw_numeric
 /// @brief Efficient mathematical utilities for embedded. Main docs: https://pigweed.dev/pw_numeric

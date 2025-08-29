@@ -23,6 +23,8 @@
 
 namespace pw::multibuf {
 
+/// @submodule{pw_multibuf,v1}
+
 class ChunkRegionTracker;
 class OwnedChunk;
 
@@ -406,5 +408,7 @@ class PW_MULTIBUF_DEPRECATED OwnedChunk {
   friend class MultiBuf;
   friend class MultiBufChunks;
 };
+
+/// @}
 
 }  // namespace pw::multibuf

@@ -22,8 +22,9 @@
 #include "pw_result/result.h"
 #include "pw_sync/mutex.h"
 
-/// Buffer library optimized for zero-copy messaging
 namespace pw::multibuf {
+
+/// @submodule{pw_multibuf,v1}
 
 enum class PW_MULTIBUF_DEPRECATED ContiguityRequirement {
   kAllowDiscontiguous,
@@ -196,5 +197,7 @@ class PW_MULTIBUF_DEPRECATED MultiBufAllocator {
   IntrusiveForwardList<MemoryAvailableDelegate> mem_delegates_
       PW_GUARDED_BY(lock_);
 };
+
+/// @}
 
 }  // namespace pw::multibuf
