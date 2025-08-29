@@ -117,6 +117,36 @@ class CigCisIdentifier {
   hci_spec::CisIdentifier cis_id_;
 };
 
+enum class CigFraming {
+  kUnframed = 0x00,
+  kFramed = 0x01,
+};
+
+enum class CigPacking {
+  kSequential = 0x00,
+  kInterleaved = 0x01,
+};
+
+struct CigParams {
+  uint32_t sdu_interval_c_to_p;
+  uint32_t sdu_interval_p_to_c;
+  CigPacking packing;
+  CigFraming framing;
+  uint16_t max_transport_latency_c_to_p;
+  uint16_t max_transport_latency_p_to_c;
+};
+
+struct CisConfigParams {
+  hci_spec::CisIdentifier cis_id;
+  uint16_t max_sdu_c_to_p;
+  uint16_t max_sdu_p_to_c;
+};
+
+struct CigCisParams {
+  CisConfigParams config;
+  CisEstablishedCallback on_established_cb;
+};
+
 // An interface for types which can create streams for an isochronous group. In
 // production this is IsoStreamManager to centralize ISO stream management.
 class CigStreamCreator {
