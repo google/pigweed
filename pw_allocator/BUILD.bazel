@@ -509,6 +509,7 @@ cc_library(
         ":buffer",
         ":first_fit",
         ":hardening",
+        ":metrics",
         ":pw_allocator",
         ":test_config",
         ":tracking_allocator",

@@ -469,6 +469,7 @@ pw_source_set("testing") {
     ":buffer",
     ":first_fit",
     ":hardening",
+    ":metrics",
     ":pw_allocator",
     ":tracking_allocator",
     "$dir_pw_assert:assert",

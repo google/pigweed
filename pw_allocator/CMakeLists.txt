@@ -506,6 +506,7 @@ pw_add_library(pw_allocator.testing INTERFACE
     pw_allocator.buffer
     pw_allocator.first_fit
     pw_allocator.hardening
+    pw_allocator.metrics
     pw_allocator.test_config
     pw_allocator.tracking_allocator
     pw_assert.assert
