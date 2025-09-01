@@ -37,10 +37,9 @@ class AdvertisingHandleMap {
   // Instantiate an AdvertisingHandleMap. The capacity parameter specifies the
   // maximum number of mappings that this instance will support. Setting the
   // capacity also restricts the range of advertising handles
-  // AdvertisingHandleMap will return: [0, capacity).
+  // AdvertisingHandleMap will return: [1, capacity).
   explicit AdvertisingHandleMap(
-      uint8_t capacity = hci_spec::kMaxAdvertisingHandle + 1)
-      : capacity_(capacity) {}
+      uint8_t capacity = hci_spec::kMaxAdvertisingHandle);
 
   // Allocate an AdvertisingHandle and a unique AdvertisementId and map them to
   // |address|. The insertion may fail if there are already
@@ -94,16 +93,9 @@ class AdvertisingHandleMap {
 
   inspect::Node node_;
 
-  // Although not in the range of valid advertising handles (0x00 to 0xEF),
-  // kStartHandle is chosen to be 0xFF because adding one to it will overflow to
-  // 0, the first valid advertising handle.
-  constexpr static hci_spec::AdvertisingHandle kStartHandle = 0xFF;
-
   // Tracks the maximum number of elements that can be stored in this container.
   //
-  // NOTE: AdvertisingHandles have a range of [0, capacity_). This value isn't
-  // set using default member initialization because it is set within the
-  // constructor itself.
+  // NOTE: AdvertisingHandles have a range of [1, capacity_).
   uint8_t capacity_;
 
   // Generate the next valid, available, and within range AdvertisingHandle.
@@ -114,7 +106,8 @@ class AdvertisingHandleMap {
 
   // The last generated advertising handle used as a hint to generate the next
   // handle.
-  hci_spec::AdvertisingHandle last_handle_ = kStartHandle;
+  hci_spec::AdvertisingHandle last_handle_ =
+      hci_spec::kMinAdvertisingHandle - 1;
 
   AdvertisementId::value_t next_advertisement_id_ = 1;
 

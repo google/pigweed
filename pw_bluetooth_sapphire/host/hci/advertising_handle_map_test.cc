@@ -102,7 +102,7 @@ TEST(AdvertisingHandleMapTest, MapHandleSupportHandleReallocation) {
     EXPECT_EQ(i + 1u, handle_map.Size());
   }
 
-  hci_spec::AdvertisingHandle old_handle = 0;
+  hci_spec::AdvertisingHandle old_handle = 1;
   std::optional<AdvertisementId> old_id = handle_map.GetId(old_handle);
   ASSERT_TRUE(old_id);
 
@@ -162,6 +162,37 @@ TEST(AdvertisingHandleMapTest, Clear) {
   EXPECT_FALSE(handle_map.GetId(handle));
 
   EXPECT_DEATH_IF_SUPPORTED(handle_map.GetAddress(adv_id.value()), ".*iter.*");
+}
+
+TEST(AdvertisingHandleMapTest, HandleNeverZero) {
+  AdvertisingHandleMap handle_map;
+
+  // Insert more than kMaxAdvertisingHandle device addresses to test handle
+  // reuse. The map has a fixed capacity, so we must erase an old entry to make
+  // room for a new one.
+  const size_t kNumInsertions = hci_spec::kMaxAdvertisingHandle + 5;
+  std::vector<AdvertisementId> inserted_ids;
+
+  for (size_t i = 0; i < kNumInsertions; i++) {
+    if (handle_map.Size() == handle_map.capacity()) {
+      ASSERT_FALSE(inserted_ids.empty());
+      handle_map.Erase(inserted_ids.front());
+      inserted_ids.erase(inserted_ids.begin());
+    }
+
+    // Create a unique device address for each insertion.
+    std::array<uint8_t, 6> addr_bytes{};
+    addr_bytes[0] = static_cast<uint8_t>(i);
+    addr_bytes[1] = static_cast<uint8_t>(i >> 8);
+    DeviceAddress address(DeviceAddress::Type::kLEPublic, addr_bytes);
+
+    std::optional<AdvertisementId> adv_id = handle_map.Insert(address);
+    ASSERT_TRUE(adv_id) << "Insertion failed at iteration " << i;
+    inserted_ids.push_back(*adv_id);
+
+    hci_spec::AdvertisingHandle handle = handle_map.GetHandle(*adv_id);
+    EXPECT_NE(handle, 0u);
+  }
 }
 
 #ifndef NINSPECT

@@ -18,15 +18,20 @@
 
 namespace bt::hci {
 
+AdvertisingHandleMap::AdvertisingHandleMap(uint8_t capacity) {
+  constexpr uint8_t max_capacity =
+      hci_spec::kMaxAdvertisingHandle - hci_spec::kMinAdvertisingHandle + 1;
+  capacity_ = std::min(capacity, max_capacity);
+}
+
 std::optional<AdvertisementId> AdvertisingHandleMap::Insert(
     const DeviceAddress& address) {
-  if (Size() == capacity_) {
+  auto next_handle = NextHandle();
+  if (!next_handle) {
     return std::nullopt;
   }
 
   AdvertisementId next_id = AdvertisementId(next_advertisement_id_++);
-  auto next_handle = NextHandle();
-  PW_CHECK(next_handle);
 
   Value value;
   value.handle = next_handle.value();
@@ -78,10 +83,12 @@ std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
     return std::nullopt;
   }
 
+  // We avoid selecting an advertising handle with value 0 because some
+  // Controllers reserve advertising handle 0 for the legacy HCI LE command use.
   hci_spec::AdvertisingHandle handle = last_handle_;
   do {
-    handle = static_cast<uint8_t>(handle + 1) % capacity_;
-  } while (handle_to_id_.count(handle) != 0);
+    handle = static_cast<uint8_t>(handle + 1) % (capacity_ + 1);
+  } while (handle == 0 || handle_to_id_.count(handle) != 0);
 
   last_handle_ = handle;
   return handle;

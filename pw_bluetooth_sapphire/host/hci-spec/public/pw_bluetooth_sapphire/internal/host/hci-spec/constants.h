@@ -454,7 +454,12 @@ inline constexpr int8_t kLEExtendedAdvertisingTxPowerNoPreference = 0x7F; // Vol
 inline constexpr int8_t kMinRssi = -127;
 inline constexpr int8_t kMaxRssi = 20;
 
-// Values used in enabling extended advertising. See Core Spec v5.0 Vol 4, Part E, 7.8.56.
+// Core Spec v5.0 Volume 4, Part E, Section 7.8.56: The range of valid
+// advertising handles is 0x00 to 0xEF. However, some Controllers internally
+// reserve advertising handle 0x00 for legacy HCI LE command use. To avoid
+// issues with those Controllers, we avoid using 0x00 entirely. These values are
+// used in enabling extended advertising.
+inline constexpr uint8_t kMinAdvertisingHandle = 0x01;
 inline constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
 inline constexpr uint8_t kNoMaxExtendedAdvertisingEvents = 0;
 inline constexpr uint8_t kNoAdvertisingDuration = 0;
