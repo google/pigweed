@@ -15,13 +15,15 @@
 
 #include "pw_preprocessor/arguments.h"
 
-// User-provided header to optionally override options in this file.
+/// @module{pw_log_string}
+
+/// User-provided header to optionally override options in this file.
 #if defined(PW_LOG_STRING_CONFIG_HEADER)
 #include PW_LOG_STRING_CONFIG_HEADER
 #endif  // defined(PW_LOG_STRING_CONFIG_HEADER)
 
-// Default implementation which can be overriden to adjust arguments passed to
-// pw_log_string_HandleMessage.
+/// Default implementation which can be overridden to adjust arguments passed to
+/// `pw_log_string_HandleMessage`.
 #ifndef PW_LOG_STRING_CONFIG_HANDLE_MESSAGE
 #define PW_LOG_STRING_CONFIG_HANDLE_MESSAGE(level, module, flags, ...) \
   do {                                                                 \
@@ -32,3 +34,5 @@
                                 __LINE__ PW_COMMA_ARGS(__VA_ARGS__));  \
   } while (0)
 #endif  // PW_LOG_STRING_CONFIG_HANDLE_MESSAGE
+
+/// @}

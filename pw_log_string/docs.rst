@@ -180,4 +180,4 @@ at link time.
 -------------
 API reference
 -------------
-.. doxygenfunction:: pw_log_string_HandleMessageVaList(int level, unsigned int flags, const char* module_name, const char* file_name, int line_number, const char* message, va_list args)
+Moved: :doxylink:`pw_log_string`

@@ -19,17 +19,19 @@
 
 #if configCHECK_FOR_STACK_OVERFLOW != 0
 
-/// @ingroup FreeRTOS_application_functions
-///
+/// @submodule{third_party,freertos}
+
 /// If `configCHECK_FOR_STACK_OVERFLOW` is enabled, FreeRTOS requires
 /// applications to implement `vApplicationStackOverflowHook`, which is called
-/// when a stack overflow is detected. This implementation invokes
-/// @c_macro{PW_CRASH} with the task name.
+/// when a stack overflow is detected. This implementation invokes `PW_CRASH`
+/// with the task name.
 extern "C" void vApplicationStackOverflowHook(TaskHandle_t, char* pcTaskName) {
   // Copy the task name to a buffer in case it is corrupted.
   static char temp_thread_name_buffer[configMAX_TASK_NAME_LEN];
   pw::string::Copy(pcTaskName, temp_thread_name_buffer).IgnoreError();
   PW_CRASH("Stack overflow for task %s", temp_thread_name_buffer);
 }
+
+/// @}
 
 #endif  // configCHECK_FOR_STACK_OVERFLOW != 0

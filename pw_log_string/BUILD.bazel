@@ -80,6 +80,7 @@ cc_library(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_log_string/config.h",
         "public/pw_log_string/handler.h",
     ],
 )

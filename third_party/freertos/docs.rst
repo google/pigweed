@@ -142,4 +142,22 @@ is provided under ``pw_third_party/freertos/config_assert.h`` which defines
 ---------------------------------------------
 FreeRTOS application function implementations
 ---------------------------------------------
-.. doxygengroup:: FreeRTOS_application_functions
+FreeRTOS requires the application to implement certain functions, depending on
+its configuration.
+
+If static allocation (``configSUPPORT_STATIC_ALLOCATION``) is enabled and
+``configKERNEL_PROVIDED_STATIC_MEMORY`` is disabled, FreeRTOS requires
+applications to implement functions that provide static memory for the idle task
+and timer task. See `Customization`_ for details.
+
+Link against ``//third_party/freertos:support`` to include these function
+implementations. The :ref:`pw_thread backend for FreeRTOS
+<module-pw_thread_freertos>` may include this library so downstream users do not
+have to.
+
+-------------
+API reference
+-------------
+Moved: :doxylink:`FreeRTOS application functions <third_party_freertos>`
+
+.. _Customization: https://www.freertos.org/a00110.html

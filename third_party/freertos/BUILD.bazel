@@ -72,6 +72,7 @@ cc_library(
 filegroup(
     name = "doxygen",
     srcs = [
+        "pw_assert_malloc_failed_hook.cc",
         "pw_assert_stack_overflow_hook.cc",
         "static_task_allocation.cc",
     ],

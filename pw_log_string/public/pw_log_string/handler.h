@@ -19,20 +19,22 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
-// This macro implements PW_LOG using pw_log_string_HandleMessage.
-//
-// This is the log macro frontend that funnels everything into the C-based
-// message hangler facade, i.e. pw_log_string_HandleMessage. It's not efficient
-// at the callsite, since it passes many arguments.
-//
-// Users can configure exactly what is passed to pw_log_string_HandleMessage by
-// providing their own PW_LOG_STRING_CONFIG_HANDLE_MESSAGE implementation.
-//
+/// @module{pw_log_string}
+
+/// This macro implements PW_LOG using pw_log_string_HandleMessage.
+///
+/// This is the log macro frontend that funnels everything into the C-based
+/// message hangler facade, i.e. pw_log_string_HandleMessage. It's not efficient
+/// at the callsite, since it passes many arguments.
+///
+/// Users can configure exactly what is passed to pw_log_string_HandleMessage by
+/// providing their own PW_LOG_STRING_CONFIG_HANDLE_MESSAGE implementation.
 #define PW_LOG_STRING_HANDLE_MESSAGE PW_LOG_STRING_CONFIG_HANDLE_MESSAGE
 
 PW_EXTERN_C_START
 
-// Invokes pw_log_string_HandleMessageVaList, this is implemented by the facade.
+/// Invokes pw_log_string_HandleMessageVaList.
+/// This is implemented by the facade.
 void pw_log_string_HandleMessage(int level,
                                  unsigned int flags,
                                  const char* module_name,
@@ -52,3 +54,5 @@ void pw_log_string_HandleMessageVaList(int level,
                                        va_list args);
 
 PW_EXTERN_C_END
+
+/// @}

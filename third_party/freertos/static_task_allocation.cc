@@ -12,21 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/// @defgroup FreeRTOS_application_functions
-///
-/// FreeRTOS requires the application to implement certain functions, depending
-/// on its configuration.
-///
-/// If static allocation (`configSUPPORT_STATIC_ALLOCATION`) is enabled and
-/// `configKERNEL_PROVIDED_STATIC_MEMORY` is disabled, FreeRTOS requires
-/// applications to implement functions that provide static memory for the idle
-/// task and timer task. See https://www.freertos.org/a00110.html for details.
-///
-/// Link against `"//third_party/freertos:support"` to include these function
-/// implementations. The `pw_thread` backend for FreeRTOS may include this
-/// library so downstream users do not have to.
-/// @{
-
 #include <cstdint>
 
 #include "FreeRTOS.h"
@@ -45,6 +30,8 @@ extern "C" {
 #else
 #define TASK_STACK_SIZE_TYPE uint32_t
 #endif  // tskKERNEL_VERSION_MAJOR >= 11
+
+/// @submodule{third_party,freertos}
 
 /// Allocates static memory for the idle task. Provides a
 /// `configMINIMAL_STACK_SIZE` stack.
@@ -78,6 +65,6 @@ void vApplicationGetTimerTaskMemory(
 #endif  // configUSE_TIMERS == 1
 #endif  // configSUPPORT_STATIC_ALLOCATION == 1
 
-}  // extern "C"
-
 /// @}
+
+}  // extern "C"

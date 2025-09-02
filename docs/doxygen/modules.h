@@ -234,6 +234,9 @@
 /// @defgroup pw_kvs pw_kvs
 /// @brief Lightweight, persistent key-value store. Main docs: https://pigweed.dev/pw_kvs
 
+/// @defgroup pw_log_string pw_log_string
+/// @brief Main docs: https://pigweed.dev/pw_log_string
+
 /// @defgroup pw_log_tokenized pw_log_tokenized
 /// @brief Main docs: https://pigweed.dev/pw_log_tokenized
 
@@ -419,5 +422,12 @@
 
 /// @defgroup pw_work_queue pw_work_queue
 /// @brief Main docs: https://pigweed.dev/pw_work_queue
+
+/// @defgroup third_party third-party
+/// @brief API integrations with third-party software e.g. FreeRTOS
+
+/// @defgroup third_party_freertos FreeRTOS
+/// @ingroup third_party
+/// @brief FreeRTOS application functions
 
 // clang-format on

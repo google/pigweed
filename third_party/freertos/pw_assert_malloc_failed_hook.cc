@@ -18,8 +18,8 @@
 
 #if configUSE_MALLOC_FAILED_HOOK != 0
 
-/// @ingroup FreeRTOS_application_functions
-///
+/// @submodule{third_party,freertos}
+
 /// If `configUSE_MALLOC_FAILED_HOOK` is enabled, FreeRTOS requires
 /// applications to implement `vApplicationMallocFailedHook`, which is called
 /// when a heap allocation fails. This implementation invokes
@@ -28,5 +28,7 @@ extern "C" void vApplicationMallocFailedHook() {
   PW_CRASH("Malloc failed to allocate, remaining heap size: %d",
            xPortGetFreeHeapSize());
 }
+
+/// @}
 
 #endif  // configUSE_MALLOC_FAILED_HOOK != 0
