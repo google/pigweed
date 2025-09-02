@@ -67,6 +67,8 @@ enum class SynchronousCallStatus {
 };
 }  // namespace internal
 
+/// @submodule{pw_rpc,sync}
+
 template <typename Response>
 class SynchronousCallResult {
  public:
@@ -139,6 +141,8 @@ class SynchronousCallResult {
   Status status_{};
   Response response_{};
 };
+
+/// @}
 
 // Implementations
 

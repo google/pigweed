@@ -15,6 +15,8 @@
 
 namespace pw::rpc {
 
+/// @module{pw_rpc}
+
 enum class MethodType : unsigned char {
   kUnary = 0b00,
   kServerStreaming = 0b01,
@@ -33,5 +35,7 @@ constexpr bool HasClientStream(MethodType type) {
   return (static_cast<unsigned>(type) &
           static_cast<unsigned>(MethodType::kClientStreaming)) != 0;
 }
+
+/// @}
 
 }  // namespace pw::rpc

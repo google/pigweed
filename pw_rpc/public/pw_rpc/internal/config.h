@@ -28,6 +28,8 @@
 
 #undef PW_RPC_CLIENT_STREAM_END_CALLBACK
 
+/// @submodule{pw_rpc,config}
+
 /// pw_rpc clients may request call completion by sending
 /// `CLIENT_REQUEST_COMPLETION` packet. For client streaming or bi-direction
 /// RPCs, this also indicates that the client is done sending requests. While
@@ -302,3 +304,5 @@ inline constexpr size_t kEncodingBufferSizeBytes =
 #endif  // PW_RPC_NANOPB_STRUCT_BUFFER_STACK_ALLOCATE
 
 #undef PW_RPC_NANOPB_STRUCT_BUFFER_STACK_ALLOCATE
+
+/// @}

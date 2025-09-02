@@ -24,6 +24,8 @@
 
 namespace pw::rpc {
 
+/// @module{pw_rpc}
+
 // Metadata about a `pw_rpc` packet.
 //
 // For now, this metadata structure only includes a limited set of information
@@ -66,5 +68,7 @@ class PacketMeta {
   internal::pwpb::PacketType type_;
   ConstByteSpan payload_;
 };
+
+/// @}
 
 }  // namespace pw::rpc

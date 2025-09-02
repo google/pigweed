@@ -18,6 +18,8 @@
 
 namespace pw::rpc {
 
+/// @module{pw_rpc}
+
 // Class that wraps both an RPC client and a server, simplifying RPC setup when
 // a device needs to function as both.
 class ClientServer {
@@ -41,5 +43,7 @@ class ClientServer {
   Client client_;
   Server server_;
 };
+
+/// @}
 
 }  // namespace pw::rpc

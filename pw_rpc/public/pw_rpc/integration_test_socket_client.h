@@ -29,6 +29,8 @@
 
 namespace pw::rpc::integration_test {
 
+/// @submodule{pw_rpc,test}
+
 // Wraps an RPC client with a socket stream and a channel configured to use it.
 // Useful for integration tests that run across a socket.
 template <size_t kMaxTransmissionUnit>
@@ -170,5 +172,7 @@ void SocketClientContext<kMaxTransmissionUnit>::ProcessPackets() {
     }
   }
 }
+
+/// @}
 
 }  // namespace pw::rpc::integration_test

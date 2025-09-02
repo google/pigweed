@@ -1,3 +1,5 @@
+.. TODO: b/442244233 - Move API reference content to Doxygen comments
+
 .. _module-pw_rpc-cpp:
 
 =====================
@@ -291,15 +293,12 @@ This can remove the need for globally known channel IDs. Clients can use a
 generic channel ID. The server remaps the generic channel ID to an ID associated
 with the transport the client is using.
 
-.. cpp:namespace-push:: pw::rpc
-
-.. doxygengroup:: pw_rpc_channel_functions
-   :content-only:
-
-.. cpp:namespace-pop::
-
 A future revision of the pw_rpc protocol will remove the need for global channel
 IDs without requiring remapping.
+
+API reference
+-------------
+Moved: :doxylink:`Channel functions <pw_rpc_channel>`
 
 Example deployment
 ==================

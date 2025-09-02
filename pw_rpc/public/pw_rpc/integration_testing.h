@@ -21,6 +21,8 @@
 
 namespace pw::rpc::integration_test {
 
+/// @submodule{pw_rpc,test}
+
 // The RPC channel for integration test RPCs.
 inline constexpr uint32_t kChannelId = 1;
 
@@ -101,5 +103,7 @@ Status InitializeClient(int port);
 
 // Terminates the client, joining the RPC dispatch thread.
 void TerminateClient();
+
+/// @}
 
 }  // namespace pw::rpc::integration_test

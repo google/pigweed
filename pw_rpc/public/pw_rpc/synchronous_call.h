@@ -120,6 +120,8 @@
 /// contains the error type and status or the proto response.
 namespace pw::rpc {
 
+/// @submodule{pw_rpc,sync}
+
 /// Invokes a unary RPC synchronously using Nanopb or pwpb. Blocks indefinitely
 /// until a response is received.
 ///
@@ -303,5 +305,7 @@ Status SynchronousCallUntil(
       internal::CallGeneratedClient<kRpcMethod>(client, request),
       deadline);
 }
+
+/// @}
 
 }  // namespace pw::rpc

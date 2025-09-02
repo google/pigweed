@@ -26,6 +26,8 @@ namespace internal {
 class Call;
 }
 
+/// @module{pw_rpc}
+
 // The Writer class allows writing requests or responses to a streaming RPC.
 // ClientWriter, ClientReaderWriter, ServerWriter, and ServerReaderWriter
 // classes can be used as a generic Writer.
@@ -53,5 +55,7 @@ class Writer {
   // an existing call object.
   constexpr Writer() = default;
 };
+
+/// @}
 
 }  // namespace pw::rpc

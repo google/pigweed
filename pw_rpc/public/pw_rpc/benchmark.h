@@ -17,6 +17,8 @@
 
 namespace pw::rpc {
 
+/// @submodule{pw_rpc,test}
+
 // RPC service with low-level RPCs for transmitting data. Used for benchmarking
 // and testing.
 //
@@ -35,5 +37,7 @@ class BenchmarkService
   ReaderWriterId next_reader_writer_id_ = 0;
   std::unordered_map<ReaderWriterId, RawServerReaderWriter> reader_writers_;
 };
+
+/// @}
 
 }  // namespace pw::rpc

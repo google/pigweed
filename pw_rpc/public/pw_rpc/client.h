@@ -23,6 +23,8 @@
 
 namespace pw::rpc {
 
+/// @module{pw_rpc}
+
 class Client : public internal::Endpoint {
  public:
   // If dynamic allocation is supported, it is not necessary to preallocate a
@@ -54,5 +56,7 @@ class Client : public internal::Endpoint {
   using Endpoint::CleanUpCalls;
   using Endpoint::GetInternalChannel;
 };
+
+/// @}
 
 }  // namespace pw::rpc

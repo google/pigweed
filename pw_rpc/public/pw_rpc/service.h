@@ -25,6 +25,8 @@
 
 namespace pw::rpc {
 
+/// @module{pw_rpc}
+
 // Base class for all RPC services. This cannot be instantiated directly; use a
 // generated subclass instead.
 //
@@ -79,5 +81,7 @@ class Service : public IntrusiveList<Service>::Item {
   const uint16_t method_size_;
   const uint16_t method_count_;
 };
+
+/// @}
 
 }  // namespace pw::rpc

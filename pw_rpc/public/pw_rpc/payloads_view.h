@@ -73,6 +73,8 @@ using PacketsView = containers::FilteredView<Vector<Packet>, PacketFilter>;
 
 }  // namespace internal::test
 
+/// @module{pw_rpc}
+
 // Returns the payloads for a particular RPC in a Vector of RPC packets.
 //
 // Adapts a FilteredView of packets to return payloads instead of packets.
@@ -260,5 +262,7 @@ class StatusView {
 
   internal::test::PacketsView view_;
 };
+
+/// @}
 
 }  // namespace pw::rpc

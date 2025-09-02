@@ -29,8 +29,9 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
-/// Efficient, low-code-size RPC system for embedded
 namespace pw::rpc {
+
+/// @module{pw_rpc}
 
 class Server : public internal::Endpoint {
  public:
@@ -219,5 +220,7 @@ class Server : public internal::Endpoint {
 
   IntrusiveList<Service> services_ PW_GUARDED_BY(internal::rpc_lock());
 };
+
+/// @}
 
 }  // namespace pw::rpc

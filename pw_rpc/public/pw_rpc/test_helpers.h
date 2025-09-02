@@ -25,6 +25,8 @@
 
 namespace pw::rpc::test {
 
+/// @submodule{pw_rpc,test}
+
 // Wait until the provided RawFakeChannelOutput, NanopbFakeChannelOutput or
 // PwpbFakeChannelOutput receives the specified number of packets.
 template <unsigned kTimeoutSeconds = 10, typename Function>
@@ -100,5 +102,7 @@ Status SendResponseIfCalled(
   return SendResponseIfCalled<kMethod, Context>(
       client_context, {}, status, timeout);
 }
+
+/// @}
 
 }  // namespace pw::rpc::test

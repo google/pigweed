@@ -19,6 +19,8 @@
 
 namespace pw::rpc {
 
+/// @module{pw_rpc}
+
 // Collection of various helpers for RPC calls introspection. For now contains
 // only MethodRequestType/MethodResponseTypes types to obtain information about
 // RPC methods request/response types.
@@ -72,5 +74,7 @@ template <auto kMethod>
 constexpr ServiceId GetServiceIdForMethod() {
   return internal::WrapServiceId(internal::MethodInfo<kMethod>::kServiceId);
 }
+
+/// @}
 
 }  // namespace pw::rpc

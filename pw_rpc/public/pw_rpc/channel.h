@@ -41,8 +41,7 @@ Status OverwriteChannelId(ByteSpan rpc_packet, uint32_t channel_id_under_128);
 
 }  // namespace internal
 
-/// @defgroup pw_rpc_channel_functions
-/// @{
+/// @submodule{pw_rpc,channel}
 
 /// Extracts the channel ID from a pw_rpc packet.
 ///
@@ -87,8 +86,6 @@ inline Status ChangeEncodedChannelId(ByteSpan rpc_packet,
   PW_ASSERT(new_channel_id < 128);
   return internal::OverwriteChannelId(rpc_packet, new_channel_id);
 }
-
-/// @}
 
 /// Returns the maximum payload size of an RPC packet for RPC endpoints as
 /// configured. This can be used when allocating response encode buffers for
@@ -154,6 +151,8 @@ class ChannelOutput {
  private:
   const char* name_;
 };
+
+/// @}
 
 namespace internal {
 

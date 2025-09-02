@@ -310,6 +310,32 @@
 /// @defgroup pw_random pw_random
 /// @brief Main docs: https://pigweed.dev/pw_random
 
+/// @defgroup pw_rpc pw_rpc
+/// @brief Efficient, low-code-size RPC system for embedded devices
+/// @details Main docs: [Home](../../pw_rpc/docs.html) |
+/// [Quickstart & guides](../../pw_rpc/guides.html) |
+/// [Client, server, and protobuf libraries](../../pw_rpc/libraries.html) |
+/// [C++ server and client](../../pw_rpc/cpp.html) |
+/// [Python client](../../pw_rpc/py/docs.html) |
+/// [TypeScript client](../../pw_rpc/ts/docs.html) |
+/// [Nanopb codegen](../../pw_rpc/nanopb/docs.html) |
+/// [pw_protobuf codegen](../../pw_rpc/pwpb/docs.html) |
+/// [Packet protocol](../../pw_rpc/protocol.html) |
+/// [Design & roadmap](../../pw_rpc/design.html) |
+/// [HDLC example](../../pw_hdlc/rpc_example/docs.html)
+
+/// @defgroup pw_rpc_test Benchmarking & testing
+/// @ingroup pw_rpc
+
+/// @defgroup pw_rpc_channel Channels
+/// @ingroup pw_rpc
+
+/// @defgroup pw_rpc_sync Synchronous API
+/// @ingroup pw_rpc
+
+/// @defgroup pw_rpc_config Configuration
+/// @ingroup pw_rpc
+
 /// @defgroup pw_span pw_span
 /// @brief std::span for C++17. Main docs: https://pigweed.dev/pw_span
 
