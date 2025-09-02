@@ -108,6 +108,7 @@ impl Arch for crate::Arch {
     type BareSpinLock = BareSpinLock;
     type Clock = super::timer::Clock;
     type AtomicUsize = core::sync::atomic::AtomicUsize;
+    type SyscallArgs<'a> = crate::syscall::CortexMSyscallArgs<'a>;
 
     unsafe fn context_switch<'a>(
         self,

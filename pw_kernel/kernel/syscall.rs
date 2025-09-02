@@ -23,13 +23,30 @@ use crate::object::Signals;
 
 const SYSCALL_DEBUG: bool = false;
 
-pub fn handle_syscall<K: Kernel>(
+/// An arch-specific collection of syscall arguments
+///
+/// Since architectures ABI, calling, and syscall conventions can differ, this
+/// trait provides a common API for extracting syscall arguments.  The API does
+/// not provide any index based methods for retrieving arguments because, on some
+/// architectures, the location of an argument can depend of the size of the
+/// preceding arguments.
+pub trait SyscallArgs<'a> {
+    /// Return the next `usize` argument.
+    fn next_usize(&mut self) -> Result<usize>;
+
+    /// Return the next `u64` argument.
+    fn next_u64(&mut self) -> Result<u64>;
+
+    /// Return the next `u32` argument.
+    fn next_u32(&mut self) -> Result<u32> {
+        u32::try_from(self.next_usize()?).map_err(|_| Error::InvalidArgument)
+    }
+}
+
+pub fn handle_syscall<'a, K: Kernel>(
     kernel: K,
     id: u16,
-    arg0: usize,
-    arg1: usize,
-    arg2: usize,
-    arg3: usize,
+    mut args: K::SyscallArgs<'a>,
 ) -> Result<u64> {
     log_if::debug_if!(SYSCALL_DEBUG, "syscall: {:#06x}", id as usize);
 
@@ -42,17 +59,19 @@ pub fn handle_syscall<K: Kernel>(
     let id: SysCallId = id.try_into()?;
     let res = match id {
         SysCallId::ObjectWait => {
-            let handle = arg0;
-            let Some(signal_mask) = Signals::from_bits(u32::try_from(arg1).unwrap()) else {
+            let handle = args.next_usize()?;
+            let signals = args.next_usize()?;
+            let deadline = args.next_u64()?;
+            let Some(signal_mask) = Signals::from_bits(u32::try_from(signals).unwrap()) else {
                 log_if::debug_if!(
                     SYSCALL_DEBUG,
                     "sycall: ObjectWait invalid signal mask: {:#010x}",
-                    arg1 as usize
+                    signals as usize
                 );
 
                 return Err(Error::InvalidArgument);
             };
-            let deadline = Instant::<K::Clock>::from_ticks(((arg3 as u64) << 32) | (arg2 as u64));
+            let deadline = Instant::<K::Clock>::from_ticks(deadline);
             log_if::debug_if!(
                 SYSCALL_DEBUG,
                 "sycall: ObjectWait handle {:#010x} mask {:#010x} until{:x} {:x}",
@@ -80,35 +99,35 @@ pub fn handle_syscall<K: Kernel>(
         }
         SysCallId::DebugNoOp => Ok(0),
         SysCallId::DebugAdd => {
+            let a = args.next_usize()?;
+            let b = args.next_usize()?;
             log_if::debug_if!(
                 SYSCALL_DEBUG,
                 "syscall: DebugAdd({:#x}, {:#x}) sleeping",
-                arg0 as usize,
-                arg1 as usize,
+                a as usize,
+                b as usize,
             );
             crate::sleep_until(kernel, kernel.now() + crate::Duration::from_secs(1));
             log_if::debug_if!(SYSCALL_DEBUG, "sycall: DebugAdd woken");
-            match arg0.checked_add(arg1) {
-                Some(res) => Ok(res.cast_into()),
-                None => Err(Error::OutOfRange),
-            }
+            a.checked_add(b)
+                .map(|res| res.cast_into())
+                .ok_or(Error::OutOfRange)
         }
         // TODO: Remove this syscall when logging is added.
         SysCallId::DebugPutc => {
             log_if::debug_if!(SYSCALL_DEBUG, "sycall: sleeping");
             crate::sleep_until(kernel, kernel.now() + crate::Duration::from_secs(1));
-            let c = u32::try_from(arg0)
-                .ok()
-                .and_then(char::from_u32)
-                .ok_or(Error::InvalidArgument)?;
+            let arg = args.next_u32()?;
+            let c = char::from_u32(arg).ok_or(Error::InvalidArgument)?;
             info!("{}", c as char);
-            Ok(arg0.cast_into())
+            Ok(arg.cast_into())
         }
         // TODO: Consider adding an feature flagged PowerManager object and move
         // this shutdown call to it.
         SysCallId::DebugShutdown => {
-            log_if::debug_if!(SYSCALL_DEBUG, "sycall: Shutdown {}", arg0 as usize);
-            crate::target::shutdown(u32::try_from(arg0).unwrap());
+            let exit_code = args.next_u32()?;
+            log_if::debug_if!(SYSCALL_DEBUG, "sycall: Shutdown {}", exit_code as u32);
+            crate::target::shutdown(exit_code);
         }
     };
     log_if::debug_if!(SYSCALL_DEBUG, "syscall: {:#06x} returning", id as usize);
@@ -116,14 +135,7 @@ pub fn handle_syscall<K: Kernel>(
 }
 
 #[allow(dead_code)]
-pub fn raw_handle_syscall<K: Kernel>(
-    kernel: K,
-    id: u16,
-    arg0: usize,
-    arg1: usize,
-    arg2: usize,
-    arg3: usize,
-) -> i64 {
-    let ret_val: SysCallReturnValue = handle_syscall(kernel, id, arg0, arg1, arg2, arg3).into();
+pub fn raw_handle_syscall<'a, K: Kernel>(kernel: K, id: u16, args: K::SyscallArgs<'a>) -> i64 {
+    let ret_val: SysCallReturnValue = handle_syscall(kernel, id, args).into();
     ret_val.0
 }

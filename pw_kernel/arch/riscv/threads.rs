@@ -99,6 +99,7 @@ impl Arch for super::Arch {
     type AtomicUsize = core::sync::atomic::AtomicUsize;
     #[cfg(feature = "disable_interrupts_atomic")]
     type AtomicUsize = crate::disable_interrupts_atomic::AtomicUsize;
+    type SyscallArgs<'a> = crate::exceptions::RiscVSyscallArgs<'a>;
 
     #[inline(never)]
     unsafe fn context_switch<'a>(

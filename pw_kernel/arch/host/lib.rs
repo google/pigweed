@@ -19,7 +19,7 @@ use kernel::scheduler::thread::{Stack, ThreadState};
 use kernel::sync::spinlock::SpinLockGuard;
 use kernel::{Arch, Kernel, KernelState, MemoryRegionType};
 use pw_log::info;
-use pw_status::Result;
+use pw_status::{Error, Result};
 
 mod spinlock;
 
@@ -35,6 +35,7 @@ impl Arch for HostArch {
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = Clock;
     type AtomicUsize = core::sync::atomic::AtomicUsize;
+    type SyscallArgs<'a> = HostSyscallArgs;
 
     unsafe fn context_switch(
         self,
@@ -128,5 +129,16 @@ impl kernel::memory::MemoryConfig for MemoryConfig {
         _end_addr: usize,
     ) -> bool {
         false
+    }
+}
+
+pub struct HostSyscallArgs;
+impl<'a> kernel::syscall::SyscallArgs<'a> for HostSyscallArgs {
+    fn next_usize(&mut self) -> Result<usize> {
+        Err(Error::Unimplemented)
+    }
+
+    fn next_u64(&mut self) -> Result<u64> {
+        Err(Error::Unimplemented)
     }
 }

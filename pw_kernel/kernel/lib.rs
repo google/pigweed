@@ -37,12 +37,14 @@ pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use sync::spinlock::{BareSpinLock, SpinLock, SpinLockGuard};
 
 use crate::scheduler::{PreemptDisableGuard, ThreadLocalState};
+pub use crate::syscall::SyscallArgs;
 
 pub trait Arch: 'static + Copy + thread::ThreadArg {
     type ThreadState: ThreadState;
     type BareSpinLock: BareSpinLock;
     type Clock: time::Clock;
     type AtomicUsize: AtomicUsize;
+    type SyscallArgs<'a>: SyscallArgs<'a>;
 
     /// Switches to a new thread.
     ///

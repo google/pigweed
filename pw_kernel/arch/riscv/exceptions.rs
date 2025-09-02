@@ -12,10 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use kernel::syscall::raw_handle_syscall;
+use kernel::syscall::{SyscallArgs, raw_handle_syscall};
 use kernel_config::{ExceptionMode, KernelConfig, RiscVKernelConfigInterface};
 use log_if::debug_if;
+use pw_cast::CastInto as _;
 use pw_log::info;
+use pw_status::{Error, Result};
 #[cfg(not(feature = "user_space"))]
 pub(crate) use riscv_macro::kernel_only_exception as exception;
 #[cfg(feature = "user_space")]
@@ -27,6 +29,49 @@ use crate::regs::{
 use crate::timer;
 
 const LOG_EXCEPTIONS: bool = false;
+
+pub struct RiscVSyscallArgs<'a> {
+    frame: &'a TrapFrame,
+    cur_index: usize,
+}
+
+impl<'a> RiscVSyscallArgs<'a> {
+    fn new(frame: &'a TrapFrame) -> Self {
+        Self {
+            frame,
+            cur_index: 0,
+        }
+    }
+}
+
+impl<'a> SyscallArgs<'a> for RiscVSyscallArgs<'a> {
+    fn next_usize(&mut self) -> Result<usize> {
+        let value = self.frame.a(self.cur_index)?;
+        self.cur_index += 1;
+        Ok(value)
+    }
+
+    fn next_u64(&mut self) -> Result<u64> {
+        // RISC-V 32 bit ABI aligns 64 bit values such that the low order word
+        // always starts on an even register number and the high order word is
+        // always the next register.
+        //
+        // Example: foo(a: usize, b: u64)
+        // a is store in register a0
+        // b is stored in registers a2 and a3
+        // register a1 is unused
+        //
+        // See: https://riscv.org/wp-content/uploads/2024/12/riscv-calling.pdf
+
+        // Round up to next even index.
+        let index = (self.cur_index + 1) % 2;
+        let low: u64 = self.frame.a(index)?.cast_into();
+        let high: u64 = self.frame.a(index + 1)?.cast_into();
+        self.cur_index = index + 2;
+
+        Ok(low | high << 32)
+    }
+}
 
 pub fn early_init() {
     // Explicitly set up MTVEC to point to the kernel's handler to ensure
@@ -79,14 +124,9 @@ fn dump_exception_frame(frame: &TrapFrame) {
 // Pulls arguments out of the trap frame and calls the arch-independent syscall
 // handler.
 fn handle_ecall(frame: &mut TrapFrame) {
-    let ret_val = raw_handle_syscall(
-        super::Arch,
-        (*frame).t0 as u16,
-        (*frame).a0 as usize,
-        (*frame).a1 as usize,
-        (*frame).a2 as usize,
-        (*frame).a3 as usize,
-    );
+    let id = frame.t0 as u16;
+    let args = RiscVSyscallArgs::new(frame);
+    let ret_val = raw_handle_syscall(super::Arch, id, args);
     (*frame).a0 = ret_val.cast_unsigned() as usize;
     (*frame).a1 = (ret_val.cast_unsigned() >> 32) as usize;
 
@@ -163,6 +203,7 @@ pub struct TrapFrame {
     status: usize, // 0x04
     ra: usize,     // 0x08
 
+    // SAFETY: the `a()` accessor requires these to be in order.
     a0: usize, // 0x0c
     a1: usize, // 0x10
     a2: usize, // 0x14
@@ -189,4 +230,22 @@ pub struct TrapFrame {
     pad: [usize; 3], // 0x54-0x5f
 }
 
+impl TrapFrame {
+    pub fn a(&self, index: usize) -> Result<usize> {
+        // TODO - konkers: Verify that the optimizer reduces this to a pointer
+        // offset within the frame.  If not, replace with unsafe code using
+        // offset_of!() and explicit pointer math.
+        match index {
+            0 => Ok(self.a0),
+            1 => Ok(self.a1),
+            2 => Ok(self.a2),
+            3 => Ok(self.a3),
+            4 => Ok(self.a4),
+            5 => Ok(self.a5),
+            6 => Ok(self.a6),
+            7 => Ok(self.a7),
+            _ => Err(Error::InvalidArgument),
+        }
+    }
+}
 const _: () = assert!(core::mem::size_of::<TrapFrame>() == 0x60);
