@@ -20,6 +20,8 @@
 
 namespace pw::spi {
 
+/// @module{pw_spi}
+
 /// Configuration data used to determine how the Chip Select signal is
 /// controlled throughout a transaction.
 ///
@@ -90,5 +92,7 @@ class ChipSelector {
   /// @endrst
   Status Deactivate() { return SetActive(false); }
 };
+
+/// @}
 
 }  // namespace pw::spi

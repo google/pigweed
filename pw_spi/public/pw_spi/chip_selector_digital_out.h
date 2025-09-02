@@ -19,17 +19,19 @@
 
 namespace pw::spi {
 
-/// An implementation of pw::spi::ChipSelector that sets the state of a
+/// @module{pw_spi}
+
+/// An implementation of `pw::spi::ChipSelector` that sets the state of a
 /// pw_digital_io output when activated.
 class DigitalOutChipSelector : public ChipSelector {
  public:
   constexpr DigitalOutChipSelector(pw::digital_io::DigitalOut& cs_pin)
       : cs_pin_(cs_pin) {}
 
-  /// Set a pw::digital_io::DigitalOut state as a chip select signal.
+  /// Set a `pw::digital_io::DigitalOut` state as a chip select signal.
   ///
-  /// @param[active] true Set the DigitalOut to kActive
-  /// @param[active] false Set the DigitalOut to kInactive
+  /// @param[active] true Set the DigitalOut to `kActive`
+  /// @param[active] false Set the DigitalOut to `kInactive`
   inline Status SetActive(bool active) override {
     return cs_pin_.SetState(active ? pw::digital_io::State::kActive
                                    : pw::digital_io::State::kInactive);
@@ -38,5 +40,7 @@ class DigitalOutChipSelector : public ChipSelector {
  private:
   pw::digital_io::DigitalOut& cs_pin_;
 };
+
+/// @}
 
 }  // namespace pw::spi

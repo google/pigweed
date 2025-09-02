@@ -21,6 +21,8 @@
 
 namespace pw::spi {
 
+/// @module{pw_spi}
+
 class MockChipSelector : public ChipSelector {
  public:
   bool is_active() { return active_; }
@@ -32,5 +34,7 @@ class MockChipSelector : public ChipSelector {
   }
   bool active_ = false;
 };
+
+/// @}
 
 }  // namespace pw::spi

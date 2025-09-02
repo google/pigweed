@@ -21,34 +21,35 @@
 #include "pw_bytes/span.h"
 #include "pw_status/status.h"
 
-/// Serial Peripheral Interface library
 namespace pw::spi {
 
-// ClockPolarity is a configuration parameter that specifies whether a SPI
-// bus clock signal is active low, or active high.
+/// @module{pw_spi}
+
+/// A configuration parameter that specifies whether a SPI
+/// bus clock signal is active low, or active high.
 enum class ClockPolarity : uint8_t {
   kActiveHigh,  // Corresponds to CPOL = 0
   kActiveLow,   // Corresponds to CPOL = 1
 };
 
-// ClockPhase is a configuration parameter that specifies whether the
-// phase of the SPI bus clock is rising edge or falling edge.
+/// A configuration parameter that specifies whether the
+/// phase of the SPI bus clock is rising edge or falling edge.
 enum class ClockPhase : uint8_t {
   kRisingEdge,   // Corresponds to CPHA = 0
   kFallingEdge,  // Corresponds to CPHA = 1
 };
 
-// Configuration parameter, specifying the bit order for data clocked over the
-// SPI bus; whether least-significant bit first, or most-significant bit first
+/// Configuration parameter, specifying the bit order for data clocked over the
+/// SPI bus; whether least-significant bit first, or most-significant bit first
 enum class BitOrder : uint8_t {
   kLsbFirst,
   kMsbFirst,
 };
 
-// Configuration object used to represent the number of bits in a SPI
-// data word. Devices typically use 8-bit words, although values of 3-32
-// are sometimes specified for bus-level optimizations.  Values outside
-// this range are considered an error.
+/// Configuration object used to represent the number of bits in a SPI
+/// data word. Devices typically use 8-bit words, although values of 3-32
+/// are sometimes specified for bus-level optimizations.  Values outside
+/// this range are considered an error.
 class BitsPerWord {
  public:
   constexpr BitsPerWord(uint8_t data_bits) : data_bits_(data_bits) {
@@ -61,8 +62,8 @@ class BitsPerWord {
   uint8_t data_bits_;
 };
 
-// This struct contains the necessary configuration details required to
-// initialize a SPI bus for communication with a target device.
+/// Contains the necessary configuration details required to
+/// initialize a SPI bus for communication with a target device.
 struct Config {
   ClockPolarity polarity;
   ClockPhase phase;
@@ -79,29 +80,52 @@ struct Config {
 static_assert(sizeof(Config) == sizeof(uint32_t),
               "Ensure that the config struct fits in 32-bits");
 
-// The Initiator class provides an abstract interface used to configure and
-// transmit data using a SPI bus.
+// inclusive-language: disable
+/// Abstract interface for configuring a SPI bus, and initiating data transfers
+/// using it.
+///
+/// A concrete implementation of this interface class *must* be defined in order
+/// to use `pw_spi` with a specific target.
+///
+/// `Initiator` configures the SPI bus to communicate with a
+/// defined set of common bus parameters that include:
+///
+/// - clock polarity/phase
+/// - bits-per-word (between 3-32 bits)
+/// - bit ordering (LSB or MSB first)
+///
+/// These bus configuration parameters are aggregated in the `pw::spi::Config`
+/// structure, and passed to the `pw::spi::Initiator` via its `Configure`
+/// method.
+///
+/// @note The terms "initiator" and "responder" are used to
+/// describe the two roles SPI devices can implement.  These terms correspond
+/// to the  "master" and "slave" roles described in legacy documentation
+/// related to the SPI protocol.
+// inclusive-language: enable
 class Initiator {
  public:
   virtual ~Initiator() = default;
 
-  // Configure the SPI bus to communicate with responders using a given set of
-  // properties, including the clock polarity, clock phase, bit-order, and
-  // bits-per-word.
-  // Returns OkStatus() on success, and implementation-specific values on
-  // failure.
+  /// Configures the SPI bus to communicate with responders using a given set of
+  /// properties, including the clock polarity, clock phase, bit-order, and
+  /// bits-per-word.
+  ///
+  /// @returns `OkStatus()` on success, and implementation-specific values on
+  /// failure.
   Status Configure(const Config& config) { return DoConfigure(config); }
 
-  // Perform a synchronous read/write operation on the SPI bus.  Data from the
-  // `write_buffer` object is written to the bus, while the `read_buffer` is
-  // populated with incoming data on the bus.  The operation will ensure that
-  // all requested data is written-to and read-from the bus. In the event the
-  // read buffer is smaller than the write buffer (or zero-size), any additional
-  // input bytes are discarded. In the event the write buffer is smaller than
-  // the read buffer (or zero size), the output is padded with 0-bits for the
-  // remainder of the transfer.
-  // Returns OkStatus() on success, and implementation-specific values on
-  // failure.
+  /// Performs a synchronous read/write operation on the SPI bus.  Data from the
+  /// `write_buffer` object is written to the bus, while the `read_buffer` is
+  /// populated with incoming data on the bus.  The operation will ensure that
+  /// all requested data is written-to and read-from the bus. In the event the
+  /// read buffer is smaller than the write buffer (or zero-size), any
+  /// additional input bytes are discarded. In the event the write buffer is
+  /// smaller than the read buffer (or zero size), the output is padded with
+  /// 0-bits for the remainder of the transfer.
+  ///
+  /// @returns `OkStatus()` on success, and implementation-specific values on
+  /// failure.
   Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) {
     return DoWriteRead(write_buffer, read_buffer);
   }
@@ -112,5 +136,7 @@ class Initiator {
   virtual Status DoWriteRead(ConstByteSpan write_buffer,
                              ByteSpan read_buffer) = 0;
 };
+
+/// @}
 
 }  // namespace pw::spi

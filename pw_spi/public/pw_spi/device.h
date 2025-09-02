@@ -25,11 +25,36 @@
 
 namespace pw::spi {
 
-// The Device class enables data transfer with a specific SPI responder.
-// This class combines an Initiator (representing the physical SPI bus), its
-// configuration data, and the ChipSelector object to uniquely address a device.
-// Transfers to a selected initiator are guarded against concurrent access
-// through the use of the `Borrowable` object.
+/// @module{pw_spi}
+
+/// Enables data transfer with a specific SPI responder. This class combines
+/// a `pw::spi::Initiator` (representing the physical SPI bus), its
+/// configuration data, and a `pw::spi::ChipSelector` object to uniquely address
+/// a device. Transfers to a selected initiator are guarded against concurrent
+/// access through the use of the `pw::sync::Borrowable` object.
+///
+/// `pw::spi::Device` provides a wrapper for an injected `pw::spi::Initiator`
+/// object, using its methods to configure the bus and perform individual SPI
+/// transfers.  The injected `pw::spi::ChipSelector` object is used internally
+/// to activate and de-activate the device on-demand from within the data
+/// transfer methods.
+///
+/// The `Read()`, `Write()`, and `WriteRead()` methods provide support for
+/// performing individual transfers:  `Read()` and `Write()` perform
+/// half-duplex operations, whereas `WriteRead()` provides support for
+/// full-duplex transfers.
+///
+/// The `StartTransaction()` method provides support for performing multi-part
+/// transfers consisting of a series of `Read()`, `Write()`, or `WriteRead()`
+/// calls, during which the caller is guaranteed exclusive access to the
+/// underlying bus.  The `Transaction` objects returned from this method
+/// implements the RAII layer providing exclusive access to the bus; exclusive
+/// access locking is released when the `pw::spi::Transaction` object is
+/// destroyed or goes out of scope.
+///
+/// Mutual-exclusion to the `pw::spi::Initiator` object is provided by the use
+/// of the `pw::sync::Borrowable` object, where the `pw::spi::Initiator`
+/// object is "borrowed" for the duration of a transaction.
 class Device {
  public:
   Device(sync::Borrowable<Initiator> initiator,
@@ -39,52 +64,58 @@ class Device {
 
   ~Device() = default;
 
-  // Synchronously read data from the SPI responder until the provided
-  // `read_buffer` is full.
-  // This call will configure the bus and activate/deactivate chip select
-  // for the transfer
-  //
-  // Note: This call will block in the event that other clients are currently
-  // performing transactions using the same SPI Initiator.
-  // Returns OkStatus() on success, and implementation-specific values on
-  // failure.
+  /// Synchronously reads data from the SPI responder until the provided
+  /// `read_buffer` is full.
+  ///
+  /// This call will configure the bus and activate/deactivate chip select
+  /// for the transfer.
+  ///
+  /// @note This call will block in the event that other clients are currently
+  /// performing transactions using the same SPI Initiator.
+  ///
+  /// @returns `OkStatus()` on success, and implementation-specific values on
+  /// failure.
   Status Read(ByteSpan read_buffer) { return WriteRead({}, read_buffer); }
 
-  // Synchronously write the contents of `write_buffer` to the SPI responder.
-  // This call will configure the bus and activate/deactivate chip select
-  // for the transfer
-  //
-  // Note: This call will block in the event that other clients are currently
-  // performing transactions using the same SPI Initiator.
-  // Returns OkStatus() on success, and implementation-specific values on
-  // failure.
+  /// Synchronously writes the contents of `write_buffer` to the SPI responder.
+  ///
+  /// This call will configure the bus and activate/deactivate chip select
+  /// for the transfer.
+  ///
+  /// @note This call will block in the event that other clients are currently
+  /// performing transactions using the same SPI Initiator.
+  ///
+  /// @returns `OkStatus()` on success, and implementation-specific values on
+  /// failure.
   Status Write(ConstByteSpan write_buffer) {
     return WriteRead(write_buffer, {});
   }
 
-  // Perform a synchronous read/write transfer with the SPI responder. Data
-  // from the `write_buffer` object is written to the bus, while the
-  // `read_buffer` is populated with incoming data on the bus.  In the event
-  // the read buffer is smaller than the write buffer (or zero-size), any
-  // additional input bytes are discarded. In the event the write buffer is
-  // smaller than the read buffer (or zero size), the output is padded with
-  // 0-bits for the remainder of the transfer.
-  // This call will configure the bus and activate/deactivate chip select
-  // for the transfer
-  //
-  // Note: This call will block in the event that other clients
-  // are currently performing transactions using the same SPI Initiator.
-  // Returns OkStatus() on success, and implementation-specific values on
-  // failure.
+  /// Performs a synchronous read/write transfer with the SPI responder. Data
+  /// from the `write_buffer` object is written to the bus, while the
+  /// `read_buffer` is populated with incoming data on the bus. In the event
+  /// the read buffer is smaller than the write buffer (or zero-size), any
+  /// additional input bytes are discarded. In the event the write buffer is
+  /// smaller than the read buffer (or zero-size), the output is padded with
+  /// 0-bits for the remainder of the transfer.
+  ///
+  /// This call will configure the bus and activate/deactivate chip select
+  /// for the transfer.
+  ///
+  /// @note This call will block in the event that other clients
+  /// are currently performing transactions using the same SPI Initiator.
+  ///
+  /// @returns `OkStatus()` on success, and implementation-specific values on
+  /// failure.
   Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) {
     return StartTransaction(ChipSelectBehavior::kPerWriteRead)
         .WriteRead(write_buffer, read_buffer);
   }
 
-  // RAII Object providing exclusive access to the SPI device.  Enables
-  // thread-safe Read()/Write()/WriteRead() operations, as well as composite
-  // operations consisting of multiple, uninterrupted transfers, with
-  // configurable chip-select behavior.
+  /// RAII object providing exclusive access to the SPI device. Enables
+  /// thread-safe `Read`, `Write`, and `WriteRead` operations, as well as
+  /// composite operations consisting of multiple, uninterrupted transfers,
+  /// with configurable chip select behavior.
   class Transaction final {
    public:
     Transaction() = delete;
@@ -97,7 +128,7 @@ class Device {
       }
     }
 
-    // Transaction objects are moveable but not copyable
+    /// Transaction objects are moveable but not copyable.
     Transaction(Transaction&& other)
         : initiator_(std::move(other.initiator_)),
           config_(other.config_),
@@ -120,32 +151,33 @@ class Device {
     Transaction(const Transaction&) = delete;
     Transaction& operator=(const Transaction&) = delete;
 
-    // Synchronously read data from the SPI responder until the provided
-    // `read_buffer` is full.
-    //
-    // Returns OkStatus() on success, and implementation-specific values on
-    // failure.
+    /// Synchronously reads data from the SPI responder until the provided
+    /// `read_buffer` is full.
+    ///
+    /// @returns `OkStatus()` on success, and implementation-specific values on
+    /// failure.
     Status Read(ByteSpan read_buffer) { return WriteRead({}, read_buffer); }
 
-    // Synchronously write the contents of `write_buffer` to the SPI responder
-    //
-    // Returns OkStatus() on success, and implementation-specific values on
-    // failure.
+    /// Synchronously writes the contents of `write_buffer` to the SPI
+    /// responder.
+    ///
+    /// @returns `OkStatus()` on success, and implementation-specific values on
+    /// failure.
     Status Write(ConstByteSpan write_buffer) {
       return WriteRead(write_buffer, {});
     }
 
-    // Perform a synchronous read/write transfer on the SPI bus.  Data from the
-    // `write_buffer` object is written to the bus, while the `read_buffer` is
-    // populated with incoming data on the bus.  The operation will ensure that
-    // all requested data is written-to and read-from the bus. In the event the
-    // read buffer is smaller than the write buffer (or zero-size), any
-    // additional input bytes are discarded. In the event the write buffer is
-    // smaller than the read buffer (or zero size), the output is padded with
-    // 0-bits for the remainder of the transfer.
-    //
-    // Returns OkStatus() on success, and implementation-specific values on
-    // failure.
+    /// Performs a synchronous read/write transfer on the SPI bus. Data from the
+    /// `write_buffer` object is written to the bus, while the `read_buffer` is
+    /// populated with incoming data on the bus. The operation will ensure that
+    /// all requested data is written to and read from the bus. In the event the
+    /// read buffer is smaller than the write buffer (or zero-size), any
+    /// additional input bytes are discarded. In the event the write buffer is
+    /// smaller than the read buffer (or zero-size), the output is padded with
+    /// 0-bits for the remainder of the transfer.
+    ///
+    /// @returns `OkStatus()` on success, and implementation-specific values on
+    /// failure.
     Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) {
       // Lazy-init: Configure the SPI bus when performing the first transfer in
       // a transaction.
@@ -187,14 +219,15 @@ class Device {
     bool first_write_read_;
   };
 
-  // Begin a transaction with the SPI device.  This creates an RAII
-  // `Transaction` object that ensures that only one entity can access the
-  // underlying SPI bus (Initiator) for the object's duration. The `behavior`
-  // parameter provides a means for a client to select how the chip-select
-  // signal will be applied on Read/Write/WriteRead calls taking place with the
-  // Transaction object. A value of `kPerWriteRead` will activate/deactivate
-  // chip-select on each operation, while `kPerTransaction` will hold the
-  // chip-select active for the duration of the Transaction object.
+  /// Begins a transaction with the SPI device. This creates an RAII
+  /// `Transaction` object that ensures that only one entity can access the
+  /// underlying SPI bus (`pw::spi::Initiator`) for the object's duration. The
+  /// `behavior` parameter provides a means for a client to select how the
+  /// chip select signal will be applied on `Read`, `Write`, or `WriteRead`
+  /// calls taking place with the `Transaction` object. A value of
+  /// `kPerWriteRead` will activate/deactivate chip select on each operation,
+  /// while `kPerTransaction` will hold the chip select active for the duration
+  /// of the Transaction object.
   Transaction StartTransaction(ChipSelectBehavior behavior) {
     return Transaction(initiator_.acquire(), config_, selector_, behavior);
   }
@@ -204,5 +237,7 @@ class Device {
   const Config config_;
   ChipSelector& selector_;
 };
+
+/// @}
 
 }  // namespace pw::spi

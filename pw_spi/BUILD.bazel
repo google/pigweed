@@ -145,6 +145,11 @@ filegroup(
     srcs = [
         "public/pw_spi/chip_selector.h",
         "public/pw_spi/chip_selector_digital_out.h",
+        "public/pw_spi/chip_selector_mock.h",
+        "public/pw_spi/device.h",
+        "public/pw_spi/initiator.h",
+        "public/pw_spi/initiator_mock.h",
+        "public/pw_spi/responder.h",
     ],
 )
 
