@@ -69,6 +69,7 @@ pw_add_library(pw_containers.flat_map INTERFACE
 pw_add_library(pw_containers._common INTERFACE
   HEADERS
     public/pw_containers/internal/traits.h
+    public/pw_containers/internal/wrap.h
   PUBLIC_INCLUDES
     public
 )

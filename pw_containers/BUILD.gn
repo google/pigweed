@@ -80,7 +80,10 @@ pw_source_set("flat_map") {
 }
 
 pw_source_set("common") {
-  public = [ "public/pw_containers/internal/traits.h" ]
+  public = [
+    "public/pw_containers/internal/traits.h",
+    "public/pw_containers/internal/wrap.h",
+  ]
   public_configs = [ ":public_include_path" ]
   visibility = [ "$dir_pigweed/*" ]
 }

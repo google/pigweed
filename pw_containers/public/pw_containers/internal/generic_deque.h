@@ -27,6 +27,7 @@
 #include "pw_assert/assert.h"
 #include "pw_containers/internal/deque_iterator.h"
 #include "pw_containers/internal/traits.h"
+#include "pw_containers/internal/wrap.h"
 #include "pw_numeric/checked_arithmetic.h"
 #include "pw_span/span.h"
 
@@ -150,35 +151,20 @@ class GenericDequeBase {
   }
 
   constexpr void PushBack(size_type count = 1) {
-    IncrementWithWrap(tail_, count);
+    IncrementWithWrap(tail_, count, capacity());
     count_and_capacity_.IncrementCount(count);
   }
   constexpr void PushFront(size_type count = 1) {
-    DecrementWithWrap(head_, count);
+    DecrementWithWrap(head_, count, capacity());
     count_and_capacity_.IncrementCount(count);
   }
   constexpr void PopFront() {
-    IncrementWithWrap(head_, 1);
+    IncrementWithWrap(head_, size_type(1), capacity());
     count_and_capacity_.DecrementCount();
   }
   constexpr void PopBack() {
-    DecrementWithWrap(tail_, 1);
+    DecrementWithWrap(tail_, size_type(1), capacity());
     count_and_capacity_.DecrementCount();
-  }
-
-  constexpr void IncrementWithWrap(size_type& index, size_type count) const {
-    index += count;
-    // Note: branch is faster than mod (%) on common embedded architectures.
-    if (index >= capacity()) {
-      index -= capacity();
-    }
-  }
-
-  constexpr void DecrementWithWrap(size_type& index, size_type count) const {
-    if (index < count) {
-      index += capacity();
-    }
-    index -= count;
   }
 
   CountAndCapacityType count_and_capacity_;
