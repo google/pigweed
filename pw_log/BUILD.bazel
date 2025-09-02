@@ -258,6 +258,16 @@ pw_cc_test(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_log/config.h",
+        "public/pw_log/glog_adapter.h",
+        "public/pw_log/glog_adapter_config.h",
+        "public/pw_log/levels.h",
+        "public/pw_log/log.h",
+        "public/pw_log/options.h",
+        "public/pw_log/proto_utils.h",
+        "public/pw_log/rate_limited.h",
+        "public/pw_log/short.h",
+        "public/pw_log/shorter.h",
         "public/pw_log/tokenized_args.h",
     ],
 )

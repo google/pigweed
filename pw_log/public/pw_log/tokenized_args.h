@@ -15,6 +15,8 @@
 
 #include "pw_tokenizer/enum.h"
 
+/// @submodule{pw_log,tokenized_args}
+
 /// If nested tokenization is supported by the logging backend, this is a
 /// format specifier to declare a nested token with a specific domain value.
 ///
@@ -48,8 +50,8 @@
 
 /// An "empty" value for a token.
 ///
-/// If nested tokenization is supported by the logging backend, this is 0.
-/// Otherwise, it is ``nullptr``.
+/// If nested tokenization is supported by the logging backend, this is `0`.
+/// Otherwise, it is `nullptr`.
 #ifdef __cplusplus
 #define PW_LOG_TOKEN_DEFAULT_VALUE nullptr
 #else
@@ -91,7 +93,6 @@
 
 #ifdef __cplusplus
 
-/// Portable logging library
 namespace pw::log {
 
 /// Type of a log token. Either a `const char*` or a `pw::tokenizer::Token`.
@@ -104,3 +105,5 @@ inline constexpr Token kDefaultToken = PW_LOG_TOKEN_DEFAULT_VALUE;
 }  // namespace pw::log
 
 #endif  // __cplusplus
+
+/// @}

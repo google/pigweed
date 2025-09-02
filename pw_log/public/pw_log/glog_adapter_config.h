@@ -13,15 +13,19 @@
 // the License.
 #pragma once
 
-// The size of the stack-allocated buffer used by the Google Logging (glog)
-// macros. This only affects the glog macros provided through pw_log/glog.h.
-//
+/// @submodule{pw_log,glog}
+
 // Pigweed strongly recommends sticking to printf-style logging instead
 // of C++ stream-style Google Log logging unless absolutely necessary. The glog
 // macros are only provided for compatibility with non-embedded code. See
 // https://pigweed.dev/pw_log/ for more details.
-//
-// Undersizing this buffer will result in truncated log messages.
+
+/// The size of the stack-allocated buffer used by the Google Logging (glog)
+/// macros. This only affects the glog macros provided through `pw_log/glog.h`.
+///
+/// Undersizing this buffer will result in truncated log messages.
 #ifndef PW_LOG_CFG_GLOG_BUFFER_SIZE_BYTES
 #define PW_LOG_CFG_GLOG_BUFFER_SIZE_BYTES 128
 #endif  // PW_LOG_CFG_GLOG_BUFFER_SIZE_BYTES
+
+/// @}

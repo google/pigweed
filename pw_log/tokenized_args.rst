@@ -30,13 +30,6 @@ affects how the arguments appear in final logs if they cannot be detokenized
 for any reason. Undetokenized tokens will appear inline as hex integers
 prefixed with ``$#``, e.g. ``$#34d16466``.
 
-.. doxygentypedef:: pw::log::Token
-.. doxygenvariable:: pw::log::kDefaultToken
-.. doxygendefine:: PW_LOG_TOKEN_TYPE
-.. doxygendefine:: PW_LOG_TOKEN
-.. doxygendefine:: PW_LOG_TOKEN_EXPR
-.. doxygendefine:: PW_LOG_TOKEN_FMT
-
 Example usage with inline string arguments:
 
 .. code-block:: cpp
@@ -78,3 +71,8 @@ Example usage with enums:
    void LogColor(foo::Color color) {
      PW_LOG("Color: [" PW_LOG_TOKEN_FMT() "]", color)
    }
+
+-------------
+API reference
+-------------
+Moved: :doxylink:`Tokenized args <pw_log_tokenized_args>`

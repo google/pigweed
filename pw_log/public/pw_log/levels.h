@@ -13,11 +13,13 @@
 // the License.
 #pragma once
 
-// Standard log levels. Values are limited to 3 bits, to fit within the protobuf
-// definition of LogEntry's line_level in pw_log_rpc. These levels correspond
-// with the log levels from Python's logging library, but have different values.
-//
+/// @module{pw_log}
+
 // clang-format off
+/// Standard log levels. Values are limited to 3 bits, to fit within the
+/// protobuf definition of LogEntry's line_level in pw_log_rpc. These levels
+/// correspond with the log levels from Python's logging library, but have
+/// different values.
 #define PW_LOG_LEVEL_DEBUG    1
 #define PW_LOG_LEVEL_INFO     2
 #define PW_LOG_LEVEL_WARN     3
@@ -26,7 +28,9 @@
 
 #define PW_LOG_LEVEL_FATAL    7
 
-// Number of bits required to represent the log level
+/// Number of bits required to represent the log level
 #define PW_LOG_LEVEL_BITS     3
 #define PW_LOG_LEVEL_BITMASK  7  // 0b111
 // clang-format on
+
+/// @}

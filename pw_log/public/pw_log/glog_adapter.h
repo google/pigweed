@@ -16,23 +16,26 @@
 #include "pw_log/internal/glog_adapter.h"
 #include "pw_preprocessor/concat.h"
 
+/// @submodule{pw_log,glog}
+
 // WARNING: Pigweed strongly recommends sticking to printf-style logging instead
 // of C++ stream-style Google Log logging unless absolutely necessary. These
 // macros are only provided for compatibility with non-embedded code. See
 // https://pigweed.dev/pw_log/ for more details.
 
-// A subset of the streaming Google logging (glog) macros are supported:
-// - LOG(glog_level)
-// - LOG_IF(glog_level, condition)
-//
-// The supported glog levels are DEBUG, INFO, WARNING, ERROR, FATAL & DFATAL
-//
-// This means the following are NOT supported:
-// - glog level DFATAL
-// - {D,P,SYS}LOG*
-// - {,D}VLOG*
-// - {,D}CHECK*
-// - LOG_EVERY_*, LOG_EVERY_*, LOG_IF_EVERY_*, LOG_FIRST_N
+/// A subset of the streaming Google logging (glog) macros are supported:
+/// - `LOG(glog_level)`
+/// - `LOG_IF(glog_level, condition)`
+///
+/// The supported glog levels are `DEBUG`, `INFO`, `WARNING`, `ERROR`, `FATAL`,
+/// and `DFATAL`
+///
+/// This means the following are NOT supported:
+/// - `glog level DFATAL`
+/// - `{D,P,SYS}LOG*`
+/// - `{,D}VLOG*`
+/// - `{,D}CHECK*`
+/// - `LOG_EVERY_*`, `LOG_IF_EVERY_*`, `LOG_FIRST_N`
 #define LOG(glog_level)                               \
   _PW_LOG_GLOG(_PW_LOG_GLOG_DECLARATION_##glog_level, \
                PW_CONCAT(GlogStreamingLog, __COUNTER__))
@@ -41,3 +44,5 @@
   _PW_LOG_GLOG_IF(_PW_LOG_GLOG_DECLARATION_##glog_level, \
                   expr,                                  \
                   PW_CONCAT(GlogStreamingLog, __COUNTER__))
+
+/// @}

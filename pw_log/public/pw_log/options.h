@@ -32,33 +32,37 @@
 
 #include "pw_log/config.h"
 
+/// @submodule{pw_log,module_config}
+
 // These configuration options differ from the options in pw_log/config.h in
 // that these should be set at a module/compile unit level rather than a global
 // level level.
 
-// Default: Module name
-//
-// An empty string is used for the module name if it is not set.
+/// Default: Module name
+///
+/// An empty string is used for the module name if it is not set.
 #ifndef PW_LOG_MODULE_NAME
 #define PW_LOG_MODULE_NAME ""
 #endif  // PW_LOG_MODULE_NAME
 
-// Default: Log level filtering
-//
-// All log statements have a level, and this define sets the log level to the
-// globally set default if PW_LOG_LEVEL was not already set by the module.
-// This is compile-time filtering if the level is a constant.
+/// Default: Log level filtering
+///
+/// All log statements have a level, and this define sets the log level to the
+/// globally set default if PW_LOG_LEVEL was not already set by the module.
+/// This is compile-time filtering if the level is a constant.
 #ifndef PW_LOG_LEVEL
 #define PW_LOG_LEVEL PW_LOG_LEVEL_DEFAULT
 #endif  // PW_LOG_LEVEL
 
-// Default: Flags
-//
-// For log statements like LOG_INFO that don't have an explicit argument, this
-// is used for the flags value.
+/// Default: Flags
+///
+/// For log statements like LOG_INFO that don't have an explicit argument, this
+/// is used for the flags value.
 #ifndef PW_LOG_FLAGS
 #define PW_LOG_FLAGS PW_LOG_FLAGS_DEFAULT
 #endif  // PW_LOG_FLAGS
+
+/// @}
 
 // DEPRECATED: Use PW_LOG_FLAGS.
 // TODO: b/234876701 - Remove this macro after migration.

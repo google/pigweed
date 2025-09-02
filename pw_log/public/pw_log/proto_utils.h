@@ -24,19 +24,21 @@
 
 namespace pw::log {
 
-// Packs line number and log level into a single uint32_t as dictated by the
-// line_level field in the Log proto message.
-//
-// Note:
-//   line_number is restricted to 29 bits. Values beyond 536870911 will be lost.
-//   level is restricted to 3 bits. Values beyond 7 will be lost.
+/// @submodule{pw_log,proto}
+
+/// Packs line number and log level into a single `uint32_t` as dictated by the
+/// `line_level` field in the Log proto message.
+///
+/// @note `line_number` is restricted to 29 bits. Values beyond `536870911`
+/// will be lost. `level` is restricted to 3 bits. Values beyond `7` will be
+/// lost.
 constexpr inline uint32_t PackLineLevel(uint32_t line_number, uint8_t level) {
   return (level & PW_LOG_LEVEL_BITMASK) |
          ((line_number << PW_LOG_LEVEL_BITS) & ~PW_LOG_LEVEL_BITMASK);
 }
 
-// Unpacks the line_level field as dictated by the Log proto message into line
-// number (uint32_t) and level (uint8_t).
+/// Unpacks the `line_level` field as dictated by the Log proto message into
+/// line number (`uint32_t`) and level (`uint8_t`).
 constexpr inline std::tuple<uint32_t, uint8_t> UnpackLineLevel(
     uint32_t line_and_level) {
   return std::make_tuple(
@@ -44,14 +46,15 @@ constexpr inline std::tuple<uint32_t, uint8_t> UnpackLineLevel(
       line_and_level & PW_LOG_LEVEL_BITMASK);
 }
 
-// Convenience functions to encode multiple log attributes as a log proto
-// message.
-//
-// Returns:
-// OK - A byte span containing the encoded log proto.
-// INVALID_ARGUMENT - `message` argument is zero-length.
-// RESOURCE_EXHAUSTED - The provided buffer was not large enough to encode the
-//   proto.
+/// Convenience functions to encode multiple log attributes as a log proto
+/// message.
+///
+/// @returns A byte span containing the encoded log proto on success or one of
+/// the following error codes on failure.
+///
+/// @retval pw::Status::InvalidArgument() `message` argument is zero-length.
+/// @retval pw::Status::ResourceExhausted() The provided buffer was not large
+/// enough to encode the proto.
 Result<ConstByteSpan> EncodeLog(int level,
                                 unsigned int flags,
                                 std::string_view module_name,
@@ -62,22 +65,23 @@ Result<ConstByteSpan> EncodeLog(int level,
                                 std::string_view message,
                                 ByteSpan encode_buffer);
 
-// Encodes tokenized message and metadata, with a timestamp as a log proto.
-// Extra fields can be encoded into the returned encoder. The caller must check
-// the encoder status.
+/// Encodes tokenized message and metadata, with a timestamp as a log proto.
+/// Extra fields can be encoded into the returned encoder. The caller must check
+/// the encoder status.
 pwpb::LogEntry::MemoryEncoder CreateEncoderAndEncodeTokenizedLog(
     log_tokenized::Metadata metadata,
     ConstByteSpan tokenized_data,
     int64_t ticks_since_epoch,
     ByteSpan encode_buffer);
 
-// Convenience functions to convert from tokenized metadata to the log proto
-// format.
-//
-// Returns:
-// OK - A byte span containing the encoded log proto.
-// RESOURCE_EXHAUSTED - The provided buffer was not large enough to store the
-//   proto.
+/// Convenience functions to convert from tokenized metadata to the log proto
+/// format.
+///
+/// @returns A byte span containing the encoded log proto on success or one of
+/// the following error codes on failure.
+///
+/// @retval pw::Status::ResourceExhausted() The provided buffer was not large
+/// enough to store the proto.
 inline Result<ConstByteSpan> EncodeTokenizedLog(
     log_tokenized::Metadata metadata,
     ConstByteSpan tokenized_data,
@@ -101,13 +105,14 @@ inline Result<ConstByteSpan> EncodeTokenizedLog(
                             encode_buffer);
 }
 
-// Encodes tokenized message (passed as pointer and size), tokenized metadata,
-// timestamp, and thread name as a log proto.
-//
-// Returns:
-// OK - A byte span containing the encoded log proto.
-// RESOURCE_EXHAUSTED - The provided buffer was not large enough to store the
-//   proto.
+/// Encodes tokenized message (passed as pointer and size), tokenized metadata,
+/// timestamp, and thread name as a log proto.
+///
+/// @returns A byte span containing the encoded log proto on success or one of
+/// the following error codes on failure.
+///
+/// @retval pw::Status::ResourceExhausted() The provided buffer was not large
+/// enough to store the proto.
 inline Result<ConstByteSpan> EncodeTokenizedLog(
     log_tokenized::Metadata metadata,
     const uint8_t* tokenized_data,
@@ -127,13 +132,14 @@ inline Result<ConstByteSpan> EncodeTokenizedLog(
   return ConstByteSpan(encoder);
 }
 
-// Encodes tokenized message (passed as a byte span), tokenized metadata,
-// timestamp, and thread name as a log proto.
-//
-// Returns:
-// OK - A byte span containing the encoded log proto.
-// RESOURCE_EXHAUSTED - The provided buffer was not large enough to store the
-//   proto.
+/// Encodes tokenized message (passed as a byte span), tokenized metadata,
+/// timestamp, and thread name as a log proto.
+///
+/// @returns A byte span containing the encoded log proto on success or one of
+/// the following error codes on failure.
+///
+/// @retval pw::Status::ResourceExhausted() The provided buffer was not large
+/// enough to store the proto.
 inline Result<ConstByteSpan> EncodeTokenizedLog(
     log_tokenized::Metadata metadata,
     ConstByteSpan tokenized_data,
@@ -148,4 +154,7 @@ inline Result<ConstByteSpan> EncodeTokenizedLog(
   PW_TRY(encoder.status());
   return ConstByteSpan(encoder);
 }
+
+/// @}
+
 }  // namespace pw::log

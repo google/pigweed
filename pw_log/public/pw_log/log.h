@@ -65,9 +65,11 @@
 //
 #include "pw_log_backend/log_backend.h"
 
-// The PW_LOG macro accepts the format string and its arguments in a variadic
-// macro. The format string is not listed as a separate argument to avoid adding
-// a comma after the format string when it has no arguments.
+/// @module{pw_log}
+
+/// Accepts the format string and its arguments in a variadic macro. The format
+/// string is not listed as a separate argument to avoid adding a comma after
+/// the format string when it has no arguments.
 #define PW_LOG(                                                            \
     level, verbosity, module, flags, /* format string and arguments */...) \
   do {                                                                     \
@@ -75,6 +77,8 @@
       PW_HANDLE_LOG(level, module, flags, __VA_ARGS__);                    \
     }                                                                      \
   } while (0)
+
+/// @}
 
 // For backends that elect to only provide the general PW_LOG() macro and not
 // specialized versions, define the standard PW_LOG_<level>() macros in terms
@@ -138,11 +142,15 @@
   } while (0)
 #endif  // PW_LOG_EVERY_N
 
-// Default: Number of bits available for the log flags
-//
-// All log statements have a flags field, and this define is the number of bits
-// available for the flags. Some backends restrict this for better efficiency.
-// By default, pick a restricted but large enough value to work for most cases.
+/// @module{pw_log}
+
+/// Default: Number of bits available for the log flags
+///
+/// All log statements have a flags field, and this define is the number of bits
+/// available for the flags. Some backends restrict this for better efficiency.
+/// By default, pick a restricted but large enough value to work for most cases.
 #ifndef PW_LOG_FLAG_BITS
 #define PW_LOG_FLAG_BITS 2
 #endif  // PW_LOG_FLAG_BITS
+
+/// @}

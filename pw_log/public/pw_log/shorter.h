@@ -15,6 +15,8 @@
 
 #include "pw_log/log.h"
 
+/// @submodule{pw_log,short}
+
 // These are optional very short versions of the PW_LOG macros. They are not
 // prefixed with PW_*, so may collide with other macros.
 
@@ -31,3 +33,5 @@
 #define ERR PW_LOG_ERROR
 #define CRT PW_LOG_CRITICAL
 // clang-format on
+
+/// @}

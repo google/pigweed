@@ -1,3 +1,5 @@
+.. TODO: b/442238478 - Migrate C/C++ API reference content to Doxygen
+
 .. _module-pw_log:
 
 ======

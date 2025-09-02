@@ -15,6 +15,8 @@
 
 #include <stdint.h>
 
+/// @submodule{pw_log,global_config}
+
 // These configuration options differ from the options in pw_log/options.h in
 // that these should be set at a global level in the build system rather than
 // at a module or compile unit level.
@@ -42,3 +44,5 @@
 #define PW_LOG_ENABLE_IF(level, verbosity, module, flags) \
   ((int32_t)(level) >= (int32_t)(verbosity))
 #endif  // PW_LOG_ENABLE_IF
+
+/// @}

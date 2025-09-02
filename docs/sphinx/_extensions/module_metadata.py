@@ -565,6 +565,7 @@ def should_add_doxygen_link(module_name) -> bool:
         'pw_interrupt',
         'pw_json',
         'pw_kvs',
+        'pw_log',
         'pw_log_tokenized',
         'pw_malloc',
         'pw_multibuf',

@@ -51,31 +51,32 @@ class RateLimiter {
 
 }  // namespace pw::log::internal
 
-// PW_LOG_EVERY_N_DURATION(level, min_interval_between_logs, msg, ...)
-//
-// Logs a message at the given level, only it hasn't been logged within
-// `min_interval_between_logs`.
-//
-// Inputs:
-//    level - An integer level as devifen by pw_log/levels.h
-//    min_interval_between_logs - A pw::chrono::SystemClock::duration that
-//      defines the minimum time interval between unsuppressed logs
-//    msg - Formattable message, same as you would use for PW_LOG or variants
-//
-// Includes a summary of how many logs were skipped, and a rough rate in
-// integer seconds.
-//
-// NOTE: This macro is NOT threadsafe. The underlying object being modified by
-// multiple threads calling the macro context may result in undefined behavior.
-//
-// Intended to supplement and replace widespread use of EVERY_N for logging. The
-// main benefit this provides is responsiveness for bursty logs.
-// LOG_RATE_LIMITED will log as soon as a burst starts - provided the
-// `min_interval_between_logs` has elapsed - while EVERY_N may sit idle for a
-// full period depending on the count state.
-//
-// Note that this will not log until called again, so the summary may include
-// skipped logs from a prior burst.
+/// @module{pw_log}
+
+/// Logs a message at the given level, only if it hasn't been logged within
+/// `min_interval_between_logs`.
+///
+/// @param level An integer level as defined by `pw_log/levels.h`
+/// @param min_interval_between_logs A `pw::chrono::SystemClock::duration` that
+/// defines the minimum time interval between unsuppressed logs
+/// @param msg Formattable message, same as you would use for `PW_LOG` or
+/// variants
+///
+/// Includes a summary of how many logs were skipped, and a rough rate in
+/// integer seconds.
+///
+/// @warning This macro is **NOT** thread-safe. The underlying object being
+/// modified by multiple threads calling the macro context may result in
+/// undefined behavior.
+///
+/// Intended to supplement and replace widespread use of EVERY_N` for logging.
+/// The main benefit this provides is responsiveness for bursty logs.
+/// `LOG_RATE_LIMITED` will log as soon as a burst starts - provided the
+/// `min_interval_between_logs` has elapsed - while `EVERY_N` may sit idle for a
+/// full period depending on the count state.
+///
+/// Note that this will not log until called again, so the summary may include
+/// skipped logs from a prior burst.
 #define PW_LOG_EVERY_N_DURATION(level, min_interval_between_logs, msg, ...) \
   do {                                                                      \
     static pw::log::internal::RateLimiter rate_limiter;                     \
@@ -101,3 +102,5 @@ class RateLimiter {
              static_cast<unsigned>(result.logs_per_s));                     \
     }                                                                       \
   } while (0)
+
+/// @}
