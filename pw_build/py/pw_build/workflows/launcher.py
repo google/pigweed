@@ -191,6 +191,20 @@ class WorkflowsCli(multitool.MultitoolCli):
             return workflows_pb2.WorkflowSuite()
         return WorkflowsCli._load_proto_json(config)
 
+    def add_arguments(self, parser: argparse.ArgumentParser) -> None:
+        super().add_arguments(parser)
+        parser.add_argument(
+            '--output-dir',
+            '-o',
+            default=Path('out'),
+            type=Path,
+            help=(
+                'Output root for builds triggered by launched workflows. '
+                'Builds and tools will be nested in configuration-specific '
+                'subdirectories.'
+            ),
+        )
+
     def _dump_textproto(self, plugin_args: Sequence[str]) -> int:
         parser = argparse.ArgumentParser(
             description=(
@@ -342,7 +356,7 @@ class WorkflowsCli(multitool.MultitoolCli):
                 "bazel": BazelBuildDriver(),
             },
             working_dir=Path.cwd(),
-            base_out_dir=Path.cwd() / 'out',
+            base_out_dir=args.output_dir,
         )
 
         all_plugins = []
