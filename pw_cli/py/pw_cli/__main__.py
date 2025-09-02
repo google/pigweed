@@ -13,6 +13,7 @@
 # the License.
 """The Pigweed command line interface."""
 
+import argparse
 from typing import Sequence
 
 from pw_cli import multitool, pw_command_plugins, plugins
@@ -35,7 +36,9 @@ class BootstrappedPlugin(multitool.MultitoolPlugin):
 class PwMultitoolTool(multitool.MultitoolCli):
     """The entry point for the `pw` tool."""
 
-    def plugins(self) -> Sequence[multitool.MultitoolPlugin]:
+    def plugins(
+        self, args: argparse.Namespace
+    ) -> Sequence[multitool.MultitoolPlugin]:
         pw_command_plugins.register()
         return [
             BootstrappedPlugin(plugin)

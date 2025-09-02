@@ -164,6 +164,7 @@ class WorkflowsCli(multitool.MultitoolCli):
     """A CLI entry point for launching project-specific workflows."""
 
     def __init__(self, config: workflows_pb2.WorkflowSuite | None = None):
+        super().__init__()
         self.config: workflows_pb2.WorkflowSuite | None = config
         self._workflows: WorkflowsManager | None = None
 
@@ -330,7 +331,9 @@ class WorkflowsCli(multitool.MultitoolCli):
             ),
         ]
 
-    def plugins(self) -> Sequence[multitool.MultitoolPlugin]:
+    def plugins(
+        self, args: argparse.Namespace
+    ) -> Sequence[multitool.MultitoolPlugin]:
         if not self.config:
             self.config = self._load_config_from()
         self._workflows = WorkflowsManager(

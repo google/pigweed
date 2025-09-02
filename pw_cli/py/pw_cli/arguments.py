@@ -259,15 +259,4 @@ def arg_parser() -> argparse.ArgumentParser:
         help='Temporarily disable analytics collection.',
     )
 
-    argparser.add_argument(
-        'command',
-        nargs='?',
-        help='Which command to run; see supported commands below',
-    )
-    argparser.add_argument(
-        'plugin_args',
-        metavar='...',
-        nargs=argparse.REMAINDER,
-        help='Remaining arguments are forwarded to the command',
-    )
     return add_tab_complete_arguments(argparser)

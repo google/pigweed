@@ -14,6 +14,7 @@
 """Utilities for authoring busybox-style multitools."""
 
 import abc
+import argparse
 import logging
 import os
 import sys
@@ -47,9 +48,20 @@ class MultitoolPlugin(abc.ABC):
 class MultitoolCli:
     """A class that simplifies declaring a multitool hub."""
 
+    def __init__(self):
+        self._top_level_args_added = False
+
     @abc.abstractmethod
-    def plugins(self) -> Sequence[MultitoolPlugin]:
+    def plugins(self, args: argparse.Namespace) -> Sequence[MultitoolPlugin]:
         """Populates a list of available plugins."""
+
+    def add_arguments(
+        self,
+        parser: argparse.ArgumentParser,  # pylint: disable=unused-argument
+    ) -> None:
+        """Extend arguments with application-specific options."""
+        # Make sure all super-class arguments have been added.
+        self._top_level_args_added = True
 
     @staticmethod
     def _plugin_help(plugins: Mapping[str, MultitoolPlugin]) -> str:
@@ -64,10 +76,12 @@ class MultitoolCli:
         return f'supported plugins:\n{subcommands_pretty}'
 
     @staticmethod
-    def _format_help(plugins: Mapping[str, MultitoolPlugin]):
+    def _format_help(
+        parser: argparse.ArgumentParser, plugins: Mapping[str, MultitoolPlugin]
+    ):
         return '\n'.join(
             (
-                arguments.arg_parser().format_help(),
+                parser.format_help(),
                 MultitoolCli._plugin_help(plugins),
             )
         )
@@ -76,7 +90,26 @@ class MultitoolCli:
         """Entry point for the CLI tool."""
 
         argv_copy = sys.argv[:]
-        args = arguments.parse_args()
+        parser = arguments.arg_parser()
+        self.add_arguments(parser)
+        assert self._top_level_args_added, (
+            'Parent multitool args are missing, did you forget to call '
+            'super().add_arguments()?'
+        )
+
+        parser.add_argument(
+            'command',
+            nargs='?',
+            help='Which command to run; see supported commands below',
+        )
+        parser.add_argument(
+            'plugin_args',
+            metavar='...',
+            nargs=argparse.REMAINDER,
+            help='Remaining arguments are forwarded to the command',
+        )
+
+        args = parser.parse_args()
 
         pw_cli.log.install(level=args.loglevel, debug_log=args.debug_log)
 
@@ -95,12 +128,12 @@ class MultitoolCli:
         os.chdir(args.directory)
 
         plugin_map: dict[str, MultitoolPlugin] = {
-            plugin.name(): plugin for plugin in self.plugins()
+            plugin.name(): plugin for plugin in self.plugins(args)
         }
 
         if args.tab_complete_option is not None:
             arguments.print_completions_for_option(
-                arguments.arg_parser(),
+                parser,
                 text=args.tab_complete_option,
                 tab_completion_format=args.tab_complete_format,
             )
@@ -116,7 +149,7 @@ class MultitoolCli:
             sys.exit(0)
 
         if args.help or args.command is None:
-            print(self._format_help(plugin_map), file=sys.stderr)
+            print(self._format_help(parser, plugin_map), file=sys.stderr)
             sys.exit(0)
 
         if args.analytics is None:
