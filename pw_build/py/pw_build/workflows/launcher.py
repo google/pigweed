@@ -14,6 +14,7 @@
 """A CLI tool for running tools, builds, and more from a workflows.json file."""
 
 import argparse
+from collections import defaultdict
 from collections.abc import Callable, Sequence
 import json
 import logging
@@ -160,6 +161,15 @@ class _WorkflowGroupPlugin(multitool.MultitoolPlugin):
         return builder.run_builds()
 
 
+def _extra_arg_handler(arg: str) -> tuple[str, str]:
+    """An argparse argument type for foo_build=--bar argument handling."""
+    assert (
+        '=' in arg
+    ), f'Invalid argument: `{arg}`, must be of the form BUILD_TYPE=--flag'
+    parts = arg.split('=', 1)
+    return parts[0], parts[1]
+
+
 class WorkflowsCli(multitool.MultitoolCli):
     """A CLI entry point for launching project-specific workflows."""
 
@@ -202,6 +212,19 @@ class WorkflowsCli(multitool.MultitoolCli):
                 'Output root for builds triggered by launched workflows. '
                 'Builds and tools will be nested in configuration-specific '
                 'subdirectories.'
+            ),
+        )
+
+        parser.add_argument(
+            '--extra-arg',
+            '-X',
+            nargs='*',
+            metavar='build_type=--argument',
+            type=_extra_arg_handler,
+            help=(
+                'Forwards additional arguments to all builds of the specified '
+                'build type. These are always injected at the end of the '
+                'configuration-specific list of arguments.'
             ),
         )
 
@@ -350,6 +373,12 @@ class WorkflowsCli(multitool.MultitoolCli):
     ) -> Sequence[multitool.MultitoolPlugin]:
         if not self.config:
             self.config = self._load_config_from()
+
+        extra_args_by_type = defaultdict(list)
+        if args.extra_arg:
+            for build_type, arg in args.extra_arg:
+                extra_args_by_type[build_type].append(arg)
+
         self._workflows = WorkflowsManager(
             self.config,
             {
@@ -357,6 +386,7 @@ class WorkflowsCli(multitool.MultitoolCli):
             },
             working_dir=Path.cwd(),
             base_out_dir=args.output_dir,
+            extra_build_args=extra_args_by_type,
         )
 
         all_plugins = []

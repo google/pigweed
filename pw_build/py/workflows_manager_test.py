@@ -104,6 +104,15 @@ class WorkflowsManagerTest(unittest.TestCase):
                     targets=['//:my_target'],
                     use_config='shared_config',
                 ),
+                workflows_pb2.Build(
+                    name='build_with_args',
+                    targets=['//:my_target'],
+                    build_config=workflows_pb2.BuildConfig(
+                        name='build_config_with_args',
+                        build_type='fake_build_type',
+                        args=['--existing-arg'],
+                    ),
+                ),
             ],
             groups=[
                 workflows_pb2.TaskGroup(
@@ -451,6 +460,78 @@ class WorkflowsManagerTest(unittest.TestCase):
         )
         with self.assertRaises(AssertionError):
             manager.get_unified_driver_request(['not_a_real_thing'])
+
+    def test_extra_args_injected_into_build_without_args(self):
+        """Test extra args injection into a build with no existing args."""
+        extra_args = {'fake_build_type': ['--extra', '--args']}
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+            extra_build_args=extra_args,
+        )
+        driver = self.build_drivers['fake_build_type']
+        with patch.object(
+            driver, 'generate_jobs', wraps=driver.generate_jobs
+        ) as mock_generate_jobs:
+            manager.program_build('my_build')
+            mock_generate_jobs.assert_called_once()
+            request = mock_generate_jobs.call_args[0][0]
+            self.assertEqual(len(request.jobs), 1)
+            self.assertEqual(
+                list(request.jobs[0].build.build_config.args),
+                ['--extra', '--args'],
+            )
+
+    def test_extra_args_injected_into_build_with_args(self):
+        """Test extra args injection into a build with existing args."""
+        extra_args = {'fake_build_type': ['--extra', '--args']}
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+            extra_build_args=extra_args,
+        )
+        driver = self.build_drivers['fake_build_type']
+        with patch.object(
+            driver, 'generate_jobs', wraps=driver.generate_jobs
+        ) as mock_generate_jobs:
+            manager.program_build('build_with_args')
+            mock_generate_jobs.assert_called_once()
+            request = mock_generate_jobs.call_args[0][0]
+            self.assertEqual(len(request.jobs), 1)
+            self.assertEqual(
+                list(request.jobs[0].build.build_config.args),
+                ['--existing-arg', '--extra', '--args'],
+            )
+
+    def test_extra_args_injected_into_tool(self):
+        """Test that extra args are correctly added to tools."""
+        extra_args = {'fake_build_type': ['--extra', '--args']}
+        manager = WorkflowsManager(
+            self.workflow_suite,
+            self.build_drivers,
+            self.working_dir,
+            self.base_out_dir,
+            self.project_root,
+            extra_build_args=extra_args,
+        )
+        driver = self.build_drivers['fake_build_type']
+        with patch.object(
+            driver, 'generate_jobs', wraps=driver.generate_jobs
+        ) as mock_generate_jobs:
+            manager.program_tool('my_tool', [])
+            mock_generate_jobs.assert_called_once()
+            request = mock_generate_jobs.call_args[0][0]
+            self.assertEqual(len(request.jobs), 1)
+            self.assertEqual(
+                list(request.jobs[0].tool.build_config.args),
+                ['--extra', '--args'],
+            )
 
 
 if __name__ == '__main__':

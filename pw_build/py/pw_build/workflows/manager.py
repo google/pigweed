@@ -89,6 +89,7 @@ class WorkflowsManager:
         working_dir: Path,
         base_out_dir: Path,
         project_root: Path | None = None,
+        extra_build_args: dict[str, list[str]] | None = None,
     ):
         self._workflow_suite = workflows_pb2.WorkflowSuite()
         self._workflow_suite.CopyFrom(workflow_suite)
@@ -113,6 +114,7 @@ class WorkflowsManager:
             raise ValueError('Cannot locate project root')
         self._base_out_dir = base_out_dir
         self._working_dir = working_dir
+        self._extra_build_args = extra_build_args or {}
         Validator(workflow_suite, build_drivers).validate()
         self._init_workflow_defaults()
 
@@ -302,6 +304,12 @@ class WorkflowsManager:
                 config = self._get_build_config(fragment)
                 fragment.ClearField('use_config')
                 fragment.build_config.CopyFrom(config)
+
+            build_type = fragment.build_config.build_type
+            if build_type in self._extra_build_args:
+                fragment.build_config.args.extend(
+                    self._extra_build_args[build_type]
+                )
 
             if sanitize:
                 fragment.ClearField('name')
