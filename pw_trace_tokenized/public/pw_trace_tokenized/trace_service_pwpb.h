@@ -18,6 +18,8 @@
 
 namespace pw::trace {
 
+/// @module{pw_trace_tokenized}
+
 class TraceService final
     : public proto::pw_rpc::pwpb::TraceService::Service<TraceService>,
       public BaseTraceService {
@@ -34,5 +36,7 @@ class TraceService final
       const proto::pwpb::ClockParametersRequest::Message& request,
       proto::pwpb::ClockParametersResponse::Message& response);
 };
+
+/// @}
 
 }  // namespace pw::trace

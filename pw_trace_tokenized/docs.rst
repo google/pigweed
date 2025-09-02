@@ -300,11 +300,4 @@ interpretation of serialized snapshots with a populated ``trace_data`` field.
 -------------
 API reference
 -------------
-
-pw::trace::TraceTransferHandler
--------------------------------
-.. doxygenclass:: pw::trace::TraceTransferHandler
-
-pw::trace::TraceBufferReader
-----------------------------
-.. doxygenclass:: pw::trace::TraceBufferReader
+Moved: :doxylink:`pw_trace_tokenized`

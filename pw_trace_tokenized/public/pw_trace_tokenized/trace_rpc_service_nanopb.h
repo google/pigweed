@@ -17,6 +17,8 @@
 
 namespace pw::trace {
 
+/// @module{pw_trace_tokenized}
+
 class TokenizedTracer;
 
 class TraceService final
@@ -36,5 +38,7 @@ class TraceService final
  private:
   TokenizedTracer& tokenized_tracer_;
 };
+
+/// @}
 
 }  // namespace pw::trace

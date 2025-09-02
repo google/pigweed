@@ -21,6 +21,9 @@
 #include "pw_trace_tokenized/trace_tokenized.h"
 
 namespace pw::trace {
+
+/// @module{pw_trace_tokenized}
+
 class BaseTraceService {
  public:
   BaseTraceService(TokenizedTracer& tokenized_tracer,
@@ -39,5 +42,7 @@ class BaseTraceService {
  protected:
   std::optional<uint32_t> transfer_id_;
 };
+
+/// @}
 
 }  // namespace pw::trace

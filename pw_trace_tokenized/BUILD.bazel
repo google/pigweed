@@ -268,6 +268,14 @@ pw_proto_filegroup(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_trace_tokenized/base_trace_service.h",
+        "public/pw_trace_tokenized/config.h",
+        "public/pw_trace_tokenized/trace_buffer.h",
+        "public/pw_trace_tokenized/trace_buffer_log.h",
+        "public/pw_trace_tokenized/trace_callback.h",
+        "public/pw_trace_tokenized/trace_rpc_service_nanopb.h",
+        "public/pw_trace_tokenized/trace_service_pwpb.h",
+        "public/pw_trace_tokenized/trace_tokenized.h",
         "public/pw_trace_tokenized/transfer_handler.h",
     ],
 )

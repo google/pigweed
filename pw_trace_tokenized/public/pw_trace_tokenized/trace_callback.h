@@ -28,28 +28,32 @@
 #include "pw_trace_tokenized/trace_tokenized.h"
 
 PW_EXTERN_C_START
-// The pw_trace_EventCallback is called before the sample is encoded or sent
-// to the sinks. Bits in the return argument can be set to change the behaviour
-// of tracing.
-//    - PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT can optionally be set true to
-//    skip this sample.
-//    - PW_TRACE_EVENT_RETURN_FLAGS_DISABLE_AFTER_PROCESSING can be set true to
-//      disable tracing after this sample.
-//
-// When registering the callback the parameter 'called_on_every_event' is used
-// to indicate if the callback should be called even when tracing is disabled.
-// This behaviour is useful to implment a tracing behaviour, where tracing can
-// turn on when a specific event occurs.
-//
-// If a handle pointer is provided it will be set to a value, which can be later
-// used to unregister the callback.
-//
-// The user_data pointer is provider for use by the application, it can be used
-// to allow a single function callback to be registered multiple times but act
-// differently by providing it with different context objects as pointers.
-//
-// NOTE: Since callbacks are called within the trace event lock, they should not
-// register/unregister sinks or callbacks or trigger other trace events.
+
+/// @module{pw_trace_tokenized}
+
+/// `pw_trace_EventCallback` is called before the sample is encoded or sent
+/// to the sinks. Bits in the return argument can be set to change the behavior
+/// of tracing.
+/// - `PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT` can optionally be set `true` to
+/// skip this sample.
+/// - `PW_TRACE_EVENT_RETURN_FLAGS_DISABLE_AFTER_PROCESSING` can be set `true`
+///   to disable tracing after this sample.
+///
+/// When registering the callback the parameter `called_on_every_event` is used
+/// to indicate if the callback should be called even when tracing is disabled.
+/// This behavior is useful to implement a tracing behaviour, where tracing can
+/// turn on when a specific event occurs.
+///
+/// If a handle pointer is provided it will be set to a value, which can be
+/// later used to unregister the callback.
+///
+/// The `user_data` pointer is provided for use by the application. It can be
+/// used to allow a single function callback to be registered multiple times
+/// but act differently by providing it with different context objects as
+/// pointers.
+///
+/// @note Since callbacks are called within the trace event lock, they should
+/// not register/unregister sinks or callbacks or trigger other trace events.
 typedef enum {
   PW_TRACE_CALL_ONLY_WHEN_ENABLED = 0,
   PW_TRACE_CALL_ON_EVERY_EVENT = 1,
@@ -72,32 +76,32 @@ pw_Status pw_trace_RegisterEventCallback(
     void* user_data,
     pw_trace_EventCallbackHandle* handle);
 
-// pw_trace_UnregisterEventCallback will cause the callback to not receive any
-// more events.
+/// Causes the callback to not receive any more events.
 pw_Status pw_trace_UnregisterEventCallback(pw_trace_EventCallbackHandle handle);
 
-// pw_trace_Sink* is called after the trace event is encoded.
-// Trace will internally handle locking, so every Start event will have a
-// matching End event before another sequence is started.
-// The number of bytes sent to AddBytes will be the number provided at the
-// start, allowing buffers to allocate the required amount at the start when
-// necessary.
-//
-// If OkStatus() is not returned from Start, the events bytes will be skipped.
-//
-// NOTE: Called while tracing is locked (which might be a critical section
-// depending on application), so quick/simple operations only. One trace event
-// might result in multiple callbacks if the data is split up.
-//
-// If a handle pointer is provided it will be set to a value, which can be later
-// used to unregister the callback.
-//
-// The user_data pointer is provider for use by the application, it can be used
-// to allow a single function callback to be registered multiple times but act
-// differently by providing it with different user_data values.
-//
-// NOTE: Since callbacks are called within the trace event lock, they should not
-// register/unregister sinks or callbacks or trigger other trace events.
+/// The `pw_trace_Sink*` functions are called after the trace event is encoded.
+/// Trace will internally handle locking, so every `Start` event will have a
+/// matching `End` event before another sequence is started.
+/// The number of bytes sent to `AddBytes` will be the number provided at the
+/// start, allowing buffers to allocate the required amount at the start when
+/// necessary.
+///
+/// If `OkStatus()` is not returned from `Start`, the events bytes will be
+/// skipped.
+///
+/// @note Called while tracing is locked (which might be a critical section
+/// depending on application), so quick/simple operations only. One trace event
+/// might result in multiple callbacks if the data is split up.
+///
+/// If a handle pointer is provided it will be set to a value, which can be
+/// later used to unregister the callback.
+///
+/// The `user_data` pointer is provider for use by the application, it can be
+/// used to allow a single function callback to be registered multiple times
+/// but act differently by providing it with different `user_data` values.
+///
+/// @note Since callbacks are called within the trace event lock, they should
+/// not register/unregister sinks or callbacks or trigger other trace events.
 typedef void (*pw_trace_SinkStartBlock)(void* user_data, size_t size);
 typedef void (*pw_trace_SinkAddBytes)(void* user_data,
                                       const void* bytes,
@@ -110,17 +114,24 @@ pw_Status pw_trace_RegisterSink(pw_trace_SinkStartBlock start_func,
                                 void* user_data,
                                 pw_trace_SinkHandle* handle);
 
-// pw_trace_UnregisterSink will cause the sink to stop receiving trace data.
+/// Causes the sink to stop receiving trace data.
 pw_Status pw_trace_UnregisterSink(pw_trace_SinkHandle handle);
+
+/// @}
 
 PW_EXTERN_C_END
 
 #ifdef __cplusplus
 namespace pw {
+
+/// @module{pw_trace_tokenized}
+
 namespace trace {
 
-// C++ API to the tokenized trace callback system
-// Example: pw::trace::GetTraceCallbacks().UnregisterAllSinks();
+/// C++ API to the tokenized trace callback system. Example:
+/// @code{.cpp}
+/// pw::trace::GetTraceCallbacks().UnregisterAllSinks();
+/// @endcode
 class Callbacks {
  public:
   enum CallOnEveryEvent {
@@ -182,12 +193,12 @@ class Callbacks {
   }
 };
 
-// Returns a reference of the tokenized trace callbacks
+/// @returns A reference of the tokenized trace callbacks
 Callbacks& GetCallbacks();
 
-// This is a convenience class to register the callback when the object is
-// created. For example if the callback should always be registered this can be
-// created as a global object to avoid needing to call register directly.
+/// A convenience class to register the callback when the object is created.
+/// For example, if the callback should always be registered this can be
+/// created as a global object to avoid needing to call register directly.
 class RegisterCallbackWhenCreated {
  public:
   RegisterCallbackWhenCreated(
@@ -216,5 +227,8 @@ class RegisterCallbackWhenCreated {
 };
 
 }  // namespace trace
+
+/// @}
+
 }  // namespace pw
 #endif  // __cplusplus

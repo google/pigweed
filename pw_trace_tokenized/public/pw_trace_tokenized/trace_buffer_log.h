@@ -21,16 +21,18 @@
 namespace pw {
 namespace trace {
 
-// Dumps the trace buffer to the log. The output format to the log is the
-// base64-encoded buffer, split into lines of an implementation-defined length.
-// The trace logs are surrounded by 'begin' and 'end' tags.
-//
-// Ex. Invoking PW_TRACE_INSTANT with 'test1' and 'test2', then calling this
-// function would produce this in the output logs:
-//
-// [TRACE] begin
-// [TRACE] data: BWdDMRoABWj52YMB
-// [TRACE] end
+/// Dumps the trace buffer to the log. The output format to the log is the
+/// Base64-encoded buffer, split into lines of an implementation-defined
+/// length. The trace logs are surrounded by `begin` and `end` tags.
+///
+/// E.g. invoking `PW_TRACE_INSTANT` with `test1` and `test2`, then calling this
+/// function, would produce this in the output logs:
+///
+/// @code{.unparsed}
+/// [TRACE] begin
+/// [TRACE] data: BWdDMRoABWj52YMB
+/// [TRACE] end
+/// @endcode
 pw::Status DumpTraceBufferToLog();
 
 }  // namespace trace

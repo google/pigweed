@@ -23,20 +23,25 @@
 #include "pw_varint/varint.h"
 
 namespace pw {
+
+/// @module{pw_trace_tokenzed}
+
 namespace trace {
 
-// pw_TraceClearBuffer resets the trace buffer, and all data currently stored
-// in the buffer is lost.
+/// Resets the trace buffer. All data currently stored in the buffer is lost.
 void ClearBuffer();
 
-// Get the ring buffer which contains the data.
+/// Gets the ring buffer which contains the data.
 pw::ring_buffer::PrefixedEntryRingBuffer* GetBuffer();
 
-// View underlying buffer trace_tokenized provided ring_buffer at time of
-// construction. This allows for bulk access to the trace events buffer. Since
-// this also derings the underlying ring_buffer, ensure that tracing is disabled
-// when calling this function.
+/// Makes all entries contiguous (i.e. "dering") and then provides a raw view
+/// of the data. This allows for bulk access to the trace events buffer. Since
+/// this also derings the underlying ring_buffer, ensure that tracing is
+/// disabled when calling this function.
 ConstByteSpan DeringAndViewRawBuffer();
 
 }  // namespace trace
+
+/// @}
+
 }  // namespace pw
