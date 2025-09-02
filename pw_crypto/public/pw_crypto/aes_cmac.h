@@ -131,10 +131,10 @@ class Cmac {
   /// where the final MAC will be written. If the span is larger than
   /// `kBlockSizeBytes` only the first `kBlockSizeBytes` will be modified.
   ///
-  /// @returns @pw_status{OK} if the AES-CMAC operation was successful and the
-  /// MAC was written to `out_mac`, @pw_status{RESOURCE_EXHAUSTED} if `out_mac`
-  /// is too small to write the MAC to, or @pw_status{INTERNAL} if an error was
-  /// encountered during the operation.
+  /// @returns `pw::OkStatus()` if the AES-CMAC operation was successful and the
+  /// MAC was written to `out_mac`, `pw::Status::ResourceExhausted()` if
+  /// `out_mac` is too small to write the MAC to, or `pw::Status::Internal()` if
+  /// an error was encountered during the operation.
   Status Final(aes::BlockSpan out_mac) {
     if (state_ != State::kReady) {
       PW_LOG_DEBUG("The backend is not ready/initialized");

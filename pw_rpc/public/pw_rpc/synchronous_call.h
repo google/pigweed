@@ -102,7 +102,7 @@
 /// @cpp_type{pw::Function} and returns a @cpp_class{pw::Status}. If the RPC
 /// completes, the @cpp_type{pw::Function} is called with the response and
 /// returned status, and the `SynchronousCall` invocation returns
-/// @pw_status{OK}. If the RPC fails, `SynchronousCall` returns an error.
+/// `pw::OkStatus()`. If the RPC fails, `SynchronousCall` returns an error.
 ///
 /// @code{.cpp}
 ///   pw::Status rpc_status = pw::rpc::SynchronousCall<EchoService::Echo>(

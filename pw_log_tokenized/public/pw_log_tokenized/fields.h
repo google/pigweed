@@ -33,8 +33,8 @@ namespace pw::log_tokenized {
 /// @param[in] field_consumer A function or lambda to be called for each
 ///     parsed field. It must accept two `std::string_view` arguments:
 ///     the key and the value.
-/// @returns @pw_status{StatusWithSize} instead of the number of fields parsed.
-///     If the key is unterminated, returns @pw_status{DATA_LOSS} with the
+/// @returns `pw::StatusWithSize` instead of the number of fields parsed.
+///     If the key is unterminated, returns `pw::Status::DataLoss()` with the
 ///     number of fields parsed.
 template <typename Function>
 constexpr StatusWithSize ParseFields(

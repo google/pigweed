@@ -132,10 +132,10 @@ class MpscWriter : public NonSeekableWriter,
   /// Set the timeout for writing to this stream.
   ///
   /// After setting a timeout, if the given duration elapses while making a call
-  /// to `Write()`, @pw_status{RESOURCE_EXHAUSTED} will be returned. If desired,
-  /// a timeout should be set before calling `Write()`. Setting a timeout when a
-  /// writer is awaiting notification from a reader will not affect the duration
-  /// of that wait.
+  /// to `Write()`, `pw::Status::ResourceExhausted()` will be returned. If
+  /// desired, a timeout should be set before calling `Write()`. Setting a
+  /// timeout when a writer is awaiting notification from a reader will not
+  /// affect the duration of that wait.
   ///
   /// Note that setting a write timeout makes partial writes possible. For
   /// example, if a call to `Write()` of some length corresponds to 2 calls to

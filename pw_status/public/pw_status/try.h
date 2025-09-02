@@ -18,11 +18,15 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
+/// @module{pw_status}
+
 // Macros for cleanly working with Status or StatusWithSize objects in functions
 // that return Status.
 
 /// Returns early if `expr` is a non-OK `Status` or `Result`.
 #define PW_TRY(expr) _PW_TRY(_PW_TRY_UNIQUE(__LINE__), expr, return)
+
+/// @}
 
 #define _PW_TRY(result, expr, return_stmt)                 \
   do {                                                     \
@@ -31,10 +35,14 @@
     }                                                      \
   } while (0)
 
+/// @module{pw_status}
+
 /// Returns early if `expression` is a non-OK `Result`.
 /// If `expression` is okay, assigns the inner value to `lhs`.
 #define PW_TRY_ASSIGN(lhs, expression) \
   _PW_TRY_ASSIGN(_PW_TRY_UNIQUE(__LINE__), lhs, expression, return)
+
+/// @}
 
 #define _PW_TRY_ASSIGN(result, lhs, expr, return_stmt)   \
   auto result = (expr);                                  \
@@ -43,10 +51,14 @@
   }                                                      \
   lhs = ::pw::internal::ConvertToValue(result)
 
+/// @module{pw_status}
+
 /// Returns early if `expr` is a non-OK `Status` or `StatusWithSize`.
 ///
 /// This is designed for use in functions that return a `StatusWithSize`.
 #define PW_TRY_WITH_SIZE(expr) _PW_TRY_WITH_SIZE(_PW_TRY_UNIQUE(__LINE__), expr)
+
+/// @}
 
 #define _PW_TRY_WITH_SIZE(result, expr)                       \
   do {                                                        \
@@ -57,6 +69,8 @@
 
 #define _PW_TRY_UNIQUE(line) _PW_TRY_UNIQUE_EXPANDED(line)
 #define _PW_TRY_UNIQUE_EXPANDED(line) _pw_try_unique_name_##line
+
+/// @module{pw_status}
 
 /// Like `PW_TRY`, but using `co_return` instead of early `return`.
 ///
@@ -72,3 +86,5 @@
 /// within a coroutine or not.
 #define PW_CO_TRY_ASSIGN(lhs, expression) \
   _PW_TRY_ASSIGN(_PW_TRY_UNIQUE(__LINE__), lhs, expression, co_return)
+
+/// @}

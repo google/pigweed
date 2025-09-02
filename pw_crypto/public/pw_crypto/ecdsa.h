@@ -48,7 +48,7 @@ namespace pw::crypto::ecdsa {
 ///
 /// @param[in] signature A raw byte string ``(r||s)`` of exactly 64 bytes.
 ///
-/// @returns @pw_status{OK} for a successful verification, or an error
+/// @returns `pw::OkStatus()` for a successful verification, or an error
 /// ``Status`` otherwise.
 Status VerifyP256Signature(ConstByteSpan public_key,
                            ConstByteSpan digest,

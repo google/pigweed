@@ -90,7 +90,7 @@ Status DoFinal(NativeCmacContext& ctx, BlockSpan out_mac);
 /// @param[in] out_ciphertext A 128-bit destination block in which to store the
 /// encrypted data.
 ///
-/// @return @pw_status{OK} for a successful encryption, or an error ``Status``
+/// @return `pw::OkStatus()` for a successful encryption, or an error ``Status``
 /// otherwise.
 Status DoEncryptBlock(ConstByteSpan key,
                       ConstBlockSpan plaintext,
@@ -128,7 +128,7 @@ namespace pw::crypto::unsafe::aes {
 /// @param[in] out_ciphertext A 128-bit destination block in which to store the
 /// encrypted data.
 ///
-/// @return @pw_status{OK} for a successful encryption, or an error ``Status``
+/// @return `pw::OkStatus()` for a successful encryption, or an error ``Status``
 /// otherwise.
 template <size_t KeySize>
 inline Status EncryptBlock(span<const std::byte, KeySize> key,

@@ -185,7 +185,7 @@ class KeyValueStore {
   ///
   /// @param[in] key The name of the key. All keys in the KVS must have a
   /// unique hash. If the hash of your key matches an existing key, nothing is
-  /// added and @pw_status{ALREADY_EXISTS} is returned.
+  /// added and `pw::Status::AlreadyExists()` is returned.
   ///
   /// @param[in] value The value for the key. This can be a span of bytes or a
   /// trivially copyable object.

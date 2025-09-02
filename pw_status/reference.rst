@@ -21,9 +21,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::OkStatus()``
+        - :doxylink:`pw::OkStatus()`
       * - C
-        - ``PW_STATUS_OK``
+        - :doxylink:`PW_STATUS_OK`
       * - Python / Java / TypeScript
         - ``Status.OK``
       * - Rust
@@ -37,9 +37,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::Cancelled()``
+        - :doxylink:`pw::Status::Cancelled()`
       * - C
-        - ``PW_STATUS_CANCELLED``
+        - :doxylink:`PW_STATUS_CANCELLED`
       * - Python / Java / TypeScript
         - ``Status.CANCELLED``
       * - Rust
@@ -54,9 +54,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::Unknown()``
+        - :doxylink:`pw::Status::Unknown()`
       * - C
-        - ``PW_STATUS_UNKNOWN``
+        - :doxylink:`PW_STATUS_UNKNOWN`
       * - Python / Java / TypeScript
         - ``Status.UNKNOWN``
       * - Rust
@@ -74,9 +74,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::InvalidArgument()``
+        - :doxylink:`pw::Status::InvalidArgument()`
       * - C
-        - ``PW_STATUS_INVALID_ARGUMENT``
+        - :doxylink:`PW_STATUS_INVALID_ARGUMENT`
       * - Python / Java / TypeScript
         - ``Status.INVALID_ARGUMENT``
       * - Rust
@@ -93,9 +93,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::DeadlineExceeded()``
+        - :doxylink:`pw::Status::DeadlineExceeded()`
       * - C
-        - ``PW_STATUS_DEADLINE_EXCEEDED``
+        - :doxylink:`PW_STATUS_DEADLINE_EXCEEDED`
       * - Python / Java / TypeScript
         - ``Status.DEADLINE_EXCEEDED``
       * - Rust
@@ -115,9 +115,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::NotFound()``
+        - :doxylink:`pw::Status::NotFound()`
       * - C
-        - ``PW_STATUS_NOT_FOUND``
+        - :doxylink:`PW_STATUS_NOT_FOUND`
       * - Python / Java / TypeScript
         - ``Status.NOT_FOUND``
       * - Rust
@@ -131,9 +131,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::AlreadyExists()``
+        - :doxylink:`pw::Status::AlreadyExists()`
       * - C
-        - ``PW_STATUS_ALREADY_EXISTS``
+        - :doxylink:`PW_STATUS_ALREADY_EXISTS`
       * - Python / Java / TypeScript
         - ``Status.ALREADY_EXISTS``
       * - Rust
@@ -156,9 +156,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::PermissionDenied()``
+        - :doxylink:`pw::Status::PermissionDenied()`
       * - C
-        - ``PW_STATUS_PERMISSION_DENIED``
+        - :doxylink:`PW_STATUS_PERMISSION_DENIED`
       * - Python / Java / TypeScript
         - ``Status.PERMISSION_DENIED``
       * - Rust
@@ -173,9 +173,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::ResourceExhausted()``
+        - :doxylink:`pw::Status::ResourceExhausted()`
       * - C
-        - ``PW_STATUS_RESOURCE_EXHAUSTED``
+        - :doxylink:`PW_STATUS_RESOURCE_EXHAUSTED`
       * - Python / Java / TypeScript
         - ``Status.RESOURCE_EXHAUSTED``
       * - Rust
@@ -208,9 +208,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::FailedPrecondition()``
+        - :doxylink:`pw::Status::FailedPrecondition()`
       * - C
-        - ``PW_STATUS_FAILED_PRECONDITION``
+        - :doxylink:`PW_STATUS_FAILED_PRECONDITION`
       * - Python / Java / TypeScript
         - ``Status.FAILED_PRECONDITION``
       * - Rust
@@ -229,9 +229,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::Aborted()``
+        - :doxylink:`pw::Status::Aborted()`
       * - C
-        - ``PW_STATUS_ABORTED``
+        - :doxylink:`PW_STATUS_ABORTED`
       * - Python / Java / TypeScript
         - ``Status.ABORTED``
       * - Rust
@@ -258,9 +258,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::OutOfRange()``
+        - :doxylink:`pw::Status::OutOfRange()`
       * - C
-        - ``PW_STATUS_OUT_OF_RANGE``
+        - :doxylink:`PW_STATUS_OUT_OF_RANGE`
       * - Python / Java / TypeScript
         - ``Status.OUT_OF_RANGE``
       * - Rust
@@ -275,9 +275,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::Unimplemented()``
+        - :doxylink:`pw::Status::Unimplemented()`
       * - C
-        - ``PW_STATUS_UNIMPLEMENTED``
+        - :doxylink:`PW_STATUS_UNIMPLEMENTED`
       * - Python / Java / TypeScript
         - ``Status.UNIMPLEMENTED``
       * - Rust
@@ -292,9 +292,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::Internal()``
+        - :doxylink:`pw::Status::Internal()`
       * - C
-        - ``PW_STATUS_INTERNAL``
+        - :doxylink:`PW_STATUS_INTERNAL`
       * - Python / Java / TypeScript
         - ``Status.INTERNAL``
       * - Rust
@@ -314,9 +314,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::Unavailable()``
+        - :doxylink:`pw::Status::Unavailable()`
       * - C
-        - ``PW_STATUS_UNAVAILABLE``
+        - :doxylink:`PW_STATUS_UNAVAILABLE`
       * - Python / Java / TypeScript
         - ``Status.UNAVAILABLE``
       * - Rust
@@ -331,9 +331,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::DataLoss()``
+        - :doxylink:`pw::Status::DataLoss()`
       * - C
-        - ``PW_STATUS_DATA_LOSS``
+        - :doxylink:`PW_STATUS_DATA_LOSS`
       * - Python / Java / TypeScript
         - ``Status.DATA_LOSS``
       * - Rust
@@ -348,9 +348,9 @@ Status codes
    .. list-table::
 
       * - C++
-        - ``pw::Status::Unauthenticated()``
+        - :doxylink:`pw::Status::Unauthenticated()`
       * - C
-        - ``PW_STATUS_UNAUTHENTICATED``
+        - :doxylink:`PW_STATUS_UNAUTHENTICATED`
       * - Python / Java / TypeScript
         - ``Status.UNAUTHENTICATED``
       * - Rust
@@ -359,41 +359,20 @@ Status codes
 -------
 C++ API
 -------
-.. doxygenclass:: pw::Status
-   :members:
-
-.. doxygenfunction:: pw::OkStatus
-
-.. c:enum:: pw_Status
-
-   Enum to use in place of :cpp:class:`pw::Status` in C code. Always use
-   :cpp:class:`pw::Status` in C++ code.
-
-   The values of the :c:enum:`pw_Status` enum are all-caps and prefixed with
-   ``PW_STATUS_``. For example, ``PW_STATUS_DATA_LOSS`` corresponds with
-   :c:enumerator:`DATA_LOSS`.
-
-.. doxygenclass:: pw::StatusWithSize
-   :members:
-   :undoc-members:
-
-.. doxygendefine:: PW_TRY
-.. doxygendefine:: PW_TRY_ASSIGN
-.. doxygendefine:: PW_TRY_WITH_SIZE
-.. doxygendefine:: PW_CO_TRY
-.. doxygendefine:: PW_CO_TRY_ASSIGN
+Moved: :doxylink:`pw_status`
 
 .. _module-pw_status-reference-unused:
 
 Unused result warnings
 ----------------------
-If the ``PW_STATUS_CFG_CHECK_IF_USED`` option is enabled, ``pw::Status`` objects
-returned from function calls must be used or it is a compilation error. To
-silence these warnings call ``IgnoreError()`` on the returned status object.
+If the :doxylink:`PW_STATUS_CFG_CHECK_IF_USED` option is enabled,
+:doxylink:`pw::Status` objects returned from function calls must be used or it
+is a compilation error. To silence these warnings call ``IgnoreError()`` on the
+returned status object.
 
-``PW_STATUS_CFG_CHECK_IF_USED`` defaults to ``false`` in GN and CMake, but
-``true`` in Bazel. Pigweed compiles with this option enabled, but projects that
-use Pigweed will need to be updated to compile with this option. After all
+:doxylink:`PW_STATUS_CFG_CHECK_IF_USED` defaults to ``false`` in GN and CMake,
+but ``true`` in Bazel. Pigweed compiles with this option enabled, but projects
+that use Pigweed will need to be updated to compile with this option. After all
 projects have migrated, unused result warnings will be enabled unconditionally.
 
 -----

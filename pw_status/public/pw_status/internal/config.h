@@ -13,12 +13,16 @@
 // the License.
 #pragma once
 
-// Controls whether to check if pw::Status values are used. Ununsed Status
-// values cause compilation warnings / errors. Calling the nop IgnoreError()
-// function silences these warnings.
+/// @module{pw_status}
+
+/// Controls whether to check if `pw::Status` values are used. Unused status
+/// values cause compilation warnings or errors. Calling the nop
+/// `pw::status::IgnoreError()` function silences these warnings.
 #ifndef PW_STATUS_CFG_CHECK_IF_USED
 #define PW_STATUS_CFG_CHECK_IF_USED 0
 #endif  // PW_STATUS_CFG_CHECK_IF_USED
+
+/// @}
 
 // Set internal macro that optionally adds the [[nodiscard]] attribute.
 #if PW_STATUS_CFG_CHECK_IF_USED

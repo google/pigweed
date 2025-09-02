@@ -19,6 +19,8 @@
 extern "C" {
 #endif  // __cplusplus
 
+/// @module{pw_status}
+
 // This is the pw_Status enum. pw_Status is used to return the status from an
 // operation.
 //
@@ -34,39 +36,58 @@ extern "C" {
 // https://pigweed.dev/pw_status/reference.html#status-codes.  Consult that
 // guide when deciding which status code to use.
 typedef enum {
-  PW_STATUS_OK = 0,                   // Use OkStatus() in C++
-  PW_STATUS_CANCELLED = 1,            // Use Status::Cancelled() in C++
-  PW_STATUS_UNKNOWN = 2,              // Use Status::Unknown() in C++
-  PW_STATUS_INVALID_ARGUMENT = 3,     // Use Status::InvalidArgument() in C++
-  PW_STATUS_DEADLINE_EXCEEDED = 4,    // Use Status::DeadlineExceeded() in C++
-  PW_STATUS_NOT_FOUND = 5,            // Use Status::NotFound() in C++
-  PW_STATUS_ALREADY_EXISTS = 6,       // Use Status::AlreadyExists() in C++
-  PW_STATUS_PERMISSION_DENIED = 7,    // Use Status::PermissionDenied() in C++
-  PW_STATUS_RESOURCE_EXHAUSTED = 8,   // Use Status::ResourceExhausted() in C++
+  /// @copydoc pw::Status::OkStatus
+  PW_STATUS_OK = 0,  // Use OkStatus() in C++
+  /// @copydoc pw::Status::Cancelled
+  PW_STATUS_CANCELLED = 1,  // Use Status::Cancelled() in C++
+  /// @copydoc pw::Status::Unknown
+  PW_STATUS_UNKNOWN = 2,  // Use Status::Unknown() in C++
+  /// @copydoc pw::Status::InvalidArgument
+  PW_STATUS_INVALID_ARGUMENT = 3,  // Use Status::InvalidArgument() in C++
+  /// @copydoc pw::Status::DeadlineExceeded
+  PW_STATUS_DEADLINE_EXCEEDED = 4,  // Use Status::DeadlineExceeded() in C++
+  /// @copydoc pw::Status::NotFound
+  PW_STATUS_NOT_FOUND = 5,  // Use Status::NotFound() in C++
+  /// @copydoc pw::Status::AlreadyExists
+  PW_STATUS_ALREADY_EXISTS = 6,  // Use Status::AlreadyExists() in C++
+  /// @copydoc pw::Status::PermissionDenied
+  PW_STATUS_PERMISSION_DENIED = 7,  // Use Status::PermissionDenied() in C++
+  /// @copydoc pw::Status::ResourceExhausted
+  PW_STATUS_RESOURCE_EXHAUSTED = 8,  // Use Status::ResourceExhausted() in C++
+  /// @copydoc pw::Status::FailedPrecondition
   PW_STATUS_FAILED_PRECONDITION = 9,  // Use Status::FailedPrecondition() in C++
-  PW_STATUS_ABORTED = 10,             // Use Status::Aborted() in C++
-  PW_STATUS_OUT_OF_RANGE = 11,        // Use Status::OutOfRange() in C++
-  PW_STATUS_UNIMPLEMENTED = 12,       // Use Status::Unimplemented() in C++
-  PW_STATUS_INTERNAL = 13,            // Use Status::Internal() in C++
-  PW_STATUS_UNAVAILABLE = 14,         // Use Status::Unavailable() in C++
-  PW_STATUS_DATA_LOSS = 15,           // Use Status::DataLoss() in C++
-  PW_STATUS_UNAUTHENTICATED = 16,     // Use Status::Unauthenticated() in C++
+  /// @copydoc pw::Status::Aborted
+  PW_STATUS_ABORTED = 10,  // Use Status::Aborted() in C++
+  /// @copydoc pw::Status::OutOfRange
+  PW_STATUS_OUT_OF_RANGE = 11,  // Use Status::OutOfRange() in C++
+  /// @copydoc pw::Status::Unimplemented
+  PW_STATUS_UNIMPLEMENTED = 12,  // Use Status::Unimplemented() in C++
+  /// @copydoc pw::Status::Internal
+  PW_STATUS_INTERNAL = 13,  // Use Status::Internal() in C++
+  /// @copydoc pw::Status::Unavailable
+  PW_STATUS_UNAVAILABLE = 14,  // Use Status::Unavailable() in C++
+  /// @copydoc pw::Status::DataLoss
+  PW_STATUS_DATA_LOSS = 15,  // Use Status::DataLoss() in C++
+  /// @copydoc pw::Status::Unauthenticated
+  PW_STATUS_UNAUTHENTICATED = 16,  // Use Status::Unauthenticated() in C++
 
-  // NOTE: this error code entry should not be used and you should not rely on
-  // its value, which may change.
+  // Warning: This error code entry should not be used and you should not rely
+  // on its value, which may change.
   //
   // The purpose of this enumerated value is to force people who handle status
-  // codes with `switch()` statements to *not* simply enumerate all possible
-  // values, but instead provide a "default:" case. Providing such a default
+  // codes with `switch` statements to *not* simply enumerate all possible
+  // values, but instead provide a `default` case. Providing such a default
   // case ensures that code will compile when new codes are added.
   PW_STATUS_DO_NOT_USE_RESERVED_FOR_FUTURE_EXPANSION_USE_DEFAULT_IN_SWITCH_INSTEAD_,
 } pw_Status;  // Use pw::Status in C++
 
-// Returns a null-terminated string representation of the pw_Status.
+/// @returns A null-terminated string representation of the pw_Status.
 const char* pw_StatusString(pw_Status status);
 
-// Indicates the status code with the highest valid value.
+/// Indicates the status code with the highest valid value.
 #define PW_STATUS_LAST PW_STATUS_UNAUTHENTICATED
+
+/// @}
 
 #ifdef __cplusplus
 
@@ -75,12 +96,14 @@ const char* pw_StatusString(pw_Status status);
 /// The Pigweed namespace
 namespace pw {
 
+/// @module{pw_status}
+
 /// `Status` is a thin, zero-cost abstraction around the `pw_Status` enum. It
-/// initializes to @pw_status{OK} by default and adds `ok()` and `str()`
+/// initializes to `pw::OkStatus()` by default and adds `ok()` and `str()`
 /// methods. Implicit conversions are permitted between `pw_Status` and
 /// `pw::Status`.
 ///
-/// An @pw_status{OK} `Status` is created by the @cpp_func{pw::OkStatus}
+/// An `pw::OkStatus()` `Status` is created by the @cpp_func{pw::OkStatus}
 /// function or by the default `Status` constructor.  Non-OK `Status` is created
 /// with a static member function that corresponds with the status code.
 class _PW_STATUS_NO_DISCARD Status {
@@ -93,66 +116,99 @@ class _PW_STATUS_NO_DISCARD Status {
   // https://pigweed.dev/pw_status#status-codes. Consult that guide when
   // deciding which status code to use.
   // clang-format off
+
+  /// Operation was cancelled, typically by the caller
   [[nodiscard]] static constexpr Status Cancelled() {
     return PW_STATUS_CANCELLED;
   }
+
+  /// Unknown error occurred. Avoid this code when possible.
   [[nodiscard]] static constexpr Status Unknown() {
     return PW_STATUS_UNKNOWN;
   }
+
+  /// Argument was malformed; e.g. invalid characters when parsing integer
   [[nodiscard]] static constexpr Status InvalidArgument() {
     return PW_STATUS_INVALID_ARGUMENT;
   }
+
+  /// Deadline passed before operation completed
   [[nodiscard]] static constexpr Status DeadlineExceeded() {
     return PW_STATUS_DEADLINE_EXCEEDED;
   }
+
+  /// The entity that the caller requested (e.g. file or directory) is not found
   [[nodiscard]] static constexpr Status NotFound() {
     return PW_STATUS_NOT_FOUND;
   }
+
+  /// The entity that the caller requested to create is already present
   [[nodiscard]] static constexpr Status AlreadyExists() {
     return PW_STATUS_ALREADY_EXISTS;
   }
+
+  /// Caller lacks permission to execute action
   [[nodiscard]] static constexpr Status PermissionDenied() {
     return PW_STATUS_PERMISSION_DENIED;
   }
+
+  /// Insufficient resources to complete operation; e.g. supplied buffer is too
+  /// small
   [[nodiscard]] static constexpr Status ResourceExhausted() {
     return PW_STATUS_RESOURCE_EXHAUSTED;
   }
+
+  /// System isn’t in the required state; e.g. deleting a non-empty directory
   [[nodiscard]] static constexpr Status FailedPrecondition() {
     return PW_STATUS_FAILED_PRECONDITION;
   }
+
+  /// Operation aborted due to e.g. concurrency issue or failed transaction
   [[nodiscard]] static constexpr Status Aborted() {
     return PW_STATUS_ABORTED;
   }
+
+  /// Operation attempted out of range; e.g. seeking past end of file
   [[nodiscard]] static constexpr Status OutOfRange() {
     return PW_STATUS_OUT_OF_RANGE;
   }
+
+  /// Operation isn’t implemented or supported
   [[nodiscard]] static constexpr Status Unimplemented() {
     return PW_STATUS_UNIMPLEMENTED;
   }
+
+  /// Internal error occurred; e.g. system invariants were violated
   [[nodiscard]] static constexpr Status Internal() {
     return PW_STATUS_INTERNAL;
   }
+
+  /// Requested operation can’t finish now, but may at a later time
   [[nodiscard]] static constexpr Status Unavailable() {
     return PW_STATUS_UNAVAILABLE;
   }
+
+  /// Unrecoverable data loss occurred while completing the requested operation
   [[nodiscard]] static constexpr Status DataLoss() {
     return PW_STATUS_DATA_LOSS;
   }
+
+  /// Caller does not have valid authentication credentials for the operation
   [[nodiscard]] static constexpr Status Unauthenticated() {
     return PW_STATUS_UNAUTHENTICATED;
   }
   // clang-format on
 
-  // Statuses are created with a Status::Code.
+  /// Statuses are created with a `Status::Code`.
   constexpr Status(Code code = PW_STATUS_OK) : code_(code) {}
 
   constexpr Status(const Status&) = default;
   constexpr Status& operator=(const Status&) = default;
 
-  /// Returns the `Status::Code` (`pw_Status`) for this `Status`.
+  /// @returns The `Status::Code` (`pw_Status`) for this `Status`.
   constexpr Code code() const { return code_; }
 
-  /// True if the status is @pw_status{OK}.
+  /// @returns `true` if the status is `pw::OkStatus()`.
   ///
   /// This function is provided in place of an `IsOk()` function.
   [[nodiscard]] constexpr bool ok() const { return code_ == PW_STATUS_OK; }
@@ -207,8 +263,10 @@ class _PW_STATUS_NO_DISCARD Status {
     return code_ == PW_STATUS_UNAUTHENTICATED;
   }
 
-  /// Updates this `Status` to the provided `Status` IF this status is
-  /// @pw_status{OK}. This is useful for tracking the first encountered error,
+  /// Updates this `Status` to the `other` IF this status is
+  /// `pw::OkStatus()`.
+  ///
+  /// This is useful for tracking the first encountered error,
   /// as calls to this helper will not change one error status to another error
   /// status.
   constexpr void Update(Status other) {
@@ -217,21 +275,25 @@ class _PW_STATUS_NO_DISCARD Status {
     }
   }
 
-  /// Ignores any errors. This method does nothing except potentially suppress
+  /// Ignores any errors.
+  ///
+  /// This method does nothing except potentially suppress
   /// complaints from any tools that are checking that errors are not dropped on
   /// the floor.
   constexpr void IgnoreError() const {}
 
-  /// Returns a null-terminated string representation of the `Status`.
+  /// @returns A null-terminated string representation of the `Status`.
   [[nodiscard]] const char* str() const { return pw_StatusString(code_); }
 
  private:
   Code code_;
 };
 
-/// Returns an @pw_status{OK} status. Equivalent to `Status()` or
-/// `Status(PW_STATUS_OK)`.  This function is used instead of a `Status::Ok()`
-/// function, which would be too similar to `Status::ok()`.
+/// Operation succeeded
+///
+/// Equivalent to `Status()` or `Status(PW_STATUS_OK)`. This function is used
+/// instead of a `Status::Ok()` function, which would be too similar to
+/// `Status::ok()`.
 [[nodiscard]] constexpr Status OkStatus() { return Status(); }
 
 constexpr bool operator==(const Status& lhs, const Status& rhs) {
@@ -242,6 +304,8 @@ constexpr bool operator!=(const Status& lhs, const Status& rhs) {
   return lhs.code() != rhs.code();
 }
 
+/// @}
+
 namespace internal {
 
 // This function and its various overloads are for use by internal macros
@@ -251,10 +315,14 @@ constexpr Status ConvertToStatus(Status status) { return status; }
 }  // namespace internal
 }  // namespace pw
 
-// Create a C++ overload of pw_StatusString so that it supports pw::Status in
-// addition to pw_Status.
+/// @module{pw_status}
+
+/// Creates a C++ overload of `pw_StatusString` so that it supports `pw::Status`
+/// in addition to `pw_Status`.
 inline const char* pw_StatusString(pw::Status status) {
   return pw_StatusString(status.code());
 }
+
+/// @}
 
 #endif  // __cplusplus

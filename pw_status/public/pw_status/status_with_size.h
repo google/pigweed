@@ -20,6 +20,8 @@
 
 namespace pw {
 
+/// @module{pw_status}
+
 /// `StatusWithSize` stores a status and an unsigned integer. The integer must
 /// not exceed `StatusWithSize::max_size()`, which is 134,217,727 (2**27 - 1) on
 /// 32-bit systems.
@@ -220,6 +222,8 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
 
   size_t size_;
 };
+
+/// @}
 
 namespace internal {
 

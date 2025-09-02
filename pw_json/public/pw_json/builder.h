@@ -312,7 +312,7 @@ class JsonBuilder : private JsonValue, private JsonArray, private JsonObject {
   /// The maximum size of the JSON string, excluding the null terminator.
   constexpr size_t max_size() const { return max_size_; }
 
-  /// True if @cpp_func{status} is @pw_status{OK}; no errors have occurred.
+  /// True if @cpp_func{status} is `pw::OkStatus()`; no errors have occurred.
   [[nodiscard]] constexpr bool ok() const { return status().ok(); }
 
   /// Returns the `JsonBuilder`'s status, which reflects the first error that
@@ -332,7 +332,7 @@ class JsonBuilder : private JsonValue, private JsonArray, private JsonObject {
   constexpr Status status() const { return static_cast<Status::Code>(status_); }
 
   /// Returns the status from the most recent change to the JSON. This is set
-  /// with each JSON update and may be @pw_status{OK} while `status()` is not.
+  /// with each JSON update and may be `pw::OkStatus()` while `status()` is not.
   constexpr Status last_status() const {
     return static_cast<Status::Code>(last_status_);
   }

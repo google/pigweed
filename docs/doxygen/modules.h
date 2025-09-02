@@ -379,6 +379,12 @@
 /// @defgroup pw_span pw_span
 /// @brief std::span for C++17. Main docs: https://pigweed.dev/pw_span
 
+/// @defgroup pw_status pw_status
+/// @brief Exception-free error propagation for embedded
+/// @details Main docs: [Home](../../pw_status/docs.html) |
+/// [Quickstart & guides](../../pw_status/guide.html) |
+/// [Reference](../../pw_status/reference.html)
+
 /// @defgroup pw_stream pw_stream
 /// @brief A foundational interface for streaming data
 /// @details Main docs: [Home](../../pw_stream/docs.html) |
