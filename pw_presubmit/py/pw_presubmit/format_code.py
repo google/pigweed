@@ -98,6 +98,10 @@ from pw_presubmit.format.rst import (
 from pw_presubmit.format.starlark import DEFAULT_STARLARK_FILE_PATTERNS
 from pw_presubmit.format.typescript import DEFAULT_TYPESCRIPT_FILE_PATTERNS
 from pw_presubmit.format.whitespace import TrailingSpaceFormatter
+from pw_presubmit.format.rust import (
+    RustfmtFormatter,
+    DEFAULT_RUST_FILE_PATTERNS,
+)
 from pw_presubmit.tools import (
     log_run,
     PresubmitToolRunner,
@@ -440,6 +444,20 @@ def rst_format_fix(ctx: _Context) -> dict[Path, str]:
     return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
+def rust_format_check(ctx: _Context) -> dict[Path, str]:
+    """Checks formatting; returns {path: diff} for files with bad formatting."""
+    formatter = RustfmtFormatter(tool_runner=PresubmitToolRunner())
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(ctx.paths, ctx.dry_run)
+    )
+
+
+def rust_format_fix(ctx: _Context) -> dict[Path, str]:
+    """Fixes formatting for the provided files in place."""
+    formatter = RustfmtFormatter(tool_runner=PresubmitToolRunner())
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
+
+
 def print_format_fix(stdout: bytes):
     """Prints the output of a format --fix call."""
     for line in stdout.splitlines():
@@ -547,6 +565,13 @@ RST_FORMAT: CodeFormat = CodeFormat(
     rst_format_fix,
 )
 
+RUST_FORMAT: CodeFormat = CodeFormat(
+    'Rust',
+    DEFAULT_RUST_FILE_PATTERNS,
+    rust_format_check,
+    rust_format_fix,
+)
+
 MARKDOWN_FORMAT: CodeFormat = CodeFormat(
     'Markdown',
     DEFAULT_MARKDOWN_FILE_PATTERNS,
@@ -588,6 +613,7 @@ CODE_FORMATS: tuple[CodeFormat, ...] = tuple(
             PROTO_FORMAT,
             PYTHON_FORMAT,
             RST_FORMAT,
+            RUST_FORMAT if shutil.which('rustfmt') else None,
             TYPESCRIPT_FORMAT if shutil.which('npm') else None,
             # keep-sorted: end
         ),
