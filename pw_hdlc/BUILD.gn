@@ -57,6 +57,7 @@ pw_source_set("decoder") {
   sources = [ "decoder.cc" ]
   public_deps = [
     ":common",
+    dir_pw_assert,
     dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_result,
