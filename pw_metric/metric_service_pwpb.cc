@@ -59,11 +59,10 @@ class PwpbMetricWriter : public virtual internal::MetricWriter {
       } else {
         PW_TRY(proto_encoder.WriteAsInt(metric.as_int()));
       }
-
-      metrics_count++;
     }
+    ++metrics_count_;
 
-    if (metrics_count == kMaxNumPackedEntries) {
+    if (metrics_count_ == kMaxNumPackedEntries) {
       return Flush();
     }
     return OkStatus();
@@ -71,13 +70,12 @@ class PwpbMetricWriter : public virtual internal::MetricWriter {
 
   Status Flush() {
     Status status;
-    if (metrics_count) {
+    if (metrics_count_) {
       status = response_writer_.Write(encoder_);
-      // Different way to clear MemoryEncoder. Copy constructor is disabled
-      // for memory encoder, and there is no "clear()" method.
+      // Clear the encoder by reconstructing it in place.
       encoder_.~MemoryEncoder();
-      new (&encoder_) proto::pwpb::MetricRequest::MemoryEncoder(response_);
-      metrics_count = 0;
+      new (&encoder_) proto::pwpb::MetricResponse::MemoryEncoder(response_);
+      metrics_count_ = 0;
     }
     return status;
   }
@@ -87,8 +85,8 @@ class PwpbMetricWriter : public virtual internal::MetricWriter {
   // This RPC stream writer handle must be valid for the metric writer
   // lifetime.
   rpc::RawServerWriter& response_writer_;
-  proto::pwpb::MetricRequest::MemoryEncoder encoder_;
-  size_t metrics_count = 0;
+  proto::pwpb::MetricResponse::MemoryEncoder encoder_;
+  size_t metrics_count_ = 0;
 };
 }  // namespace
 
@@ -100,11 +98,9 @@ void MetricService::Get(ConstByteSpan /*request*/,
   // without values includes the maximum token path. Additionally, include the
   // maximum size of the `as_int` field.
   constexpr size_t kSizeOfOneMetric =
-      pw::metric::proto::pwpb::MetricResponse::
-          kMaxEncodedSizeBytesWithoutValues +
-      pw::metric::proto::pwpb::Metric::kMaxEncodedSizeBytesWithoutValues +
-      protobuf::SizeOfFieldUint32(
-          pw::metric::proto::pwpb::Metric::Fields::kAsInt);
+      proto::pwpb::MetricResponse::kMaxEncodedSizeBytesWithoutValues +
+      proto::pwpb::Metric::kMaxEncodedSizeBytesWithoutValues +
+      protobuf::SizeOfFieldUint32(proto::pwpb::Metric::Fields::kAsInt);
 
   // TODO(amontanez): Make this follow the metric_service.options configuration.
   constexpr size_t kEncodeBufferSize = kMaxNumPackedEntries * kSizeOfOneMetric;
