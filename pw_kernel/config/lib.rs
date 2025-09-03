@@ -44,10 +44,6 @@ pub trait RiscVKernelConfigInterface {
     /// or 64.
     const PMP_ENTRIES: usize;
 
-    /// Number of pmpcfgN registers.  For rv32 this is `PMP_ENTRIES / 4`, for
-    /// rv64 it is `PMP_ENTRIES / 8`.
-    const PMP_CFG_REGISTERS: usize;
-
     /// mtvec exception mode. When in direct mode, base address will be set
     /// to the `_start_trap` address.
     /// When in vectored mode, the address of the vector table is passed

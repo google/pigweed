@@ -25,7 +25,6 @@ impl RiscVKernelConfigInterface for KernelConfig {
     type Timer = TimerConfig;
     const MTIME_HZ: u64 = 10_000_000;
     const PMP_ENTRIES: usize = 16;
-    const PMP_CFG_REGISTERS: usize = 4;
     fn get_exception_mode() -> ExceptionMode {
         ExceptionMode::Direct
     }
