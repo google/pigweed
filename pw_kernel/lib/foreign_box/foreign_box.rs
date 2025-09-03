@@ -367,18 +367,18 @@ macro_rules! static_foreign_box {
 #[macro_export]
 macro_rules! static_foreign_rc {
     ($atomic_usize:ty, $ty:ty, $init:expr) => {{
-        unsafe fn declare_static() -> $crate::ForeignRc<$atomic_usize, $ty> {
+        unsafe fn declare_static(val: $ty) -> $crate::ForeignRc<$atomic_usize, $ty> {
             use $crate::{ForeignRcState, StaticStorage};
 
             static STORAGE: StaticStorage<ForeignRcState<$atomic_usize, $ty>> =
                 StaticStorage::new();
             unsafe {
-                let r = STORAGE.init(ForeignRcState::new($init));
+                let r = STORAGE.init(ForeignRcState::new(val));
                 r.create_first_ref()
             }
         }
 
-        declare_static()
+        declare_static($init)
     }};
 }
 
