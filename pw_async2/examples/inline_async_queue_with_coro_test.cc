@@ -22,7 +22,7 @@
 #include "pw_async2/coro.h"
 #include "pw_async2/coro_or_else_task.h"
 #include "pw_async2/dispatcher.h"
-#include "pw_async2/pend_func_awaitable.h"
+#include "pw_async2/pendable.h"
 #include "pw_containers/inline_async_queue.h"
 #include "pw_containers/vector.h"
 #include "pw_log/log.h"
@@ -42,7 +42,7 @@ using ::pw::async2::Coro;
 using ::pw::async2::CoroContext;
 using ::pw::async2::CoroOrElseTask;
 using ::pw::async2::Dispatcher;
-using ::pw::async2::PendFuncAwaitable;
+using ::pw::async2::PendableFor;
 
 // Use a queue with a capacity for at most four integers.
 using Queue = InlineAsyncQueue<int, 4>;
@@ -58,18 +58,6 @@ constexpr int kTerminal = -1;
 // This provides confirmation of what was received by the consumer
 Vector<int, 10> received_by_consumer;
 
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-helpers]
-auto QueueHasSpace(Queue& queue) {
-  return PendFuncAwaitable(
-      [&queue](Context& cx) { return queue.PendHasSpace(cx); });
-}
-
-auto QueueNotEmpty(Queue& queue) {
-  return PendFuncAwaitable(
-      [&queue](Context& cx) { return queue.PendNotEmpty(cx); });
-}
-// DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-helpers]
-
 // A simple producer coroutine that writes a fixed sequence of integers to a
 // queue.
 Coro<Status> Producer(CoroContext& context, Queue& queue) {
@@ -79,7 +67,7 @@ Coro<Status> Producer(CoroContext& context, Queue& queue) {
   for (auto value : kProducerExampleData) {
     // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-space]
     // Wait for there to be space in the queue before writing the next value.
-    co_await QueueHasSpace(queue);
+    co_await PendableFor<&Queue::PendHasSpace>(queue, 1);
     queue.push(value);
     // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-space]
     PW_LOG_INFO("Producer() output %d", value);
@@ -88,7 +76,8 @@ Coro<Status> Producer(CoroContext& context, Queue& queue) {
   // Once we are out of values, write the termination sentinel value.
 
   // Wait for there to be space in the queue before writing kTerminal.
-  co_await QueueHasSpace(queue);
+  co_await PendableFor<&Queue::PendHasSpace>(queue, 1);
+  PW_ASSERT(!queue.full());
   PW_LOG_INFO("Producer() output terminal");
   queue.push(kTerminal);
 
@@ -104,7 +93,7 @@ Coro<Status> Consumer(CoroContext& context, Queue& queue) {
   while (true) {
     // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-values]
     // Wait for there to be something to read.
-    co_await QueueNotEmpty(queue);
+    co_await PendableFor<&Queue::PendNotEmpty>(queue);
     const int result = queue.front();
     queue.pop();
     // DOCSTAG: [pw_async2-examples-inline-async-queue-with-coro-await-values]

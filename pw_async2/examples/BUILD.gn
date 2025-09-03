@@ -68,7 +68,7 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
       "$dir_pw_async2:coro",
       "$dir_pw_async2:coro_or_else_task",
       "$dir_pw_async2:dispatcher",
-      "$dir_pw_async2:pend_func_awaitable",
+      "$dir_pw_async2:pendable",
       "$dir_pw_containers:inline_async_queue",
       "$dir_pw_containers:vector",
       "$dir_pw_log",

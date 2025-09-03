@@ -43,7 +43,7 @@ if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
       pw_async2.coro
       pw_async2.coro_or_else_task
       pw_async2.dispatcher
-      pw_async2.pend_func_awaitable
+      pw_async2.pendable
       pw_containers.inline_async_queue
       pw_containers.vector
       pw_log

@@ -108,19 +108,18 @@ of error.
 
 Multiple values
 ===============
-To use :doxylink:`pw::InlineAsyncQueue` or :doxylink:`pw::InlineAsyncDeque`
-with ``co_await``, an adapter is needed that exposes a ``DoPend`` that invokes
-the correct member function in the containers (either ``PendHasSpace`` or
-``PendNotEmpty``).
+To use :doxylink:`InlineAsyncQueue <pw::InlineAsyncQueue>` or
+:doxylink:`InlineAsyncDeque <pw::InlineAsyncDeque>` with ``co_await``, an
+adapter is needed that exposes a ``Pend`` that invokes the correct member
+function in the containers (either ``PendHasSpace`` or ``PendNotEmpty``).
 
-.. literalinclude:: examples/inline_async_queue_with_coro_test.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_async2-examples-inline-async-queue-with-coro-await-helpers]
-   :end-before: [pw_async2-examples-inline-async-queue-with-coro-await-helpers]
+:doxylink:`PendableFor <pw::async2::PendableFor>` does this for you, and
+supports member functions or free functions.
 
 For sending, the producing coroutine has to wait for there to be space before
-trying to add to the queue.
+trying to add to the queue. Here we ``co_await`` the result of
+``PendableFor<&Queue::PendHasSpace>(queue, 1)`` to wait for space for one
+element to be available.
 
 .. literalinclude:: examples/inline_async_queue_with_coro_test.cc
    :language: cpp
