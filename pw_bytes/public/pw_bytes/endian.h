@@ -111,8 +111,7 @@ constexpr T ReverseBytes(T value) {
 
 }  // namespace internal
 
-/// @defgroup pw_bytes_endian
-/// @{
+/// @submodule{pw_bytes,endian}
 
 /// Reorders the bytes in the provided integral value to match the specified
 /// byte order. This is similar to the `htonl()` family of functions.

@@ -41,6 +41,8 @@ inline void ByteLiteralIsTooLarge() {}
 
 }  // namespace internal
 
+/// @submodule{pw_bytes,suffix}
+
 /// Returns a ``std::byte`` when used as a ``_b`` suffix.
 ///
 /// This is useful for writing byte literals, particularly in tests.
@@ -56,5 +58,7 @@ PW_CONSTEVAL std::byte operator""_b(unsigned long long value) {
   }
   return std::byte(value);
 }
+
+/// @}
 
 }  // namespace pw

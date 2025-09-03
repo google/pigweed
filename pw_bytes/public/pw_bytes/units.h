@@ -15,6 +15,8 @@
 
 namespace pw::bytes {
 
+/// @submodule{pw_bytes,unit}
+
 // Size constants for bytes in powers of two as defined by IEC 60027-2 A.2 and
 // ISO/IEC 80000:13-2008:
 
@@ -128,4 +130,7 @@ constexpr unsigned long long int operator""_EiB(
 }
 
 }  // namespace unit_literals
+
+/// @}
+
 }  // namespace pw::bytes

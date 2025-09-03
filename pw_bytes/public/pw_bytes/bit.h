@@ -23,7 +23,8 @@ namespace pw {
 
 using ::cpp20::endian;
 
-/// Binary data manipulation utilities
+/// @submodule{pw_bytes,bit}
+
 namespace bytes {
 
 /// Queries size of the object or type in bits.
@@ -77,4 +78,7 @@ constexpr OutType ExtractBits(InType value) {
 }
 
 }  // namespace bytes
+
+/// @}
+
 }  // namespace pw

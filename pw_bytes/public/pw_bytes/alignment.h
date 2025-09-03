@@ -23,6 +23,8 @@
 
 namespace pw {
 
+/// @submodule{pw_bytes,align}
+
 /// Returns whether the given pointer meets the given alignment requirement.
 inline bool IsAlignedAs(const void* ptr, size_t alignment) {
   return (cpp20::bit_cast<uintptr_t>(ptr) % alignment) == 0;
@@ -73,5 +75,7 @@ constexpr size_t Padding(size_t length, size_t alignment) {
 /// @returns A `ByteSpan` within `bytes` aligned to `alignment`, or an empty
 ///   `ByteSpan` if alignment was not possible.
 ByteSpan GetAlignedSubspan(ByteSpan bytes, size_t alignment);
+
+/// @}
 
 }  // namespace pw

@@ -79,8 +79,10 @@ PW_CONSTEVAL bool CanBeRepresentedAsByteType(const U& value) {
 
 }  // namespace internal
 
-// Concatenates arrays or integers as a byte array at compile time. Integer
-// values are copied little-endian. Spans are copied byte-for-byte.
+/// @submodule{pw_bytes,array}
+
+/// Concatenates arrays or integers as a byte array at compile time. Integer
+/// values are copied little-endian. Spans are copied byte-for-byte.
 template <typename B = std::byte, typename... Args>
 PW_CONSTEVAL auto Concat(Args... args) {
   std::array<B, (internal::SizeOfBytes(args) + ...)> bytes{};
@@ -88,7 +90,7 @@ PW_CONSTEVAL auto Concat(Args... args) {
   return bytes;
 }
 
-// Converts a string literal to an array of bytes, without the trailing '\0'.
+/// Converts a string literal to an array of bytes, without the trailing '\0'.
 template <typename B = std::byte,
           size_t kSize,
           typename Indices = std::make_index_sequence<kSize - 1>>
@@ -96,28 +98,28 @@ PW_CONSTEVAL auto String(const char (&str)[kSize]) {
   return internal::String<B>(str, Indices{});
 }
 
-// String overload for the empty string "".
+/// String overload for the empty string "".
 template <typename B = std::byte>
 PW_CONSTEVAL auto String(const char (&)[1]) {
   return std::array<B, 0>{};
 }
 
-// Creates an array of bytes from values passed as template parameters. The
-// values are guaranteed to be representable in the destination byte type.
+/// Creates an array of bytes from values passed as template parameters. The
+/// values are guaranteed to be representable in the destination byte type.
 template <typename B, auto... values>
 PW_CONSTEVAL auto Array() {
   static_assert((internal::CanBeRepresentedAsByteType<B>(values) && ...));
   return std::array<B, sizeof...(values)>{static_cast<B>(values)...};
 }
 
-// Array() defaults to using std::byte.
+/// Array() defaults to using std::byte.
 template <auto... values>
 PW_CONSTEVAL auto Array() {
   return Array<std::byte, values...>();
 }
 
-// Creates an initialized array of bytes. Initializes the array to a value or
-// the return values from a function that accepts the index as a parameter.
+/// Creates an initialized array of bytes. Initializes the array to a value or
+/// the return values from a function that accepts the index as a parameter.
 template <typename B, size_t kSize, typename T>
 constexpr auto Initialized(const T& value_or_function) {
   std::array<B, kSize> array{};
@@ -132,18 +134,20 @@ constexpr auto Initialized(const T& value_or_function) {
   return array;
 }
 
-// Initialized(value_or_function) defaults to using std::byte.
+/// Initialized(value_or_function) defaults to using std::byte.
 template <size_t kSize, typename T>
 constexpr auto Initialized(const T& value_or_function) {
   return Initialized<std::byte, kSize>(value_or_function);
 }
 
-// Creates an array of bytes from a series of function arguments. Unlike
-// Array(), MakeArray() cannot check if the values fit in the destination type.
-// MakeArray() should only be used when Array() is not suitable.
+/// Creates an array of bytes from a series of function arguments. Unlike
+/// Array(), MakeArray() cannot check if the values fit in the destination type.
+/// MakeArray() should only be used when Array() is not suitable.
 template <typename B = std::byte, typename... Args>
 constexpr auto MakeArray(const Args&... args) {
   return std::array<B, sizeof...(args)>{static_cast<B>(args)...};
 }
+
+/// @}
 
 }  // namespace pw::bytes

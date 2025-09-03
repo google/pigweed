@@ -21,6 +21,8 @@
 
 namespace pw {
 
+/// @submodule{pw_bytes,span}
+
 // Aliases for spans of bytes.
 using ByteSpan = span<std::byte>;
 
@@ -78,5 +80,7 @@ span<std::byte, sizeof(T)> ObjectAsWritableBytes(T& obj) {
   auto s = pw::span<T, 1>(std::addressof(obj), 1);
   return pw::as_writable_bytes(s);
 }
+
+/// @}
 
 }  // namespace pw

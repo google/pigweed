@@ -21,6 +21,8 @@
 
 namespace pw {
 
+/// @submodule{pw_bytes,ptr}
+
 /// Pointer wrapper that can store extra data in otherwise unused bits.
 ///
 /// Pointers to types that have an alignment of more than 1 will always have
@@ -115,5 +117,7 @@ class PackedPtr {
 
   uintptr_t data_ = 0;
 };
+
+/// @}
 
 }  // namespace pw

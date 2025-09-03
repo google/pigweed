@@ -177,6 +177,42 @@
 /// @defgroup pw_bytes pw_bytes
 /// @brief Utilities for manipulating binary data. Main docs: https://pigweed.dev/pw_bytes
 
+/// @defgroup pw_bytes_ptr Packed pointers
+/// @ingroup pw_bytes
+/// @brief Store data in unused pointer bits
+
+/// @defgroup pw_bytes_align Alignment
+/// @ingroup pw_bytes
+/// @brief Functions for memory alignment
+
+/// @defgroup pw_bytes_array Byte arrays
+/// @ingroup pw_bytes
+/// @brief Compile-time construction of byte arrays
+
+/// @defgroup pw_bytes_build Byte builders
+/// @ingroup pw_bytes
+/// @brief Dynamically build byte sequences in fixed-size buffers
+
+/// @defgroup pw_bytes_bit Bit manipulation
+/// @ingroup pw_bytes
+/// @brief C++20 `<bit>` features and extensions
+
+/// @defgroup pw_bytes_endian Endian conversion
+/// @ingroup pw_bytes
+/// @brief Utilities for handling byte order
+
+/// @defgroup pw_bytes_suffix Byte suffixes
+/// @ingroup pw_bytes
+/// @brief Convenient literal for `std::byte`
+
+/// @defgroup pw_bytes_unit Byte units
+/// @ingroup pw_bytes
+/// @brief Constants and literals for byte sizes e.g. KiB
+
+/// @defgroup pw_bytes_span Byte spans
+/// @ingroup pw_bytes
+/// @brief Aliases for `pw::span` of bytes
+
 /// @defgroup pw_channel pw_channel
 /// @brief Async, zero-copy API for sending and receiving bytes or datagrams. Main docs: https://pigweed.dev/pw_channel
 

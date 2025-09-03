@@ -28,6 +28,8 @@
 
 namespace pw {
 
+/// @submodule{pw_bytes,build}
+
 /// ByteBuilder facilitates building bytes in a fixed-size buffer.
 /// BytesBuilders never overflow. Status is tracked for each operation and
 /// an overall status is maintained, which reflects the most recent error.
@@ -417,5 +419,7 @@ class ByteBuffer : public ByteBuilder {
 constexpr ByteBuilder::iterator operator+(int n, ByteBuilder::iterator it) {
   return it + n;
 }
+
+/// @}
 
 }  // namespace pw

@@ -105,6 +105,7 @@
   "module_guides": "./modules.html",
   "pw_allocator/api": "../doxygen/group__pw__allocator.html",
   "pw_bluetooth_sapphire/reference": "../doxygen/group__pw__bluetooth__sapphire.html",
+  "pw_bytes/api": "../doxygen/group__pw__bytes.html",
   "pw_channel/reference": "../doxygen/group__pw__channel.html",
   "pw_clock_tree/api": "../doxygen/group__pw__clock__tree.html",
   "pw_hex_dump/api": "../doxygen/group__pw__hex__dump.html",
