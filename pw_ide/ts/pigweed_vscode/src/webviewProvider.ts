@@ -17,39 +17,98 @@ import { checkExtensionsAndGetStatus } from './extensionManagement';
 import logging, { output } from './logging';
 import { getSettingsData } from './configParsing';
 import getCipdReport from './clangd/report';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync } from 'fs';
 import {
   createBazelInterceptorFile,
   deleteBazelInterceptorFile,
   getBazelInterceptorPath,
 } from './clangd/compileCommandsUtils';
 import { LoggerUI } from './clangd/compileCommandsGeneratorUI';
-import path from 'path';
 import { spawn } from 'child_process';
 
 import { getReliableBazelExecutable } from './bazel';
 import { settings, workingDir } from './settings/vscode';
 import { saveLastBazelCommandInUserSettings } from './clangd/compileCommandsGenerator';
 
-export async function executeRefreshCompileCommandsManually(buildCmd: string) {
-  const bazelBinary = getReliableBazelExecutable();
-  const cwd = workingDir.get();
-  logging.info(`Generating compile commands for ${buildCmd}`);
-  if (buildCmd.trim() === '' || !bazelBinary) {
-    vscode.window.showWarningMessage(
-      'Build command is empty or Bazel binary not found.',
+function spawnAsync(
+  command: string,
+  args: string[],
+  cwd: string,
+  logger: LoggerUI,
+): Promise<number> {
+  return new Promise((resolve) => {
+    logger.addStdout(`Running command: ${command} ${args.join(' ')}\n`);
+    const child = spawn(command, args, { cwd });
+
+    child.stdout.on('data', (data) => logger.addStdout(data.toString()));
+    child.stderr.on('data', (data) => logger.addStderr(data.toString()));
+    child.on('close', (code) => resolve(code ?? -1));
+  });
+}
+
+async function generateAspectCompileCommands(
+  bazelBinary: string,
+  buildCmd: string,
+  cwd: string,
+  logger: LoggerUI,
+) {
+  // Aspect-based generator
+  logger.addStdout('Cleaning old compile commands...\n');
+  let exitCode = await spawnAsync(
+    bazelBinary,
+    ['run', '@pigweed//pw_ide/bazel:clean_compile_commands'],
+    cwd,
+    logger,
+  );
+
+  if (exitCode !== 0) {
+    logger.addStderr('Clean command failed, continuing...\n');
+  }
+
+  logger.addStdout('Building with compile commands aspect...\n');
+  const aspect =
+    '--aspects=@pigweed//pw_ide/bazel/compile_commands:defs.bzl%compile_commands_aspect';
+  const outputGroups = '--output_groups=+compile_commands_fragments';
+  exitCode = await spawnAsync(
+    bazelBinary,
+    ['build', aspect, outputGroups, buildCmd],
+    cwd,
+    logger,
+  );
+
+  if (exitCode !== 0) {
+    logger.finishWithError(`❌ Bazel build failed with exit code ${exitCode}.`);
+    return;
+  }
+
+  logger.addStdout('Updating compile commands...\n');
+  exitCode = await spawnAsync(
+    bazelBinary,
+    ['run', '@pigweed//pw_ide/bazel:update_compile_commands'],
+    cwd,
+    logger,
+  );
+
+  if (exitCode !== 0) {
+    logger.finishWithError(
+      `❌ Update command failed with exit code ${exitCode}.`,
     );
     return;
   }
-  output.show();
-  const logger = new LoggerUI(logging);
-  await settings.bazelCompileCommandsManualBuildCommand(buildCmd);
 
-  const usePythonGenerator = settings.usePythonCompileCommandsGenerator();
-  const generatorTarget = usePythonGenerator
-    ? '@pigweed//pw_ide/py:compile_commands_generator_binary'
-    : '@pigweed//pw_ide/ts/pigweed_vscode:compile_commands_generator_binary';
+  logger.finish('✅ Compile commands generated successfully.');
+  saveLastBazelCommandInUserSettings(cwd, `build ${buildCmd}`, logger);
+}
 
+async function generateAqueryCompileCommands(
+  bazelBinary: string,
+  buildCmd: string,
+  cwd: string,
+  logger: LoggerUI,
+) {
+  // Python-based generator
+  const generatorTarget =
+    '@pigweed//pw_ide/py:compile_commands_generator_binary';
   const args = [
     'run',
     generatorTarget,
@@ -62,27 +121,39 @@ export async function executeRefreshCompileCommandsManually(buildCmd: string) {
     bazelBinary,
   ];
 
-  const child = spawn(bazelBinary, args, { cwd });
-  logger.addStdout(`Running command: ${bazelBinary} ${args.join(' ')}\n`);
+  const exitCode = await spawnAsync(bazelBinary, args, cwd, logger);
 
-  child.stdout.on('data', (data) => {
-    logger.addStdout(data.toString());
-  });
+  if (exitCode === 0) {
+    logger.finish('✅ Compile commands generated successfully.');
+    saveLastBazelCommandInUserSettings(cwd, `build ${buildCmd}`, logger);
+  } else {
+    logger.finishWithError(
+      `❌ Compile commands generation failed with exit code ${exitCode}.`,
+    );
+  }
+}
 
-  child.stderr.on('data', (data) => {
-    logger.addStderr(data.toString());
-  });
+export async function executeRefreshCompileCommandsManually(buildCmd: string) {
+  const bazelBinary = getReliableBazelExecutable();
+  const cwd = workingDir.get();
+  logging.info(`Generating compile commands for ${buildCmd}`);
 
-  child.on('close', (code) => {
-    if (code === 0) {
-      logger.finish('✅ Compile commands generated successfully.');
-      saveLastBazelCommandInUserSettings(cwd, `build ${buildCmd}`, logger);
-    } else {
-      logger.finishWithError(
-        `❌ Compile commands generation failed with exit code ${code}.`,
-      );
-    }
-  });
+  if (buildCmd.trim() === '' || !bazelBinary) {
+    vscode.window.showWarningMessage(
+      'Build command is empty or Bazel binary not found.',
+    );
+    return;
+  }
+
+  output.show();
+  const logger = new LoggerUI(logging);
+  await settings.bazelCompileCommandsManualBuildCommand(buildCmd);
+
+  if (settings.experimentalCompileCommands()) {
+    generateAspectCompileCommands(bazelBinary, buildCmd, cwd, logger);
+  } else {
+    generateAqueryCompileCommands(bazelBinary, buildCmd, cwd, logger);
+  }
 }
 
 export class WebviewProvider implements vscode.WebviewViewProvider {
@@ -186,9 +257,9 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           await this.sendCipdReport();
           break;
         }
-        case 'setUsePythonCompileCommandsGenerator': {
+        case 'setExperimentalCompileCommands': {
           const enabled = data.data;
-          await settings.usePythonCompileCommandsGenerator(enabled);
+          await settings.experimentalCompileCommands(enabled);
           if (!settings.disableBazelInterceptor()) {
             await createBazelInterceptorFile();
           }
@@ -209,12 +280,11 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     const pathForBazelBuildInterceptor = getBazelInterceptorPath();
     if (!pathForBazelBuildInterceptor) return;
     const bazelInterceptorExists = existsSync(pathForBazelBuildInterceptor);
-    const usePythonCompileCommandsGenerator =
-      settings.usePythonCompileCommandsGenerator();
+    const experimentalCompileCommands = settings.experimentalCompileCommands();
     report = {
       ...report,
       isBazelInterceptorEnabled: bazelInterceptorExists,
-      usePythonCompileCommandsGenerator,
+      experimentalCompileCommands,
     };
     logging.info('getCipdReport reported: ' + JSON.stringify(report));
     this._view?.webview.postMessage({

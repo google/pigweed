@@ -34,7 +34,7 @@ type CipdReport = {
   isBazelInterceptorEnabled?: boolean;
   bazelCompileCommandsManualBuildCommand?: string;
   bazelCompileCommandsLastBuildCommand?: string;
-  usePythonCompileCommandsGenerator?: boolean;
+  experimentalCompileCommands?: boolean;
 };
 
 const vscode = acquireVsCodeApi();
@@ -73,9 +73,9 @@ export class Root extends LitElement {
     });
   }
 
-  private _togglePythonCompileCommandsGenerator(enabled: boolean) {
+  private _toggleExperimentalCompileCommands(enabled: boolean) {
     vscode.postMessage({
-      type: 'setUsePythonCompileCommandsGenerator',
+      type: 'setExperimentalCompileCommands',
       data: enabled,
     });
   }
@@ -282,14 +282,13 @@ export class Root extends LitElement {
                 <label class="checkbox-label">
                   <input
                     type="checkbox"
-                    .checked=${this.cipdReport
-                      .usePythonCompileCommandsGenerator}
+                    .checked=${this.cipdReport.experimentalCompileCommands}
                     @change=${(e: Event) =>
-                      this._togglePythonCompileCommandsGenerator(
+                      this._toggleExperimentalCompileCommands(
                         (e.target as HTMLInputElement).checked,
                       )}
                   />
-                  Use Python compile commands generator (experimental)
+                  Use aspect-based compile commands generator (experimental)
                 </label>
               </div>
               <div class="row">

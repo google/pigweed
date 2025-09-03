@@ -43,6 +43,7 @@ export interface Settings {
   disableInactiveFileNotice: Setting<boolean>;
   disableInactiveFileCodeIntelligence: Setting<boolean>;
   enforceExtensionRecommendations: Setting<boolean>;
+  experimentalCompileCommands: Setting<boolean>;
   hideInactiveFileIndicators: Setting<boolean>;
   preserveBazelPath: Setting<boolean>;
   projectRoot: Setting<string | undefined>;
@@ -51,7 +52,6 @@ export interface Settings {
   supportCmakeTargets: Setting<boolean | 'auto'>;
   supportGnTargets: Setting<boolean | 'auto'>;
   terminalShell: Setting<TerminalShell>;
-  usePythonCompileCommandsGenerator: Setting<boolean>;
 }
 
 export type ConfigAccessor<T> = {
@@ -334,6 +334,18 @@ function enforceExtensionRecommendations(
   return update(value);
 }
 
+function experimentalCompileCommands(): boolean;
+function experimentalCompileCommands(
+  value: boolean | undefined,
+): Thenable<void>;
+function experimentalCompileCommands(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
+  const { get, update } = boolSettingFor('experimentalCompileCommands');
+  if (value === undefined) return get() ?? false;
+  return update(value);
+}
+
 function hideInactiveFileIndicators(): boolean;
 function hideInactiveFileIndicators(value: boolean | undefined): Thenable<void>;
 function hideInactiveFileIndicators(
@@ -422,18 +434,6 @@ function terminalShell(
   return update(value);
 }
 
-function usePythonCompileCommandsGenerator(): boolean;
-function usePythonCompileCommandsGenerator(
-  value: boolean | undefined,
-): Thenable<void>;
-function usePythonCompileCommandsGenerator(
-  value?: boolean,
-): boolean | undefined | Thenable<void> {
-  const { get, update } = boolSettingFor('usePythonCompileCommandsGenerator');
-  if (value === undefined) return get() ?? false;
-  return update(value);
-}
-
 /** Entry point for accessing settings. */
 export const settings: Settings = {
   activateBazeliskInNewTerminals,
@@ -450,6 +450,7 @@ export const settings: Settings = {
   disableInactiveFileNotice,
   disableInactiveFileCodeIntelligence,
   enforceExtensionRecommendations,
+  experimentalCompileCommands,
   hideInactiveFileIndicators,
   preserveBazelPath,
   projectRoot,
@@ -458,7 +459,6 @@ export const settings: Settings = {
   supportCmakeTargets,
   supportGnTargets,
   terminalShell,
-  usePythonCompileCommandsGenerator,
 };
 
 // Config accessors for Bazel extension settings.

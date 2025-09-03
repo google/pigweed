@@ -192,16 +192,81 @@ export async function createBazelInterceptorFile() {
     );
   }
 
-  const usePythonGenerator = settings.usePythonCompileCommandsGenerator();
-  const generatorTarget = usePythonGenerator
-    ? '@pigweed//pw_ide/py:compile_commands_generator_binary'
-    : '@pigweed//pw_ide/ts/pigweed_vscode:compile_commands_generator_binary';
+  const useAspectBasedGenerator = settings.experimentalCompileCommands();
+  const generatorTarget =
+    '@pigweed//pw_ide/py:compile_commands_generator_binary';
   const canonicalizerTarget = '@pigweed//pw_ide/py:bazel_canonicalize_args';
 
   let bazelInterceptorScript;
 
-  if (SHELL.endsWith('fish')) {
-    bazelInterceptorScript = `#!/usr/bin/env fish
+  if (useAspectBasedGenerator) {
+    const aspect =
+      '--aspects=@pigweed//pw_ide/bazel/compile_commands:pw_cc_compile_commands_aspect.bzl%pw_cc_compile_commands_aspect';
+    const outputGroups = '--output_groups=pw_cc_compile_commands_fragments';
+
+    if (SHELL.endsWith('fish')) {
+      bazelInterceptorScript = `#!/usr/bin/env fish
+set -u
+
+if contains -- $argv[1] build run test
+  echo "Cleaning old compile commands..." >&2
+  $BAZEL_REAL run @pigweed//pw_ide/bazel:clean_compile_commands
+  if [ $status -ne 0 ];
+    echo "⚠️  Clean command failed, continuing..." >&2
+  end
+
+  echo "Building with compile commands aspect..." >&2
+  $BAZEL_REAL $argv[1] ${aspect} ${outputGroups} $argv[2..-1]
+  set BAZEL_EXIT_CODE $status
+
+  if [ $BAZEL_EXIT_CODE -eq 0 ];
+    echo "Updating compile commands..." >&2
+    $BAZEL_REAL run @pigweed//pw_ide/bazel:update_compile_commands
+    if [ $status -ne 0 ];
+      echo "⚠️  Update command failed, continuing..." >&2
+    end
+  end
+else
+  $BAZEL_REAL $argv
+  set BAZEL_EXIT_CODE $status
+end
+
+exit $BAZEL_EXIT_CODE
+`;
+    } else {
+      bazelInterceptorScript = `#!${SHELL}
+set -uo pipefail
+
+if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
+  echo "Cleaning old compile commands..." >&2
+  $BAZEL_REAL run @pigweed//pw_ide/bazel:clean_compile_commands
+  if [ $? -ne 0 ]; then
+    echo "⚠️  Clean command failed, continuing..." >&2
+  fi
+
+  echo "Building with compile commands aspect..." >&2
+  $BAZEL_REAL "$1" ${aspect} ${outputGroups} "\${@:2}"
+  BAZEL_EXIT_CODE=$?
+
+  if [ $BAZEL_EXIT_CODE -eq 0 ]; then
+    echo "Updating compile commands..." >&2
+    $BAZEL_REAL run @pigweed//pw_ide/bazel:update_compile_commands
+    if [ $? -ne 0 ]; then
+      echo "⚠️  Update command failed, continuing..." >&2
+    fi
+  fi
+else
+  $BAZEL_REAL "$@"
+  BAZEL_EXIT_CODE=$?
+fi
+
+exit $BAZEL_EXIT_CODE
+`;
+    }
+  } else {
+    // Python generator logic
+    if (SHELL.endsWith('fish')) {
+      bazelInterceptorScript = `#!/usr/bin/env fish
 set -u
 
 if contains -- $argv[1] build run test
@@ -212,13 +277,13 @@ if contains -- $argv[1] build run test
   $BAZEL_REAL $argv
   set BAZEL_EXIT_CODE $status # Capture the exit code of the Bazel command
   if [ $BAZEL_EXIT_CODE -eq 0 ]
-    echo "⏳ Generating compile commands..."
+    echo "⏳ Generating compile commands..." >&2
     # Generate the compile commands now, make sure to run this with same args as original bazel invocation.
     $BAZEL_REAL --quiet run $CANONICALIZED_ARGS --show_result=0 \
       ${generatorTarget} -- \
       --target "$argv" --cwd (pwd) --bazelCmd "$BAZEL_REAL"
     if [ $status -ne 0 ]
-      echo "⚠️ Compile commands generation failed (exit code $status), continuing..."
+      echo "⚠️ Compile commands generation failed (exit code $status), continuing..." >&2
     end
   end
 else
@@ -228,8 +293,8 @@ end
 
 exit $BAZEL_EXIT_CODE
 `;
-  } else {
-    bazelInterceptorScript = `#!${SHELL}
+    } else {
+      bazelInterceptorScript = `#!${SHELL}
 set -uo pipefail
 
  if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
@@ -240,13 +305,13 @@ set -uo pipefail
   $BAZEL_REAL "$@"
   BAZEL_EXIT_CODE=$? # Capture the exit code of the Bazel command
   if [ $BAZEL_EXIT_CODE -eq 0 ]; then
-    echo "⏳ Generating compile commands..."
+    echo "⏳ Generating compile commands..." >&2
     # Generate the compile commands now, make sure to run this with same args as original bazel invocation.
     $BAZEL_REAL --quiet run $CANONICALIZED_ARGS --show_result=0 \
       ${generatorTarget} -- \
       --target "$*" --cwd "$(pwd)" --bazelCmd "$BAZEL_REAL"
     if [ $? -ne 0 ]; then
-      echo "⚠️ Compile commands generation failed (exit code $?), continuing..."
+      echo "⚠️ Compile commands generation failed (exit code $?), continuing..." >&2
     fi
   fi
 else
@@ -256,6 +321,7 @@ fi
 
 exit $BAZEL_EXIT_CODE
 `;
+    }
   }
 
   writeFileSync(pathForBazelBuildInterceptor, bazelInterceptorScript);
