@@ -24,9 +24,93 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import List, NamedTuple
 
 # A unique suffix to identify fragments created by our aspect.
 _FRAGMENT_SUFFIX = ".pw_aspect.compile_commands.json"
+
+# Supported architectures for clangd, based on the provided list.
+# TODO(b/442862617): A better way than this than hardcoded list.
+SUPPORTED_MARCH_ARCHITECTURES = {
+    "nocona",
+    "core2",
+    "penryn",
+    "bonnell",
+    "atom",
+    "silvermont",
+    "slm",
+    "goldmont",
+    "goldmont-plus",
+    "tremont",
+    "nehalem",
+    "corei7",
+    "westmere",
+    "sandybridge",
+    "corei7-avx",
+    "ivybridge",
+    "core-avx-i",
+    "haswell",
+    "core-avx2",
+    "broadwell",
+    "skylake",
+    "skylake-avx512",
+    "skx",
+    "cascadelake",
+    "cooperlake",
+    "cannonlake",
+    "icelake-client",
+    "rocketlake",
+    "icelake-server",
+    "tigerlake",
+    "sapphirerapids",
+    "alderlake",
+    "raptorlake",
+    "meteorlake",
+    "arrowlake",
+    "arrowlake-s",
+    "lunarlake",
+    "gracemont",
+    "pantherlake",
+    "sierraforest",
+    "grandridge",
+    "graniterapids",
+    "graniterapids-d",
+    "emeraldrapids",
+    "clearwaterforest",
+    "diamondrapids",
+    "knl",
+    "knm",
+    "k8",
+    "athlon64",
+    "athlon-fx",
+    "opteron",
+    "k8-sse3",
+    "athlon64-sse3",
+    "opteron-sse3",
+    "amdfam10",
+    "barcelona",
+    "btver1",
+    "btver2",
+    "bdver1",
+    "bdver2",
+    "bdver3",
+    "bdver4",
+    "znver1",
+    "znver2",
+    "znver3",
+    "znver4",
+    "znver5",
+    "x86-64",
+    "x86-64-v2",
+    "x86-64-v3",
+    "x86-64-v4",
+}
+
+
+class CompileCommand(NamedTuple):
+    file: str
+    directory: str
+    arguments: List[str]
 
 
 def main() -> int:
@@ -62,6 +146,17 @@ def main() -> int:
             "Did you run 'bazel build --config=ide //your/target' first?",
             file=sys.stderr,
         )
+        return 1
+
+    try:
+        execution_root_str = subprocess.check_output(
+            ["bazel", "info", "execution_root"],
+            encoding="utf-8",
+            cwd=workspace_root,
+        ).strip()
+        real_bazel_out = Path(execution_root_str) / "bazel-out"
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting bazel execution_root: {e}", file=sys.stderr)
         return 1
 
     # Search for fragments with our unique suffix.
@@ -105,8 +200,19 @@ def main() -> int:
         platform_dir.mkdir()
         merged_json_path = platform_dir / "compile_commands.json"
 
+        processed_commands = []
+        for command_dict in all_commands:
+            cmd = CompileCommand(
+                file=command_dict["file"],
+                directory=command_dict["directory"],
+                arguments=command_dict["arguments"],
+            )
+            resolved_cmd = resolve_bazel_out_paths(cmd, real_bazel_out)
+            filtered_cmd = filter_unsupported_march_args(resolved_cmd)
+            processed_commands.append(filtered_cmd._asdict())
+
         with open(merged_json_path, "w") as f:
-            json.dump(all_commands, f, indent=2)
+            json.dump(processed_commands, f, indent=2)
 
         with open(merged_json_path, "r") as f:
             content = f.read()
@@ -116,6 +222,45 @@ def main() -> int:
 
     print(f"Successfully created compilation databases in: {output_dir}")
     return 0
+
+
+def resolve_bazel_out_paths(
+    command: CompileCommand, real_bazel_out: Path
+) -> CompileCommand:
+    """Replaces bazel-out paths with their real paths."""
+    marker = 'bazel-out/'
+    new_args = []
+
+    for arg in command.arguments:
+        if marker in arg:
+            parts = arg.split(marker, 1)
+            prefix = parts[0]
+            suffix = parts[1]
+            new_path = real_bazel_out.joinpath(*suffix.split('/'))
+            new_arg = prefix + str(new_path)
+            new_args.append(new_arg)
+        else:
+            new_args.append(arg)
+
+    new_file = command.file
+    if command.file.startswith(marker):
+        path_suffix = command.file[len(marker) :]
+        new_file = str(real_bazel_out.joinpath(*path_suffix.split('/')))
+
+    return command._replace(arguments=new_args, file=new_file)
+
+
+def filter_unsupported_march_args(command: CompileCommand) -> CompileCommand:
+    """Removes -march arguments if the arch is not supported by clangd."""
+    new_args = []
+    for arg in command.arguments:
+        if arg.startswith("-march="):
+            arch = arg.split("=", 1)[1]
+            if arch in SUPPORTED_MARCH_ARCHITECTURES:
+                new_args.append(arg)
+        else:
+            new_args.append(arg)
+    return command._replace(arguments=new_args)
 
 
 if __name__ == "__main__":
