@@ -20,6 +20,8 @@
 
 namespace pw::protobuf {
 
+/// @module{pw_protobuf}
+
 // Per the protobuf specification, valid field numbers range between 1 and
 // 2**29 - 1, inclusive. The numbers 19000-19999 are reserved for internal
 // use.
@@ -94,5 +96,7 @@ class FieldKey {
     uint32_t field_number, WireType wire_type) {
   return FieldKey(field_number, wire_type);
 }
+
+/// @}
 
 }  // namespace pw::protobuf

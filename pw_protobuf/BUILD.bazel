@@ -406,7 +406,16 @@ filegroup(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_protobuf/bytes_utils.h",
+        "public/pw_protobuf/config.h",
+        "public/pw_protobuf/decoder.h",
+        "public/pw_protobuf/encoder.h",
         "public/pw_protobuf/find.h",
+        "public/pw_protobuf/map_utils.h",
+        "public/pw_protobuf/message.h",
+        "public/pw_protobuf/serialized_size.h",
+        "public/pw_protobuf/stream_decoder.h",
+        "public/pw_protobuf/wire_format.h",
     ],
 )
 

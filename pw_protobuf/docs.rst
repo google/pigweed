@@ -1,3 +1,5 @@
+.. TODO: b/442224704 - Migrate the C/C++ API reference content to Doxygen
+
 .. _module-pw_protobuf:
 
 ===========
@@ -716,9 +718,29 @@ through the fields and checking the field numbers, along with casting types.
 
 Find APIs
 ---------
+Sometimes, only a single field from a serialized message needs to be read. In
+these cases, setting up a decoder and iterating through the message is a lot of
+boilerplate. ``pw_protobuf`` provides convenient :doxylink:`Find APIs
+<pw_protobuf_find>` which handle this for you.
 
-.. doxygenfile:: pw_protobuf/public/pw_protobuf/find.h
+.. note::
 
+   Each call to ``Find*()`` linearly scans through the message. If you
+   have to read multiple fields, it is more efficient to instantiate your own
+   decoder as described above.
+
+.. code-block:: cpp
+
+   pw::Status PrintCustomerAge(pw::ConstByteSpan serialized_customer) {
+     pw::Result<uint32_t> age = pw::protobuf::FindUint32(
+         serialized_customer, Customer::Fields::kAge);
+     if (!age.ok()) {
+       return age.status();
+     }
+
+     PW_LOG_INFO("Customer's age is %u", *age);
+     return pw::OkStatus();
+   }
 
 Handling of packages
 ====================

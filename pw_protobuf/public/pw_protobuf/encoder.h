@@ -38,6 +38,8 @@
 
 namespace pw::protobuf {
 
+/// @module{pw_protobuf}
+
 // Provides a size estimate to help with sizing buffers passed to
 // StreamEncoder and MemoryEncoder objects.
 //
@@ -1030,5 +1032,7 @@ inline ToStreamEncoder& StreamEncoderCast(FromStreamEncoder& encoder) {
                 "pw::protobuf::StreamEncoder");
   return pw::internal::SiblingCast<ToStreamEncoder&, StreamEncoder>(encoder);
 }
+
+/// @}
 
 }  // namespace pw::protobuf

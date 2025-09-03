@@ -44,6 +44,8 @@
 //
 namespace pw::protobuf {
 
+/// @module{pw_protobuf}
+
 // TODO(frolv): Rename this to MemoryDecoder to match the encoder naming.
 class Decoder {
  public:
@@ -345,5 +347,7 @@ class DecodeHandler {
   virtual Status ProcessField(CallbackDecoder& decoder,
                               uint32_t field_number) = 0;
 };
+
+/// @}
 
 }  // namespace pw::protobuf

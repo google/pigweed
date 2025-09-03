@@ -17,6 +17,8 @@
 
 #include <cstddef>
 
+/// @module{pw_protobuf}
+
 // When encoding nested messages, the number of bytes to reserve for the varint
 // submessage length. Nested messages are limited in size to the maximum value
 // that can be varint-encoded into this reserved space.
@@ -33,6 +35,8 @@
 #ifndef PW_PROTOBUF_CFG_MAX_VARINT_SIZE
 #define PW_PROTOBUF_CFG_MAX_VARINT_SIZE 4
 #endif  // PW_PROTOBUF_MAX_VARINT_SIZE
+
+/// @}
 
 static_assert(PW_PROTOBUF_CFG_MAX_VARINT_SIZE > 0 &&
               PW_PROTOBUF_CFG_MAX_VARINT_SIZE <= 5);

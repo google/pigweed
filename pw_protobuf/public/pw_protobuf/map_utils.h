@@ -28,6 +28,8 @@
 
 namespace pw::protobuf {
 
+/// @module{pw_protobuf}
+
 // The function writes an entry for the proto map<string, bytes> field type.
 //
 // Args:
@@ -55,5 +57,7 @@ Status WriteProtoStringToBytesMapEntry(uint32_t field_number,
                                        size_t value_size,
                                        ByteSpan stream_pipe_buffer,
                                        stream::Writer& writer);
+
+/// @}
 
 }  // namespace pw::protobuf

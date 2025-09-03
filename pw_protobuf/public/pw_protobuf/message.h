@@ -28,8 +28,9 @@
 #include "pw_stream/interval_reader.h"
 #include "pw_stream/stream.h"
 
-/// Protocol buffer encoding and decoding library
 namespace pw::protobuf {
+
+/// @module{pw_protobuf}
 
 // The following defines classes that represent various parsed proto integer
 // types or an error code to indicate parsing failure.
@@ -619,5 +620,7 @@ class StringMapParser
     return ValueParser(Status::NotFound());
   }
 };
+
+/// @}
 
 }  // namespace pw::protobuf

@@ -347,6 +347,14 @@
 /// @defgroup pw_preprocessor pw_preprocessor
 /// @brief Helpful preprocessor macros. Main docs: https://pigweed.dev/pw_preprocessor
 
+/// @defgroup pw_protobuf pw_protobuf
+/// @brief Expressive interface for encoding and decoding protocol buffers
+/// @details Main docs: [Home](../../pw_protobuf/docs.html) |
+/// [Extended size report](../../pw_protobuf/size_report.html)
+
+/// @defgroup pw_protobuf_find Find APIs
+/// @ingroup pw_protobuf
+
 /// @defgroup pw_random pw_random
 /// @brief Main docs: https://pigweed.dev/pw_random
 

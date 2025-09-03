@@ -22,6 +22,8 @@
 
 namespace pw::protobuf {
 
+/// @module{pw_protobuf}
+
 // Decodes a proto message bytes field to a uint32_t value. The caller must
 // advance the decoder and check the field number prior to calling this function
 // otherwise there is undefined behavior. E.g.
@@ -57,5 +59,7 @@ inline Result<uint32_t> DecodeBytesToUint32(Decoder& decoder) {
   }
   return value;
 }
+
+/// @}
 
 }  // namespace pw::protobuf

@@ -13,32 +13,6 @@
 // the License.
 #pragma once
 
-/// @file pw_protobuf/find.h
-///
-/// Sometimes, only a single field from a serialized message needs to be read.
-/// In these cases, setting up a decoder and iterating through the message is a
-/// lot of boilerplate. ``pw_protobuf`` provides convenient ``Find*()``
-/// functions which handle this for you.
-///
-/// @note Each call to ``Find*()`` linearly scans through the message. If you
-/// have to read multiple fields, it is more efficient to instantiate your own
-/// decoder as described above.
-///
-/// @code{.cpp}
-///
-///   pw::Status PrintCustomerAge(pw::ConstByteSpan serialized_customer) {
-///     pw::Result<uint32_t> age = pw::protobuf::FindUint32(
-///         serialized_customer, Customer::Fields::kAge);
-///     if (!age.ok()) {
-///       return age.status();
-///     }
-///
-///     PW_LOG_INFO("Customer's age is %u", *age);
-///     return pw::OkStatus();
-///   }
-///
-/// @endcode
-
 #include "pw_bytes/span.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/stream_decoder.h"
@@ -54,6 +28,8 @@ Status AdvanceToField(Decoder& decoder, uint32_t field_number);
 Status AdvanceToField(StreamDecoder& decoder, uint32_t field_number);
 
 }  // namespace internal
+
+/// @submodule{pw_protobuf,find}
 
 template <typename T, auto kReadFn>
 class Finder {
@@ -125,6 +101,8 @@ class EnumStreamFinder
   }
 };
 
+/// @}
+
 namespace internal {
 template <typename T, auto kReadFn>
 Result<T> Find(ConstByteSpan message, uint32_t field_number) {
@@ -139,6 +117,8 @@ Result<T> Find(stream::Reader& reader, uint32_t field_number) {
 }
 
 }  // namespace internal
+
+/// @submodule{pw_protobuf,find}
 
 /// @brief Scans a serialized protobuf message for a `uint32` field.
 ///
@@ -1149,5 +1129,7 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 Result<ConstByteSpan> FindRaw(ConstByteSpan message, T field) {
   return FindRaw(message, static_cast<uint32_t>(field));
 }
+
+/// @}
 
 }  // namespace pw::protobuf

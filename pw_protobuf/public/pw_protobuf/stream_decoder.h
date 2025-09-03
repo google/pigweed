@@ -31,6 +31,8 @@
 
 namespace pw::protobuf {
 
+/// @module{pw_protobuf}
+
 // A low-level, event-based protobuf wire format decoder that operates on a
 // stream.
 //
@@ -735,5 +737,7 @@ class StreamDecoder {
 
   friend class Message;
 };
+
+/// @}
 
 }  // namespace pw::protobuf

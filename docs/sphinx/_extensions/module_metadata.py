@@ -574,6 +574,7 @@ def should_add_doxygen_link(module_name) -> bool:
         'pw_persistent_ram',
         'pw_polyfill',
         'pw_preprocessor',
+        'pw_protobuf',
         'pw_random',
         'pw_rpc',
         'pw_span',
