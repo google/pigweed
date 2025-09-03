@@ -17,7 +17,6 @@ import argparse
 import logging
 import os
 import re
-import shutil
 import sys
 from typing import Pattern
 
@@ -27,8 +26,6 @@ from pw_presubmit import (
     block_submission,
     cli,
     cpp_checks,
-    inclusive_language,
-    javascript_checks,
     json_check,
     keep_sorted,
     upstream_checks,
@@ -38,7 +35,8 @@ from pw_presubmit.presubmit import Programs
 
 _LOG = logging.getLogger('pw_presubmit')
 
-EXCLUDES = (
+# Paths to completely exclude from presubmit checks.
+_EXCLUDE_PATHS = (
     "\\bthird_party/fuchsia/repo",
     "\\bthird_party/perfetto/repo",
     "\\bthird_party/.*\\.json$",
@@ -49,26 +47,22 @@ EXCLUDES = (
     "^patches\\.json$",
 )
 
+EXCLUDES = tuple(re.compile(path) for path in _EXCLUDE_PATHS)
+
+# Quick lint and format checks.
 QUICK = (
     upstream_checks.bazel_includes(),
     upstream_checks.commit_message_format,
     upstream_checks.copyright_notice,
-    inclusive_language.presubmit_check.with_filter(
-        exclude=(
-            r'\bMODULE.bazel.lock$',
-            r'\bgo.sum$',
-            r'\bpackage-lock.json$',
-            r'\bpnpm-lock.yaml$',
-            r'\byarn.lock$',
-        )
-    ),
+    upstream_checks.inclusive_language_check,
     block_submission.presubmit_check,
     cpp_checks.pragma_once,
     # TODO: b/432484923 - Fix this check in Bazel.
     # build.bazel_lint,
     upstream_checks.owners_lint_checks,
     upstream_checks.source_in_gn_build(),
-    javascript_checks.eslint if shutil.which('npm') else (),
+    # TODO: b/432484923 - Implement this check in Bazel.
+    # javascript_checks.eslint,
     json_check.presubmit_check,
     keep_sorted.presubmit_check,
     upstream_checks.todo_check_with_exceptions,
@@ -99,12 +93,13 @@ def run(install: bool, exclude: list[Pattern[str]], **presubmit_args) -> int:
         )
         return 0
 
-    exclude.extend(re.compile(path) for path in EXCLUDES)
+    exclude.extend(EXCLUDES)
     return cli.run(exclude=exclude, **presubmit_args)
 
 
 def main() -> int:
     """Run the presubmit for the Pigweed repository."""
+    # Change to working directory if running from Bazel.
     if 'BUILD_WORKING_DIRECTORY' in os.environ:
         os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
 

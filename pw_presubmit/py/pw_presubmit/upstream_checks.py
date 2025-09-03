@@ -27,6 +27,7 @@ from pw_presubmit import (
     bazel_checks,
     format_code,
     git_repo,
+    inclusive_language,
     owners_checks,
     source_in_build,
     todo_check,
@@ -559,3 +560,14 @@ def source_in_bazel_build() -> Check:
     return source_in_build.bazel(SOURCE_FILES_FILTER).with_file_filter(
         SOURCE_FILES_FILTER_BAZEL_EXCLUDE
     )
+
+
+inclusive_language_check = inclusive_language.presubmit_check.with_filter(
+    exclude=(
+        r'\bMODULE.bazel.lock$',
+        r'\bgo.sum$',
+        r'\bpackage-lock.json$',
+        r'\bpnpm-lock.yaml$',
+        r'\byarn.lock$',
+    )
+)

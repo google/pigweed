@@ -25,26 +25,22 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Callable, Pattern, Sequence
 
 import pw_package.pigweed_packages
 from pw_cli.file_filter import FileFilter
 
 from pw_presubmit import (
     bazel_checks,
-    block_submission,
     build,
     cli,
     cpp_checks,
     format_code,
     gitmodules,
-    inclusive_language,
     javascript_checks,
-    json_check,
-    keep_sorted,
     module_owners,
     npm_presubmit,
-    owners_checks,
+    pigweed_local_presubmit,
     python_checks,
     shell_checks,
     source_in_build,
@@ -54,6 +50,12 @@ from pw_presubmit.install_hook import install_git_hook
 from pw_presubmit.presubmit import Programs, call, filter_paths
 from pw_presubmit.presubmit_context import PresubmitContext, PresubmitFailure
 from pw_presubmit.tools import log_run
+
+# Keep this import separate for now to avoid breaking downstream users.
+# pylint: disable=unused-import
+from pw_presubmit.upstream_checks import owners_lint_checks
+
+# pylint: enable=unused-import
 
 _LOG = logging.getLogger(__name__)
 
@@ -1101,12 +1103,6 @@ def static_analysis(ctx: PresubmitContext):
     build.gn_check(ctx)
 
 
-@filter_paths(file_filter=format_code.OWNERS_CODE_FORMAT.filter)
-def owners_lint_checks(ctx: PresubmitContext):
-    """Runs OWNERS linter."""
-    owners_checks.presubmit_check(ctx.paths)
-
-
 SOURCE_FILES_FILTER_CMAKE_EXCLUDE = FileFilter(
     exclude=(
         # keep-sorted: start
@@ -1187,30 +1183,11 @@ SECURITY = (
 
 FUZZ = (gn_fuzz_build, oss_fuzz_build)
 
-_LINTFORMAT = (
-    upstream_checks.bazel_includes(),
-    upstream_checks.commit_message_format,
-    upstream_checks.copyright_notice,
+_LINTFORMAT = pigweed_local_presubmit.QUICK + (
     format_code.presubmit_checks(),
-    inclusive_language.presubmit_check.with_filter(
-        exclude=(
-            r'\bMODULE.bazel.lock$',
-            r'\bgo.sum$',
-            r'\bpackage-lock.json$',
-            r'\bpnpm-lock.yaml$',
-            r'\byarn.lock$',
-        )
-    ),
-    block_submission.presubmit_check,
-    cpp_checks.pragma_once,
-    build.bazel_lint,
-    owners_lint_checks,
-    upstream_checks.source_in_gn_build(),
+    build.bazel_lint,  # TODO: b/432484923 - Remove when added to Bazel checks
     source_is_in_cmake_build_warn_only,
     javascript_checks.eslint if shutil.which('npm') else (),
-    json_check.presubmit_check,
-    keep_sorted.presubmit_check,
-    upstream_checks.todo_check_with_exceptions,
 )
 
 LINTFORMAT = (
@@ -1269,7 +1246,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run(install: bool, **presubmit_args) -> int:
+def run(install: bool, exclude: list[Pattern[str]], **presubmit_args) -> int:
     """Entry point for presubmit."""
 
     if install:
@@ -1287,7 +1264,8 @@ def run(install: bool, **presubmit_args) -> int:
         )
         return 0
 
-    return cli.run(**presubmit_args)
+    exclude.extend(pigweed_local_presubmit.EXCLUDES)
+    return cli.run(exclude=exclude, **presubmit_args)
 
 
 def main() -> int:
