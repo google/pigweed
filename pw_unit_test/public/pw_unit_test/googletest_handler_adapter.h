@@ -18,6 +18,9 @@
 #include "pw_unit_test/event_handler.h"
 
 namespace pw {
+
+/// @submodule{pw_unit_test,events}
+
 namespace unit_test {
 
 /// Adapts a custom ``main()`` function to work with upstream GoogleTest
@@ -44,4 +47,7 @@ class GoogleTestHandlerAdapter : public testing::EmptyTestEventListener {
 };
 
 }  // namespace unit_test
+
+/// @}
+
 }  // namespace pw

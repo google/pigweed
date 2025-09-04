@@ -23,6 +23,8 @@
 
 namespace pw::unit_test {
 
+/// @submodule{pw_unit_test,events}
+
 /// Predefined event handler implementation that produces human-readable
 /// GoogleTest-style test output and sends it to a sink that you define.
 /// See ``pw::unit_test::EventHandler`` for explanations of emitted events.
@@ -83,5 +85,7 @@ class SimplePrintingEventHandler : public GoogleTestStyleEventHandler {
   WriteFunction write_;
   char buffer_[512];
 };
+
+/// @}
 
 }  // namespace pw::unit_test

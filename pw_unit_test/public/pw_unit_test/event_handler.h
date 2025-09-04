@@ -14,10 +14,12 @@
 #pragma once
 
 namespace pw {
-/// GoogleTest for embedded
+
 namespace unit_test {
 
-// The result of a complete test run.
+/// @submodule{pw_unit_test,events}
+
+/// The result of a complete test run.
 enum class TestResult {
   kSuccess = 0,
   kFailure = 1,
@@ -26,60 +28,60 @@ enum class TestResult {
 };
 
 struct TestCase {
-  // Name of the test suite to which this test case belongs.
+  /// Name of the test suite to which this test case belongs.
   const char* suite_name;
 
-  // Name of the test case.
+  /// Name of the test case.
   const char* test_name;
 
-  // Path to the file in which the test case is defined.
+  /// Path to the file in which the test case is defined.
   const char* file_name;
 };
 
 struct TestExpectation {
-  // The source code for the expression which was run.
+  /// The source code for the expression which was run.
   const char* expression;
 
-  // The expression with arguments evaluated.
+  /// The expression with arguments evaluated.
   const char* evaluated_expression;
 
-  // Line number at which the expectation is located.
+  /// Line number at which the expectation is located.
   int line_number;
 
-  // Whether the expectation succeeded.
+  /// Whether the expectation succeeded.
   bool success;
 };
 
 struct RunTestsSummary {
-  // The number of passed tests among the run tests.
+  /// The number of passed tests among the run tests.
   int passed_tests;
 
-  // The number of passed tests among the run tests.
+  /// The number of passed tests among the run tests.
   int failed_tests;
 
-  // The number of tests skipped or filtered out.
+  /// The number of tests skipped or filtered out.
   int skipped_tests;
 
-  // The number of disabled tests encountered.
+  /// The number of disabled tests encountered.
   int disabled_tests;
 };
 
 struct ProgramSummary {
-  // The total number of tests to run in the program.
+  /// The total number of tests to run in the program.
   int tests_to_run;
 
-  // The number of test suites included in the program.
+  /// The number of test suites included in the program.
   int test_suites;
 
-  // Test summary for the program once complete.
+  /// Test summary for the program once complete.
   RunTestsSummary tests_summary;
 };
 
 struct TestSuite {
-  // Name of the test suite.
+  /// Name of the test suite.
   const char* name;
 
-  // Total number of tests in suite to run.
+  /// Total number of tests in suite to run.
   int test_to_run_count;
 };
 
@@ -164,5 +166,8 @@ class EventHandler {
 /// @warning This method is not thread-safe.
 void RegisterEventHandler(EventHandler* event_handler);
 
+/// @}
+
 }  // namespace unit_test
+
 }  // namespace pw

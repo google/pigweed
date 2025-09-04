@@ -533,6 +533,40 @@
 /// @defgroup pw_uart pw_uart
 /// @brief Core interfaces for UART communication. Main docs: https://pigweed.dev/pw_uart
 
+/// @defgroup pw_unit_test pw_unit_test
+/// @brief GoogleTest for embedded
+/// @details Main docs: [Home](../../pw_unit_test/docs.html)
+
+/// @defgroup pw_unit_test_declaration Test declaration
+/// @ingroup pw_unit_test
+
+/// @defgroup pw_unit_test_control Test control
+/// @ingroup pw_unit_test
+
+/// @defgroup pw_unit_test_expectations Expectations
+/// @ingroup pw_unit_test
+/// @details When a test fails an expectation, the framework marks the test as
+/// a failure and then continues executing the test. They’re useful when you
+/// want to verify multiple dimensions of the same feature and see all the
+/// errors at the same time.
+
+/// @defgroup pw_unit_test_assertions Assertions
+/// @ingroup pw_unit_test
+/// @details Assertions work the same as expectations except they stop the
+/// execution of the test as soon as a failed condition is met.
+
+/// @defgroup pw_unit_test_events Event handlers
+/// @ingroup pw_unit_test
+
+/// @defgroup pw_unit_test_configuration Configuration
+/// @ingroup pw_unit_test
+
+/// @defgroup pw_unit_test_helpers Helpers
+/// @ingroup pw_unit_test
+
+/// @defgroup pw_unit_test_constexpr Constexpr tests
+/// @ingroup pw_unit_test
+
 /// @defgroup pw_uuid pw_uuid
 /// @brief 128-bit universally unique identifier (UUID). Main docs: https://pigweed.dev/pw_uuid
 

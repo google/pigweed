@@ -51,7 +51,10 @@
 #define PW_UNIT_TEST_GOOGLETEST_CASE_DISABLED "[ DISABLED ] %s.%s"
 
 namespace pw {
+
 namespace unit_test {
+
+/// @submodule{pw_unit_test,events}
 
 /// Provides GoogleTest-style output for ``pw_unit_test:light`` events. Must
 /// be extended to define how to output the results. See
@@ -90,5 +93,8 @@ class GoogleTestStyleEventHandler : public EventHandler {
   bool verbose_;
 };
 
+/// @}
+
 }  // namespace unit_test
+
 }  // namespace pw

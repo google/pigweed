@@ -20,6 +20,8 @@
 
 namespace pw::unit_test {
 
+/// @submodule{pw_unit_test,events}
+
 /// Event handler adapter that allows for multiple event handlers to be
 /// registered and used during test runs.
 template <size_t kNumHandlers>
@@ -97,5 +99,7 @@ class MultiEventHandler : public EventHandler {
   static_assert(kNumHandlers > 0);
   std::array<EventHandler*, kNumHandlers> event_handlers_;
 };
+
+/// @}
 
 }  // namespace pw::unit_test

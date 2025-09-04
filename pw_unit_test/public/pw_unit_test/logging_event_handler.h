@@ -17,6 +17,8 @@
 
 namespace pw::unit_test {
 
+/// @submodule{pw_unit_test,events}
+
 /// Predefined event handler implementation that produces human-readable
 /// GoogleTest-style test output and logs it via ``pw_log``. See
 /// ``pw::unit_test::EventHandler`` for explanations of emitted events.
@@ -42,5 +44,7 @@ class LoggingEventHandler : public EventHandler {
  private:
   bool verbose_;
 };
+
+/// @}
 
 }  // namespace pw::unit_test

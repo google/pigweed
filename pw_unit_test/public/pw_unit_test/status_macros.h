@@ -16,6 +16,8 @@
 #include "lib/stdcompat/type_traits.h"
 #include "pw_status/status.h"
 
+/// @submodule{pw_unit_test,expectations}
+
 /// Verifies that `expr` is OkStatus()
 ///
 /// Converts `expr` to a Status value and checks that it is `OkStatus()`.
@@ -27,6 +29,10 @@
         ::pw::internal::ConvertToStatus(expr));     \
   } else                                            \
     EXPECT_EQ(::pw::internal::ConvertToStatus(expr), ::pw::OkStatus())
+
+/// @}
+
+/// @submodule{pw_unit_test,assertions}
 
 /// See `PW_TEST_EXPECT_OK`.
 #define PW_TEST_ASSERT_OK(expr)                          \
@@ -66,6 +72,8 @@
 #define PW_TEST_ASSERT_OK_AND_ASSIGN(lhs, rexpr) \
   _PW_TEST_ASSERT_OK_AND_ASSIGN_DETAIL(          \
       _PW_UNIQUE_IDENTIFIER_DETAIL(__LINE__), lhs, rexpr)
+
+/// @}
 
 #define _PW_TEST_ASSERT_OK_AND_ASSIGN_DETAIL(result, lhs, rexpr) \
   auto result = (rexpr);                                         \

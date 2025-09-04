@@ -37,6 +37,8 @@
 #include "pw_unit_test/config.h"
 #include "pw_unit_test/event_handler.h"
 
+/// @submodule{pw_unit_test,declaration}
+
 /// @def GTEST_TEST
 /// Alias for `TEST`.
 #define GTEST_TEST(test_suite_name, test_name)                           \
@@ -59,6 +61,11 @@
 /// @def TEST_F
 /// Defines a test case using a test fixture.
 ///
+/// @note `TEST_F` may allocate fixtures separately from the stack. Large
+/// variables should be stored in test fixture fields, rather than stack
+/// variables. This allows the test framework to statically ensure that enough
+/// space is available to store these variables.
+///
 /// @param[in] test_fixture The name of the test fixture class to use.
 /// @param[in] test_name The name of the test case.
 #define TEST_F(test_fixture, test_name)                                \
@@ -76,6 +83,10 @@
 /// @param[in] test_name The name of the test case to befriend.
 #define FRIEND_TEST(test_suite_name, test_name) \
   friend class test_suite_name##_##test_name##_Test
+
+/// @}
+
+/// @submodule{pw_unit_test,expectations}
 
 /// @def EXPECT_TRUE
 /// Verifies that @p expr evaluates to true.
@@ -190,6 +201,10 @@
 /// @param[in] rhs The right side of the inequality comparison.
 #define EXPECT_STRNE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_C_STR(lhs, rhs, !=))
 
+/// @}
+
+/// @submodule{pw_unit_test,assertions}
+
 /// @def ASSERT_TRUE
 /// See `EXPECT_TRUE`.
 #define ASSERT_TRUE(expr) _PW_TEST_ASSERT(_PW_TEST_BOOL(expr, true))
@@ -246,6 +261,10 @@
 /// @def ASSERT_STRNE
 /// See `EXPECT_STRNE`.
 #define ASSERT_STRNE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_C_STR(lhs, rhs, !=))
+
+/// @}
+
+/// @submodule{pw_unit_test,control}
 
 /// @def ADD_FAILURE
 /// Generates a non-fatal failure with a generic message.
@@ -325,8 +344,12 @@ int RUN_ALL_TESTS();
 #define ASSERT_DEATH_IF_SUPPORTED(statement, regex) \
   EXPECT_DEATH_IF_SUPPORTED(statement, regex)
 
+/// @}
+
 namespace pw {
 namespace string {
+
+/// @submodule{pw_unit_test,helpers}
 
 // This function is used to print unknown types that are used in EXPECT or
 // ASSERT statements in tests.
@@ -384,6 +407,8 @@ StatusWithSize UnknownTypeToString(const T& value, span<char> buffer) {
   sb << '>';
   return sb.status_with_size();
 }
+
+/// @}
 
 }  // namespace string
 

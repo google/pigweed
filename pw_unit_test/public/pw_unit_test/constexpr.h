@@ -77,6 +77,8 @@
 #include "pw_preprocessor/boolean.h"
 #include "pw_preprocessor/concat.h"
 
+/// @submodule{pw_unit_test,constexpr}
+
 /// Defines a test that is executed both at compile time in a `static_assert`
 /// and as a regular GoogleTest-style `TEST()`.
 ///
@@ -108,6 +110,8 @@
     _PW_IF_CONSTEXPR_TEST(PwConstexprTest_##test_suite##_##test_name();) \
     return true;                                                         \
   }())
+
+/// @}
 
 // GoogleTest-style test macros for PW_CONSTEXPR_TEST.
 

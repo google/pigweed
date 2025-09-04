@@ -274,6 +274,35 @@ If the :ref:`subset <module-pw_unit_test-compatibility>` of GoogleTest that
 full upstream GoogleTest API through ``pw_unit_test:googletest``. See
 :ref:`module-pw_unit_test-upstream`.
 
+.. _module-pw_unit_test-compatibility:
+
+``pw_unit_test:light`` API compatibility
+----------------------------------------
+``pw_unit_test:light`` offers a number of primitives for test declaration,
+assertion, event handlers, and configuration.
+
+.. note::
+
+   The ``googletest_test_matchers`` target which provides Pigweed-specific
+   ``StatusIs``, ``IsOkAndHolds`` isn't part of the ``pw_unit_test:light``
+   backend. These matchers are only usable when including the full upstream
+   GoogleTest backend.
+
+Missing features include:
+
+* GoogleMock and matchers (e.g. ``EXPECT_THAT``).
+* Death tests (e.g. ``EXPECT_DEATH``). ``EXPECT_DEATH_IF_SUPPORTED``
+  does nothing but silently passes.
+* Value-parameterized tests.
+* Stream messages (e.g. ``EXPECT_TRUE(...) << "My message"``) will compile, but
+  no message will be logged.
+* SCOPED_TRACE will compile, but trace information will not be added to failure
+  messages.
+
+See :ref:`module-pw_unit_test-upstream` for guidance on using the
+upstream GoogleTest backend (``pw_unit_test:googletest``) instead of
+``pw_unit_test:light``.
+
 .. _module-pw_unit_test-main:
 
 Create a custom ``main`` function
@@ -336,8 +365,8 @@ Predefined event handlers
 Pigweed provides some standard event handlers to simplify the process of
 getting started with ``pw_unit_test:light``. All event handlers provide for
 GoogleTest-style output using the shared
-:cpp:class:`pw::unit_test::GoogleTestStyleEventHandler` base. Example
-output:
+:doxylink:`GoogleTestStyleEventHandler
+<pw::unit_test::GoogleTestStyleEventHandler>` base. Example output:
 
 .. code-block::
 
@@ -400,7 +429,7 @@ skipped when :ref:`using upstream GoogleTest <module-pw_unit_test-upstream>`:
 Run tests in static libraries
 =============================
 To run tests in a static library, use the
-:c:macro:`PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST` macro.
+:doxylink:`PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST` macro.
 
 Linkers usually ignore tests through static libraries (i.e. ``.a`` files)
 because test registration relies on the test instance's static constructor
@@ -569,176 +598,9 @@ In GN and CMake, directly run the
 -----------------
 C++ API reference
 -----------------
-
-``pw_status`` Helpers
-=====================
-Both the light and GoogleTest backends of ``pw_unit_test`` expose some matchers
-for dealing with Pigweed ``pw::Status`` and ``pw::Result`` values. See
-:ref:`module-pw_unit_test-api-expect` and :ref:`module-pw_unit_test-api-assert`
-for details.
-
-.. _module-pw_unit_test-compatibility:
-
-``pw_unit_test:light`` API compatibility
-========================================
-``pw_unit_test:light`` offers a number of primitives for test declaration,
-assertion, event handlers, and configuration.
-
-.. note::
-
-   The ``googletest_test_matchers`` target which provides Pigweed-specific
-   ``StatusIs``, ``IsOkAndHolds`` isn't part of the ``pw_unit_test:light``
-   backend. These matchers are only usable when including the full upstream
-   GoogleTest backend.
-
-Missing features include:
-
-* GoogleMock and matchers (e.g. :c:macro:`EXPECT_THAT`).
-* Death tests (e.g. :c:macro:`EXPECT_DEATH`). ``EXPECT_DEATH_IF_SUPPORTED``
-  does nothing but silently passes.
-* Value-parameterized tests.
-* Stream messages (e.g. ``EXPECT_TRUE(...) << "My message"``) will compile, but
-  no message will be logged.
-* SCOPED_TRACE will compile, but trace information will not be added to failure
-  messages.
-
-See :ref:`module-pw_unit_test-upstream` for guidance on using the
-upstream GoogleTest backend (``pw_unit_test:googletest``) instead of
-``pw_unit_test:light``.
-
-.. _module-pw_unit_test-declare:
-
-Test declaration
-================
-Note that ``TEST_F`` may allocate fixtures separately from the stack.
-Large variables should be stored in test fixture fields,
-rather than stack variables. This allows the test framework to statically ensure
-that enough space is available to store these variables.
-
-.. doxygendefine:: TEST
-.. doxygendefine:: GTEST_TEST
-.. doxygendefine:: TEST_F
-.. doxygendefine:: FRIEND_TEST
-
-.. _module-pw_unit_test-control:
-
-Test control
-============
-
-.. doxygenfunction:: RUN_ALL_TESTS
-.. doxygendefine:: FAIL
-.. doxygendefine:: GTEST_FAIL
-.. doxygendefine:: SUCCEED
-.. doxygendefine:: GTEST_SUCCEED
-.. doxygendefine:: GTEST_SKIP
-.. doxygendefine:: ADD_FAILURE
-.. doxygendefine:: GTEST_HAS_DEATH_TEST
-.. doxygendefine:: EXPECT_DEATH_IF_SUPPORTED
-.. doxygendefine:: ASSERT_DEATH_IF_SUPPORTED
-
-.. _module-pw_unit_test-api-expect:
-
-Expectations
-============
-When a test fails an expectation, the framework marks the test as a failure
-and then continues executing the test. They're useful when you want to
-verify multiple dimensions of the same feature and see all the errors at the
-same time.
-
-.. doxygendefine:: EXPECT_TRUE
-.. doxygendefine:: EXPECT_FALSE
-.. doxygendefine:: EXPECT_EQ
-.. doxygendefine:: EXPECT_NE
-.. doxygendefine:: EXPECT_GT
-.. doxygendefine:: EXPECT_GE
-.. doxygendefine:: EXPECT_LT
-.. doxygendefine:: EXPECT_LE
-.. doxygendefine:: EXPECT_NEAR
-.. doxygendefine:: EXPECT_FLOAT_EQ
-.. doxygendefine:: EXPECT_DOUBLE_EQ
-.. doxygendefine:: EXPECT_STREQ
-.. doxygendefine:: EXPECT_STRNE
-.. doxygendefine:: PW_TEST_EXPECT_OK
-
-.. _module-pw_unit_test-api-assert:
-
-Assertions
-==========
-Assertions work the same as expectations except they stop the execution of the
-test as soon as a failed condition is met.
-
-.. doxygendefine:: ASSERT_TRUE
-.. doxygendefine:: ASSERT_FALSE
-.. doxygendefine:: ASSERT_EQ
-.. doxygendefine:: ASSERT_NE
-.. doxygendefine:: ASSERT_GT
-.. doxygendefine:: ASSERT_GE
-.. doxygendefine:: ASSERT_LT
-.. doxygendefine:: ASSERT_LE
-.. doxygendefine:: ASSERT_NEAR
-.. doxygendefine:: ASSERT_FLOAT_EQ
-.. doxygendefine:: ASSERT_DOUBLE_EQ
-.. doxygendefine:: ASSERT_STREQ
-.. doxygendefine:: ASSERT_STRNE
-.. doxygendefine:: PW_TEST_ASSERT_OK
-.. doxygendefine:: PW_TEST_ASSERT_OK_AND_ASSIGN
-
-.. _module-pw_unit_test-api-event-handlers:
-
-Event handlers
-==============
-.. doxygenfunction:: pw::unit_test::RegisterEventHandler(EventHandler* event_handler)
-.. doxygenclass:: pw::unit_test::EventHandler
-   :members:
-.. doxygenclass:: pw::unit_test::GoogleTestHandlerAdapter
-.. doxygenclass:: pw::unit_test::GoogleTestStyleEventHandler
-.. doxygenclass:: pw::unit_test::SimplePrintingEventHandler
-.. doxygenclass:: pw::unit_test::LoggingEventHandler
-.. doxygenclass:: pw::unit_test::PrintfEventHandler
-.. doxygenclass:: pw::unit_test::MultiEventHandler
-.. doxygenclass:: pw::unit_test::TestRecordEventHandler
-
-.. _module-pw_unit_test-cpp-config:
-
-Configuration
-=============
-.. doxygenfile:: pw_unit_test/config.h
-   :sections: define
-
-.. _module-pw_unit_test-cpp-helpers:
-
-Helpers
-=======
-.. doxygendefine:: PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST
+Moved: :doxylink:`pw_unit_test`
 
 .. _module-pw_unit_test-py:
-
---------------------
-Constexpr unit tests
---------------------
-.. doxygenfile:: pw_unit_test/constexpr.h
-   :sections: detaileddescription
-
-API reference
-=============
-.. doxygendefine:: PW_CONSTEXPR_TEST
-
-.. block-submission: disable
-.. c:macro:: SKIP_CONSTEXPR_TESTS_DONT_SUBMIT
-
-   Define the ``SKIP_CONSTEXPR_TESTS_DONT_SUBMIT`` macro to temporarily disable
-   the ``constexpr`` portion of subsequent :c:macro:`PW_CONSTEXPR_TEST`\s. Use
-   this to view GoogleTest output, which is usually more informative than the
-   compiler's ``constexpr`` test failure output.
-
-   Defines of this macro should never be submitted. If a test shouldn't run at
-   compile time, use a plain ``TEST()``.
-
-   .. literalinclude:: constexpr_test.cc
-      :language: cpp
-      :start-after: [pw_unit_test-constexpr-skip]
-      :end-before: [pw_unit_test-constexpr-skip]
-.. block-submission: enable
 
 --------------------
 Python API reference

@@ -12896,10 +12896,10 @@ There's been a concerted effort to reduce ``pw_transfer`` test flakiness.
 
 pw_unit_test
 ------------
-The :ref:`module-pw_unit_test-api-expect` and
-:ref:`module-pw_unit_test-api-assert` APIs were documented. Support for
-GoogleTest's ``ASSERT_OK_AND_ASSIGN``, ``StatusIs``, and ``IsOkAndHolds`` was
-added.
+The :doxylink:`Expectations <pw_unit_test_expectations>` and
+:doxylink:`Assertions <pw_unit_test_assertions>` APIs were documented. Support
+for GoogleTest's ``ASSERT_OK_AND_ASSIGN``, ``StatusIs``, and ``IsOkAndHolds``
+was added.
 
 * `Document ASSERT_ and EXPECT_ macros
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179873>`__

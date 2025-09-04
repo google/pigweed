@@ -17,6 +17,8 @@
 
 #include <cstddef>
 
+/// @submodule{pw_unit_test,configuration}
+
 #ifndef PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
 /// The size of the event buffer that the ``UnitTestThread`` contains.
 /// This buffer is used to encode events.  By default this is set to
@@ -37,6 +39,8 @@
 #define PW_UNIT_TEST_CONFIG_EXPECTATION_BUFFER_SIZE \
   (sizeof(void*) > 4 ? 512 : 192)
 #endif  // PW_UNIT_TEST_CONFIG_EXPECTATION_BUFFER_SIZE
+
+/// @}
 
 namespace pw::unit_test::config {
 

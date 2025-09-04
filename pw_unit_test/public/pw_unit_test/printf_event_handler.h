@@ -21,6 +21,8 @@
 namespace pw {
 namespace unit_test {
 
+/// @submodule{pw_unit_test,events}
+
 /// Predefined event handler implementation that produces human-readable
 /// GoogleTest-style test output and logs it via ``std::printf``. See
 /// ``pw::unit_test::EventHandler`` for explanations of emitted events.
@@ -43,4 +45,7 @@ class PrintfEventHandler final : public GoogleTestStyleEventHandler {
 };
 
 }  // namespace unit_test
+
+/// @}
+
 }  // namespace pw

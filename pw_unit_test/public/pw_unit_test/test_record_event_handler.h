@@ -26,6 +26,8 @@ inline constexpr const char* kSkipMacroIndicator = "(test skipped)";
 
 }  // namespace json_impl
 
+/// @submodule{pw_unit_test,events}
+
 /// Predefined event handler implementation that outputs a test record (or
 /// summary) in Chromium JSON Test Results Format. To use it, register the event
 /// handler, call the ``RUN_ALL_TESTS`` macro, then extract the test record json
@@ -126,5 +128,7 @@ class TestRecordEventHandler : public EventHandler {
   // The entrypoint for interacting with the test record trie.
   json_impl::TestRecordTrie test_record_trie_;
 };
+
+/// @}
 
 }  // namespace pw::unit_test

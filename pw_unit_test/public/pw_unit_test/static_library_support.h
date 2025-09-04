@@ -15,6 +15,8 @@
 
 #include "pw_unit_test/framework.h"
 
+/// @submodule{pw_unit_test,helpers}
+
 /// Ensures tests in a static library are linked and executed. Provide the test
 /// suite name and test name for one test in the file linked into a static
 /// library. Any test in the file may be used, but it's recommended to use the
@@ -34,6 +36,8 @@
 /// that file.
 #define PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST(suite, name) \
   _PW_UNIT_TEST_LINK_TESTS(_pw_unit_test_Info_##suite##_##name)
+
+/// @}
 
 #define _PW_UNIT_TEST_LINK_TESTS(info)                              \
   extern "C" {                                                      \
