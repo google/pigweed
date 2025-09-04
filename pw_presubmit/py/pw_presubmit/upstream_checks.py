@@ -76,6 +76,8 @@ SOURCE_FILES_FILTER_GN_EXCLUDE = FileFilter(
         r'\bcodelab',
         r'\bdocs',
         r'\bexamples',
+        r'\bjava/',
+        r'\bjava_jni/',
         r'\bpw_bluetooth_sapphire/fuchsia',
         r'\bpw_kernel',
         # keep-sorted: end

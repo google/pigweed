@@ -168,6 +168,11 @@
             "//pw_status/..."
           ],
           [
+            "test",
+            "--test_tag_filters=jni",
+            "//..."
+          ],
+          [
             "build",
             "--@rules_rust//rust/toolchain/channel=nightly",
             "//..."

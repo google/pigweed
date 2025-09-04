@@ -364,35 +364,6 @@ pw_proto_library("proto") {
   python_package = "py"
 }
 
-declare_args() {
-  # pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS specifies the paths to use for
-  # building Java Native Interface libraries. If no paths are provided, targets
-  # that require JNI may not build correctly.
-  #
-  # Example JNI include paths for a Linux system:
-  #
-  #   pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS = [
-  #     "/usr/local/buildtools/java/jdk/include/",
-  #     "/usr/local/buildtools/java/jdk/include/linux",
-  #   ]
-  #
-  pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS = []
-}
-
-# Create a shared library for the tokenizer JNI wrapper. The include paths for
-# the JNI headers must be available in the system or provided with the
-# pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS variable.
-pw_shared_library("detokenizer_jni") {
-  public_configs = [ ":public_include_path" ]
-  include_dirs = pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS
-  sources = [ "java/dev/pigweed/tokenizer/detokenizer.cc" ]
-  public_deps = [
-    ":decoder",
-    "$dir_pw_preprocessor",
-  ]
-  deps = [ dir_pw_span ]
-}
-
 pw_cc_blob_library("detokenizer_elf_test_blob") {
   out_header = "pw_tokenizer/example_binary_with_tokenized_strings.h"
   namespace = "test::ns"

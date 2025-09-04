@@ -29,14 +29,12 @@ common --//pw_presubmit/py:enable_typescript_formatter=True
 
 # Default build_tag_filters and test_tag_filters
 # ==============================================
-# Skip building any targets tagged do_not_build.
-build --build_tag_filters=-do_not_build,-kernel
-
-# Exclude integration tests from the default build. The test_tag_filters flag
-# doesn't accumulate (https://github.com/bazelbuild/bazel/issues/7322): we have
-# to specify it only once, setting all the exclusions in a comma-separated
-# list.
-test --test_tag_filters=-integration,-do_not_build,-do_not_run_test,-kernel
+# Exclude targets with certain tags from default build/test runs. The
+# build/test_tag_filters flag doesn't accumulate
+# (https://github.com/bazelbuild/bazel/issues/7322): we have to specify it only
+# once, setting all the exclusions in a comma-separated list.
+build --build_tag_filters=-do_not_build,-kernel,-jni
+test --test_tag_filters=-integration,-do_not_build,-do_not_run_test,-kernel,-jni
 
 # C++ related flags
 # =================
