@@ -152,7 +152,7 @@ export class InactiveFileDecorationProvider
     }
 
     const workspaceFiles = await vscode.workspace.findFiles(
-      '**/*.{c,cc,cpp,h,hpp}', // include
+      '**/*.{c,cc,cpp}', // include
       '**/{.*,bazel*,external}/**', // exclude
     );
 
@@ -230,7 +230,7 @@ export class InactiveFileDecorationProvider
 
     const uri = editor.document.uri;
     // Only apply banners to files potentially relevant to C/C++ analysis
-    if (!/\.(c|cc|cpp|h|hpp)$/.test(uri.fsPath)) {
+    if (!/\.(c|cc|cpp)$/.test(uri.fsPath)) {
       editor.setDecorations(this.bannerDecorationType, []);
       return;
     }
