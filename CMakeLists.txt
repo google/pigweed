@@ -72,6 +72,8 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
       pw_sync.timed_thread_notification pw_sync_zephyr.timed_thread_notification_backend pw_sync/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_MUTEX
       pw_sync.mutex pw_sync_zephyr.mutex_backend pw_sync/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_TIMED_MUTEX
+      pw_sync.timed_mutex pw_sync_zephyr.timed_mutex_backend pw_sync/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYS_IO
       pw_sys_io pw_sys_io_zephyr pw_sys_io/backend.cmake)
 
