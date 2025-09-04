@@ -86,9 +86,9 @@ export class TargetStatusBarItem extends Disposable {
         break;
       case 'fault':
         this.updateProps({
-          command: 'pigweed.refresh-compile-commands',
+          command: 'pigweed.select-target',
           icon: ICON_FAULT,
-          tooltip: 'An error occurred! Click to try again',
+          tooltip: 'Click to select a code analysis target',
         });
         break;
       default:
