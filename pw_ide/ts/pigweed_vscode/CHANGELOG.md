@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.9.8] - 2025-09-04
+
+### Features
+
+ - New experimental compile commands generator based on Bazel's
+   [aspects](https://bazel.build/extending/aspects) feature.
+ - The default commands generator is now based on the previous experimental
+   python based generator.
+
+### Bug Fixes
+
+ - Clicking the targets in the status bar now opens the target selection.
+ - Don't parse compile commands for headers.
+
 ## [1.9.7] - 2025-08-19
 
 ### Bug Fixes
