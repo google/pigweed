@@ -269,7 +269,7 @@ input.
 To simulate inserting a coin, type :kbd:`c` and press :kbd:`Enter` in the same
 terminal. The hardware thread will call the coin slot Interrupt Service Routine
 (ISR), which wakes up your task. The dispatcher will run it again, and you'll
-see... an unexpected result:
+see… an unexpected result:
 
 .. code-block::
 
@@ -367,23 +367,23 @@ your `//pw_async2/codelab/vending_machine.h`_ header file:
 .. code-block:: cpp
 
    class Keypad {
-      public:
-         constexpr Keypad() : key_pressed_(kNone) {}
+    public:
+     constexpr Keypad() : key_pressed_(kNone) {}
 
-         // Pends until a key has been pressed, returning the key number.
-         //
-         // May only be called by one task.
-         pw::async2::Poll<int> Pend(pw::async2::Context& cx);
+     // Pends until a key has been pressed, returning the key number.
+     //
+     // May only be called by one task.
+     pw::async2::Poll<int> Pend(pw::async2::Context& cx);
 
-         // Record a key press. Typically called from the keypad ISR.
-         void Press(int key);
+     // Record a key press. Typically called from the keypad ISR.
+     void Press(int key);
 
-      private:
-         // A special internal value to indicate no keypad button has yet been
-         // pressed.
-         static constexpr int kNone = -1;
+    private:
+     // A special internal value to indicate no keypad button has yet been
+     // pressed.
+     static constexpr int kNone = -1;
 
-         int key_pressed_;
+     int key_pressed_;
    };
 
 Also add these stub implementations to the top of your
@@ -392,14 +392,14 @@ Also add these stub implementations to the top of your
 .. code-block:: cpp
 
    pw::async2::Poll<int> Keypad::Pend(pw::async2::Context& cx) {
-      // This is a stub implementation!
-      static_cast<void>(cx);
-      return key_pressed_;
+     // This is a stub implementation!
+     static_cast<void>(cx);
+     return key_pressed_;
    }
 
    void Keypad::Press(int key) {
-      // This is a stub implementation!
-      static_cast<void>(key);
+     // This is a stub implementation!
+     static_cast<void>(key);
    }
 
 This should be a good starting stub. Notice how the ``Pend`` member function just
@@ -525,7 +525,7 @@ you some work. But if something went wrong, they are straightforward:
       std::lock_guard lock(lock_);
       int key = std::exchange(key_pressed_, kNone);
       if (key != kNone) {
-         return key;
+        return key;
       }
       return pw::async2::Pending();
 
@@ -634,7 +634,7 @@ will not be a crash!
 Let's see what happens if you forget to wake the task.
 
 Build and run the codelab, and then press :kbd:`c` :kbd:`Enter` :kbd:`1`
-:kbd:`Enter`....
+:kbd:`Enter`.
 
 .. code-block:: sh
 
@@ -747,8 +747,316 @@ Well, depending on how you arranged to wait on both the ``CoinSlot`` and
    Try typing :kbd:`d` :kbd:`Enter`, to see what your task is waiting on. Can
    you fix it?
 
-We will look at how to better handle multiple pendables in the next step. As a
-hint, you need to start thinking of your task as a state machine.
+We will look at how to better handle increasing complexity in your ``DoPend``
+function in the next step.
+
+-------------------------------
+Step 4: Dealing with complexity
+-------------------------------
+
+You've now gotten to a point where your ``VendingMachineTask`` has a
+``DoPend()`` member function that:
+
+- First displays a welcome message, asking the user to insert a coin.
+
+  - … unless it is been displayed already.
+
+- Then waits for the user to insert a coin.
+
+  - … unless it has been inserted already.
+
+- Then waits for the user to select an item with the keypad.
+
+  - We haven't actually needed it, yet, but we might also need to skip this
+    if it has already occurred.
+
+Writing ``DoPend()`` functions this way is a perfectly valid choice, but you can
+imagine the pattern of a chain of checks growing ever longer as the complexity
+increases, and you end up with a long list of specialized conditional checks to
+skip the early stages before you handle the later stages.
+
+It's also not ideal that we can't process keypad input while waiting for a coin
+to be inserted. It would be nice to do something useful when the user makes a
+selection before paying for it. Likewise, when handling keypad input, we may
+miss additional coin insertion events when we should handle them, so we can
+properly account for the coins we are holding prior to a purchase.
+
+This step shows you how to do this.
+
+.. tip::
+
+   Solution for this step:
+   `//pw_async2/codelab/solutions/step4`_
+
+1. Structuring your tasks as state machines
+===========================================
+The first thing we recommend is explicitly structuring your tasks as state
+machines. For the vending machine you might end up with an enum for the states,
+and a switch statement in ``DoPend`` that looks like this skeleton:
+
+.. code-block:: cpp
+
+   enum State {
+     kWelcome,
+     kAwaitingPayment,
+     kAwaitingSelection,
+   };
+
+   pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context& cx) {
+     while (true) {
+       switch (state_) {
+         case kWelcome: {
+           // Show Welcome message
+           state_ = kAwaitingPayment;
+           break; // Reenter the switch()
+         }
+         case kAwaitingPayment: {
+           // Pend on coin_slot_
+
+           // Once coins are inserted...
+           state = kAwaitingSelection;
+           break; // Renter the switch()
+         }
+         case kAwaitingSelection: {
+           // Pend on keypad_
+
+           // Once a selection is made
+           // Dispense item
+           return pw::async2::Ready();
+         }
+       }
+     }
+   }
+
+This isn't the only way to do it, but it is perhaps the easiest way to
+understand since there isn't a lot of hidden machinery.
+
+Go ahead and convert your implementation to use this pattern, and make sure it
+still works.
+
+.. topic:: State machines in C++
+
+   Two other options for implementing a state machine in C++ include:
+
+   - Define a type tag for each state, and use a ``std::variant`` to represent
+     the possible states, and ```std::visit``` to dispatch to a handler for each
+     of them. Effectively this causes the compiler to generate the switch
+     statement for you at compile time.
+
+   - Use runtime dispatch through a function pointer to handle each state.
+     Usually you derive each state from a base class that defined a virtual
+     function that each state class provides an override for, but there are
+     other equivalents.
+
+
+2. Waiting on multiple pendables
+================================
+Given that your ``VendingMachine`` has both a ``CoinSlot`` and a ``Keypad``,
+there is already another problem in the simple linear flow we've implemented so
+far.
+
+You can see it for yourself by pressing :kbd:`1` on the keypad first, and
+inserting a coin :kbd:`c` afterwards, followed by :kbd:`Enter`,
+
+What happens in the linear flow, even after you've made the change to use a
+state machine pattern?
+
+How do you make your task better at handling multiple inputs when
+the ``Pend()`` of ``CoinSlot`` and ``Keypad`` can only wait on one thing?
+
+The answer is to use the :doxylink:`Selector <pw::async2::Selector>` class and
+the :doxylink:`Select <pw::async2::Select>` helper function to wait on multiple
+pendables, along with the
+:doxylink:`VisitSelectResult <pw::async2::VisitSelectResult>` helper that allows
+you to unpack the completion result value when one of those pendables returns
+``Ready()``
+
+Using ``Selector`` and ``Select``
+---------------------------------
+
+- :doxylink:`Select <pw::async2::Select>` is a simple wrapper function for
+  ``Selector``. It constructs a temporary instance of the class, and then
+  returns the result of calling ``Pend()`` on the instance. The temporary
+  instance is then destroyed when the function returns the result.
+
+  This behavior is useful when you have a set of pendables where you want to
+  wait on any of them. However take note that this won't ensure each pendable
+  has a fair chance to report it's stats. The first pendables in the set get
+  polled first, and if those are ready, those take precedence.
+
+  Depending on the design of the pendable type, it may also not be possible to
+  wait afresh for a new result after the pendable returned ``Ready()``.
+
+- :doxylink:`Selector <pw::async2::Selector>` is a pendable class that polls an
+  ordered set of pendables you provide to determine which (if any) are ready.
+
+  If you construct and store a ``Selector`` instance yourself, you can give all
+  the pendables in the poll set a chance to return ``Ready()``, since each will
+  be polled until the first time it returns ``Ready()``. However you must
+  arrange to invoke the ``Pend()`` function on the same ``Selector`` instance
+  yourself in a loop.
+
+  Once you process the ``AllPendablesCompleted`` result when using
+  ``VisitSelectResult`` (see below), you could then reset the ``Selector`` to once
+  again try all the pendables again.
+
+
+For the vending machine, we'll use ``Select``, so we can wait on multiple keypad
+buttons and coins, and respond correctly.
+
+Both ``Select`` and ``Selector`` work by using another helper function
+:doxylink:`PendableFor <pw::async2::PendableFor>` to construct a type-erased
+wrapper that allows the ``Pend()`` function to be called.
+
+To poll both the ``CoinSlot`` and the ``Keypad``, we use:
+
+.. code-block:: cpp
+
+   PW_TRY_READY_ASSIGN(
+       auto result,
+       pw::async2::Select(cx,
+                          pw::async2::PendableFor<&CoinSlot::Pend>(coin_slot_),
+                          pw::async2::PendableFor<&Keypad::Pend>(keypad_)));
+
+We use ``auto`` for the result return type, as the actual type is much more
+complicated, and typing out the entire type would be laborious and would not
+help with the readability of the code.
+
+As usual, we're using ``PW_TRY_READY_ASSIGN`` so that if all the pendables are
+pending then the current function will return ``Pending()``.
+
+If one of those returns ``Ready()``, the ``result`` value will indicate which
+one, and will also be holding the value (if any). For the ``CoinSlot`` that
+value will be the count of coins added, and for the ``Keypad``, that will be the
+button that was pressed.
+
+.. note::
+
+   The result will only contain a single ready result, based on the order of the
+   pendables given to the ``Select`` function (or used when constructing the
+   ``Selector``). They are checked in the order you give.
+
+   To get them all you may have to make the same call again. Keep in mind that
+   with ``Select`` you could see more coin inserts if the ISR for them happens
+   to trigger faster than your task can poll for them.
+
+   The bare ``Selector`` does not have that problem, but you will have to reset
+   its state instead to see more coin events after the first.
+
+
+Using ``VisitSelectResult``
+---------------------------
+:doxylink:`VisitSelectResult <pw::async2::VisitSelectResult>` is a helper for
+processing the result of the ``Select`` function or the ``Selector::Pend``
+member function call.
+
+The result contains a single ``Ready()`` result, but because of how the result is
+stored, there is a bit of C++ template magic to unpack it for each possible
+type. ``VisitSelectResult`` does its best to hide most of the details, but you
+need to specify an ordered list of lambda functions to handle each specific
+pendable result.
+
+.. code-block:: cpp
+
+   pw::async2::VisitSelectResult(
+       result,
+       [](pw::async2::AllPendablesCompleted) {
+         // Special lambda that's only needed when using `Selector::Pend`, and
+         // which is invoked when all the other pendables have completed.
+         // This can be left blank when using `Select` as it is not used.
+       },
+       [&](unsigned coins) {
+         // This is the first lambda after the `AllPendablesCompleted`` case as
+         // `CoinSlot::Pend` was in the first argument to `Select`.
+         // Invoked if the `CoinSlot::Pend` is ready, with the count of coins
+         // returned as part of the `Poll` result from that call.
+       },
+       [&](int key) {
+         // This is the second lambda after the `AllPendablesCompleted`` case as
+         // `Keypad::Pend` was in the second argument to `Select`.
+         // Invoked if the `Keypad::Pend` is ready, with the key number
+         // returned as part of the `Poll` result from that call.
+       });
+
+In case you were curious about the syntax, behind the scenes a ``std::visit`` is
+used with a ``std::variant``, and lambdas like these are how you can deal with
+the alternative values.
+
+But before you go and use ``Select``, there is one more suggestion.
+
+3. Reusing the ``Select`` code
+==============================
+Both the ``kAwaitingPayment`` state and the ``kAwaitingSelection`` state are
+going to be using the same set of pendables-the ``CoinSlot`` and the ``Keypad``.
+As the code involved is template-heavy (leading to lots of compile time code
+being generated), it's advisable to encapsulate the calls into a function that
+both states can use, without expanding the templates twice.
+
+The best way to do that is to treat input result as a pendable sub-state of the
+task's primary state machine.
+
+.. code-block:: cpp
+
+   enum Input {
+     kNone,
+     kCoinInserted,
+     kKeyPressed,
+   };
+
+   pw::async2::Poll<Input> VendingMachineTask::PendInput(pw::async2::Context& cx) {
+     Input input = kNone;
+
+     PW_TRY_READY_ASSIGN(
+         auto result,
+         pw::async2::Select(cx,
+                            pw::async2::PendableFor<&CoinSlot::Pend>(coin_slot_),
+                            pw::async2::PendableFor<&Keypad::Pend>(keypad_)));
+     pw::async2::VisitSelectResult(
+         result,
+         [](pw::async2::AllPendablesCompleted) {},
+         [&](unsigned coins) {
+           /* do something with coins */
+           input = kCoinInserted;
+         },
+         [&](int key) {
+           /* do something with key */
+           input = kKeyPressed;
+         });
+
+     return input;
+   }
+
+Inside the ``kAwaitingPayment`` and ``kAwaitingSelection`` states, you can then
+``Pend()`` for and then switch on the input sub-state result:
+
+.. code-block:: cpp
+
+   switch (state_) {
+
+     // …
+
+     case kAwaitingPayment: {
+       PW_TRY_READY_ASSIGN(Input input, PendInput(cx));
+       switch (input) {
+         case kCoinInserted: {
+           /* react to the expected coins */
+           break;
+         }
+         case kKeyPressed: {
+            /* react to the unexpected input */
+            break;
+         }
+       }
+     }
+
+     // And then something similar for the kAwaitingSelection state.
+   }
+
+Now go ahead and try filling in the blanks in those snippets. Can you build
+something reasonable that handles out-of-order input?
+
+Remember, if you get stuck, you can example our example solution for this step:
+`//pw_async2/codelab/solutions/step4`_
 
 .. The following references shorten the markup above.
 
@@ -761,3 +1069,4 @@ hint, you need to start thinking of your task as a state machine.
 .. _`//pw_async2/codelab/solutions/step1`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step1
 .. _`//pw_async2/codelab/solutions/step2`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step2
 .. _`//pw_async2/codelab/solutions/step3`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step3
+.. _`//pw_async2/codelab/solutions/step4`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step4

@@ -33,7 +33,7 @@ pw::async2::Poll<int> Keypad::Pend(pw::async2::Context& cx) {
 }
 
 void Keypad::Press(int key) {
-  if (key < 0 || key > 9) {
+  if (key < 1 || key > 4) {
     PW_LOG_ERROR("Ignoring unexpected key %d", key);
     return;
   }

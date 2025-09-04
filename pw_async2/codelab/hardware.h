@@ -22,7 +22,7 @@
 void coin_inserted_isr();
 
 // Interrupt handler function invoked when the user presses a key on the
-// machine's keypad. Receives the value of the pressed key (0-9).
+// machine's keypad. Receives the value of the pressed key (1-4).
 void key_press_isr(int key);
 
 namespace codelab {
@@ -35,7 +35,7 @@ void SetDisplay(std::string_view text);
 
 // Initializes the simulated hardware, allowing for interactive input and
 // output using a background thread. The given dispatcher is used to dump the
-// current dispatcher state on demand for diagnostic purporses.
+// current dispatcher state on demand for diagnostic purposes.
 void HardwareInit(pw::async2::Dispatcher* dispatcher);
 
 }  // namespace codelab
