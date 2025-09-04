@@ -416,6 +416,8 @@
 
 /// @defgroup pw_rpc_sync Synchronous API
 /// @ingroup pw_rpc
+/// @details Main docs: [Client synchronous call
+/// wrappers](../../pw_rpc/cpp.html#client-synchronous-call-wrappers)
 
 /// @defgroup pw_rpc_config Configuration
 /// @ingroup pw_rpc

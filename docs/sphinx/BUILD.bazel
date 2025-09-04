@@ -192,7 +192,6 @@ sphinx_build_binary(
         "//pw_unit_test/py:pw_unit_test",
         "//pw_watch/py:pw_watch",
         "//pw_watch/py:watch",
-        "@pigweed_python_packages//breathe",
         "@pigweed_python_packages//jsonschema",
         "@pigweed_python_packages//kconfiglib",
         "@pigweed_python_packages//pydata_sphinx_theme",

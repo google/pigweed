@@ -622,8 +622,108 @@ instantiate as:
 --------------------------------
 Client synchronous call wrappers
 --------------------------------
-.. doxygenfile:: pw_rpc/synchronous_call.h
-   :sections: detaileddescription
+``pw_rpc`` provides wrappers that convert the asynchronous client API to a
+synchronous API. The :doxylink:`SynchronousCall\<RpcMethod\>
+<pw::rpc::SynchronousCall>` functions wrap the asynchronous client RPC call
+with a timed thread notification and returns once a result is known or a
+timeout has occurred. Only unary methods are supported.
+
+The Nanopb and pwpb APIs return a :doxylink:`SynchronousCallResult\<Response\>
+<pw::rpc::SynchronousCallResult>` object, which can be queried to determine
+whether any error scenarios occurred and, if not, access the response. The raw
+API executes a function when the call completes or returns a :doxylink:`Status
+<pw::Status>` if it does not.
+
+``SynchronousCall<RpcMethod>`` blocks indefinitely, whereas
+:doxylink:`SynchronousCallFor\<RpcMethod\> <pw::rpc::SynchronousCallFor>` and
+:doxylink:`SynchronousCallUntil\<RpcMethod\> <pw::rpc::SynchronousCallUntil>`
+block for a given timeout or until a deadline, respectively. All wrappers work
+with either the standalone static RPC functions or the generated service client
+member methods.
+
+.. note::
+
+   Use of the ``SynchronousCall`` wrappers requires a
+   :doxylink:`TimedThreadNotification <pw::sync::TimedThreadNotification>`
+   backend.
+
+The following examples use the Nanopb API to make a call that blocks
+indefinitely. If you'd like to include a timeout for how long the call
+should block for, use the ``SynchronousCallFor()`` or ``SynchronousCallUntil()``
+variants.
+
+.. code-block:: cpp
+
+   pw_rpc_EchoMessage request{.msg = "hello" };
+   pw::rpc::SynchronousCallResult<pw_rpc_EchoMessage> result =
+     pw::rpc::SynchronousCall<EchoService::Echo>(rpc_client,
+                                                 channel_id,
+                                                 request);
+   if (result.ok()) {
+     PW_LOG_INFO("%s", result.response().msg);
+   }
+
+Additionally, the use of a generated ``Client`` object is supported:
+
+.. code-block:: cpp
+
+   pw_rpc::nanopb::EchoService::Client client(rpc_client, channel_id);
+   pw_rpc_EchoMessage request{.msg = "hello" };
+   pw::rpc::SynchronousCallResult<pw_rpc_EchoMessage> result =
+     pw::rpc::SynchronousCall<EchoService::Echo>(client, request);
+
+   if (result.ok()) {
+     PW_LOG_INFO("%s", result.response().msg);
+   }
+
+``SynchronousCall<RpcMethod>`` also supports using an optional custom response
+message class, ``SynchronousCall<RpcMethod, Response>``. This enables the use
+of response messages with variable-length fields.
+
+.. code-block:: cpp
+
+   pw_rpc_MyMethodRequestMessage request{};
+   class CustomResponse : public pw_rpc_MyMethodResponseMessage {
+    public:
+     CustomResponse() {
+       repeated_field.SetDecoder([this](
+         MyMethodResponse::StreamDecoder& decoder) {
+           return decoder.ReadRepeatedField(values);
+         }
+       );
+     }
+     pw::Vector<uint32_t, 4> values();
+   };
+   pw::rpc::SynchronousCallResult<CustomResponse> result =
+     pw::rpc::SynchronousCall<EchoService::Echo, CustomResponse>(rpc_client,
+                                                                 channel_id,
+                                                                 request);
+   if (result.ok()) {
+     PW_LOG_INFO("%d", result.response().values[0]);
+   }
+
+The raw API works similarly to the Nanopb API, but takes a :doxylink:`Function
+<pw::Function>` and returns a :doxylink:`Status <pw::Status>`. If the RPC
+completes, the ``Function`` is called with the response and returned status,
+and the ``SynchronousCall()`` invocation returns :doxylink:`OkStatus()
+<pw::OkStatus>`. If the RPC fails, ``SynchronousCall()`` returns an error.
+
+.. code-block:: cpp
+
+   pw::Status rpc_status = pw::rpc::SynchronousCall<EchoService::Echo>(
+       rpc_client, channel_id, encoded_request,
+       [](pw::ConstByteSpan reply, pw::Status status) {
+         PW_LOG_INFO("Received %zu bytes with status %s",
+                     reply.size(),
+                     status.str());
+       });
+
+.. warning::
+
+   These wrappers should not be used from any context that cannot be
+   blocked! This method will block the calling thread until the RPC completes,
+   and translate the response into a ``SynchronousCallResult`` that
+   contains the error type and status or the proto response.
 
 Example
 =======
@@ -986,13 +1086,7 @@ defined in ``pw_rpc/integration_testing.h``:
 ---------------------
 Configuration options
 ---------------------
-The following configurations can be adjusted via compile-time configuration of
-this module, see the
-:ref:`module documentation <module-structure-compile-time-configuration>` for
-more details.
-
-.. doxygenfile:: pw_rpc/public/pw_rpc/internal/config.h
-   :sections: define
+See :doxylink:`Configuration <pw_rpc_config>`.
 
 ------------------------------
 Sharing server and client code

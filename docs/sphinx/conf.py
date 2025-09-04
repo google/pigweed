@@ -85,7 +85,6 @@ else:  # GN build
     sys.path.append(f'{pw_root}/docs/_extensions')
 
 extensions = [
-    "breathe",
     "bug",  # Custom extension to normalize Pigweed bug links.
     "kconfig",
     "module_metadata",
@@ -312,17 +311,6 @@ doxylink = {
 }
 # TODO: b/441605063 - Remove after variadic macro bug is fixed.
 doxylink_parse_error_ignore_regexes = [r"\.\.\."]
-
-breathe_projects = {
-    # Assuming doxygen output is at out/docs/doxygen/
-    # This dir should be relative to out/docs/gen/docs/pw_docgen_tree/
-    "Pigweed": doxygen_xml_path,
-}
-breathe_default_project = "Pigweed"
-breathe_debug_trace_directives = False
-# (b/295023422) Disable the inaccurate `#include` statements that are generated
-# when `doxygennamespace` is used.
-breathe_show_include = False
 
 # Treat these as valid attributes in function signatures.
 cpp_id_attributes = [
