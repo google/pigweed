@@ -28,7 +28,7 @@ exports_files(
 )
 
 pw_cc_binary(
-    name = "step2",
+    name = "step5",
     srcs = [
         "main.cc",
         "vending_machine.cc",

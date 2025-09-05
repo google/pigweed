@@ -32,6 +32,15 @@ void coin_inserted_isr() { coin_slot.Deposit(); }
 // machine's keypad. Receives the value of the pressed key (0-9).
 void key_press_isr(int key) { keypad.Press(key); }
 
+// Interrupt handler function invoked to simulate the item drop detector
+// detecting confirmation that an item was successfully dispensed from the
+// machine.
+void item_drop_sensor_isr() {
+  // In Step 5 you will uses this as part of a new Dispense task that runs
+  // the dispenser motor until an item drops, or you time out on the vend
+  // operation.
+}
+
 int main() {
   pw::async2::Dispatcher dispatcher;
   codelab::HardwareInit(&dispatcher);

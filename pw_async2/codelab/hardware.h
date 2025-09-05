@@ -25,6 +25,11 @@ void coin_inserted_isr();
 // machine's keypad. Receives the value of the pressed key (1-4).
 void key_press_isr(int key);
 
+// Interrupt handler function invoked to simulate the item drop detector
+// detecting confirmation that an item was successfully dispensed from the
+// machine.
+void item_drop_sensor_isr();
+
 namespace codelab {
 
 // Number of characters on the vending machine's display.
@@ -32,6 +37,12 @@ inline constexpr size_t kDisplayCharacters = 10;
 
 // Call this to set the text on the vending machine's display.
 void SetDisplay(std::string_view text);
+
+enum MotorState { kOff, kOn };
+
+// Call this to set the simulated dispenser motor state for a item slot (1-4).
+// The motor state for each item slot is initially off.
+void SetDispenserMotorState(int item, MotorState state);
 
 // Initializes the simulated hardware, allowing for interactive input and
 // output using a background thread. The given dispatcher is used to dump the

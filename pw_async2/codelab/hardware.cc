@@ -42,6 +42,7 @@ enum : char {
   kKeypress4 = '4',
   kQuit = 'q',
   kDebugDispatcher = 'd',
+  kItemDropSensor = 'i',
 };
 
 // For use with kDebugDispatcher
@@ -65,6 +66,9 @@ Status StreamHardwareLoop(pw::stream::Reader& reader) {
     switch (command) {
       case kCoinReceived:
         coin_inserted_isr();
+        break;
+      case kItemDropSensor:
+        item_drop_sensor_isr();
         break;
       case kKeypress1:
       case kKeypress2:
@@ -141,6 +145,12 @@ void SetDisplay(std::string_view text) {
   }
 }
 
+void SetDispenserMotorState(int item, MotorState state) {
+  PW_LOG_INFO("[Motor for item %d set to %s]",
+              item,
+              state == MotorState::kOff ? "Off" : "On");
+}
+
 void HardwareInit(pw::async2::Dispatcher* dispatcher) {
   current_dispatcher = dispatcher;
 
@@ -150,6 +160,7 @@ void HardwareInit(pw::async2::Dispatcher* dispatcher) {
     PW_LOG_INFO("  Type 'q' (then enter) to quit.");
     PW_LOG_INFO("  Type 'd' to show the dispatcher state.");
     PW_LOG_INFO("  Type 'c' to insert a coin.");
+    PW_LOG_INFO("  Type 'i' to signal an item dropped.");
     PW_LOG_INFO("  Type '0'..'4' to press a keypad key.");
     PW_LOG_INFO("==========================================");
   }

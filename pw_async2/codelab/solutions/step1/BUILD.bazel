@@ -37,10 +37,18 @@ pw_cc_binary(
     ],
     deps = [
         "//pw_async2:dispatcher",
+        "//pw_async2:pendable",
         "//pw_async2:poll",
+        "//pw_async2:select",
+        "//pw_async2:system_time_provider",
+        "//pw_async2:time_provider",
         "//pw_async2/codelab:coin_slot",
         "//pw_async2/codelab:hardware",
+        "//pw_chrono:system_clock",
+        "//pw_containers:inline_async_deque",
         "//pw_log",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
     ],
 )
 
