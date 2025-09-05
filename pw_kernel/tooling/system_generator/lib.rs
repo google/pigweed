@@ -165,12 +165,12 @@ impl SystemGenerator for DefaultSystemGenerator {
         // Stack the apps after the kernel in flash and ram.
         // TODO: davidroth - remove the requirement of setting the size of
         // flash, and instead calculate it based on code size.
-        let mut flash_offset =
+        let mut next_flash_start_address =
             self.config.kernel.flash_start_address + self.config.kernel.flash_size_bytes;
-        flash_offset = Self::align(flash_offset, FLASH_ALIGNMENT);
-        let mut ram_offset =
+        next_flash_start_address = Self::align(next_flash_start_address, FLASH_ALIGNMENT);
+        let mut next_ram_start_address =
             self.config.kernel.ram_start_address + self.config.kernel.ram_size_bytes;
-        ram_offset = Self::align(ram_offset, RAM_ALIGNMENT);
+        next_ram_start_address = Self::align(next_ram_start_address, RAM_ALIGNMENT);
 
         let arch = self.config.arch.parse().unwrap();
         self.config.arch_crate_name = match arch {
@@ -179,13 +179,15 @@ impl SystemGenerator for DefaultSystemGenerator {
         };
 
         for app in self.config.apps.values_mut() {
-            app.flash_start_address = flash_offset;
-            app.flash_end_address = app.flash_start_address + app.flash_size_bytes;
-            flash_offset = Self::align(app.flash_end_address + 1, FLASH_ALIGNMENT);
+            app.flash_start_address = next_flash_start_address;
+            next_flash_start_address = Self::align(
+                app.flash_start_address + app.flash_size_bytes,
+                FLASH_ALIGNMENT,
+            );
 
-            app.ram_start_address = ram_offset;
-            app.ram_end_address = app.ram_start_address + app.ram_size_bytes;
-            ram_offset = Self::align(app.ram_end_address + 1, RAM_ALIGNMENT);
+            app.ram_start_address = next_ram_start_address;
+            next_ram_start_address =
+                Self::align(app.ram_start_address + app.ram_size_bytes, RAM_ALIGNMENT);
 
             app.start_fn_address = match arch {
                 // On Armv8M, the +1 is to denote thumb mode.
@@ -193,7 +195,7 @@ impl SystemGenerator for DefaultSystemGenerator {
                 Arch::RiscV => app.flash_start_address,
             };
 
-            app.initial_sp = app.ram_end_address;
+            app.initial_sp = app.ram_start_address + app.ram_size_bytes;
         }
     }
 }

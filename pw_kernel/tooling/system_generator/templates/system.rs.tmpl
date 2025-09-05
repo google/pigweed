@@ -34,12 +34,12 @@ pub fn start() {
         kernel::MemoryRegion::new(
             kernel::MemoryRegionType::ReadOnlyExecutable,
             {{app.flash_start_address | to_hex}},
-            {{app.flash_end_address | to_hex}},
+            {{(app.flash_start_address + app.flash_size_bytes) | to_hex}},
         ),
         kernel::MemoryRegion::new(
             kernel::MemoryRegionType::ReadWriteData,
             {{app.ram_start_address | to_hex}},
-            {{app.ram_end_address | to_hex}},
+            {{(app.ram_start_address + app.ram_size_bytes) | to_hex}},
         ),
     ]);
 

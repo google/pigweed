@@ -47,11 +47,7 @@ pub struct AppConfig {
     #[serde(skip_deserializing)]
     pub flash_start_address: usize,
     #[serde(skip_deserializing)]
-    pub flash_end_address: usize,
-    #[serde(skip_deserializing)]
     pub ram_start_address: usize,
-    #[serde(skip_deserializing)]
-    pub ram_end_address: usize,
     #[serde(skip_deserializing)]
     pub start_fn_address: usize,
     #[serde(skip_deserializing)]
