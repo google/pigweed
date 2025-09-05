@@ -26,19 +26,33 @@
 
 namespace pw {
 
-/// @module{pw_containers}
+/// @submodule{pw_containers,queues}
 
 // Forward declaration.
 template <typename T, typename SizeType, size_t kCapacity>
 class BasicInlineAsyncDeque;
 
-/// Async wrapper around BasicInlineDeque.
+/// Async wrapper around `pw::InlineDeque`.
 ///
-/// This class mimics the structure of `BasicInlineDequeImpl` to allow referring
-/// to an `InlineAsyncDeque` without an explicit maximum size.
+/// This class mimics the structure of `BasicInlineDeque` to allow referring to
+/// an `InlineAsyncDeque` without an explicit maximum size.
+///
+/// @warning `InlineAsyncDeque` is NOT thread safe. External synchronization is
+/// required to share an `InlineAsyncDeque` between threads.
 template <typename T, size_t kCapacity = containers::internal::kGenericSized>
 using InlineAsyncDeque = BasicInlineAsyncDeque<T, uint16_t, kCapacity>;
 
+/// `BasicInlineAsyncDeque` adds async `PendHasSpace` and `PendNotEmpty` methods
+/// to `BasicInlineDeque`.
+///
+/// `BasicInlineAsyncDeque` allows specifying the `size_type`. Larger
+/// `size_type`s allow for larger queues, but they slightly increase the
+/// object's size. Users should typically reach for `pw::InlineAsyncDeque`,
+/// which uses a `size_type` of `uint16_t`.
+///
+/// @warning `BasicInlineAsyncDeque` is NOT thread safe. External
+/// synchronization is required to share a `BasicInlineAsyncDeque` between
+/// threads.
 template <typename ValueType,
           typename SizeType,
           size_t kCapacity = containers::internal::kGenericSized>
@@ -173,7 +187,19 @@ class BasicInlineAsyncDeque
 
   static constexpr size_type max_size() { return capacity(); }
   static constexpr size_type capacity() { return kCapacity; }
+
+  // Async
+  // Document these functions here since the template specialization base isn't
+  // included in Doxygen.
+
+  /// Returns `pw::async2::Pending` until space for `num` elements is available.
+  using Base::PendHasSpace;
+
+  /// Returns `pw::async2::Pending` until an element is available.
+  using Base::PendNotEmpty;
 };
+
+/// @}
 
 // Defines the generic-sized BasicInlineAsyncDeque<T> specialization, which
 // serves as the base class for BasicInlineAsyncDeque<T> of any capacity.
@@ -224,12 +250,10 @@ class BasicInlineAsyncDeque<ValueType,
 
   using Base::operator=;
 
-  /// Returns `Pending` until space for `num` elements is available.
   async2::Poll<> PendHasSpace(async2::Context& context, size_type num = 1) {
     return Base::count_and_capacity().PendHasSpace(context, num);
   }
 
-  /// Returns `Pending` until an element is available.
   async2::Poll<> PendNotEmpty(async2::Context& context) {
     return Base::count_and_capacity().PendNotEmpty(context);
   }

@@ -25,23 +25,34 @@
 
 namespace pw {
 
-/// @module{pw_containers}
-
-/// @addtogroup pw_containers_queues
-/// @{
+/// @submodule{pw_containers,queues}
 
 // Forward declaration.
 template <typename ValueType, typename SizeType, size_t kCapacity>
 class BasicInlineAsyncQueue;
 
-/// Async wrapper around BasicInlineQueue.
+/// Async wrapper around `pw::InlineQueue`.
 ///
 /// This class mimics the structure of `BasicInlineQueue` to allow referring to
 /// an `InlineAsyncQueue` without an explicit maximum size.
+///
+/// @warning `InlineAsyncQueue` is NOT thread safe. External synchronization is
+/// required to share an `InlineAsyncQueue` between threads.
 template <typename ValueType,
           size_t kCapacity = containers::internal::kGenericSized>
 using InlineAsyncQueue = BasicInlineAsyncQueue<ValueType, uint16_t, kCapacity>;
 
+/// `BasicInlineAsyncQueue` adds async `PendHasSpace` and `PendNotEmpty` methods
+/// to `BasicInlineQueue`.
+///
+/// `BasicInlineAsyncQueue` allows specifying the `size_type`. Larger
+/// `size_type`s allow for larger queues, but they slightly increase the
+/// object's size. Users should typically reach for `pw::InlineAsyncQueue`,
+/// which uses a `size_type` of `uint16_t`.
+///
+/// @warning `BasicInlineAsyncQueue` is NOT thread safe. External
+/// synchronization is required to share a `BasicInlineAsyncQueue` between
+/// threads.
 template <typename ValueType,
           typename SizeType,
           size_t kCapacity = containers::internal::kGenericSized>
@@ -159,6 +170,16 @@ class BasicInlineAsyncQueue
   static constexpr size_type max_size() { return capacity(); }
   static constexpr size_type capacity() { return kCapacity; }
 
+  // Async
+  // Document these functions here since the template specialization base isn't
+  // included in Doxygen.
+
+  /// Returns `pw::async2::Pending` until space for `num` elements is available.
+  using Base::PendHasSpace;
+
+  /// Returns `pw::async2::Pending` until an element is available.
+  using Base::PendNotEmpty;
+
  private:
   friend class BasicInlineAsyncQueue<ValueType,
                                      SizeType,
@@ -166,6 +187,8 @@ class BasicInlineAsyncQueue
 
   Deque deque_;
 };
+
+/// @}
 
 // Defines the generic-sized BasicInlineAsyncDeque<T> specialization, which
 // serves as the base class for BasicInlineAsyncDeque<T> of any capacity.
@@ -198,12 +221,10 @@ class BasicInlineAsyncQueue<ValueType,
   using typename Base::size_type;
   using typename Base::value_type;
 
-  /// Returns `Pending` until space for `num` elements is available.
   async2::Poll<> PendHasSpace(async2::Context& context, size_type num = 1) {
     return deque().PendHasSpace(context, num);
   }
 
-  /// Returns `Pending` until an element is available.
   async2::Poll<> PendNotEmpty(async2::Context& context) {
     return deque().PendNotEmpty(context);
   }
