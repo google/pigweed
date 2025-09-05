@@ -52,7 +52,7 @@ _ALL_COMPILE_EXTS = _C_COMPILE_EXTS + _CPP_COMPILE_EXTS
 
 # This value is somewhat arbitrary. It's roughly associated with the maximum
 # number of direct dependencies any one target may have.
-_MAX_STACK_ITERATIONS = 999
+_MAX_STACK_ITERATIONS = 99999
 
 def _get_one_compile_command(ctx, src, action):
     """Extracts compile commands associated with the source.
