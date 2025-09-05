@@ -31,9 +31,13 @@ Let's get started!
 Setup
 -----
 The code for this codelab is part of the Pigweed repository. If you haven't
-
 already, follow the :ref:`contributor guide <docs-contributing-setup>` to clone
 the Pigweed repository and set up your development environment.
+
+.. tip::
+
+   We encourage you to implement each step on your own, but if you
+   ever get stuck, a solution is provided at the start of each step.
 
 ---------------------------
 Step 1: Hello, Async World!
@@ -42,12 +46,10 @@ The first step is to create and run a basic asynchronous task. This will
 introduce you to the two most fundamental components of ``pw_async2``: the
 **Task** and the **Dispatcher**.
 
-.. tip::
+.. admonition:: Solution for this step
+   :class: hint
 
-   We encourage you to implement each step on your own, but if you
-   ever get stuck, a solution is provided at the start of each step.
-
-   The solution for this step is here: `//pw_async2/codelab/solutions/step1`_
+   `//pw_async2/codelab/solutions/step1`_
 
 What's a Task?
 ==============
@@ -168,9 +170,9 @@ packet to arrive, or, in our case, a user to insert a coin.
 
 In ``pw_async2``, operations that can wait are called **pendable functions**.
 
-.. tip::
+.. admonition:: Solution for this step
+   :class: hint
 
-   Solution for this step:
    `//pw_async2/codelab/solutions/step2`_
 
 What's a Pendable function?
@@ -354,9 +356,9 @@ the keypad number after receiving a coin to dispense an item.
 A single digit should be enough, but if you want an extra challenge, you can
 choose to allow larger numbers to be entered.
 
-.. tip::
+.. admonition:: Solution for this step
+   :class: hint
 
-   Solution for this step:
    `//pw_async2/codelab/solutions/step3`_
 
 1. Define a stub ``Keypad`` class
@@ -783,9 +785,9 @@ properly account for the coins we are holding prior to a purchase.
 
 This step shows you how to do this.
 
-.. tip::
+.. admonition:: Solution for this step
+   :class: hint
 
-   Solution for this step:
    `//pw_async2/codelab/solutions/step4`_
 
 1. Structuring your tasks as state machines
@@ -1073,6 +1075,11 @@ The dispenser mechanism is complex enough to merit a task of its own. The
 ``VendingMachineTask`` will send which items to dispense to a new
 ``DispenserTask``. After dispensing an item, the ``DispenserTask`` will send
 confirmation back to the ``VendingMachineTask``.
+
+.. admonition:: Solution for this step
+   :class: hint
+
+   `//pw_async2/codelab/solutions/step5`_
 
 1. Set up the ``item_drop_sensor_isr()``
 ========================================
@@ -1396,9 +1403,6 @@ selection.
 
 Try again, but this time press :kbd:`i` :kbd:`Enter` quickly so dispensing the
 item succeeds.
-
-Remember, if you get stuck, you can reference our example solution for this
-step: `//pw_async2/codelab/solutions/step5`_
 
 .. The following references shorten the markup above.
 
