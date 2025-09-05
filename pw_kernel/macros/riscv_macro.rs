@@ -321,7 +321,6 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
     quote! {
         #[unsafe(no_mangle)]
         #[unsafe(naked)]
-        #[unsafe(link_section = ".trap")]
         pub unsafe extern "C" fn #exception_ident() -> ! {
             unsafe {
                 core::arch::naked_asm!(#asm)
@@ -330,7 +329,6 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
         // Compile time assert that the handler function signature matches.
         const _: crate::exceptions::ExceptionHandler = #handler_ident;
 
-        #[unsafe(link_section = ".trap")]
         #handler
     }
     .into()
