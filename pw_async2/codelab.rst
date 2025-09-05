@@ -158,7 +158,7 @@ You should see the following output:
    INF  Welcome to the Pigweed Vending Machine!
 
 Congratulations! You've written and run your first asynchronous task with
-``pw_async2``. In the next step, you'll learn how to have your task call run
+``pw_async2``. In the next step, you'll learn how to have your task run
 asynchronous operations.
 
 ---------------------------------
@@ -476,7 +476,7 @@ The next step is harder, implementing the ``Keypad::Press`` member function
 correctly.
 
 Since the keypad ISR is asynchronous, you will need to synchronize access to
-the stored event data. For this codelab, you we use
+the stored event data. For this codelab, we use
 :doxylink:`pw::sync::InterruptSpinLock` which is safe to acquire from an ISR in
 production use. Alternatively you can use atomic operations.
 
@@ -761,7 +761,7 @@ You've now gotten to a point where your ``VendingMachineTask`` has a
 
 - First displays a welcome message, asking the user to insert a coin.
 
-  - … unless it is been displayed already.
+  - … unless it has been displayed already.
 
 - Then waits for the user to insert a coin.
 
@@ -769,7 +769,7 @@ You've now gotten to a point where your ``VendingMachineTask`` has a
 
 - Then waits for the user to select an item with the keypad.
 
-  - We haven't actually needed it, yet, but we might also need to skip this
+  - We haven't actually needed it yet, but we might also need to skip this
     if it has already occurred.
 
 Writing ``DoPend()`` functions this way is a perfectly valid choice, but you can
@@ -816,8 +816,8 @@ and a switch statement in ``DoPend`` that looks like this skeleton:
            // Pend on coin_slot_
 
            // Once coins are inserted...
-           state = kAwaitingSelection;
-           break; // Renter the switch()
+           state_ = kAwaitingSelection;
+           break; // Reenter the switch()
          }
          case kAwaitingSelection: {
            // Pend on keypad_
@@ -841,12 +841,12 @@ still works.
    Two other options for implementing a state machine in C++ include:
 
    - Define a type tag for each state, and use a ``std::variant`` to represent
-     the possible states, and ```std::visit``` to dispatch to a handler for each
+     the possible states, and ``std::visit`` to dispatch to a handler for each
      of them. Effectively this causes the compiler to generate the switch
      statement for you at compile time.
 
    - Use runtime dispatch through a function pointer to handle each state.
-     Usually you derive each state from a base class that defined a virtual
+     Usually you derive each state from a base class that defines a virtual
      function that each state class provides an override for, but there are
      other equivalents.
 
@@ -883,7 +883,7 @@ Using ``Selector`` and ``Select``
 
   This behavior is useful when you have a set of pendables where you want to
   wait on any of them. However take note that this won't ensure each pendable
-  has a fair chance to report it's stats. The first pendables in the set get
+  has a fair chance to report its stats. The first pendables in the set get
   polled first, and if those are ready, those take precedence.
 
   Depending on the design of the pendable type, it may also not be possible to
