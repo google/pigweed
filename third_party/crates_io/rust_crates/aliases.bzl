@@ -35,17 +35,6 @@ def make_crate_aliases(name):
         visibility = ["//visibility:public"],
     )
     native.alias(
-        name = "askama",
-        target_compatible_with = select({
-            "@pigweed//pw_build/constraints/rust:std": [],
-            "//conditions:default": ["@platforms//:incompatible"],
-        }),
-        actual = select({
-            "@pigweed//pw_build/constraints/rust:std": "@crates_std//:askama",
-        }),
-        visibility = ["//visibility:public"],
-    )
-    native.alias(
         name = "bitfield-struct",
         target_compatible_with = select({
             "@pigweed//pw_build/constraints/rust:std": [],
@@ -188,6 +177,17 @@ def make_crate_aliases(name):
         }),
         actual = select({
             "@pigweed//pw_build/constraints/rust:std": "@crates_std//:libc",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
+        name = "minijinja",
+        target_compatible_with = select({
+            "@pigweed//pw_build/constraints/rust:std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            "@pigweed//pw_build/constraints/rust:std": "@crates_std//:minijinja",
         }),
         visibility = ["//visibility:public"],
     )

@@ -12,13 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use askama::Template;
 use hashlink::LinkedHashMap;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Template)]
-#[template(path = "system.rs.tmpl", escape = "none")]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct SystemConfig {
     pub arch: String,
@@ -29,7 +26,7 @@ pub struct SystemConfig {
     pub arch_crate_name: &'static str,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct KernelConfig {
     pub flash_start_address: usize,
@@ -38,7 +35,7 @@ pub struct KernelConfig {
     pub ram_size_bytes: usize,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AppConfig {
     pub flash_size_bytes: usize,
@@ -61,7 +58,7 @@ pub struct AppConfig {
     pub initial_sp: usize,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProcessConfig {
     name: String,
@@ -70,29 +67,20 @@ pub struct ProcessConfig {
     threads: Vec<ThreadConfig>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum ObjectConfig {
     Ticker(TickerConfig),
 }
 
-#[derive(Template)]
-#[template(path = "objects/ticker.rs.tmpl", escape = "none")]
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct TickerConfig;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ThreadConfig {
     name: String,
     stack_size_bytes: usize,
-}
-
-// Custom askama filters
-pub mod filters {
-    pub fn to_hex(value: &usize, _: &dyn askama::Values) -> askama::Result<String> {
-        Ok(format!("{value:#x}"))
-    }
 }

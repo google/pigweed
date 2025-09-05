@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-{% if apps.len() > 0 %}
+{% if apps | length > 0 %}
 pub fn start() {
     use core::ptr::NonNull;
 
@@ -26,10 +26,11 @@ pub fn start() {
     type K = arch::Arch;
     let kernel = K {};
 
-{%- for (app_name, app) in apps %}
+{%- for app_name in apps %}
+    {%- set app = apps[app_name] %}
     let start_fn_{{app_name}} = {{app.start_fn_address | to_hex}}_usize;
 
-    const MEMORY_CONFIG_{{app_name | uppercase }}: MemoryConfig = MemoryConfig::const_new(&[
+    const MEMORY_CONFIG_{{app_name | upper }}: MemoryConfig = MemoryConfig::const_new(&[
         kernel::MemoryRegion::new(
             kernel::MemoryRegionType::ReadOnlyExecutable,
             {{app.flash_start_address | to_hex}},
@@ -42,30 +43,30 @@ pub fn start() {
         ),
     ]);
 
-    {%- for (object_name, object) in app.process.objects %}
-        #[allow(non_snake_case)]
-        let object_{{object_name}} =
-        {% match object %}
-            {% when ObjectConfig::Ticker(ticker) %}{{ticker}}
-        {% endmatch %}
+    {%- for object_name in app.process.objects %}
+    {%- set object = app.process.objects[object_name] %}
+
+        let object_{{object_name | lower}} =
+        {% if object.type == "ticker" -%}
+            {% include "object_ticker" %}
+        {%- endif -%}
         ;
-    {%- endfor -%}
+    {%- endfor %}
 
     let object_table_{{app_name}}: ForeignBox<dyn ObjectTable<K>> = unsafe {
         static_foreign_box!(
-            [ForeignRc<<K as kernel::Arch>::AtomicUsize, dyn KernelObject<K>>; {{app.process.objects.len()}}],
+            [ForeignRc<<K as kernel::Arch>::AtomicUsize, dyn KernelObject<K>>; {{app.process.objects | length}}],
             [
-            {%- for (object_name, object) in app.process.objects %}
-                object_{{object_name}},
+            {%- for object_name in app.process.objects %}
+                object_{{object_name | lower}},
             {%- endfor -%}
             ]
         )
     };
 
-
     let process_{{app_name}} = unsafe { kernel::init_non_priv_process!(
         "{{app.process.name}}",
-        MEMORY_CONFIG_{{app_name | uppercase}},
+        MEMORY_CONFIG_{{app_name | upper}},
         object_table_{{app_name}}
     )};
 
@@ -82,6 +83,6 @@ pub fn start() {
     };
     kernel::start_thread(arch::Arch, thread_{{app_name}}_{{thread_index}});
 {%- endfor -%}
-{%- endfor -%}
+{%- endfor %}
 }
 {% endif %}

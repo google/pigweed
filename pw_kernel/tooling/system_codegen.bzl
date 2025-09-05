@@ -17,7 +17,12 @@ for a system.
 
 def _system_codegen_impl(ctx):
     output = ctx.actions.declare_file(ctx.attr.name + ".rs")
-    args = [
+    args = []
+    for (name, path) in ctx.attr.templates.items():
+        args.append("--template")
+        args.append(name + "=" + path.files.to_list()[0].path)
+
+    args = args + [
         "--config",
         ctx.file.system_config.path,
         "--output",
@@ -26,7 +31,7 @@ def _system_codegen_impl(ctx):
     ]
 
     ctx.actions.run(
-        inputs = ctx.files.system_config,
+        inputs = ctx.files.system_config + ctx.files.templates,
         outputs = [output],
         executable = ctx.executable.system_generator,
         mnemonic = "CodegenSystem",
@@ -47,6 +52,13 @@ system_codegen = rule(
             executable = True,
             cfg = "exec",
             default = "//pw_kernel/tooling/system_generator:system_generator_bin",
+        ),
+        "templates": attr.string_keyed_label_dict(
+            allow_files = True,
+            default = {
+                "object_ticker": "//pw_kernel/tooling/system_generator/templates/objects:ticker.rs.tmpl",
+                "system": "//pw_kernel/tooling/system_generator/templates:system.rs.tmpl",
+            },
         ),
     },
     doc = "Codegen system sources from system config",

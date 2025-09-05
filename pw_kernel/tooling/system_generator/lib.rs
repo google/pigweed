@@ -19,11 +19,9 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use anyhow::{Context, Error, Result, anyhow};
-use askama::Template;
 use clap::{Args, Parser, Subcommand};
-use serde::Deserialize;
+use minijinja::{Environment, State};
 
-use crate::system_config::filters;
 pub mod system_config;
 
 #[derive(Debug, Parser)]
@@ -40,13 +38,24 @@ pub struct CommonArgs {
     config: PathBuf,
     #[arg(long, required(true))]
     output: PathBuf,
+    #[arg(
+        long("template"),
+        value_name = "NAME=PATH",
+        value_parser = parse_template,
+        action = clap::ArgAction::Append
+    )]
+    templates: Vec<(String, PathBuf)>,
+}
+
+fn parse_template(s: &str) -> Result<(String, PathBuf), String> {
+    s.split_once('=')
+        .map(|(name, path)| (name.to_string(), path.into()))
+        .ok_or_else(|| format!("invalid template format: '{s}'. Expected NAME=PATH."))
 }
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    #[command()]
     CodegenSystem,
-    #[command()]
     AppLinkerScript(AppLinkerScriptArgs),
 }
 
@@ -60,26 +69,21 @@ pub trait SystemGenerator {
     fn new(config: system_config::SystemConfig) -> Self;
     fn config(&self) -> &system_config::SystemConfig;
     fn populate_addresses(&mut self);
-    fn render_arch_app_linker_script(
-        &mut self,
-        _app_config: &system_config::AppConfig,
-    ) -> Result<String>;
 
-    fn render_system(&mut self) -> Result<String> {
-        self.populate_addresses();
-        self.config().render().context("Failed to render system")
+    fn render_system(&mut self, env: &mut Environment) -> Result<String> {
+        let template = env.get_template("system")?;
+        match template.render(self.config()) {
+            Ok(str) => Ok(str),
+            Err(e) => Err(anyhow!(e)),
+        }
     }
 
-    fn render_app_linker_script(&mut self, app_name: &String) -> Result<String> {
-        self.populate_addresses();
-        let app_config = self
-            .config()
-            .apps
-            .get(app_name)
-            .with_context(|| format!("'{app_name}' does not exist in the config file."))?
-            .clone();
-
-        self.render_arch_app_linker_script(&app_config)
+    fn render_app_linker_script(&mut self, env: &Environment, app_name: &String) -> Result<String> {
+        let template = env.get_template("app")?;
+        match template.render(self.config().apps.get(app_name)) {
+            Ok(str) => Ok(str),
+            Err(e) => Err(anyhow!(e)),
+        }
     }
 
     #[must_use]
@@ -96,10 +100,20 @@ pub fn parse_config(cli: &Cli) -> Result<system_config::SystemConfig> {
 }
 
 pub fn generate<T: SystemGenerator>(cli: &Cli, system_generator: &mut T) -> Result<()> {
+    let mut env = Environment::new();
+    env.add_filter("to_hex", to_hex);
+
+    for (name, path) in &cli.common_args.templates {
+        let template = fs::read_to_string(path)?;
+        env.add_template_owned(name, template)?;
+    }
+
+    system_generator.populate_addresses();
+
     let out_str = match &cli.command {
-        Command::CodegenSystem => system_generator.render_system()?,
+        Command::CodegenSystem => system_generator.render_system(&mut env)?,
         Command::AppLinkerScript(args) => {
-            system_generator.render_app_linker_script(&args.app_name)?
+            system_generator.render_app_linker_script(&env, &args.app_name)?
         }
     };
     // println!("OUT:\n{}", out_str);
@@ -109,28 +123,12 @@ pub fn generate<T: SystemGenerator>(cli: &Cli, system_generator: &mut T) -> Resu
         .context("Failed to write output")
 }
 
-// The DefaultSystemGenerator below supports Armv7m and RiscV.
+// The DefaultSystemGenerator below supports Armv8m and RiscV.
 // New architectures which are implemented out of tree can
 // depend on this crate with a custom SystemGenerator impl.
 
 const FLASH_ALIGNMENT: usize = 4;
 const RAM_ALIGNMENT: usize = 8;
-
-#[derive(Template)]
-#[template(path = "armv8m_app.ld.tmpl", escape = "none")]
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AppConfigArmv8M {
-    pub config: system_config::AppConfig,
-}
-
-#[derive(Template)]
-#[template(path = "riscv_app.ld.tmpl", escape = "none")]
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AppConfigRiscV {
-    pub config: system_config::AppConfig,
-}
 
 #[derive(Debug, PartialEq)]
 pub enum Arch {
@@ -198,22 +196,10 @@ impl SystemGenerator for DefaultSystemGenerator {
             app.initial_sp = app.ram_end_address;
         }
     }
+}
 
-    fn render_arch_app_linker_script(
-        &mut self,
-        app_config: &system_config::AppConfig,
-    ) -> Result<String> {
-        let arch = self.config.arch.parse().unwrap();
-        match arch {
-            Arch::Armv8M => AppConfigArmv8M {
-                config: app_config.clone(),
-            }
-            .render(),
-            Arch::RiscV => AppConfigRiscV {
-                config: app_config.clone(),
-            }
-            .render(),
-        }
-        .context("Failed to render app linker script")
-    }
+// Custom filters
+#[must_use]
+pub fn to_hex(_state: &State, value: usize) -> String {
+    format!("{value:#x}")
 }
