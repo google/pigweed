@@ -473,6 +473,31 @@ pw_cc_test(
 )
 
 cc_library(
+    name = "cancellable_task",
+    hdrs = [
+        "public/pw_async2/cancellable_task.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":dispatcher",
+    ],
+)
+
+pw_cc_test(
+    name = "cancellable_task_test",
+    srcs = [
+        "cancellable_task_test.cc",
+    ],
+    deps = [
+        ":cancellable_task",
+        ":dispatcher",
+        ":pendable",
+        ":poll",
+        "//pw_function",
+    ],
+)
+
+cc_library(
     name = "enqueue_heap_func",
     hdrs = [
         "public/pw_async2/enqueue_heap_func.h",
@@ -572,6 +597,7 @@ filegroup(
     srcs = [
         "public/pw_async2/allocate_task.h",
         "public/pw_async2/callback_task.h",
+        "public/pw_async2/cancellable_task.h",
         "public/pw_async2/context.h",
         "public/pw_async2/coro.h",
         "public/pw_async2/coro_or_else_task.h",

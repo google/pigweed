@@ -414,4 +414,24 @@ pw_add_test(pw_async2.select_test
     pw_async2
 )
 
+pw_add_library(pw_async2.cancellable_task INTERFACE
+  HEADERS
+    public/pw_async2/cancellable_task.h
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_async2.cancellable_task_test
+  SOURCES
+    cancellable_task_test.cc
+  PRIVATE_DEPS
+    pw_async2.cancellable_task
+    pw_async2.dispatcher
+    pw_async2.pendable
+    pw_async2.poll
+    pw_function
+)
+
 add_subdirectory(examples)
