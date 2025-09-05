@@ -127,7 +127,7 @@ pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context& cx) {
 
       case kAwaitingDispenseIdle: {
         PW_TRY_READY(dispense_requests_.PendHasSpace(cx));
-        dispense_requests_.push_back(*selected_item_);
+        dispense_requests_.push(*selected_item_);
         state_ = kAwaitingDispense;
         break;
       }
@@ -135,7 +135,7 @@ pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context& cx) {
       case kAwaitingDispense: {
         PW_TRY_READY(dispense_responses_.PendNotEmpty(cx));
         const bool dispensed = dispense_responses_.front();
-        dispense_responses_.pop_front();
+        dispense_responses_.pop();
 
         if (dispensed) {
           // Accept the inserted money as payment
@@ -185,10 +185,7 @@ pw::async2::Poll<> DispenserTask::DoPend(pw::async2::Context& cx) {
     switch (state_) {
       case kIdle: {
         PW_TRY_READY(dispense_requests_.PendNotEmpty(cx));
-        current_item_ = dispense_requests_.front();
-        dispense_requests_.pop_front();
-
-        SetDispenserMotorState(*current_item_, MotorState::kOn);
+        SetDispenserMotorState(dispense_requests_.front(), MotorState::kOn);
 
         const auto expected_completion =
             pw::chrono::SystemClock::TimePointAfterAtLeast(kDispenseTimeout);
@@ -209,25 +206,33 @@ pw::async2::Poll<> DispenserTask::DoPend(pw::async2::Context& cx) {
                     &pw::async2::TimeFuture<pw::chrono::SystemClock>::Pend>(
                     timeout_future_)));
 
+        // Finished with this dispense request.
+        SetDispenserMotorState(dispense_requests_.front(), MotorState::kOff);
+        dispense_requests_.pop();
+
+        // Check if the item dispensed successfully or not.
         pw::async2::VisitSelectResult(
             result,
             [](pw::async2::AllPendablesCompleted) {},
             [&](pw::async2::ReadyType) {
-              SetDispenserMotorState(*current_item_, MotorState::kOff);
-              state_ = kReportDispenseResult;
-              timeout_future_.Reset(pw::chrono::SystemClock::now());
+              // Clear the timeout. This releases the future's waker, preventing
+              // an unnecessary wakeup when the timeout completes.
+              timeout_future_ = {};
+              state_ = kReportDispenseSuccess;
             },
             [&](std::chrono::time_point<pw::chrono::SystemClock>) {
-              SetDispenserMotorState(*current_item_, MotorState::kOff);
-              current_item_.reset();
-              state_ = kReportDispenseResult;
+              state_ = kReportDispenseFailure;
             });
-
         break;
       }
-      case kReportDispenseResult:
+      case kReportDispenseSuccess:
         PW_TRY_READY(dispense_responses_.PendHasSpace(cx));
-        dispense_responses_.push_back(current_item_.has_value());
+        dispense_responses_.push(true);
+        state_ = kIdle;
+        break;
+      case kReportDispenseFailure:
+        PW_TRY_READY(dispense_responses_.PendHasSpace(cx));
+        dispense_responses_.push(false);
         state_ = kIdle;
         break;
     }

@@ -16,6 +16,7 @@
 #include <optional>
 
 #include "coin_slot.h"
+#include "item_drop_sensor.h"
 #include "pw_async2/context.h"
 #include "pw_async2/poll.h"
 #include "pw_async2/system_time_provider.h"
@@ -23,14 +24,14 @@
 #include "pw_async2/time_provider.h"
 #include "pw_async2/waker.h"
 #include "pw_chrono/system_clock.h"
-#include "pw_containers/inline_async_deque.h"
+#include "pw_containers/inline_async_queue.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace codelab {
 
-using DispenseRequestQueue = pw::InlineAsyncDeque<int, 1>;
-using DispenseResponseQueue = pw::InlineAsyncDeque<bool, 1>;
+using DispenseRequestQueue = pw::InlineAsyncQueue<int, 1>;
+using DispenseResponseQueue = pw::InlineAsyncQueue<bool, 1>;
 
 class Keypad {
  public:
@@ -51,22 +52,6 @@ class Keypad {
 
   pw::sync::InterruptSpinLock lock_;
   int key_pressed_ PW_GUARDED_BY(lock_);
-  pw::async2::Waker waker_ PW_GUARDED_BY(lock_);
-};
-
-class ItemDropSensor {
- public:
-  constexpr ItemDropSensor() = default;
-
-  // Pends until theitem drop sensor triggers.
-  pw::async2::Poll<> Pend(pw::async2::Context& cx);
-
-  // Records an item drop event. Typically called from the drop sensor ISR.
-  void Drop();
-
- private:
-  pw::sync::InterruptSpinLock lock_;
-  bool drop_detected_ PW_GUARDED_BY(lock_) = false;
   pw::async2::Waker waker_ PW_GUARDED_BY(lock_);
 };
 
@@ -140,7 +125,8 @@ class DispenserTask : public pw::async2::Task {
   enum State {
     kIdle,
     kDispensing,
-    kReportDispenseResult,
+    kReportDispenseSuccess,
+    kReportDispenseFailure,
   };
 
   pw::async2::Poll<> DoPend(pw::async2::Context& cx) override;
@@ -148,9 +134,8 @@ class DispenserTask : public pw::async2::Task {
   ItemDropSensor& item_drop_sensor_;
   DispenseRequestQueue& dispense_requests_;
   DispenseResponseQueue& dispense_responses_;
-  pw::async2::TimeFuture<pw::chrono::SystemClock> timeout_future_;
-  std::optional<int> current_item_;
   State state_;
+  pw::async2::TimeFuture<pw::chrono::SystemClock> timeout_future_;
 };
 
 }  // namespace codelab

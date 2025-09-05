@@ -1055,14 +1055,358 @@ Inside the ``kAwaitingPayment`` and ``kAwaitingSelection`` states, you can then
 Now go ahead and try filling in the blanks in those snippets. Can you build
 something reasonable that handles out-of-order input?
 
-Remember, if you get stuck, you can example our example solution for this step:
-`//pw_async2/codelab/solutions/step4`_
+Remember, if you get stuck, you can reference our example solution for this
+step: `//pw_async2/codelab/solutions/step4`_
+
+-----------------------------------
+Step 5: Communicating between tasks
+-----------------------------------
+Now that the ``VendingMachineTask`` has been refactored, it's ready to handle
+more functionality. In this step, you'll write code to handle the vending
+machine's dispenser mechanism. Along the way, you'll learn how to send data
+between tasks.
+
+This vending machine uses a motor to push the selected product into a chute. A
+sensor detects when the item has dropped, then the motor is turned off.
+
+The dispenser mechanism is complex enough to merit a task of its own. The
+``VendingMachineTask`` will send which items to dispense to a new
+``DispenserTask``. After dispensing an item, the ``DispenserTask`` will send
+confirmation back to the ``VendingMachineTask``.
+
+1. Set up the ``item_drop_sensor_isr()``
+========================================
+First, let's set up the item drop sensor. When an item is dispensed
+successfully, the item drop sensor triggers an interrupt, which is handled by
+the ``item_drop_sensor_isr()`` function.
+
+.. literalinclude:: codelab/hardware.h
+   :language: cpp
+   :start-at: item_drop_sensor_isr
+   :end-at: item_drop_sensor_isr
+
+We've provided an ``ItemDropSensor`` class in
+`//pw_async2/codelab/item_drop_sensor.h`_. It is similar to the ``CoinSlot`` and
+``Keypad`` classes.
+
+To use it, ``#include "item_drop_sensor.h"`` and declare an ``ItemDropSensor``
+instance in your `//pw_async2/codelab/main.cc`_:
+
+.. literalinclude:: codelab/solutions/step5/main.cc
+   :language: cpp
+   :start-at: codelab::ItemDropSensor
+   :end-at: codelab::ItemDropSensor
+
+Then, call it from ``item_drop_sensor_isr()``.
+
+.. literalinclude:: codelab/solutions/step5/main.cc
+   :language: cpp
+   :start-at: void item_drop_sensor_isr()
+   :end-at: void item_drop_sensor_isr()
+
+2. Setting up inter-task communication
+======================================
+We'll be adding a new ``DispatcherTask`` soon. To get ready for that, let's set
+up communications channels between ``VendingMachineTask`` and the new task.
+
+There are many ways to use a :doxylink:`Waker <pw::async2::Waker>` to
+communicate between tasks. For this step, we'll use
+:doxylink:`pw::InlineAsyncQueue` to send events between the two tasks.
+
+.. topic:: ``pw::InlineAsyncQueue`` async member functions
+
+   :doxylink:`pw::InlineAsyncQueue` adds two async member functions to
+   :doxylink:`pw::InlineQueue`.
+
+   - :doxylink:`PendHasSpace() <pw::BasicInlineAsyncQueue::PendHasSpace>`:
+     Producers call this to ensure the queue has room before producing more
+     data.
+
+     .. code-block:: c++
+
+        PW_TRY_READY(async_queue.PendHasSpace(context));
+        async_queue.push_back(item);
+
+   - :doxylink:`PendNotEmpty() <pw::BasicInlineAsyncQueue::PendNotEmpty>`:
+     Consumers call this to block until data is available to consume.
+
+     .. code-block:: c++
+
+        PW_TRY_READY(async_queue.PendNotEmpty(context));
+        Item& item = async_queue.front();
+        async_queue.pop();  // Remove the item when done with it.
+
+We'll need two queues, one for each of the following:
+
+- Send dispense requests (item numbers) from the ``VendingMachineTask``
+  to the ``DispenserTask``.
+- Send dispense responses (success/failure) from the ``DispenserTask``
+  to the ``VendingMachineTask``.
+
+For convenience, you can create aliases for these queues in
+`//pw_async2/codelab/vending_machine.h`_. A depth of ``1`` is fine for now.
+
+.. literalinclude:: codelab/solutions/step5/vending_machine.h
+   :language: cpp
+   :start-at: using DispenseRequestQueue =
+   :end-at: using DispenseResponseQueue =
+
+Make sure to add ``#include` "pw_containers/inline_async_queue.h"`` to the top
+of the file.
+
+Declare a ``dispense_requests`` queue and a ``dispense_response`` queue in your
+`//pw_async2/codelab/main.cc`_.
+
+3. Create a new ``DispenserTask``
+=================================
+The ``DispenserTask`` will turn the dispenser motor on and off in response to
+dispense requests from the ``VendingMachineTask``.
+
+Like ``VendingMachineTask``, ``DispenserTask`` will be a state machine. It will
+need to handle three states:
+
+- ``kIdle`` -- waiting for a dispense request; motor is off
+- ``kDispensing`` -- actively dispensing an item; motor is on
+- ``kReportDispenseSuccess`` -- waiting to report success; motor is off
+- ``kReportDispenseFailure`` -- waiting to report failure; motor is off
+
+The task will control the vending machine's dispenser motor with the
+``SetDispenserMotorState`` function in `//pw_async2/codelab/hardware.h`_.
+
+.. literalinclude:: codelab/hardware.h
+   :language: cpp
+   :start-at: enum MotorState
+   :end-at: SetDispenserMotorState
+
+Declare a ``DispenserTask`` in your `//pw_async2/codelab/vending_machine.h`_
+file. It should take references to ``ItemDropSensor`` and the two queues in its
+constructor.
+
+.. literalinclude:: codelab/solutions/step5/vending_machine.h
+   :language: cpp
+   :start-at: class DispenserTask :
+   :end-before: pw::async2::TimeFuture
+   :append: };
+
+The implementation should be structured as a state machine. You can copy this
+stub to your `//pw_async2/codelab/vending_machine.cc`_:
+
+.. code-block:: cpp
+
+   pw::async2::Poll<> DispenserTask::DoPend(pw::async2::Context& cx) {
+     // This is a stub implementation!
+     while (true) {
+       switch (state_) {
+         case kIdle: {
+           break;
+         }
+         case kDispensing: {
+           break;
+         }
+         case kReportDispenseSuccess: {
+           break;
+         }
+         case kReportDispenseFailure: {
+           break;
+         }
+       }
+     }
+   }
+
+Here's what the three states need to do.
+
+- ``kIdle``
+
+  1. Read an item number from the ``dispense_requests_`` queue. This is done by
+     calling :doxylink:`PendNotEmpty()
+     <pw::BasicInlineAsyncQueue::PendNotEmpty>` and accessing the request with
+     a call to ``front()``. Keep the item in the queue until you turn off the
+     dispensing motor; you'll to reference the number.
+
+  2. Start the motor with a call to ``SetDispenerMotorState()``.
+  3. Move to the ``kDispensing`` state.
+
+- ``kDispensing``
+
+  1. Wait for the ``ItemDropSensor`` to trigger with
+     ``item_drop_sensor_.Pend()``.
+  2. Turn off the dispensing motor, using ``dispense_requests_.front()`` for the
+     motor number.
+  3. ``pop()`` the dispense request. It's no longer needed since the motor is
+     off.
+  4. Advance to the ``kReportDispenseSuccess`` state.
+
+- ``kReportDispenseSuccess``
+
+  1. Wait for the response queue to have space with :doxylink:`PendHasSpace()
+     <pw::BasicInlineAsyncQueue::PendHasSpace>`.
+  2. Signal that the item was dispensed with ``.push(true)``.
+
+     Note that dispensing can't fail at this stage---we'll get to that later.
+
+4. Interact with ``DispenserTask`` from ``VendingMachineTask``
+==============================================================
+Now, let's get ``VendingMachineTask`` communicating with ``DispenserTask``.
+
+Instead of just logging when a purchase is made, ``VendingMachineTask`` will
+send the selected item to the ``DispenserTask`` through the dispense requests
+queue. Then it will wait for a response with the dispense responses queue.
+Update ``VendingMachineTask``'s constructor to take references to the two
+queues.
+
+We'll need two new states in ``VendingMachineTask`` for this:
+
+- ``kAwaitingDispenseIdle`` state.
+
+  This state ensures the ``DispenserTask`` is ready for the request before we
+  send it.
+
+  1. Transition to this state after ``kAwaitingSelection``.
+  2. Wait for a slot in the dispense requests queue by calling
+     :doxylink:`PendHasSpace() <pw::BasicInlineAsyncQueue::PendHasSpace>`.
+  3. Push the request to it.
+  4. Transition to the new ``kAwaitingDispense`` state.
+
+- ``kAwaitingDispense`` state
+
+  1. Wait for ``DispenserTask`` to report that it finished dispensing the item
+     with a call to :doxylink:`PendNotEmpty()
+     <pw::BasicInlineAsyncQueue::PendNotEmpty>`.
+  2. Display a message with the result.
+  3. Return to the ``kWelcome`` state if successful or ``kAwaitingSelection`` if
+     not.
+
+5. Build and run: Test the dispenser
+====================================
+Build and run the codelab, and then press :kbd:`c` :kbd:`Enter` :kbd:`1`
+:kbd:`Enter` to input a coin and make a selection.
+
+.. code-block:: sh
+
+   bazelisk run //pw_async2/codelab
+
+   INF  Welcome to the Pigweed Vending Machine!
+   INF  Please insert a coin.
+   c
+   INF  Received 1 coin.
+   INF  Please press a keypad key.
+   1
+
+You'll notice that the vending machine hasn't finished dispensing the item.
+Press :kbd:`i` :kbd:`Enter` to signal that the item has dropped, triggering the
+``item_drop_sensor_isr()``. You should see vending machine display its welcome
+message again.
+
+Congratulations! You now have a fully functioning vending machine!
+
+6. Handling unexpected situations with timeouts
+===============================================
+But wait---what if you press the wrong button and accidentally buy an
+out-of-stock item? Well, as of now, the dispenser will just keep running
+forever. The vending machine will eat your money while you go hungry.
+
+Let's fix this. We can add a timeout to the ``kDispensing`` state. If the
+``ItemDropSensor`` hasn't triggered after a certain amount of time, then
+something has gone wrong. The ``DispenserTask`` should stop the motor and tell
+the ``VendingMachineTask`` what happened.
+
+You can implement a timeout with :doxylink:`pw::async2::TimeFuture`. To use it,
+``#include "pw_async2/time_provider.h"`` and declare a ``TimeFuture`` in your
+``DispenserTask``.
+
+.. literalinclude:: codelab/solutions/step5/vending_machine.h
+   :language: cpp
+   :start-at: pw::async2::TimeFuture
+   :end-at: pw::async2::TimeFuture
+   :dedent:
+
+Define a timeout period in your ``DispenserTask``. For testing purposes, make
+sure it's long enough for a human to respond. 5 seconds should do.
+
+.. literalinclude:: codelab/solutions/step5/vending_machine.h
+   :language: cpp
+   :start-at: kDispenseTimeout =
+   :end-at: kDispenseTimeout =
+   :dedent:
+
+When you start dispensing an item (in your transition from ``kIdle`` to
+``kDispensing``), initialize the :doxylink:`TimeFuture <pw::async2::TimeFuture>`
+to your timeout.
+
+.. literalinclude:: codelab/solutions/step5/vending_machine.cc
+   :language: cpp
+   :start-at: const auto expected_completion
+   :end-at: WaitUntil(expected_completion)
+   :dedent:
+
+Then, in the ``kDispensing`` state, use :doxylink:`Select <pw::async2::Select>`
+to wait for either the timeout or the item drop signal, whichever comes first.
+Use :doxylink:`VisitSelectResult <pw::async2::VisitSelectResult>` to take action
+based on the result:
+
+.. code-block:: cpp
+
+   pw::async2::VisitSelectResult(
+       result,
+       [](pw::async2::AllPendablesCompleted) {},
+       [&](pw::async2::ReadyType) {
+         // Received the item drop interrupt.
+         // Note that the type is ReadyType, the type of Ready(). Ready() is an
+         // empty placeholder produced by a completed Poll<>.
+       },
+       [&](std::chrono::time_point<pw::chrono::SystemClock>) {
+         // The timeout occurred before the item drop interrupt!
+       });
+
+- If the item drop interrupt arrives first, clear the timeout with
+  ``timeout_future_ = {}``. If the timer isn't cleared, it will fire later and
+  wake ``DispenserTask`` unnecessarily, wasting time and power. After that,
+  proceed to the ``kReportDispenseSuccess`` state.
+- If the timeout arrives first, proceed to the ``kReportDispenseSuccess`` state.
+
+In either case, be sure to turn off the motor and ``pop()`` the dispense request
+from the queue.
+
+7. Build and run: Test the dispenser with timeouts
+==================================================
+Build and run the codelab, and then press :kbd:`c` :kbd:`Enter` :kbd:`1`
+:kbd:`Enter` to input a coin and make a selection.
+
+.. code-block:: sh
+
+   bazelisk run //pw_async2/codelab
+
+The machine will start dispensing, but don't press :kbd:`i`. After the timeout
+period, you should see the dispenser time out and ask you to make another
+selection.
+
+.. code-block:: text
+
+   INF  Welcome to the Pigweed Vending Machine!
+   INF  Please insert a coin.
+   INF  Dispenser task awake
+   c
+   INF  Received 1 coin.
+   INF  Please press a keypad key.
+   1
+   INF  Keypad 1 was pressed. Dispensing an item.
+   INF  [Motor for item 1 set to On]
+   INF  [Motor for item 1 set to Off]
+   INF  Dispense failed. Choose another selection.
+
+Try again, but this time press :kbd:`i` :kbd:`Enter` quickly so dispensing the
+item succeeds.
+
+Remember, if you get stuck, you can reference our example solution for this
+step: `//pw_async2/codelab/solutions/step5`_
 
 .. The following references shorten the markup above.
 
 .. _`//pw_async2/codelab/BUILD.bazel`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/BUILD.bazel
 .. _`//pw_async2/codelab/coin_slot.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/coin_slot.cc
 .. _`//pw_async2/codelab/main.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/main.cc
+.. _`//pw_async2/codelab/hardware.h`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/hardware.h
+.. _`//pw_async2/codelab/item_drop_sensor.h`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/item_drop_sensor.h
 .. _`//pw_async2/codelab/vending_machine.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.cc
 .. _`//pw_async2/codelab/vending_machine.h`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.h
 
@@ -1070,3 +1414,4 @@ Remember, if you get stuck, you can example our example solution for this step:
 .. _`//pw_async2/codelab/solutions/step2`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step2
 .. _`//pw_async2/codelab/solutions/step3`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step3
 .. _`//pw_async2/codelab/solutions/step4`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step4
+.. _`//pw_async2/codelab/solutions/step5`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step5
