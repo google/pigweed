@@ -316,7 +316,10 @@ class EnvSetup:
         if 'json_file' in config:
             self._json_file = config.pop('json_file')
 
-        self._gni_file = config.pop('gni_file', None)
+        self._gni_file = config.pop(
+            'gni_file',
+            os.path.join('build_overrides', 'pigweed_environment.gni'),
+        )
 
         self._optional_submodules.extend(
             _assert_sequence(config.pop('optional_submodules', ()))
@@ -478,15 +481,28 @@ class EnvSetup:
         if self._cipd_only:
             return
 
-        gni_file = os.path.join(
-            self._project_root, 'build_overrides', 'pigweed_environment.gni'
+        generated_gni_file = os.path.join(
+            self._install_dir, 'build_overrides', 'pigweed_environment.gni'
         )
-        if self._gni_file:
-            gni_file = os.path.join(self._project_root, self._gni_file)
+        os.makedirs(os.path.dirname(generated_gni_file), exist_ok=True)
+        with open(generated_gni_file, 'w') as outs:
+            self._env.gni(outs, self._project_root, generated_gni_file)
+        shutil.copy(generated_gni_file, os.path.join(self._install_dir, 'logs'))
 
-        with open(gni_file, 'w') as outs:
-            self._env.gni(outs, self._project_root, gni_file)
-        shutil.copy(gni_file, os.path.join(self._install_dir, 'logs'))
+        # The location of the project's gni file
+        project_gni_file = os.path.join(self._project_root, self._gni_file)
+
+        # The pigweed gni file sole responsibility is to import the generated
+        # gni file.
+        pigweed_gni_file = os.path.join(
+            self._pw_root, 'build_overrides', 'pigweed_environment.gni'
+        )
+
+        # Copy the pigweed gni to the project's location
+        try:
+            shutil.copyfile(pigweed_gni_file, project_gni_file)
+        except shutil.SameFileError:
+            pass
 
     def _log(self, *args, **kwargs):
         # Not using logging module because it's awkward to flush a log handler.
