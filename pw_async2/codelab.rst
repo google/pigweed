@@ -212,14 +212,42 @@ Now, let's modify the task's ``DoPend`` in
 `//pw_async2/codelab/vending_machine.cc`_. Following your welcome message from
 Step 1, prompt the user to insert a coin.
 
-To get a coin from the ``CoinSlot``, you'll call its ``Pend`` method using the
-:doxylink:`PW_TRY_READY_ASSIGN` macro.
+To wait for a coin from the ``CoinSlot``, you'll call its ``Pend`` function.
+This returns a ``Poll<unsigned>`` indicating the status of the coin slot.
 
-.. topic:: A Closer Look at ``PW_TRY_READY_ASSIGN``
+*   If the ``Poll`` is ``Pending()``, it means that no coin has been inserted
+    yet. Your task cannot proceed without payment, so it must signal this to
+    the dispatcher by returning ``Pending()`` itself. Pendable functions like
+    ``CoinSlot::Pend`` which wait for data will automatically wake your waiting
+    task once that data becomes available.
+
+*   If the ``Poll`` is ``Ready()``, it means that coins have been inserted. The
+    ``Poll`` object now contains the number of coins. Your task can get this
+    value and proceed to the next step.
+
+Here's how you would write that:
+
+.. code-block:: cpp
+
+   Poll<unsigned> poll_result = coin_slot_.Pend(cx);
+   if (poll_result.IsPending()) {
+     return Pending();
+   }
+   unsigned coins = poll_result.value();
+
+Add this code to your ``DoPend`` method. After getting the number of coins, log
+that a coin was detected and that an item is being dispensed. Finally, return
+``pw::async2::Ready()`` to finish the task.
+
+.. topic:: Simplifying with ``PW_TRY_READY_ASSIGN``
    :class: tip
 
-   This macro simplifies writing clean asynchronous code in ``pw_async2``.
-   It polls a pendable function and handles the two possible outcomes:
+   The pattern of polling a pendable function and returning ``Pending()`` if
+   it's not ready is common in ``pw_async2``. To reduce this boilerplate,
+   ``pw_async2`` provides the :doxylink:`PW_TRY_READY_ASSIGN` macro.
+
+   This macro simplifies writing clean asynchronous code. It polls a pendable
+   function and handles the two possible outcomes:
 
    1. If the function returns ``Pending()``, the macro immediately
       returns ``Pending()`` from the current function (your ``DoPend``).
@@ -228,17 +256,8 @@ To get a coin from the ``CoinSlot``, you'll call its ``Pend`` method using the
       the value and assigns it to a variable you specify. The task then
       continues executing.
 
-   Without the macro, you would have to write this boilerplate yourself:
-
-   .. code-block:: cpp
-
-      Poll<unsigned> poll_result = coin_slot_.Pend(cx);
-      if (poll_result.IsPending()) {
-        return Pending();
-      }
-      unsigned coins = poll_result.value();
-
-   The macro condenses this into a single, expressive line:
+   The four lines of code you just wrote can be condensed into a single,
+   expressive line:
 
    .. code-block:: cpp
 
@@ -248,9 +267,8 @@ To get a coin from the ``CoinSlot``, you'll call its ``Pend`` method using the
    Python, this macro serves a similar purpose to the ``await`` keyword.
    It's the point at which your task can be suspended.
 
-Use the macro to poll ``coin_slot_.Pend(cx)``. If it's ready, log that a coin
-was detected and that an item is being dispensed. Finally, return
-``pw::async2::Ready()`` to finish the task.
+Go ahead and replace the call to the ``CoinSlot`` in your ``DoPend`` with this
+macro. The behavior will be identical, but the code is much cleaner.
 
 3. Build and run: Spot the issue
 ================================
