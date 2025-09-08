@@ -51,6 +51,7 @@ impl<'a> SyscallArgs<'a> for RiscVSyscallArgs<'a> {
         Ok(value)
     }
 
+    #[inline(always)]
     fn next_u64(&mut self) -> Result<u64> {
         // RISC-V 32 bit ABI aligns 64 bit values such that the low order word
         // always starts on an even register number and the high order word is
@@ -232,20 +233,16 @@ pub struct TrapFrame {
 
 impl TrapFrame {
     pub fn a(&self, index: usize) -> Result<usize> {
-        // TODO - konkers: Verify that the optimizer reduces this to a pointer
-        // offset within the frame.  If not, replace with unsafe code using
-        // offset_of!() and explicit pointer math.
-        match index {
-            0 => Ok(self.a0),
-            1 => Ok(self.a1),
-            2 => Ok(self.a2),
-            3 => Ok(self.a3),
-            4 => Ok(self.a4),
-            5 => Ok(self.a5),
-            6 => Ok(self.a6),
-            7 => Ok(self.a7),
-            _ => Err(Error::InvalidArgument),
+        if index > 7 {
+            return Err(Error::InvalidArgument);
         }
+        // Pointer math is used here instead of a match statement as it results
+        // in significantly smaller code.
+        //
+        // SAFETY: Index is range checked above and the a* fields are in consecutive
+        // positions in the `TrapFrame` struct.
+        let usize0 = &raw const self.a0;
+        Ok(unsafe { *usize0.byte_add(index * 4) })
     }
 }
 const _: () = assert!(core::mem::size_of::<TrapFrame>() == 0x60);

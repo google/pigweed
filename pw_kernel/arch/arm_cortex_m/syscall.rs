@@ -36,20 +36,21 @@ impl<'a> CortexMSyscallArgs<'a> {
 
 impl<'a> SyscallArgs<'a> for CortexMSyscallArgs<'a> {
     fn next_usize(&mut self) -> Result<usize> {
-        let value = match self.cur_index {
-            0 => self.frame.r4,
-            1 => self.frame.r5,
-            2 => self.frame.r6,
-            3 => self.frame.r7,
-            4 => self.frame.r8,
-            5 => self.frame.r9,
-            6 => self.frame.r10,
-            _ => return Err(Error::InvalidArgument),
-        };
+        if self.cur_index > 6 {
+            return Err(Error::InvalidArgument);
+        }
+        // Pointer math is used here instead of a match statement as it results
+        // in significantly smaller code.
+        //
+        // SAFETY: Index is range checked above and the r* fields are in consecutive
+        // positions in the `KernelExceptionFrame` struct.
+        let usize0 = &raw const self.frame.r4;
+        let value = unsafe { *usize0.byte_add(self.cur_index * 4) };
         self.cur_index += 1;
         Ok(value.cast_into())
     }
 
+    #[inline(always)]
     fn next_u64(&mut self) -> Result<u64> {
         let low: u64 = self.next_usize()?.cast_into();
         let high: u64 = self.next_usize()?.cast_into();

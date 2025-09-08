@@ -38,6 +38,7 @@ pub trait SyscallArgs<'a> {
     fn next_u64(&mut self) -> Result<u64>;
 
     /// Return the next `u32` argument.
+    #[inline(always)]
     fn next_u32(&mut self) -> Result<u32> {
         u32::try_from(self.next_usize()?).map_err(|_| Error::InvalidArgument)
     }
