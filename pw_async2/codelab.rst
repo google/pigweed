@@ -618,9 +618,8 @@ Let's set up the waiter.
 
 2. Add an instance as member data to your ``Keypad`` class.
 
-   Note that the instance is internally thread-safe, and ou do **not** need to
-   be guarded by an extra spinlock. An external spinlock is redundant, but
-   harmless.
+   Note that the instance is internally thread-safe, and you do not need to
+   guard it with a lock. An external spinlock is redundant, but harmless.
 
    .. code-block:: cpp
 
