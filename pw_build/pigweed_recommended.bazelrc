@@ -47,16 +47,5 @@ common --strip=never
 common --per_file_copt=external/.*,.*\.pb\.cc@-w
 common --host_per_file_copt=external/.*,.*\.pb\.cc@-w
 
-# Names the platform-specific output directories in `bazel-out/` after their
-# associated platform.
-#
-# These names are used by Pigweed's IDE integration to surface available views
-# for code intelligence.
-#
-# Warning: This can cause confusing conflicts in C++ compile actions if there's
-# any intermixing of the well-known host platform definitions. More info:
-# https://github.com/bazelbuild/bazel/issues/26228
-common --experimental_platform_in_output_dir=True
-
-# Respect the CIPD cache directory environment variable, if set.
+# Respect changes to the CIPD cache directory environment variable, if set.
 common --repo_env=CIPD_CACHE_DIR
