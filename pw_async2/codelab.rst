@@ -229,9 +229,9 @@ Here's how you would write that:
 
 .. code-block:: cpp
 
-   Poll<unsigned> poll_result = coin_slot_.Pend(cx);
+   pw::async2::Poll<unsigned> poll_result = coin_slot_.Pend(cx);
    if (poll_result.IsPending()) {
-     return Pending();
+     return pw::async2::Pending();
    }
    unsigned coins = poll_result.value();
 
