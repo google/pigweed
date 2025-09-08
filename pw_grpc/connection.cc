@@ -763,7 +763,7 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
     uint32_t message_length;
 
     // If we aren't reassembling a message, read the next length prefix.
-    if (!stream->assembly_buffer) {
+    if (stream->assembly_buffer == nullptr) {
       size_t read =
           std::min(5 - static_cast<size_t>(stream->assembly.prefix.received),
                    payload.size());
@@ -801,9 +801,9 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
           return OkStatus();
         }
 
-        stream->assembly_buffer = static_cast<std::byte*>(
-            state->message_assembly_allocator()->Allocate(
-                allocator::Layout(message_length)));
+        stream->assembly_buffer =
+            state->message_assembly_allocator()->MakeUnique<std::byte[]>(
+                message_length);
         if (stream->assembly_buffer == nullptr) {
           PW_LOG_ERROR("Partial message reassembly buffer allocation failed");
           PW_TRY(
@@ -823,17 +823,18 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
       uint32_t read = std::min(
           stream->assembly.message.length - stream->assembly.message.received,
           static_cast<uint32_t>(payload.size()));
-      std::copy(payload.begin(),
-                payload.begin() + read,
-                stream->assembly_buffer + stream->assembly.message.received);
+      std::copy(
+          payload.begin(),
+          payload.begin() + read,
+          stream->assembly_buffer.get() + stream->assembly.message.received);
       payload = payload.subspan(read);
       stream->assembly.message.received += read;
       if (stream->assembly.message.received < stream->assembly.message.length) {
         continue;
       }
       // Fully received message.
-      message =
-          pw::span(stream->assembly_buffer, stream->assembly.message.length);
+      message = pw::span(stream->assembly_buffer.get(),
+                         stream->assembly.message.length);
     } else {
       message = payload.subspan(0, message_length);
       payload = payload.subspan(message_length);
@@ -854,7 +855,6 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
     }
 
     if (stream->assembly_buffer != nullptr) {
-      state->message_assembly_allocator()->Deallocate(stream->assembly_buffer);
       stream->assembly_buffer = nullptr;
       stream->assembly = {};
     }

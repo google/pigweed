@@ -191,7 +191,7 @@ class Connection {
     multibuf::MultiBuf response_queue;
 
     // Fragmented gRPC message assembly, nullptr if not assembling a message.
-    std::byte* assembly_buffer;
+    UniquePtr<std::byte[]> assembly_buffer;
     union {
       struct {
         // Buffer for the length-prefix, if fragmented.
