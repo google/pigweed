@@ -618,12 +618,13 @@ Let's set up the waiter.
 
 2. Add an instance as member data to your ``Keypad`` class.
 
-   As this will ultimately be used by both ``Pend()`` and ``Press()``, it needs
-   to be guarded by the spin lock.
+   Note that the instance is internally thread-safe, and ou do **not** need to
+   be guarded by an extra spinlock. An external spinlock is redundant, but
+   harmless.
 
    .. code-block:: cpp
 
-      pw::async2::Waker waker_ PW_GUARDED_BY(lock_);
+      pw::async2::Waker waker_;
 
 3. Setup the waker right before returning :doxylink:`pw::async2::Pending`
 

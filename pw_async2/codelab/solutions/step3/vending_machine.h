@@ -42,7 +42,7 @@ class Keypad {
 
   pw::sync::InterruptSpinLock lock_;
   int key_pressed_ PW_GUARDED_BY(lock_);
-  pw::async2::Waker waker_ PW_GUARDED_BY(lock_);
+  pw::async2::Waker waker_;  // No guard needed!
 };
 
 // The main task that drives the vending machine.

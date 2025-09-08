@@ -42,7 +42,7 @@ class CoinSlot {
   unsigned coins_deposited_ PW_GUARDED_BY(lock_);
 
   // Wakes a task that called Pend() when a coin arrives.
-  pw::async2::Waker waker_ PW_GUARDED_BY(lock_);
+  pw::async2::Waker waker_;  // No guard needed!
 };
 
 }  // namespace codelab

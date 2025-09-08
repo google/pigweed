@@ -52,7 +52,7 @@ class Keypad {
 
   pw::sync::InterruptSpinLock lock_;
   int key_pressed_ PW_GUARDED_BY(lock_);
-  pw::async2::Waker waker_ PW_GUARDED_BY(lock_);
+  pw::async2::Waker waker_;  // No guard needed!
 };
 
 // Does this belong in pw_async2?
