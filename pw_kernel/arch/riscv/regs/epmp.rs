@@ -12,13 +12,39 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use kernel::MemoryRegionType;
 use regs::{ro_bool_field, rw_bool_field};
 
-/// Machine Security Configuration Register value
+use crate::regs::pmp::{PmpCfgAddressMode, PmpCfgVal};
 use crate::rw_csr_reg;
+
+impl PmpCfgVal {
+    pub const fn from_region_type(ty: MemoryRegionType, address_mode: PmpCfgAddressMode) -> Self {
+        // Prepare user mode PmpCfgVals for ePMP.
+        // To understand the ePMP permission bits, see section 2.1 of "PMP Enhancements
+        // for memory access and execution prevention on Machine mode (Smepmp)":
+        // https://raw.githubusercontent.com/riscv/riscv-tee/main/Smepmp/Smepmp.pdf
+        if ty.is_executable() {
+            Self(0)
+                .with_r(ty.is_readable())
+                .with_w(ty.is_writeable())
+                .with_x(ty.is_executable())
+                .with_a(address_mode)
+        } else if ty.is_writeable() {
+            // Read-write region shared between M/U mode.
+            // RW by kernel; RW by user mode.
+            Self(0).with_w(true).with_x(true).with_a(address_mode)
+        } else {
+            // Read-only region shared between M/U mode.
+            // RW by kernel; RO by user mode.
+            Self(0).with_w(true).with_a(address_mode)
+        }
+    }
+}
 
 #[derive(Copy, Clone, Default)]
 #[repr(transparent)]
+/// Machine Security Configuration Register value
 pub struct MSeccfgVal(pub usize);
 impl MSeccfgVal {
     rw_bool_field!(usize, mml, 0, "Machine Mode Lockdown");

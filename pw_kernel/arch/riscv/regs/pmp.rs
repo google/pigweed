@@ -15,8 +15,10 @@
 
 use core::arch::asm;
 
+#[cfg(not(feature = "epmp"))]
 use kernel::MemoryRegionType;
 use kernel::memory::MemoryRegion;
+use kernel_config::{KernelConfig, RiscVKernelConfigInterface as _};
 use pw_status::{Error, Result};
 use regs::*;
 
@@ -37,7 +39,7 @@ pub enum PmpCfgAddressMode {
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]
-pub struct PmpCfgVal(u8);
+pub struct PmpCfgVal(pub(crate) u8);
 impl PmpCfgVal {
     rw_bool_field!(u8, r, 0, "readable");
     rw_bool_field!(u8, w, 1, "writable");
@@ -53,7 +55,9 @@ impl Default for PmpCfgVal {
 }
 
 impl PmpCfgVal {
+    #[cfg(not(feature = "epmp"))]
     pub const fn from_region_type(ty: MemoryRegionType, address_mode: PmpCfgAddressMode) -> Self {
+        // Prepare PmpCfgVals for PMP.
         Self(0)
             .with_r(ty.is_readable())
             .with_w(ty.is_writeable())
@@ -84,12 +88,15 @@ impl<const NUM_ENTRIES: usize> PmpConfig<NUM_ENTRIES> {
             addr: [0; NUM_ENTRIES],
         };
         let mut cur_region = 0;
-        let mut cur_entry = 0;
+        let mut cur_entry = KernelConfig::PMP_USERSPACE_ENTRIES.start;
 
         // The iteration of `regions` is somewhat awkwardly done using a `while`
         // loop instead of a `for` loop because `for` loops are not supported
         // in const functions.
         while cur_region < regions.len() {
+            if cur_entry >= KernelConfig::PMP_USERSPACE_ENTRIES.end {
+                return Err(Error::ResourceExhausted);
+            }
             let region = &regions[cur_region];
 
             if let Err(e) = cfg.entry(
@@ -101,6 +108,9 @@ impl<const NUM_ENTRIES: usize> PmpConfig<NUM_ENTRIES> {
             }
             cur_region += 1;
             cur_entry += 1;
+            if cur_entry >= KernelConfig::PMP_USERSPACE_ENTRIES.end {
+                return Err(Error::ResourceExhausted);
+            }
 
             // When two regions are back-to-back marking the end of the first
             // regions with a Top of Range entry is not required.
@@ -135,6 +145,16 @@ impl<const NUM_ENTRIES: usize> PmpConfig<NUM_ENTRIES> {
         self.cfg[index] = config;
         self.addr[index] = address;
         Ok(self)
+    }
+
+    /// Clear the PMPCFG registers disabling the current configuration.
+    pub unsafe fn clear(&self) {
+        unsafe {
+            asm!("csrw pmpcfg0, x0");
+            asm!("csrw pmpcfg1, x0");
+            asm!("csrw pmpcfg2, x0");
+            asm!("csrw pmpcfg3, x0");
+        }
     }
 
     /// Write this PMP configuration to the registers.

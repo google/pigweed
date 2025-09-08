@@ -44,6 +44,10 @@ pub trait RiscVKernelConfigInterface {
     /// or 64.
     const PMP_ENTRIES: usize;
 
+    /// A range of PMP entries the kernel will use to configure memory access
+    /// for userspace.
+    const PMP_USERSPACE_ENTRIES: core::ops::Range<usize>;
+
     /// mtvec exception mode. When in direct mode, base address will be set
     /// to the `_start_trap` address.
     /// When in vectored mode, the address of the vector table is passed

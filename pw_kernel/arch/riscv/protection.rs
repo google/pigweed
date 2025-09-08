@@ -45,16 +45,38 @@ impl MemoryConfig {
 
     /// Write this memory configuration to the PMP registers.
     pub unsafe fn write(&self) {
-        unsafe { self.pmp_config.write() }
+        unsafe {
+            // We clear first so the following write can't create an
+            // intermediate invalid state (Consider zeroing the lower
+            // address register of a TOR region, which could create a
+            // region from address 0 to whatever the top-of-range is that
+            // may be inaccessible).
+            self.pmp_config.clear();
+            self.pmp_config.write();
+        }
+    }
+
+    pub fn dump(&self) {
+        self.pmp_config.dump();
+    }
+
+    pub fn dump_current(&self) {
+        unsafe {
+            let pmp_config = PmpConfig::<{ KernelConfig::PMP_ENTRIES }>::read();
+            pmp_config.dump();
+        }
     }
 }
 
 impl kernel::memory::MemoryConfig for MemoryConfig {
+    #[cfg(not(feature = "epmp"))]
     const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion::new(
         MemoryRegionType::ReadWriteExecutable,
         0x0000_0000,
         0xffff_ffff,
     )]);
+    #[cfg(feature = "epmp")]
+    const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[]);
 
     fn range_has_access(
         &self,

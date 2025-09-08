@@ -13,6 +13,8 @@
 // the License.
 #![no_std]
 
+use core::ops::Range;
+
 pub use kernel_config::{
     ClintTimerConfigInterface, ExceptionMode, KernelConfigInterface, RiscVKernelConfigInterface,
 };
@@ -25,6 +27,11 @@ impl RiscVKernelConfigInterface for KernelConfig {
     type Timer = TimerConfig;
     const MTIME_HZ: u64 = 10_000_000;
     const PMP_ENTRIES: usize = 16;
+    const PMP_USERSPACE_ENTRIES: Range<usize> = Range {
+        start: 0usize,
+        end: Self::PMP_ENTRIES,
+    };
+
     fn get_exception_mode() -> ExceptionMode {
         ExceptionMode::Direct
     }
