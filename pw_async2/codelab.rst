@@ -1131,7 +1131,7 @@ Then, call it from ``item_drop_sensor_isr()``.
 
 2. Setting up inter-task communication
 ======================================
-We'll be adding a new ``DispatcherTask`` soon. To get ready for that, let's set
+We'll be adding a new ``DispenserTask`` soon. To get ready for that, let's set
 up communications channels between ``VendingMachineTask`` and the new task.
 
 There are many ways to use a :doxylink:`Waker <pw::async2::Waker>` to
