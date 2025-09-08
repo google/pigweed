@@ -488,7 +488,7 @@ member function.
 
 .. code-block:: cpp
 
-   void key_press_isr(int raw_key_code) { keypad.Press(raw_key_code); }
+   void key_press_isr(int key) { keypad.Press(key); }
 
 The next step is harder, implementing the ``Keypad::Press`` member function
 correctly.
