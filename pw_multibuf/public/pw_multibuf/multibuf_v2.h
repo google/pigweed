@@ -13,18 +13,10 @@
 // the License.
 #pragma once
 
-//         __      ___   ___ _  _ ___ _  _  ___
-//         \ \    / /_\ | _ \ \| |_ _| \| |/ __|
-//          \ \/\/ / _ \|   / .` || || .` | (_ |
-//           \_/\_/_/ \_\_|_\_|\_|___|_|\_|\___|
-//  _____  _____ ___ ___ ___ __  __ ___ _  _ _____ _   _
-// | __\ \/ / _ \ __| _ \_ _|  \/  | __| \| |_   _/_\ | |
-// | _| >  <|  _/ _||   /| || |\/| | _|| .` | | |/ _ \| |__
-// |___/_/\_\_| |___|_|_\___|_|  |_|___|_|\_| |_/_/ \_\____|
-//
-// MultiBuf version 2 is in an early, experimental state. The APIs are in flux
-// and may change without notice. Please do not rely on it in production code,
-// but feel free to explore and share feedback with the Pigweed team!
+// NOTE: MultiBuf version 2 is in a nearly stable state, but may still change.
+// The Pigweed team will announce breaking changes in the API. It is strongly
+// recommended to coordinate with the Pigweed team if you want to start using
+// this code.
 
 #include <cstddef>
 #include <cstdint>
