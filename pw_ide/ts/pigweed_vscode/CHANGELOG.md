@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.9.9] - 2025-09-05
+
+### Bug Fixes
+
+ - Increase max direct dependencies for provider collector.
+    + This increases the maximum number of direct targets the aspect will
+      evaluate to handle these kinds of large targets.
+
 ## [1.9.8] - 2025-09-04
 
 ### Features
