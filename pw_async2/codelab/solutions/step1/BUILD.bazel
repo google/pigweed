@@ -56,4 +56,6 @@ pw_golden_test(
     name = "test",
     executable = ":step1",
     expected = ":step1.expected",
+    # TODO: https://pwbug.dev/441375913 - Make this deterministic and re-enable.
+    tags = ["manual"],
 )

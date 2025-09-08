@@ -44,6 +44,7 @@ void item_drop_sensor_isr() {
 
 int main() {
   pw::async2::Dispatcher dispatcher;
+  codelab::HardwareInit(&dispatcher);
 
   codelab::VendingMachineTask task;
   dispatcher.Post(task);
