@@ -33,8 +33,6 @@ exports_files(
 pw_cc_binary(
     name = "codelab",
     srcs = [
-        "item_drop_sensor.cc",
-        "item_drop_sensor.h",
         "main.cc",
         "vending_machine.cc",
         "vending_machine.h",

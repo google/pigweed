@@ -1246,10 +1246,10 @@ Here's what the three states need to do.
      calling :doxylink:`PendNotEmpty()
      <pw::BasicInlineAsyncQueue::PendNotEmpty>` and accessing the request with
      a call to ``front()``. Keep the item in the queue until you turn off the
-     dispensing motor; you'll to reference the number.
-
-  2. Start the motor with a call to ``SetDispenerMotorState()``.
-  3. Move to the ``kDispensing`` state.
+     dispensing motor; you'll need to reference the number.
+  2. Call ``item_drop_sensor_.Clear()`` so the sensor is ready for a new item.
+  3. Start the motor with a call to ``SetDispenerMotorState()``.
+  4. Move to the ``kDispensing`` state.
 
 - ``kDispensing``
 

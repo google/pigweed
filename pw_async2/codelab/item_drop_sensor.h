@@ -13,9 +13,10 @@
 // the License.
 #pragma once
 
+#include <atomic>
+
 #include "pw_async2/context.h"
 #include "pw_async2/waker.h"
-#include "pw_sync/interrupt_spin_lock.h"
 
 namespace codelab {
 
@@ -29,10 +30,12 @@ class ItemDropSensor {
   // Records an item drop event. Typically called from the drop sensor ISR.
   void Drop();
 
+  // Clears any latched drop events.
+  void Clear() { drop_detected_.store(false, std::memory_order_relaxed); }
+
  private:
-  pw::sync::InterruptSpinLock lock_;
-  bool drop_detected_ PW_GUARDED_BY(lock_) = false;
-  pw::async2::Waker waker_ PW_GUARDED_BY(lock_);
+  std::atomic<bool> drop_detected_ = false;
+  pw::async2::Waker waker_;
 };
 
 }  // namespace codelab

@@ -27,21 +27,6 @@
 
 namespace codelab {
 
-pw::async2::Poll<> ItemDropSensor::Pend(pw::async2::Context& cx) {
-  std::lock_guard lock(lock_);
-  if (std::exchange(drop_detected_, false)) {
-    return pw::async2::Ready();
-  }
-  PW_ASYNC_STORE_WAKER(cx, waker_, "item drop");
-  return pw::async2::Pending();
-}
-
-void ItemDropSensor::Drop() {
-  std::lock_guard lock(lock_);
-  drop_detected_ = true;
-  std::move(waker_).Wake();
-}
-
 pw::async2::Poll<int> Keypad::Pend(pw::async2::Context& cx) {
   std::lock_guard lock(lock_);
   int key = std::exchange(key_pressed_, kNone);
@@ -184,7 +169,13 @@ pw::async2::Poll<> DispenserTask::DoPend(pw::async2::Context& cx) {
   while (true) {
     switch (state_) {
       case kIdle: {
+        // Wait until a purchase is made.
         PW_TRY_READY(dispense_requests_.PendNotEmpty(cx));
+
+        // Clear any previously latched item drops.
+        item_drop_sensor_.Clear();
+
+        // Start the motor to dispense the requested item.
         SetDispenserMotorState(dispense_requests_.front(), MotorState::kOn);
 
         const auto expected_completion =

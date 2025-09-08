@@ -20,8 +20,7 @@
 namespace codelab {
 
 pw::async2::Poll<> ItemDropSensor::Pend(pw::async2::Context& cx) {
-  std::lock_guard lock(lock_);
-  if (std::exchange(drop_detected_, false)) {
+  if (drop_detected_.exchange(false, std::memory_order_relaxed)) {
     return pw::async2::Ready();
   }
   PW_ASYNC_STORE_WAKER(cx, waker_, "item drop");
@@ -29,9 +28,9 @@ pw::async2::Poll<> ItemDropSensor::Pend(pw::async2::Context& cx) {
 }
 
 void ItemDropSensor::Drop() {
-  std::lock_guard lock(lock_);
-  drop_detected_ = true;
-  std::move(waker_).Wake();
+  if (!drop_detected_.exchange(true, std::memory_order_relaxed)) {
+    std::move(waker_).Wake();
+  }
 }
 
 }  // namespace codelab
