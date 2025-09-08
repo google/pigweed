@@ -161,7 +161,7 @@ void HardwareInit(pw::async2::Dispatcher* dispatcher) {
     PW_LOG_INFO("  Type 'd' to show the dispatcher state.");
     PW_LOG_INFO("  Type 'c' to insert a coin.");
     PW_LOG_INFO("  Type 'i' to signal an item dropped.");
-    PW_LOG_INFO("  Type '0'..'4' to press a keypad key.");
+    PW_LOG_INFO("  Type '1'..'4' to press a keypad key.");
     PW_LOG_INFO("==========================================");
   }
 
