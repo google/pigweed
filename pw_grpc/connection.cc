@@ -1149,7 +1149,9 @@ Status Connection::Reader::ProcessSettingsFrame(const FrameHeader& frame,
 
   // RFC 9113 §6.5.2
   ByteBuilder builder(payload);
-  for (auto it = builder.begin(); it != builder.end();) {
+  // ByteBuilder.end() points at end of written buffer view, not input.
+  const ByteBuilder::iterator end(payload.data() + payload.size());
+  for (auto it = builder.begin(); it != end;) {
     auto id = it.ReadUint16(endian::big);
     auto value = it.ReadUint32(endian::big);
     PW_LOG_DEBUG("Applying SETTING id=%" PRIu16 " value=%" PRIu32, id, value);
