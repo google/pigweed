@@ -135,20 +135,16 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
 
   std::lock_guard lock(impl::dispatcher_lock());
   if (task->state_ == Task::State::kRunning) {
-    if (task->name_ != log::kDefaultToken) {
-      PW_LOG_DEBUG(
-          "Dispatcher adding task " PW_LOG_TOKEN_FMT() ":%p to sleep queue",
-          task->name_,
-          static_cast<const void*>(task));
-    } else {
-      PW_LOG_DEBUG("Dispatcher adding task (anonymous):%p to sleep queue",
-                   static_cast<const void*>(task));
-    }
+    PW_LOG_DEBUG(
+        "Dispatcher adding task " PW_LOG_TOKEN_FMT() ":%p to sleep queue",
+        task->name_,
+        static_cast<const void*>(task));
 
     if (requires_waker) {
       PW_CHECK(!task->wakers_.empty(),
-               "Task %p returned Pending() without registering a waker",
-               static_cast<const void*>(task));
+               "Task " PW_LOG_TOKEN_FMT()
+               ":%p returned Pending() without registering a waker",
+               task->name_, static_cast<const void*>(task));
       task->state_ = Task::State::kSleeping;
       sleeping_.push_front(*task);
     } else {
@@ -182,14 +178,9 @@ void NativeDispatcherBase::RemoveSleepingTaskLocked(Task& task) {
 }
 
 void NativeDispatcherBase::WakeTask(Task& task) {
-  if (task.name_ != log::kDefaultToken) {
-    PW_LOG_DEBUG("Dispatcher waking task " PW_LOG_TOKEN_FMT() ":%p",
-                 task.name_,
-                 static_cast<const void*>(&task));
-  } else {
-    PW_LOG_DEBUG("Dispatcher waking task (anonymous):%p",
-                 static_cast<const void*>(&task));
-  }
+  PW_LOG_DEBUG("Dispatcher waking task " PW_LOG_TOKEN_FMT() ":%p",
+               task.name_,
+               static_cast<const void*>(&task));
 
   switch (task.state_) {
     case Task::State::kWoken:
@@ -235,29 +226,19 @@ void NativeDispatcherBase::LogRegisteredTasks() {
 
   PW_LOG_INFO("Woken tasks:");
   for (const Task& task : woken_) {
-    if (task.name_ != log::kDefaultToken) {
-      PW_LOG_INFO("  - " PW_LOG_TOKEN_FMT() ":%p",
-                  task.name_,
-                  static_cast<const void*>(&task));
-    } else {
-      PW_LOG_INFO("  - (anonymous):%p", static_cast<const void*>(&task));
-    }
+    PW_LOG_INFO("  - " PW_LOG_TOKEN_FMT() ":%p",
+                task.name_,
+                static_cast<const void*>(&task));
   }
   PW_LOG_INFO("Sleeping tasks:");
   for (const Task& task : sleeping_) {
     int waker_count = static_cast<int>(
         std::distance(task.wakers_.begin(), task.wakers_.end()));
 
-    if (task.name_ != log::kDefaultToken) {
-      PW_LOG_INFO("  - " PW_LOG_TOKEN_FMT() ":%p (%d wakers)",
-                  task.name_,
-                  static_cast<const void*>(&task),
-                  waker_count);
-    } else {
-      PW_LOG_INFO("  - (anonymous):%p (%d wakers)",
-                  static_cast<const void*>(&task),
-                  waker_count);
-    }
+    PW_LOG_INFO("  - " PW_LOG_TOKEN_FMT() ":%p (%d wakers)",
+                task.name_,
+                static_cast<const void*>(&task),
+                waker_count);
 
 #if PW_ASYNC2_DEBUG_WAIT_REASON
     LogTaskWakers(task);
