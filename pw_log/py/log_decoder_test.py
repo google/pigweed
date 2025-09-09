@@ -66,8 +66,6 @@ _TOKEN_DATABASE = pw_tokenizer.tokens.Database(
 )
 _DETOKENIZER = pw_tokenizer.Detokenizer(_TOKEN_DATABASE)
 
-_ZERO_NS_TIMESTAMP_STR = '00:00:00.000000'
-
 
 def _create_log_entry_with_tokenized_fields(
     message: str, module: str, file: str, thread: str, line: int, level: int
@@ -151,13 +149,50 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
                 message=b'Hello',
                 file=b'my/path/file.cc',
                 line_level=Log.pack_line_level(123, logging.INFO),
+            )
+        )
+        self.assertEqual(result, expected_log)
+
+    def test_parse_log_entry_with_timestamp(self) -> None:
+        """Test that LogEntry with timestamps are parsed correctly."""
+        expected_log = Log(
+            message='Hello',
+            file_and_line='my/path/file.cc:123',
+            level=logging.INFO,
+            source_name=self.decoder.source_name,
+            timestamp='00:45:45.587123',
+        )
+        result = self.decoder.parse_log_entry_proto(
+            log_pb2.LogEntry(
+                message=b'Hello',
+                file=b'my/path/file.cc',
+                line_level=Log.pack_line_level(123, logging.INFO),
+                timestamp=2745587123456,
+            )
+        )
+        self.assertEqual(result, expected_log)
+
+    def test_parse_log_entry_with_zero_timestamp(self) -> None:
+        """Test that LogEntry with zero timestamp are parsed correctly."""
+        expected_log = Log(
+            message='Hello',
+            file_and_line='my/path/file.cc:123',
+            level=logging.INFO,
+            source_name=self.decoder.source_name,
+            timestamp='00:00:00.000000',
+        )
+        result = self.decoder.parse_log_entry_proto(
+            log_pb2.LogEntry(
+                message=b'Hello',
+                file=b'my/path/file.cc',
+                line_level=Log.pack_line_level(123, logging.INFO),
+                timestamp=0,
             )
         )
         self.assertEqual(result, expected_log)
@@ -170,7 +205,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             level=logging.DEBUG,
             source_name=self.decoder.source_name,
             module_name='wifi',
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -180,7 +214,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
                     )
                 ),
                 line_level=Log.pack_line_level(0, logging.DEBUG),
-                timestamp=100,
             )
         )
         self.assertEqual(result, log_with_metadata_in_message)
@@ -212,7 +245,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line=file + ':123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
             thread_name=thread_name,
         )
 
@@ -258,7 +290,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line=file + ':123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
             thread_name=thread,
         )
         result = self.decoder.parse_log_entry_proto(log_entry)
@@ -285,7 +316,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             level=logging.DEBUG,
             source_name=self.decoder.source_name,
             module_name='wifi',
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
             thread_name=thread_name,
         )
 
@@ -301,7 +331,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -321,7 +350,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -343,7 +371,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
 
         result = self.decoder.parse_log_entry_proto(
@@ -364,7 +391,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
 
         result = self.decoder.parse_log_entry_proto(
@@ -387,7 +413,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
 
         result = self.decoder.parse_log_entry_proto(
@@ -410,7 +435,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -432,7 +456,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -454,7 +477,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -476,7 +498,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -498,7 +519,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -522,7 +542,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -544,7 +563,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -566,7 +584,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -588,7 +605,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -612,7 +628,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -634,7 +649,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line='my/path/file.cc:123',
             level=logging.INFO,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
         )
         result = self.decoder.parse_log_entry_proto(
             log_pb2.LogEntry(
@@ -665,7 +679,6 @@ class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
             file_and_line=':123',
             level=logging.DEBUG,
             source_name=self.decoder.source_name,
-            timestamp=_ZERO_NS_TIMESTAMP_STR,
             thread_name=thread_name,
         )
         result = self.decoder.parse_log_entry_proto(log_entry)

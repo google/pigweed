@@ -290,7 +290,7 @@ class LogStreamDecoder:
         decoded_log_handler: Callable[[Log], None],
         detokenizer: Detokenizer | None = None,
         source_name: str = '',
-        timestamp_parser: Callable[[int], str] | None = None,
+        timestamp_parser: Callable[[int], str] = str,
         message_parser: Callable[[str], str] | None = None,
     ):
         self.decoded_log_handler = decoded_log_handler
@@ -391,10 +391,10 @@ class LogStreamDecoder:
         message = message_and_metadata.message
         if self.message_parser:
             message = self.message_parser(message)
-        if self.timestamp_parser:
+        if log_entry_proto.HasField("timestamp"):
             timestamp = self.timestamp_parser(log_entry_proto.timestamp)
         else:
-            timestamp = str(log_entry_proto.timestamp)
+            timestamp = ""
         log = Log(
             message=message,
             level=line_level_tuple.level,
