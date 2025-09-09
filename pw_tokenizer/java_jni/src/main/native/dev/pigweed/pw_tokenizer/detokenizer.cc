@@ -21,13 +21,9 @@
 #include <cstdint>
 #include <cstring>
 
-#include "lib/stdcompat/bit.h"
 #include "pw_span/span.h"
 #include "pw_tokenizer/detokenize.h"
 #include "pw_tokenizer/token_database.h"
-
-// This header does exist, but should
-// #include "dev_pigweed_pw_tokenizer_Detokenizer.h"
 
 #define DETOKENIZER_JNI_METHOD(return_type, method) \
   extern "C" JNIEXPORT return_type JNICALL          \
@@ -36,12 +32,18 @@
 namespace pw::tokenizer {
 namespace {
 
-constexpr Detokenizer* HandleToPointer(jlong handle) {
-  return cpp20::bit_cast<Detokenizer*>(handle);
+Detokenizer* HandleToPointer(jlong handle) {
+  Detokenizer* detokenizer = nullptr;
+  std::memcpy(&detokenizer, &handle, sizeof(detokenizer));
+  static_assert(sizeof(detokenizer) <= sizeof(handle));
+  return detokenizer;
 }
 
-constexpr jlong PointerToHandle(Detokenizer* detokenizer) {
-  return cpp20::bit_cast<jlong>(detokenizer);
+jlong PointerToHandle(Detokenizer* detokenizer) {
+  jlong handle = 0;
+  std::memcpy(&handle, &detokenizer, sizeof(detokenizer));
+  static_assert(sizeof(handle) >= sizeof(detokenizer));
+  return handle;
 }
 
 jbyteArray ByteArrayFromString(JNIEnv* env, const std::string& str) {

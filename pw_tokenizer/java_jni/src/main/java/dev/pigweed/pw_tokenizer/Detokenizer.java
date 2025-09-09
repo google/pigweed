@@ -67,6 +67,7 @@ public final class Detokenizer {
   }
 
   /** Deletes memory allocated in C++ when this class is garbage collected. */
+  @SuppressWarnings("Finalize") // finalize() is deprecated
   @Override
   protected void finalize() {
     deleteNativeDetokenizer(handle);

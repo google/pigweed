@@ -24,6 +24,5 @@ cc_jni_library(
     deps = [
         "//pw_span",
         "//pw_tokenizer:decoder",
-        "//third_party/fuchsia:stdcompat",
     ],
 )
