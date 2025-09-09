@@ -289,7 +289,8 @@ class LogStreamDecoder:
     Performs log drop detection on the stream of LogEntries proto messages.
 
     Args:
-        decoded_log_handler: Callback called on each decoded log.
+        decoded_log_handler: Callback called on each decoded log. Required if
+          parse_log_entries_proto() is to be called.
         detokenizer: Detokenizes log messages if tokenized when provided.
         source_name: Optional string to identify the logs source.
         timestamp_parser: Optional timestamp parser number to a string.
@@ -303,7 +304,7 @@ class LogStreamDecoder:
 
     def __init__(
         self,
-        decoded_log_handler: Callable[[Log], None],
+        decoded_log_handler: Callable[[Log], None] | None = None,
         detokenizer: Detokenizer | None = None,
         source_name: str = '',
         timestamp_parser: Callable[[int], str] = str,
@@ -321,11 +322,18 @@ class LogStreamDecoder:
     ) -> None:
         """Parses each LogEntry in log_entries_proto.
 
+        Each parsed LogEntry is passed to decoded_log_handler, which must be
+        provided in the constructor.
+
         Args:
             log_entry_proto: A LogEntry message proto.
-        Returns:
-            A Log object with the decoded log_entry_proto.
+
+        Raises:
+            ValueError: If decoded_log_handler was not provided to the
+                constructor.
         """
+        if not self.decoded_log_handler:
+            raise ValueError("decoded_log_handler not set")
         has_received_logs = self._expected_log_sequence_id > 0
         dropped_log_count = self._calculate_dropped_logs(log_entries_proto)
         if dropped_log_count > 0:
