@@ -27,6 +27,7 @@ from pw_ide.compile_commands_generator import (
     parse_bazel_build_command,
     resolve_bazel_out_paths,
     resolve_virtual_includes_to_real_paths,
+    filter_unsupported_march_args,
     CompileCommand,
     LoggerUI,
 )
@@ -601,6 +602,26 @@ class CompileCommandsGeneratorTest(unittest.TestCase):
                 warning_msg,
                 mock_logger.get_stderr(),
             )
+
+    def test_filter_unsupported_march_args(self):
+        """Test that unsupported -march arguments are removed."""
+        sample_command = CompileCommand(
+            file='test.cc',
+            directory='.',
+            arguments=[
+                'clang++',
+                '-march=znver1',  # Supported
+                '-march=unsupported_arch',  # Unsupported
+                '-other-flag',
+            ],
+        )
+
+        filtered_command = filter_unsupported_march_args(sample_command)
+
+        self.assertIn('-march=znver1', filtered_command.arguments)
+        self.assertNotIn('-march=unsupported_arch', filtered_command.arguments)
+        self.assertIn('-other-flag', filtered_command.arguments)
+        self.assertEqual(len(filtered_command.arguments), 3)
 
 
 if __name__ == '__main__':

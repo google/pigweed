@@ -30,6 +30,84 @@ import json5  # type: ignore
 CQueryItem = Tuple[str, List[str]]
 
 
+# Supported architectures for clangd, based on the provided list.
+# TODO(b/442862617): A better way than this than hardcoded list.
+SUPPORTED_MARCH_ARCHITECTURES = {
+    "nocona",
+    "core2",
+    "penryn",
+    "bonnell",
+    "atom",
+    "silvermont",
+    "slm",
+    "goldmont",
+    "goldmont-plus",
+    "tremont",
+    "nehalem",
+    "corei7",
+    "westmere",
+    "sandybridge",
+    "corei7-avx",
+    "ivybridge",
+    "core-avx-i",
+    "haswell",
+    "core-avx2",
+    "broadwell",
+    "skylake",
+    "skylake-avx512",
+    "skx",
+    "cascadelake",
+    "cooperlake",
+    "cannonlake",
+    "icelake-client",
+    "rocketlake",
+    "icelake-server",
+    "tigerlake",
+    "sapphirerapids",
+    "alderlake",
+    "raptorlake",
+    "meteorlake",
+    "arrowlake",
+    "arrowlake-s",
+    "lunarlake",
+    "gracemont",
+    "pantherlake",
+    "sierraforest",
+    "grandridge",
+    "graniterapids",
+    "graniterapids-d",
+    "emeraldrapids",
+    "clearwaterforest",
+    "diamondrapids",
+    "knl",
+    "knm",
+    "k8",
+    "athlon64",
+    "athlon-fx",
+    "opteron",
+    "k8-sse3",
+    "athlon64-sse3",
+    "opteron-sse3",
+    "amdfam10",
+    "barcelona",
+    "btver1",
+    "btver2",
+    "bdver1",
+    "bdver2",
+    "bdver3",
+    "bdver4",
+    "znver1",
+    "znver2",
+    "znver3",
+    "znver4",
+    "znver5",
+    "x86-64",
+    "x86-64-v2",
+    "x86-64-v3",
+    "x86-64-v4",
+}
+
+
 class EnvVar(NamedTuple):
     key: str
     value: str
@@ -543,6 +621,19 @@ def resolve_bazel_out_paths(
     return command._replace(arguments=new_args, file=new_file)
 
 
+def filter_unsupported_march_args(command: CompileCommand) -> CompileCommand:
+    """Removes -march arguments if the arch is not supported by clangd."""
+    new_args = []
+    for arg in command.arguments:
+        if arg.startswith("-march="):
+            arch = arg.split("=", 1)[1]
+            if arch in SUPPORTED_MARCH_ARCHITECTURES:
+                new_args.append(arg)
+        else:
+            new_args.append(arg)
+    return command._replace(arguments=new_args)
+
+
 def generate_compile_commands_from_aquery_cquery(
     cwd: str,
     aquery_actions: List[Dict],
@@ -597,7 +688,8 @@ def generate_compile_commands_from_aquery_cquery(
                 resolved_cmd = resolve_bazel_out_paths(
                     fixed_cmd, real_bazel_out
                 )
-                compile_commands.add(resolved_cmd)
+                filtered_cmd = filter_unsupported_march_args(resolved_cmd)
+                compile_commands.add(filtered_cmd)
 
         compile_commands_per_platform.set(platform, compile_commands)
         if tui_manager:
