@@ -6,6 +6,17 @@
       "build_type": "bazel",
       "args": [],
       "env": {}
+    },
+    {
+      "name": "bazel_default_notest",
+      "description": "Default bazel build configuration (usually host)",
+      "build_type": "bazel",
+      "args": [],
+      "env": {},
+      "driver_options": {
+        "@type": "pw.build.proto.BazelDriverOptions",
+        "no_test": true
+      }
     }
   ],
   "builds": [
@@ -32,7 +43,7 @@
     },
     {
       "name": "docs",
-      "use_config": "bazel_default",
+      "use_config": "bazel_default_notest",
       "targets": [
         "//docs"
       ]
@@ -71,6 +82,149 @@
       },
       "targets": [
         "//..."
+      ]
+    },
+    {
+      "name": "lm3s6965evb",
+      "build_config": {
+        "name": "lm3s6965evb_config",
+        "description": "lm3s6965evb build",
+        "build_type": "bazel",
+        "args": [
+          "--config=lm3s6965evb"
+        ]
+      },
+      "targets": [
+        "//pw_status/..."
+      ]
+    },
+    {
+      "name": "jni",
+      "build_config": {
+        "name": "jni_config",
+        "description": "jni build",
+        "build_type": "bazel",
+        "args": [
+          "--build_tag_filters=jni",
+          "--test_tag_filters=jni"
+        ]
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "rust_nightly",
+      "build_config": {
+        "name": "rust_nightly_config",
+        "description": "Pigweed with Nightly release of Rust",
+        "build_type": "bazel",
+        "args": [
+          "--@rules_rust//rust/toolchain/channel=nightly"
+        ]
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "googletest",
+      "build_config": {
+        "name": "googletest_config",
+        "description": "Use real Googletest",
+        "build_type": "bazel",
+        "args": [
+          "--config=googletest"
+        ]
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "clippy",
+      "build_config": {
+        "name": "clippy_config",
+        "description": "Run clippy checks",
+        "build_type": "bazel",
+        "args": [
+          "--aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect",
+          "--output_groups=clippy_checks"
+        ],
+        "driver_options": {
+          "@type": "pw.build.proto.BazelDriverOptions",
+          "no_test": true
+        }
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "clippy_nightly",
+      "build_config": {
+        "name": "clippy_nightly_config",
+        "description": "Run clippy checks",
+        "build_type": "bazel",
+        "args": [
+          "--@rules_rust//rust/toolchain/channel=nightly",
+          "--aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect",
+          "--output_groups=clippy_checks"
+        ],
+        "driver_options": {
+          "@type": "pw.build.proto.BazelDriverOptions",
+          "no_test": true
+        }
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "asan_fuzztest",
+      "build_config": {
+        "name": "asan_fuzztest_config",
+        "description": "ASAN Fuzztest",
+        "build_type": "bazel",
+        "args": [
+          "--config=asan",
+          "--config=fuzztest"
+        ],
+        "driver_options": {
+          "@type": "pw.build.proto.BazelDriverOptions",
+          "no_test": true
+        }
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "rpc_callback",
+      "build_config": {
+        "name": "rpc_callback_config",
+        "description": "RPC callback config enabled",
+        "build_type": "bazel",
+        "args": [
+          "--//pw_rpc:config_override=//pw_rpc:completion_request_callback_config_enabled"
+        ]
+      },
+      "targets": [
+        "//pw_rpc/..."
+      ]
+    },
+    {
+      "name": "grpc",
+      "build_config": {
+        "name": "grpc_config",
+        "description": "GRPC support",
+        "build_type": "bazel",
+        "args": [
+          "--platforms=//pw_grpc:test_platform"
+        ]
+      },
+      "targets": [
+        "//pw_grpc/..."
       ]
     }
   ],
@@ -120,6 +274,23 @@
       "analyzers": [
         "format",
         "pw_presubmit_checks"
+      ]
+    },
+    {
+      "name": "default",
+      "description": "Most common builds/configurations",
+      "builds": [
+        "all_host",
+        "lm3s6965evb",
+        "jni",
+        "rust_nightly",
+        "googletest",
+        "clippy",
+        "clippy_nightly",
+        "asan_fuzztest",
+        "rpc_callback",
+        "grpc",
+        "docs"
       ]
     }
   ]
