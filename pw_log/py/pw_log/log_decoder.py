@@ -113,12 +113,28 @@ class Log:
 
     def __str__(self) -> str:
         level_name = self._LOG_LEVEL_NAMES.get(self.level, '')
-        metadata = ' '.join(map(str, self.metadata_fields.values()))
-        return (
-            f'{level_name} [{self.source_name}] {self.module_name} '
-            f'{self.timestamp} {self.message} {self.file_and_line} '
-            f'{metadata}'
-        ).strip()
+        metadata = ', '.join(
+            f"{key}={value}" for key, value in self.metadata_fields.items()
+        )
+
+        parts: list[str] = []
+
+        def add_if_nonempty(
+            part: str, prefix: str = "", suffix: str = ""
+        ) -> None:
+            nonlocal parts
+            if not part:
+                return
+            parts.append(f"{prefix}{part}{suffix}")
+
+        add_if_nonempty(level_name)
+        add_if_nonempty(self.source_name, "[", "]")
+        add_if_nonempty(self.module_name)
+        add_if_nonempty(self.timestamp)
+        add_if_nonempty(self.message)
+        add_if_nonempty(self.file_and_line)
+        add_if_nonempty(metadata)
+        return " ".join(parts)
 
     @staticmethod
     def pack_line_level(line: int, logging_log_level: int) -> int:

@@ -905,5 +905,55 @@ class TestTimestampFormatting(TestCase):
         )
 
 
+class TestLog(TestCase):
+    """Tests for Log class."""
+
+    def test_str_empty(self) -> None:
+        log = Log()
+        self.assertEqual(str(log), "")
+
+    def test_str_message(self) -> None:
+        log = Log(message="Hello, world!")
+        self.assertEqual(str(log), "Hello, world!")
+
+    def test_str_message_level(self) -> None:
+        log = Log(
+            message="Hello, world!",
+            level=logging.ERROR,
+        )
+        self.assertEqual(str(log), "ERR Hello, world!")
+
+    def test_str_not_quite_everything(self) -> None:
+        log = Log(
+            message="Hello, world!",
+            level=logging.ERROR,
+            module_name="MYMOD",
+            thread_name="Dispatcher",
+            file_and_line="dispatcher.c:1234",
+            metadata_fields=dict(mode="debug", magic="42"),
+        )
+        self.assertEqual(
+            str(log),
+            "ERR MYMOD Hello, world! dispatcher.c:1234 mode=debug, magic=42",
+        )
+
+    def test_str_everything(self) -> None:
+        log = Log(
+            message="Hello, world!",
+            level=logging.ERROR,
+            timestamp="00:45:45.587123",
+            module_name="MYMOD",
+            thread_name="Dispatcher",
+            source_name="device",
+            file_and_line="dispatcher.c:1234",
+            metadata_fields=dict(mode="debug", magic="42"),
+        )
+        self.assertEqual(
+            str(log),
+            "ERR [device] MYMOD 00:45:45.587123 Hello, world! dispatcher.c:1234"
+            " mode=debug, magic=42",
+        )
+
+
 if __name__ == '__main__':
     main()
