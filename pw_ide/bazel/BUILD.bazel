@@ -14,7 +14,8 @@
 
 # This file makes this directory a Bazel package.
 
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//pw_build:python.bzl", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -23,6 +24,13 @@ exports_files([
     "merger.py",
     "cleaner.py",
 ])
+
+py_library(
+    name = "merger",
+    testonly = True,
+    srcs = ["merger.py"],
+    visibility = ["//visibility:private"],
+)
 
 py_binary(
     name = "update_compile_commands",
@@ -34,4 +42,13 @@ py_binary(
     name = "clean_compile_commands",
     srcs = ["cleaner.py"],
     main = "cleaner.py",
+)
+
+pw_py_test(
+    name = "merger_test",
+    srcs = ["merger_test.py"],
+    deps = [
+        ":merger",
+        "@pigweed_python_packages//pyfakefs",
+    ],
 )

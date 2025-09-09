@@ -22,6 +22,7 @@ pw_python_package("py") {
   sources = [
     "cleaner.py",
     "merger.py",
+    "merger_test.py",
   ]
 
   # This is not a real package, but the pw_python_package rule requires
