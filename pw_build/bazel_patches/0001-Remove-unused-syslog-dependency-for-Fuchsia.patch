@@ -1,0 +1,26 @@
+From 6d6f140dce37a0aad763b5e46ede06dbe3a354b2 Mon Sep 17 00:00:00 2001
+From: Abseil Team <absl-team@google.com>
+Date: Sun, 24 Aug 2025 14:51:05 -0700
+Subject: [PATCH] Remove unused syslog dependency for Fuchsia.
+
+PiperOrigin-RevId: 798883577
+Change-Id: Id248b44a45c6d3eb173513b1cd2bb8fb564885ed
+---
+ BUILD.bazel | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/BUILD.bazel b/BUILD.bazel
+index 0306468e..faa8801b 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -160,7 +160,6 @@ cc_library(
+         # Otherwise, builds targeting Fuchsia would fail to compile.
+         ":fuchsia": [
+             "@fuchsia_sdk//pkg/fdio",
+-            "@fuchsia_sdk//pkg/syslog",
+             "@fuchsia_sdk//pkg/zx",
+         ],
+         "//conditions:default": [],
+-- 
+2.51.0.384.g4c02a37b29-goog
+

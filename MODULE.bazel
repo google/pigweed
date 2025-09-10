@@ -24,6 +24,8 @@ bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "fuzztest", version = "20250214.0")
 bazel_dep(name = "gazelle", version = "0.40.0", repo_name = "bazel_gazelle")
+
+# When this version is bumped, remove the patch referenced below if included
 bazel_dep(name = "googletest", version = "1.16.0", repo_name = "com_google_googletest")
 bazel_dep(name = "nanopb", version = "0.4.9.1.bcr.2")
 bazel_dep(name = "pico-sdk", version = "2.1.1")
@@ -77,6 +79,15 @@ single_version_override(
         # Adds more thumbv6m, thumbv8m, and thumbv8m triples
         # TODO: https://pwbug.dev/392707726 - Upstream below patch
         "//pw_rust/bazel_patches:0003-Add-thumbv6m-and-more-thumbv7m-and-thumbv8m-triples.patch",
+    ],
+)
+
+single_version_override(
+    module_name = "googletest",
+    patch_strip = 1,
+    patches = [
+        # This patches googletest to remove the Fuchsia syslog dependency (which is unused and deprecated)
+        "//pw_build/bazel_patches:0001-Remove-unused-syslog-dependency-for-Fuchsia.patch",
     ],
 )
 
