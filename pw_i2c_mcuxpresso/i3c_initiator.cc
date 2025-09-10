@@ -371,6 +371,14 @@ pw::Status I3cMcuxpressoInitiator::DoTransferCcc(I3cCccAction rnw,
                                                  I3cCcc ccc_id,
                                                  pw::i2c::Address address,
                                                  pw::ByteSpan buffer) {
+  // CCC commands are all small packets that should not incur any delay.
+  // Hitting a timeout is unexpected. We set a large delay here so that
+  // any timeout is noticeable.
+  constexpr auto kCccTimeout = std::chrono::seconds(1);
+
+  chrono::SystemClock::time_point kCccDeadline =
+      chrono::SystemClock::TimePointAfterAtLeast(kCccTimeout);
+
   status_t status;
   i3c_master_transfer_t transfer;
 
@@ -397,9 +405,12 @@ pw::Status I3cMcuxpressoInitiator::DoTransferCcc(I3cCccAction rnw,
     transfer.data = nullptr;
     transfer.dataSize = 0;
     transfer.busType = kI3C_TypeI3CSdr;
-    status = I3C_MasterTransferBlocking(base_, &transfer);
-    if (status != kStatus_Success) {
-      return HalStatusToPwStatus(status);
+
+    pw::Status pw_status =
+        InitiateNonBlockingTransferUntil(kCccDeadline, &transfer);
+    if (!pw_status.ok()) {
+      PW_LOG_ERROR("Error sending I3C CCC prefix: %d", pw_status.code());
+      return pw_status;
     }
 
     transfer.flags = kI3C_TransferRepeatedStartFlag;
@@ -410,7 +421,12 @@ pw::Status I3cMcuxpressoInitiator::DoTransferCcc(I3cCccAction rnw,
     transfer.data = buffer.data();
     transfer.dataSize = buffer.size();
     transfer.busType = kI3C_TypeI3CSdr;
-    status |= I3C_MasterTransferBlocking(base_, &transfer);
+
+    pw_status = InitiateNonBlockingTransferUntil(kCccDeadline, &transfer);
+    if (!pw_status.ok()) {
+      PW_LOG_ERROR("Error sending I3C CCC data: %d", pw_status.code());
+    }
+    return pw_status;
   }
   return HalStatusToPwStatus(status);
 }
