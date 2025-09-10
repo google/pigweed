@@ -17,6 +17,15 @@
         "@type": "pw.build.proto.BazelDriverOptions",
         "no_test": true
       }
+    },
+    {
+      "name": "k_host_config",
+      "description": "Kernel host config",
+      "build_type": "bazel",
+      "args": [
+        "--config=k_host"
+      ],
+      "env": {}
     }
   ],
   "builds": [
@@ -226,6 +235,96 @@
       "targets": [
         "//pw_grpc/..."
       ]
+    },
+    {
+      "name": "k_host",
+      "use_config": "k_host_config",
+      "targets": [
+        "//pw_kernel/..."
+      ]
+    },
+    {
+      "name": "k_doctest",
+      "build_config": {
+        "name": "k_doctest_config",
+        "description": "Kernel doc test config",
+        "build_type": "bazel",
+        "args": [
+          "--config=k_doctest"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//pw_kernel/..."
+      ]
+    },
+    {
+      "name": "k_qemu_mps2_an505",
+      "build_config": {
+        "name": "k_qemu_mps2_an505_config",
+        "description": "QEMU MPS2 AN505 config",
+        "build_type": "bazel",
+        "args": [
+          "--config=k_qemu_mps2_an505"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//pw_kernel/..."
+      ]
+    },
+    {
+      "name": "k_qemu_virt_riscv32",
+      "build_config": {
+        "name": "k_qemu_virt_riscv32_config",
+        "description": "QEMU Virt RISC-V32 config",
+        "build_type": "bazel",
+        "args": [
+          "--config=k_qemu_virt_riscv32"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//pw_kernel/..."
+      ]
+    },
+    {
+      "name": "k_rp2350",
+      "build_config": {
+        "name": "k_rp2350_config",
+        "description": "Kernel RP2350 config",
+        "build_type": "bazel",
+        "args": [
+          "--config=k_rp2350"
+        ],
+        "env": {},
+        "driver_options": {
+          "@type": "pw.build.proto.BazelDriverOptions",
+          "no_test": true
+        }
+      },
+      "targets": [
+        "//pw_kernel/..."
+      ]
+    },
+    {
+      "name": "k_lint",
+      "build_config": {
+        "name": "k_lint_config",
+        "description": "Kernel lint config",
+        "build_type": "bazel",
+        "args": [
+          "--config=k_lint"
+        ],
+        "env": {},
+        "driver_options": {
+          "@type": "pw.build.proto.BazelDriverOptions",
+          "no_test": true
+        }
+      },
+      "targets": [
+        "//pw_kernel/..."
+      ]
     }
   ],
   "tools": [
@@ -301,6 +400,18 @@
         "rpc_callback",
         "grpc",
         "docs"
+      ]
+    },
+    {
+      "name": "kernel",
+      "description": "Kernel-related builds/configurations",
+      "builds": [
+        "k_host",
+        "k_doctest",
+        "k_qemu_mps2_an505",
+        "k_qemu_virt_riscv32",
+        "k_rp2350",
+        "k_lint"
       ]
     }
   ]
