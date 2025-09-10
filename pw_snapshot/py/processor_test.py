@@ -15,10 +15,14 @@
 """Tests for snapshot processing."""
 
 import base64
+import textwrap
 import unittest
-from pw_snapshot.processor import process_snapshot
 
-_RISCV_EXPECTED_SNAPSHOT = """
+from pw_log.proto import log_pb2
+from pw_snapshot.processor import process_snapshot
+from pw_snapshot_protos import snapshot_pb2
+
+_SNAPSHOT_HEADER = """
         ____ _       __    _____ _   _____    ____  _____ __  ______  ______
        / __ \\ |     / /   / ___// | / /   |  / __ \\/ ___// / / / __ \\/_  __/
       / /_/ / | /| / /    \\__ \\/  |/ / /| | / /_/ /\\__ \\/ /_/ / / / / / /
@@ -26,7 +30,11 @@ _RISCV_EXPECTED_SNAPSHOT = """
     /_/     |__/|__/____/____/_/ |_/_/  |_/_/    /____/_/ /_/\\____/ /_/
                   /_____/
 
+"""
 
+_RISCV_EXPECTED_SNAPSHOT = (
+    _SNAPSHOT_HEADER
+    + """
 Snapshot capture reason:
     Example Reason
 
@@ -42,16 +50,11 @@ mepc       0x20000001
 mcause     0x20000002
 mstatus    0x20000003
 """
+)
 
-_ARM_EXPECTED_SNAPSHOT = """
-        ____ _       __    _____ _   _____    ____  _____ __  ______  ______
-       / __ \\ |     / /   / ___// | / /   |  / __ \\/ ___// / / / __ \\/_  __/
-      / /_/ / | /| / /    \\__ \\/  |/ / /| | / /_/ /\\__ \\/ /_/ / / / / / /
-     / ____/| |/ |/ /    ___/ / /|  / ___ |/ ____/___/ / __  / /_/ / / /
-    /_/     |__/|__/____/____/_/ |_/_/  |_/_/    /____/_/ /_/\\____/ /_/
-                  /_____/
-
-
+_ARM_EXPECTED_SNAPSHOT = (
+    _SNAPSHOT_HEADER
+    + """
 Snapshot capture reason:
     Example Reason
 
@@ -71,10 +74,25 @@ pc         0x20000001
 lr         0x20000002
 psr        0x20000003
 """
+)
+
+_TEST_LOGS = [
+    log_pb2.LogEntry(message=b"Basic"),
+    log_pb2.LogEntry(
+        message=b"Hello, world!",
+        line_level=(1234 << 3) | 4,
+        timestamp=2745587123456,
+        module=b"MYMOD",
+        file=b"dispatcher.c",
+        thread=b"Dispatcher",
+    ),
+]
 
 
 class ProcessorTest(unittest.TestCase):
     """Tests that the metadata processor produces expected results."""
+
+    maxDiff = None
 
     def test_riscv_process_snapshot(self):
         """Test processing snapshot of a RISCV CPU"""
@@ -102,6 +120,30 @@ class ProcessorTest(unittest.TestCase):
 
         output = process_snapshot(snapshot)
         self.assertEqual(output, _ARM_EXPECTED_SNAPSHOT)
+
+    def test_process_snapshot_with_logs(self):
+        snapshot = snapshot_pb2.Snapshot(logs=_TEST_LOGS)
+        expected_output = _SNAPSHOT_HEADER + textwrap.dedent(
+            """
+            Logs:
+              Basic
+              ERR MYMOD 00:45:45.587123 Hello, world! dispatcher.c:1234
+            """
+        )
+
+        output = process_snapshot(snapshot.SerializeToString())
+        self.assertEqual(output, expected_output)
+
+    def test_process_snapshot_with_no_log_processor(self):
+        """Verify process_snapshot() supports process_logs=None."""
+        snapshot = snapshot_pb2.Snapshot(logs=_TEST_LOGS)
+        expected_output = _SNAPSHOT_HEADER
+
+        output = process_snapshot(
+            snapshot.SerializeToString(),
+            process_logs=None,
+        )
+        self.assertEqual(output, expected_output)
 
 
 if __name__ == '__main__':

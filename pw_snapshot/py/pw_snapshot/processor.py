@@ -18,11 +18,17 @@ import functools
 import logging
 import sys
 from pathlib import Path
-from typing import BinaryIO, TextIO, Callable
+from typing import BinaryIO, TextIO, Callable, Sequence
+
 import pw_tokenizer
 import pw_cpu_exception_cortex_m
 import pw_cpu_exception_risc_v
 import pw_build_info.build_id
+from pw_log.log_decoder import (
+    LogStreamDecoder,
+    timestamp_parser_ns_since_boot,
+)
+from pw_log.proto import log_pb2
 from pw_snapshot_metadata import metadata
 from pw_snapshot_metadata_proto import snapshot_metadata_pb2
 from pw_snapshot_protos import snapshot_pb2
@@ -55,6 +61,29 @@ ElfMatcher = Callable[[snapshot_pb2.Snapshot], Path | None]
 # whether a Symbolizer may be loaded with a suitable ELF file for symbolization.
 SymbolizerMatcher = Callable[[snapshot_pb2.Snapshot], Symbolizer]
 
+LogProcessor = Callable[
+    [Sequence[log_pb2.LogEntry], pw_tokenizer.Detokenizer | None], str
+]
+
+
+def _default_log_processor(
+    logs: Sequence[log_pb2.LogEntry],
+    detokenizer: pw_tokenizer.Detokenizer | None,
+) -> str:
+    assert logs
+
+    log_decoder = LogStreamDecoder(
+        detokenizer=detokenizer,
+        timestamp_parser=timestamp_parser_ns_since_boot,
+    )
+
+    output = ["Logs:"]
+    for log_msg in logs:
+        log = log_decoder.parse_log_entry_proto(log_msg)
+        output.append(f"  {log}")
+
+    return "\n".join(output)
+
 
 def process_snapshot(
     serialized_snapshot: bytes,
@@ -63,14 +92,15 @@ def process_snapshot(
     symbolizer_matcher: SymbolizerMatcher | None = None,
     llvm_symbolizer_binary: Path | None = None,
     thread_processing_callback: Callable[[bytes], str] | None = None,
+    process_logs: LogProcessor | None = _default_log_processor,
 ) -> str:
     """Processes a single snapshot."""
 
     output = [_BRANDING]
 
-    # Open a symbolizer.
     snapshot = snapshot_pb2.Snapshot.FromString(serialized_snapshot)
 
+    # Open a symbolizer.
     if symbolizer_matcher is not None:
         symbolizer = symbolizer_matcher(snapshot)
     elif elf_matcher is not None:
@@ -87,6 +117,11 @@ def process_snapshot(
     )
     if captured_metadata:
         output.append(captured_metadata)
+
+    # Logs
+    if snapshot.logs and process_logs:
+        output.append(process_logs(snapshot.logs, detokenizer))
+        output.append("")
 
     # Create MetadataProcessor
     snapshot_metadata = snapshot_metadata_pb2.SnapshotBasicInfo.FromString(
@@ -144,6 +179,7 @@ def process_snapshots(
     symbolizer_matcher: SymbolizerMatcher | None = None,
     thread_processing_callback: Callable[[snapshot_pb2.Snapshot, bytes], str]
     | None = None,
+    process_logs: LogProcessor | None = _default_log_processor,
 ) -> str:
     """Processes a snapshot that may have multiple embedded snapshots."""
     output = []
@@ -161,6 +197,7 @@ def process_snapshots(
             elf_matcher=elf_matcher,
             symbolizer_matcher=symbolizer_matcher,
             thread_processing_callback=callback,
+            process_logs=process_logs,
         )
     )
 
@@ -175,12 +212,13 @@ def process_snapshots(
         output.append(
             str(
                 process_snapshots(
-                    nested_snapshot.SerializeToString(),
-                    detokenizer,
-                    elf_matcher,
-                    user_processing_callback,
-                    symbolizer_matcher,
-                    thread_processing_callback,
+                    serialized_snapshot=nested_snapshot.SerializeToString(),
+                    detokenizer=detokenizer,
+                    elf_matcher=elf_matcher,
+                    user_processing_callback=user_processing_callback,
+                    symbolizer_matcher=symbolizer_matcher,
+                    thread_processing_callback=thread_processing_callback,
+                    process_logs=process_logs,
                 )
             )
         )

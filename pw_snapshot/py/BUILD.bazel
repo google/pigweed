@@ -30,6 +30,7 @@ py_library(
         "//pw_chrono/py:pw_chrono",
         "//pw_cpu_exception_cortex_m/py:exception_analyzer",
         "//pw_cpu_exception_risc_v/py:exception_analyzer",
+        "//pw_log/py:pw_log",
         "//pw_snapshot:snapshot_proto_py_pb2",
         "//pw_symbolizer/py:pw_symbolizer",
         "//pw_thread/py:pw_thread",
