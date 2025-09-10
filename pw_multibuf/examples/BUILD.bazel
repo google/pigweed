@@ -13,6 +13,9 @@
 # the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//pw_multibuf:__subpackages__"])
 
@@ -22,4 +25,132 @@ cc_library(
     name = "protocol",
     hdrs = ["public/pw_multibuf/examples/protocol.h"],
     strip_include_prefix = "public",
+)
+
+pw_cc_test(
+    name = "basic",
+    srcs = ["basic.cc"],
+    deps = [
+        "//pw_allocator",
+        "//pw_allocator:testing",
+        "//pw_bytes",
+        "//pw_multibuf:multibuf_v2",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "iterate",
+    srcs = ["iterate.cc"],
+    deps = [
+        "//pw_allocator",
+        "//pw_allocator:testing",
+        "//pw_bytes",
+        "//pw_checksum",
+        "//pw_multibuf:multibuf_v2",
+        "//pw_random",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "queue",
+    srcs = ["queue.cc"],
+    deps = [
+        "//pw_allocator",
+        "//pw_allocator:testing",
+        "//pw_assert:assert",
+        "//pw_bytes",
+        "//pw_multibuf:multibuf_v2",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "async_queue",
+    srcs = ["async_queue.cc"],
+    deps = [
+        "//pw_allocator",
+        "//pw_allocator:testing",
+        "//pw_assert:assert",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pend_func_task",
+        "//pw_async2:poll",
+        "//pw_bytes",
+        "//pw_multibuf:multibuf_v2",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "scatter_gather",
+    srcs = ["scatter_gather.cc"],
+    deps = [
+        "//pw_allocator",
+        "//pw_allocator:testing",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
+        "//pw_containers:dynamic_vector",
+        "//pw_i2c:address",
+        "//pw_i2c:initiator",
+        "//pw_i2c:message",
+        "//pw_multibuf:multibuf_v2",
+        "//pw_sync:timed_thread_notification",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "transfer",
+    srcs = ["transfer.cc"],
+    deps = [
+        ":protocol",
+        "//pw_allocator",
+        "//pw_allocator:testing",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pend_func_task",
+        "//pw_async2:poll",
+        "//pw_bytes",
+        "//pw_checksum",
+        "//pw_multibuf:multibuf_v2",
+        "//pw_status",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "pseudo_encrypt",
+    srcs = ["pseudo_encrypt.cc"],
+    deps = [
+        ":protocol",
+        "//pw_allocator",
+        "//pw_allocator:testing",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:pend_func_task",
+        "//pw_async2:poll",
+        "//pw_bytes",
+        "//pw_containers:inline_async_queue",
+        "//pw_multibuf:multibuf_v2",
+        "//pw_random",
+        "//pw_unit_test",
+    ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "async_queue.cc",
+        "basic.cc",
+        "iterate.cc",
+        "pseudo_encrypt.cc",
+        "public/pw_multibuf/examples/protocol.h",
+        "queue.cc",
+        "scatter_gather.cc",
+        "transfer.cc",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
 )

@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -25,4 +26,122 @@ pw_source_set("protocol") {
   public = [ "public/pw_multibuf/examples/protocol.h" ]
   public_configs = [ ":public_include_path" ]
   visibility = [ "//pw_multibuf:*" ]
+}
+
+pw_test("basic") {
+  sources = [ "basic.cc" ]
+  deps = [
+    "$dir_pw_allocator",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_bytes",
+    "$dir_pw_multibuf:multibuf_v2",
+    "$dir_pw_unit_test:main",
+  ]
+}
+
+pw_test("iterate") {
+  sources = [ "iterate.cc" ]
+  deps = [
+    "$dir_pw_allocator",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_bytes",
+    "$dir_pw_checksum",
+    "$dir_pw_multibuf:multibuf_v2",
+    "$dir_pw_random",
+    "$dir_pw_unit_test:main",
+  ]
+}
+
+pw_test("queue") {
+  sources = [ "queue.cc" ]
+  deps = [
+    "$dir_pw_allocator",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_assert:assert",
+    "$dir_pw_bytes",
+    "$dir_pw_multibuf:multibuf_v2",
+    "$dir_pw_unit_test:main",
+  ]
+}
+
+pw_test("async_queue") {
+  sources = [ "async_queue.cc" ]
+  deps = [
+    "$dir_pw_allocator",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_assert:assert",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_async2:poll",
+    "$dir_pw_bytes",
+    "$dir_pw_multibuf:multibuf_v2",
+    "$dir_pw_unit_test:main",
+  ]
+}
+
+pw_test("scatter_gather") {
+  sources = [ "scatter_gather.cc" ]
+  deps = [
+    "$dir_pw_allocator",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_bytes",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_containers:dynamic_vector",
+    "$dir_pw_i2c:address",
+    "$dir_pw_i2c:initiator",
+    "$dir_pw_i2c:message",
+    "$dir_pw_multibuf:multibuf_v2",
+    "$dir_pw_sync:timed_thread_notification",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    "$dir_pw_unit_test:main",
+  ]
+}
+
+pw_test("transfer") {
+  sources = [ "transfer.cc" ]
+  deps = [
+    ":protocol",
+    "$dir_pw_allocator",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_assert:check",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_async2:poll",
+    "$dir_pw_bytes",
+    "$dir_pw_checksum",
+    "$dir_pw_multibuf:multibuf_v2",
+    "$dir_pw_status",
+    "$dir_pw_unit_test:main",
+  ]
+}
+
+pw_test("pseudo_encrypt") {
+  sources = [ "pseudo_encrypt.cc" ]
+  deps = [
+    ":protocol",
+    "$dir_pw_allocator",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_assert:check",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_async2:poll",
+    "$dir_pw_bytes",
+    "$dir_pw_containers:inline_async_queue",
+    "$dir_pw_multibuf:multibuf_v2",
+    "$dir_pw_random",
+    "$dir_pw_unit_test:main",
+  ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":async_queue",
+    ":basic",
+    ":iterate",
+    ":pseudo_encrypt",
+    ":queue",
+    ":scatter_gather",
+    ":transfer",
+  ]
 }

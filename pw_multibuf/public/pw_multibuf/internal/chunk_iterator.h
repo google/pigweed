@@ -134,12 +134,10 @@ class ChunkIterator {
     return deque_ != nullptr && index_ < deque_->size();
   }
 
-  // constexpr ByteType* data() const { return data(index_); }
   constexpr ByteType* data(size_type index) const {
     return (*deque_)[index].data + (*deque_)[index + depth_ - 1].view.offset;
   }
 
-  // constexpr size_t size() const { return size(index_); }
   constexpr size_t size(size_type index) const {
     return (*deque_)[index + depth_ - 1].view.length;
   }
@@ -164,6 +162,9 @@ class ChunksImpl {
 
   constexpr ChunksImpl() = default;
 
+  constexpr size_type size() const { return deque().size() / depth(); }
+  constexpr size_type capacity() const { return deque().capacity() / depth(); }
+
   constexpr const_iterator cbegin() const { return derived().begin(); }
   constexpr const_iterator cend() const { return derived().end(); }
 
@@ -180,6 +181,9 @@ class ChunksImpl {
   constexpr const Derived& derived() const {
     return static_cast<const Derived&>(*this);
   }
+
+  constexpr const Deque& deque() const { return *(derived().begin_.deque_); }
+  constexpr size_type depth() const { return derived().begin_.depth_; }
 };
 
 /// Helper class that allows iterating over read-only chunks in a MultiBuf.
