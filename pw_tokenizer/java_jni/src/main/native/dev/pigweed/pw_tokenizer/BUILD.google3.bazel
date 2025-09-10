@@ -15,6 +15,10 @@
 load("//mobile/build:build_defs.bzl", "android_jni_library")
 load("//third_party/bazel_rules/rules_cc/cc:cc_library.bzl", "cc_library")
 
+package(
+    default_applicable_licenses = ["//third_party/pigweed/pigweed:license"],
+)
+
 android_jni_library(
     name = "native_android",
     binary_name = "libpw_tokenizer_jni.so",

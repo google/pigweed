@@ -15,6 +15,10 @@
 # Java wrapper around pw_tokenizer's Detokenizer class.
 load("//java/com/google/devtools/staticanalysis/java/checker:build_defs.bzl", "android_library_with_nullness_check")
 
+package(
+    default_applicable_licenses = ["//third_party/pigweed/pigweed:license"],
+)
+
 android_library_with_nullness_check(
     name = "detokenizer_android",
     srcs = ["Detokenizer.java"],
