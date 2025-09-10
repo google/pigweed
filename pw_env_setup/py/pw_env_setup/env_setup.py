@@ -401,6 +401,10 @@ class EnvSetup:
             'pip_install_require_hashes', False
         )
 
+        # Grab the extra environment variables, we'll add them to _env later
+        # so they're at the end.
+        self._extra_env_vars = virtualenv.pop('extra_vars', {})
+
         if virtualenv:
             raise ConfigFileError(
                 'unrecognized option in {}: "virtualenv.{}"'.format(
@@ -617,6 +621,12 @@ Then use `set +x` to go back to normal.
         # Only write stuff for GitHub Actions once, at the end.
         if 'GITHUB_ACTIONS' in os.environ:
             self._env.github(self._install_dir)
+
+        # Finally, add the extra environment variables. This is done last to
+        # make sure that references to other environment variables are resolved
+        # first.
+        for var_name, var_value in self._extra_env_vars.items():
+            self._env.set(var_name, var_value)
 
         self._log('')
         self._env.echo('')

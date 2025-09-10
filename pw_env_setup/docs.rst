@@ -357,6 +357,21 @@ here.
   Python packages. On most systems this is located in
   ``~/.cache/pip/``. Defaults to ``false``.
 
+``pw.pw_env_setup.virtualenv.extra_vars``
+  A dictionary of new environment variables to be automatically added during
+  bootstrapping.
+
+  .. tip::
+    You can nest other environment variables. For example:
+
+    .. code-block:: json
+
+       "virtualenv": {
+          "extra_vars": {
+             "ZEPHYR_SDK_INSTALL_DIR": "${PW_ZEPHYR_SDK_CIPD_INSTALL_DIR}"
+          }
+       }
+
 ``pw.pw_env_setup.optional_submodules``
   By default environment setup will check that all submodules are present in
   the checkout. Any submodules in this list are excluded from that check.
