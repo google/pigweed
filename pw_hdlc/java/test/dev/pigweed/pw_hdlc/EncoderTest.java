@@ -21,7 +21,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class EncoderTest {
   private static final int OUTPUT_SIZE = 1024;
   private static final byte UNNUMBERED_CONTROL = 0x03;

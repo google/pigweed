@@ -20,7 +20,10 @@ import com.google.protobuf.ExtensionRegistryLite;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public final class PacketsTest {
   private static final Service SERVICE = new Service(
       "Greetings", Service.unaryMethod("Hello", RpcPacket.parser(), RpcPacket.parser()));

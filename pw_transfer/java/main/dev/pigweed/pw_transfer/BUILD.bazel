@@ -68,6 +68,7 @@ java_library(
 android_library(
     name = "client_android",
     srcs = TRANSFER_CLIENT_SOURCES,
+    custom_package = "dev.pigweed.pw_transfer",
     tags = ["manual"],  # TODO: b/227771184 - support Android in the Bazel build
     visibility = ["//visibility:public"],
     deps = [

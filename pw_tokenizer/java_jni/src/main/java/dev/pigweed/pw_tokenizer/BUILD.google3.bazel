@@ -24,3 +24,10 @@ android_library_with_nullness_check(
         "//third_party/pigweed/pigweed/pw_tokenizer/java_jni/src/main/native/dev/pigweed/pw_tokenizer:native_android",
     ],
 )
+
+# Provide non-Android alias for DetokenizerTest.java.
+alias(
+    name = "detokenizer",
+    actual = ":detokenizer_android",
+    visibility = ["//third_party/pigweed/pigweed/pw_tokenizer/java_jni/src/test/java/dev/pigweed/pw_tokenizer:__pkg__"],
+)

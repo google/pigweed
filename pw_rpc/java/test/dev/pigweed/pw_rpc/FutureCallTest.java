@@ -33,10 +33,13 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+@RunWith(JUnit4.class)
 public final class FutureCallTest {
   @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
