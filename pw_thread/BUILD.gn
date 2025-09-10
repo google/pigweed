@@ -160,7 +160,10 @@ pw_test("priority_test") {
 
 pw_test("thread_creation_test") {
   sources = [ "thread_creation_test.cc" ]
-  deps = [ ":thread" ]
+  deps = [
+    ":thread",
+    "$dir_pw_sync:binary_semaphore",
+  ]
   negative_compilation_tests = true
 
   # TODO: b/388048843 - Build on Windows when the toolchain is updated.

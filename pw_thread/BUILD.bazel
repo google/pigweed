@@ -458,6 +458,7 @@ pw_cc_test(
     deps = [
         ":thread",
         "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_sync:binary_semaphore",
     ],
 )
 

@@ -23,6 +23,7 @@ testcase:
     pw_thread.thread_creation:
       extra_configs:
         - CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK=y
+        - CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE=y
         - CONFIG_PIGWEED_SYNC_MUTEX=y
         - CONFIG_PIGWEED_THREAD=y
       extra_args:

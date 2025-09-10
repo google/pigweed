@@ -239,6 +239,7 @@ if(NOT "${pw_thread.thread_BACKEND}" STREQUAL "")
       thread_creation_test.cc
     PRIVATE_DEPS
       pw_compilation_testing._pigweed_only_negative_compilation
+      pw_sync.binary_semaphore
       pw_thread.thread
     GROUPS
       modules
