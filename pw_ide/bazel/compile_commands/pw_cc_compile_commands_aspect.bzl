@@ -305,3 +305,24 @@ pw_cc_compile_commands_aspect = aspect(
     },
     toolchains = use_cc_toolchain(),
 )
+
+def _pw_cc_compile_commands_fragments_impl(ctx):
+    dep_fragments = _collect_fragments(
+        ctx,
+        ctx.label,
+        CompileCommandsFragmentInfo,
+        lambda command_fragment_info: command_fragment_info.fragments,
+    )
+    return DefaultInfo(
+        files = depset(transitive = dep_fragments),
+    )
+
+pw_cc_compile_commands_fragments = rule(
+    implementation = _pw_cc_compile_commands_fragments_impl,
+    attrs = {
+        "targets": attr.label_list(
+            mandatory = True,
+            aspects = [pw_cc_compile_commands_aspect],
+        ),
+    },
+)

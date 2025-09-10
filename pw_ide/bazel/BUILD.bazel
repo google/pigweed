@@ -15,7 +15,8 @@
 # This file makes this directory a Bazel package.
 
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("//pw_build:python.bzl", "pw_py_test")
+load("//pw_build:pw_py_importable_runfile.bzl", "pw_py_importable_runfile")
+load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -50,5 +51,41 @@ pw_py_test(
     deps = [
         ":merger",
         "@pigweed_python_packages//pyfakefs",
+    ],
+)
+
+# For testing, do not increase visibility.
+pw_py_importable_runfile(
+    name = "clangd_binary",
+    testonly = True,
+    src = "@llvm_toolchain//:bin/clangd",
+    executable = True,
+    import_location = "pw_ide.bazel.compile_commands.clangd_binary",
+    visibility = ["//visibility:private"],
+)
+
+# For testing, do not increase visibility.
+pw_py_importable_runfile(
+    name = "update_compile_commands_binary",
+    testonly = True,
+    src = "//pw_ide/bazel:update_compile_commands",
+    executable = True,
+    import_location = "pw_ide.bazel.compile_commands.update_compile_commands_binary",
+    visibility = ["//visibility:private"],
+)
+
+pw_py_binary(
+    name = "integration_test",
+    testonly = True,
+    srcs = ["integration_test.py"],
+    data = [
+        # Ensure compile commands are always available.
+        "//pw_ide/bazel/compile_commands/test:test_compile_commands",
+        # Ensure generated files exist.
+        "//pw_ide/bazel/compile_commands/test:test_compile_commands_outputs",
+    ],
+    deps = [
+        ":clangd_binary",
+        ":update_compile_commands_binary",
     ],
 )

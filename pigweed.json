@@ -219,6 +219,10 @@
           [
             "build",
             "//docs"
+          ],
+          [
+            "run",
+            "//pw_ide/bazel:integration_test"
           ]
         ],
         "docs": [

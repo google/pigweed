@@ -17,6 +17,7 @@ Finds all existing compile command fragments and merges them into
 platform-specific compilation databases.
 """
 
+import argparse
 import collections
 import json
 import os
@@ -113,8 +114,23 @@ class CompileCommand(NamedTuple):
     arguments: List[str]
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--out-dir',
+        '-o',
+        type=Path,
+        help=(
+            'Where to write merged compile commands. By default, outputs are '
+            'written to $BUILD_WORKSPACE_DIRECTORY/.compile_commands'
+        ),
+    )
+    return parser.parse_args()
+
+
 def main() -> int:
     """Script entry point."""
+    args = _parse_args()
     workspace_root = os.environ.get("BUILD_WORKSPACE_DIRECTORY")
     if not workspace_root:
         print(
@@ -178,7 +194,9 @@ def main() -> int:
 
     print(f"Found fragments for {len(fragments_by_platform)} platform(s).")
 
-    output_dir = Path(workspace_root) / ".compile_commands"
+    output_dir = args.out_dir
+    if not output_dir:
+        output_dir = Path(workspace_root) / ".compile_commands"
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir()
