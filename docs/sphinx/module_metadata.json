@@ -8,7 +8,7 @@
   },
   "pw_allocator": {
     "tagline": "Flexible, safe, and measurable memory allocation",
-    "status": "unstable",
+    "status": "stable",
     "languages": [
       "C++17"
     ],
