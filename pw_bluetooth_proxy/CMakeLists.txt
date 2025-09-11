@@ -136,7 +136,10 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
     pw_multibuf
+    pw_sync.mutex
     pw_third_party.fuchsia.stdcompat
+    pw_thread.test_thread_context
+    pw_thread.thread
   SOURCES
     channel_proxy_test.cc
     gatt_notify_test.cc

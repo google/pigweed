@@ -331,14 +331,20 @@ class ProxyHostTest : public testing::Test {
       ChannelEventCallback&& event_fn = nullptr);
 
   template <typename T, size_t N>
-  pw::multibuf::MultiBuf MultiBufFromSpan(span<T, N> buf) {
+  static pw::multibuf::MultiBuf MultiBufFromSpan(
+      span<T, N> buf, multibuf::MultiBufAllocator& allocator) {
     std::optional<pw::multibuf::MultiBuf> multibuf =
-        test_multibuf_allocator_.AllocateContiguous(buf.size());
+        allocator.AllocateContiguous(buf.size());
     PW_ASSERT(multibuf.has_value());
     std::optional<ConstByteSpan> multibuf_span = multibuf->ContiguousSpan();
     PW_ASSERT(multibuf_span);
     PW_TEST_EXPECT_OK(multibuf->CopyFrom(as_bytes(buf)));
     return std::move(*multibuf);
+  }
+
+  template <typename T, size_t N>
+  pw::multibuf::MultiBuf MultiBufFromSpan(span<T, N> buf) {
+    return MultiBufFromSpan(buf, test_multibuf_allocator_);
   }
 
   template <typename T, size_t N>

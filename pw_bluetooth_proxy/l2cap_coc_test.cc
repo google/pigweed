@@ -13,12 +13,17 @@
 // the License.
 
 #include <cstdint>
+#include <mutex>
 
 #include "pw_assert/check.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_bluetooth_proxy_private/test_utils.h"
 #include "pw_containers/flat_map.h"
+#include "pw_sync/mutex.h"
+#include "pw_thread/test_thread_context.h"
+#include "pw_thread/thread.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::bluetooth::proxy {
 namespace {
@@ -411,6 +416,153 @@ TEST_F(L2capCocWriteTest, MultipleWritesMultipleChannels) {
 
   EXPECT_EQ(capture.sends_called, kNumChannels);
 }
+
+// TODO: https://pwbug.dev/365161669 - Disable test at build-level once
+// joinability is a build-system constraint.
+#if PW_THREAD_JOINING_ENABLED
+// Have multiple threads write to a L2capCoc channel. Verify all resulting ACL
+// packets are sent towards controller in the correct order per channel.
+// TODO: https://pwbug.dev/441841355 - Update test to send larger packets and
+// verify segment order is correct.
+TEST_F(L2capCocWriteTest, MultithreadedWrite) {
+  constexpr unsigned int kNumThreads = 40;
+  constexpr unsigned int kPacketsPerThread = kTestL2capQueueCapacity;
+  constexpr uint16_t kBaseLocalCid = 0xb000;   // 176
+  constexpr uint16_t kBaseRemoteCid = 0xc000;  // 192
+  constexpr uint16_t kPayloadSize = 10;
+
+  struct {
+    const uint16_t kExpectedSduLength = kPayloadSize;
+    const uint16_t kExpectedPduLength =
+        kSduLengthFieldSize + kExpectedSduLength;
+    const uint16_t kTestHandle = 0xaa;  // 170
+    const uint16_t kExpectedAclDataTotalLength =
+        emboss::BasicL2capHeader::IntrinsicSizeInBytes() + kExpectedPduLength;
+    pw::sync::Mutex sends_by_channel_mutex;
+    std::array<unsigned int, kNumThreads> sends_by_channel
+        PW_GUARDED_BY(sends_by_channel_mutex){};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
+        EXPECT_EQ(packet.GetHciSpan().size(),
+                  static_cast<unsigned long>(
+                      emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
+                      capture.kExpectedAclDataTotalLength));
+
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            auto acl,
+            MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
+        EXPECT_EQ(acl.header().handle().Read(), capture.kTestHandle);
+        EXPECT_EQ(acl.header().packet_boundary_flag().Read(),
+                  emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+        EXPECT_EQ(acl.header().broadcast_flag().Read(),
+                  emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
+        EXPECT_EQ(acl.data_total_length().Read(),
+                  capture.kExpectedAclDataTotalLength);
+
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            emboss::FirstKFrameView kframe,
+            MakeEmbossView<emboss::FirstKFrameView>(
+                acl.payload().BackingStorage().data(), acl.SizeInBytes()));
+
+        EXPECT_EQ(kframe.pdu_length().Read(), capture.kExpectedPduLength);
+        EXPECT_EQ(kframe.sdu_length().Read(), capture.kExpectedSduLength);
+
+        // Each channel's remote cid has the thread index as its LSB.
+        uint16_t current_remote_cid = kframe.channel_id().Read();
+        unsigned int current_thread_id = current_remote_cid & ~kBaseRemoteCid;
+        {
+          std::lock_guard lock(capture.sends_by_channel_mutex);
+
+          // Each payload byte should match the send count (to verify ordering).
+          for (size_t i = 0; i < kPayloadSize; ++i) {
+            EXPECT_EQ(kframe.payload()[i].Read(),
+                      capture.sends_by_channel[current_thread_id]);
+          }
+          capture.sends_by_channel[current_thread_id]++;
+        }
+      });
+
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn),
+                std::move(send_to_controller_fn),
+                /*le_acl_credits_to_reserve=*/kNumThreads * kPacketsPerThread,
+                /*br_edr_acl_credits_to_reserve=*/0);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
+      proxy, kNumThreads * kPacketsPerThread));
+
+  pw::Vector<L2capCoc, kNumThreads> channels;
+  pw::thread::test::TestThreadContext context;
+  pw::Vector<pw::Thread, kNumThreads> threads;
+
+  for (unsigned int i = 0; i < kNumThreads; ++i) {
+    uint16_t local_cid = kBaseLocalCid + i;
+    // Each channel's remote cid has the thread index its LSB. That is
+    // used to track packet ordering per channel.
+    uint16_t remote_cid = kBaseRemoteCid + i;
+    // TODO: https://pwbug.dev/422222575 -  Move channel creation, close, and
+    // destruction inside each thread once we have proper channel lifecycle
+    // locking.
+    channels.emplace_back(
+        BuildCoc(proxy,
+                 CocParameters{.handle = capture.kTestHandle,
+                               .local_cid = local_cid,
+                               .remote_cid = remote_cid,
+                               .tx_credits = kPacketsPerThread}));
+  }
+
+  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/200 * 1024,
+                                             /*kMetaSizeBytes=*/200 * 1024>
+      packet_allocator{};
+
+  for (unsigned int thread_numb = 0; thread_numb < kNumThreads; ++thread_numb) {
+    struct ThreadCapture {
+      L2capCoc* channel;
+      multibuf::MultiBufAllocator* packet_allocator;
+    };
+    // Dynamic allocation needed since thread will outlive this for loop scope.
+    std::unique_ptr<ThreadCapture> thread_capture(
+        new ThreadCapture{.channel = &channels[thread_numb],
+                          .packet_allocator = &packet_allocator});
+
+    threads.emplace_back(
+        context.options(), [thread_capture = std::move(thread_capture)]() {
+          for (unsigned int packet_numb = 0; packet_numb < kPacketsPerThread;
+               ++packet_numb) {
+            std::array<uint8_t, kPayloadSize> payload = {};
+            std::fill(payload.begin(), payload.end(), packet_numb);
+            Status write_status =
+                thread_capture->channel
+                    ->Write(MultiBufFromSpan(span(payload),
+                                             *thread_capture->packet_allocator))
+                    .status;
+            PW_TEST_EXPECT_OK(write_status);
+          }
+        });
+  }
+
+  for (auto& t : threads) {
+    t.join();
+  }
+
+  for (unsigned int i = 0; i < kNumThreads; ++i) {
+    // TODO: https://pwbug.dev/422222575 -  Move channel close and dtor inside
+    // each thread once we have proper channel lifecycle locking.
+    channels[i].Close();
+  }
+
+  {
+    std::lock_guard lock(capture.sends_by_channel_mutex);
+    for (unsigned int i = 0; i < kNumThreads; ++i) {
+      EXPECT_EQ(capture.sends_by_channel[i], kPacketsPerThread);
+    }
+  }
+}
+#endif  // PW_THREAD_JOINING_ENABLED
 
 // ########## L2capCocReadTest
 

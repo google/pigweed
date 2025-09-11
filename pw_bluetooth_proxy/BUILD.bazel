@@ -171,6 +171,9 @@ pw_cc_test(
         "//pw_bluetooth:emboss_util",
         "//pw_containers:flat_map",
         "//pw_multibuf",
+        "//pw_sync:mutex",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
     ],
     # LINT.ThenChange(BUILD.gn, CMakeLists.txt)
 )
