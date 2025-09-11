@@ -125,12 +125,13 @@ pw_source_set("test_utils") {
   public = [ "pw_bluetooth_proxy_private/test_utils.h" ]
   public_deps = [
     ":pw_bluetooth_proxy",
+    "$dir_pw_allocator:libc_allocator",
     "$dir_pw_bluetooth:emboss_hci_commands",
     "$dir_pw_bluetooth:emboss_hci_common",
     "$dir_pw_bluetooth:emboss_hci_events",
     "$dir_pw_bluetooth:emboss_hci_h4",
     "$dir_pw_bluetooth:emboss_util",
-    "$dir_pw_multibuf:testing",
+    "$dir_pw_multibuf:simple_allocator",
     "$dir_pw_unit_test",
     "$pw_external_fuchsia:stdcompat",
   ]
@@ -154,6 +155,7 @@ pw_test("pw_bluetooth_proxy_test") {
   deps = [
     ":pw_bluetooth_proxy",
     ":test_utils",
+    "$dir_pw_allocator:libc_allocator",
     "$dir_pw_bluetooth:emboss_att",
     "$dir_pw_bluetooth:emboss_hci_commands",
     "$dir_pw_bluetooth:emboss_hci_common",
@@ -161,9 +163,11 @@ pw_test("pw_bluetooth_proxy_test") {
     "$dir_pw_bluetooth:emboss_hci_h4",
     "$dir_pw_bluetooth:emboss_util",
     "$dir_pw_multibuf",
+    "$dir_pw_multibuf:testing",
     "$dir_pw_sync:mutex",
     "$dir_pw_thread:test_thread_context",
     "$dir_pw_thread:thread",
+    "$dir_pw_unit_test",
     "$pw_external_fuchsia:stdcompat",
   ]
   sources = [

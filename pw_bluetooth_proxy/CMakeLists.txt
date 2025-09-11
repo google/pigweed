@@ -128,6 +128,7 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
 
 # LINT.IfChange
   PRIVATE_DEPS
+    pw_allocator.libc_allocator
     pw_bluetooth_proxy
     pw_bluetooth_proxy.test_utils
     pw_bluetooth.emboss_att

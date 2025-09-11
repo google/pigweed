@@ -129,6 +129,7 @@ cc_library(
     features = ["-conversion_warnings"],
     deps = [
         ":pw_bluetooth_proxy",
+        "//pw_allocator:libc_allocator",
         "//pw_assert:check",
         "//pw_bluetooth:emboss_att",
         "//pw_bluetooth:emboss_hci_commands",
@@ -137,7 +138,7 @@ cc_library(
         "//pw_bluetooth:emboss_hci_h4",
         "//pw_bluetooth:emboss_util",
         "//pw_containers:flat_map",
-        "//pw_multibuf:testing",
+        "//pw_multibuf:simple_allocator",
         "//pw_unit_test",
     ],
     # LINT.ThenChange(BUILD.gn, CMakeLists.txt)
@@ -162,6 +163,7 @@ pw_cc_test(
     deps = [
         ":pw_bluetooth_proxy",
         ":test_utils",
+        "//pw_allocator:libc_allocator",
         "//pw_assert:check",
         "//pw_bluetooth:emboss_att",
         "//pw_bluetooth:emboss_hci_commands",
@@ -170,10 +172,13 @@ pw_cc_test(
         "//pw_bluetooth:emboss_hci_h4",
         "//pw_bluetooth:emboss_util",
         "//pw_containers:flat_map",
+        "//pw_containers:to_array",
         "//pw_multibuf",
+        "//pw_multibuf:testing",
         "//pw_sync:mutex",
         "//pw_thread:test_thread_context",
         "//pw_thread:thread",
+        "//pw_unit_test",
     ],
     # LINT.ThenChange(BUILD.gn, CMakeLists.txt)
 )

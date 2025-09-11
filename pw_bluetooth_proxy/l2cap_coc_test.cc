@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <mutex>
 
+#include "pw_allocator/libc_allocator.h"
 #include "pw_assert/check.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
@@ -515,9 +516,14 @@ TEST_F(L2capCocWriteTest, MultithreadedWrite) {
                                .tx_credits = kPacketsPerThread}));
   }
 
-  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/200 * 1024,
-                                             /*kMetaSizeBytes=*/200 * 1024>
-      packet_allocator{};
+  std::array<std::byte, 200 * 1024> data_mem{};
+  // Use a libc allocator for metadata so msan can detect use after free at
+  // multibuf level. When we move to MultiBuf 2 we can use libc for entire
+  // multibuf.
+  pw::allocator::LibCAllocator libc_allocator;
+  pw::multibuf::SimpleAllocator packet_allocator{
+      /*data_area=*/data_mem,
+      /*metadata_alloc=*/libc_allocator};
 
   for (unsigned int thread_numb = 0; thread_numb < kNumThreads; ++thread_numb) {
     struct ThreadCapture {

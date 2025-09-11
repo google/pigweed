@@ -16,8 +16,8 @@
 
 #include <cstdint>
 #include <mutex>
-#include <vector>
 
+#include "pw_allocator/libc_allocator.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_commands.emb.h"
 #include "pw_bluetooth/hci_common.emb.h"
@@ -34,6 +34,8 @@
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
 #include "pw_log/log.h"
+#include "pw_multibuf/simple_allocator.h"
+#include "pw_multibuf/simple_allocator_for_test.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/mutex.h"
@@ -2470,9 +2472,14 @@ TEST_F(BasicL2capChannelTest, MultithreadedWrite) {
                              .remote_cid = remote_cid}));
   }
 
-  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/200 * 1024,
-                                             /*kMetaSizeBytes=*/200 * 1024>
-      packet_allocator{};
+  std::array<std::byte, 200 * 1024> data_mem{};
+  // Use a libc allocator for metadata so msan can detect use after free at
+  // multibuf level. When we move to MultiBuf 2 we can use libc for entire
+  // multibuf.
+  pw::allocator::LibCAllocator libc_allocator;
+  pw::multibuf::SimpleAllocator packet_allocator{
+      /*data_area=*/data_mem,
+      /*metadata_alloc=*/libc_allocator};
 
   for (unsigned int thread_numb = 0; thread_numb < kNumThreads; ++thread_numb) {
     struct ThreadCapture {
@@ -2884,9 +2891,6 @@ TEST_F(L2capSignalingTest, RemoteLocalCidCollisionBetweenProfiles) {
 
   // Acquire first channel with the event_fn_
   uint8_t reset_called = 0;
-  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/1024,
-                                             /*kMetaSizeBytes=*/256>
-      multibuf_allocator_{};
 
   auto event_fn([&reset_called](L2capChannelEvent event) -> void {
     switch (event) {
