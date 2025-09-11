@@ -99,20 +99,12 @@ class PairingDelegate2 {
     /// Ready when the pairing is completed. The `Request` should be
     /// destroyed once pairing is complete. Awakens `cx` on pairing completion.
     ///
-    /// @return @rst
-    ///
-    /// .. pw-status-codes::
-    ///
-    ///    OK: Pairing completed successfully.
-    ///
-    ///    CANCELLED: Pairing was rejected via `Reject()` or the peer cancelled
-    ///    the pairing.
-    ///
-    ///    DEADLINE_EXCEEDED: Pairing timed out.
-    ///
-    ///    INTERNAL: Pairing failed unexpectedly due to an internal error.
-    ///
-    /// @endrst
+    /// @returns
+    /// * @OK: Pairing completed successfully.
+    /// * @CANCELLED: Pairing was rejected via `Reject()` or the peer cancelled
+    ///   the pairing.
+    /// * @DEADLINE_EXCEEDED: Pairing timed out.
+    /// * @INTERNAL: Pairing failed unexpectedly due to an internal error.
     virtual async2::Poll<pw::Status> PendComplete(async2::Context& cx) = 0;
 
    private:

@@ -84,13 +84,11 @@ class L2capSignalingChannel : public BasicL2capChannel {
   // Send L2CAP_FLOW_CONTROL_CREDIT_IND to indicate local endpoint `cid` is
   // capable of receiving a number of additional K-frames (`credits`).
   //
-  // @returns @rst
-  //
-  // .. pw-status-codes::
-  // UNAVAILABLE:   Send could not be queued due to lack of memory in the
-  // client-provided rx_multibuf_allocator (transient error).
-  //  FAILED_PRECONDITION: If channel is not `State::kRunning`.
-  // @endrst
+  // @returns
+  // * @OK: `L2CAP_FLOW_CONTROL_CREDIT_IND` was sent.
+  // * @UNAVAILABLE: Send could not be queued due to lack of memory in the
+  //   client-provided `rx_multibuf_allocator` (transient error).
+  // * @FAILED_PRECONDITION: Channel is not `State::kRunning`.
   Status SendFlowControlCreditInd(
       uint16_t cid,
       uint16_t credits,

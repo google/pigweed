@@ -108,19 +108,11 @@ class BasicBlock : public internal::BasicBase {
 
   /// @brief Creates the first block for a given memory region.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Returns a block representing the region.
-  ///
-  ///    INVALID_ARGUMENT: The region is null.
-  ///
-  ///    RESOURCE_EXHAUSTED: The region is too small for a block.
-  ///
-  ///    OUT_OF_RANGE: The region is larger than `kMaxAddressableSize`.
-  ///
-  /// @endrst
+  /// @returns @Result{a block representing the region}
+  /// * @OK: Returns a block representing the region.
+  /// * @INVALID_ARGUMENT: The region is null.
+  /// * @RESOURCE_EXHAUSTED: The region is too small for a block.
+  /// * @OUT_OF_RANGE: The region is larger than `kMaxAddressableSize`.
   static constexpr Result<Derived*> Init(ByteSpan region);
 
   /// @returns  A pointer to a `Block`, given a pointer to the start of the

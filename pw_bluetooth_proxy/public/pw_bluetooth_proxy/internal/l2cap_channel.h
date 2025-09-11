@@ -156,41 +156,30 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   /// @param[in] payload The client payload to be sent. Payload will be
   /// destroyed once its data has been used.
   ///
-  /// @returns A StatusWithMultiBuf with one of the statuses below. If status is
-  /// not OK then payload is also returned in StatusWithMultiBuf.
-  ///
-  /// .. pw-status-codes::
-  ///  OK:                  If packet was successfully queued for send.
-  ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error). If an
-  ///                       `event_fn` has been provided it will be called with
-  ///                       `L2capChannelEvent::kWriteAvailable` when there is
-  ///                       queue space available again.
-  ///  INVALID_ARGUMENT:    If payload is too large or if payload is not a
-  ///                       contiguous MultiBuf.
-  ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
-  ///  UNIMPLEMENTED:       If channel does not support Write(MultiBuf).
-  /// @endrst
+  /// @returns A `StatusWithMultiBuf` with one of the statuses below. If status
+  /// is not @OK then payload is also returned in `StatusWithMultiBuf`.
+  /// * @OK: Packet was successfully queued for send.
+  /// * @UNAVAILABLE: Channel could not acquire the resources to queue
+  ///   the send at this time (transient error). If an `event_fn` has been
+  ///   provided it will be called with `L2capChannelEvent::kWriteAvailable`
+  ///   when there is queue space available again.
+  /// * @INVALID_ARGUMENT: Payload is too large or payload is not a contiguous
+  ///   `MultiBuf`.
+  /// * @FAILED_PRECONDITION: Channel is not `State::kRunning`.
+  /// * @UNIMPLEMENTED: Channel does not support `Write(MultiBuf)`.
   // TODO: https://pwbug.dev/388082771 - Plan to eventually move this to
   // ClientChannel.
   StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload);
 
   /// Determine if channel is ready to accept one or more Write payloads.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///    OK: Channel is ready to accept one or more Write payloads.
-  ///
-  ///    UNAVAILABLE: Channel does not yet have the resources to queue a Write
-  ///    at this time (transient error). If an `event_fn` has been provided it
-  ///    will be called with `L2capChannelEvent::kWriteAvailable` when there is
-  ///    queue space available again.
-  ///
-  ///    FAILED_PRECONDITION: If channel is not `State::kRunning`.
-  ///
-  /// @endrst
-  ///
+  /// @returns
+  /// * @OK: Channel is ready to accept one or more `Write` payloads.
+  /// * @UNAVAILABLE: Channel does not yet have the resources to queue a Write
+  ///   at this time (transient error). If an `event_fn` has been provided it
+  ///   will be called with `L2capChannelEvent::kWriteAvailable` when there is
+  ///   queue space available again.
+  /// * @FAILED_PRECONDITION: Channel is not `State::kRunning`.
   Status IsWriteAvailable();
 
   // Dequeue a packet if one is available to send.

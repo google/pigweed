@@ -40,18 +40,11 @@ namespace pw::string {
 /// The `std::snprintf()` return value is awkward to interpret, and
 /// misinterpreting it can lead to serious bugs.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the number of characters written, excluding the null
-///    terminator. The buffer is always null-terminated unless it is empty.
-///
-///    RESOURCE_EXHAUSTED: The buffer was too small to fit the output.
-///
-///    INVALID_ARGUMENT: There was a formatting error.
-///
-/// @endrst
+/// @returns
+/// * @OK: Returns the number of characters written, excluding the null
+///   terminator. The buffer is always null-terminated unless it is empty.
+/// * @RESOURCE_EXHAUSTED: The buffer was too small to fit the output.
+/// * @INVALID_ARGUMENT: There was a formatting error.
 PW_PRINTF_FORMAT(2, 3)
 StatusWithSize Format(span<char> buffer, const char* format, ...);
 

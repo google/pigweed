@@ -67,6 +67,7 @@ class AllocatableBlock : public internal::AllocatableBase {
   /// This method will eventually be deprecated. Prefer `IsFree`.
   constexpr bool Used() const { return !IsFree(); }
 
+  // clang-format off
   /// Checks if a block could be split from the block.
   ///
   /// On error, this method will return the same status as `AllocFirst` or
@@ -74,21 +75,13 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///
   /// @pre The block must not be in use.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Returns the number of bytes to shift this block in order to align
-  ///    its usable space.
-  ///
-  ///    FAILED_PRECONDITION: This block is in use and cannot be split.
-  ///
-  ///    RESOURCE_EXHAUSTED: The available space is insufficient to fulfill the
-  ///    request. This may be due to a large requested size, or insufficient
-  ///    remaining space to fulfill the requested alignment create a valid
-  ///    leading block, and/or create a valid trailing block.
-  ///
-  /// @endrst
+  /// @returns @Result{the number of bytes to shift this block in order to align its usable space}
+  /// * @FAILED_PRECONDITION: This block is in use and cannot be split.
+  /// * @RESOURCE_EXHAUSTED: The available space is insufficient to fulfill the
+  ///   request. This may be due to a large requested size, or insufficient
+  ///   remaining space to fulfill the requested alignment create a valid
+  ///   leading block, and/or create a valid trailing block.
+  // clang-format on
   constexpr StatusWithSize CanAlloc(Layout layout) const;
 
   /// Splits an aligned block from the start of the block, and marks it as used.
@@ -109,21 +102,14 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///
   /// @pre The block must not be in use.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The split completed successfully. The `BlockAllocType` indicates
-  ///    how extra memory was distributed to other blocks.
-  ///
-  ///    FAILED_PRECONDITION: This block is in use and cannot be split.
-  ///
-  ///    RESOURCE_EXHAUSTED: The available space is insufficient to fulfill the
-  ///    request. This may be due to a large requested size, or insufficient
-  ///    remaining space to fulfill the requested alignment create a valid
-  ///    leading block, and/or create a valid trailing block.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The split completed successfully. The `BlockAllocType` indicates
+  ///   how extra memory was distributed to other blocks.
+  /// * @FAILED_PRECONDITION: This block is in use and cannot be split.
+  /// * @RESOURCE_EXHAUSTED: The available space is insufficient to fulfill the
+  ///   request. This may be due to a large requested size, or insufficient
+  ///   remaining space to fulfill the requested alignment create a valid
+  ///   leading block, and/or create a valid trailing block.
   static constexpr BlockResult<Derived> AllocFirst(Derived*&& block,
                                                    Layout layout);
 
@@ -141,21 +127,14 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///
   /// @pre The block must not be in use.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The split completed successfully. The `BlockAllocType` indicates
-  ///    how extra memory was distributed to other blocks.
-  ///
-  ///    FAILED_PRECONDITION: This block is in use and cannot be split.
-  ///
-  ///    RESOURCE_EXHAUSTED: The available space is insufficient to fulfill the
-  ///    request. This may be due to a large requested size, or insufficient
-  ///    remaining space to fulfill the requested alignment create a valid
-  ///    leading block, and/or create a valid trailing block.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The split completed successfully. The `BlockAllocType` indicates
+  ///   how extra memory was distributed to other blocks.
+  /// * @FAILED_PRECONDITION: This block is in use and cannot be split.
+  /// * @RESOURCE_EXHAUSTED: The available space is insufficient to fulfill the
+  ///   request. This may be due to a large requested size, or insufficient
+  ///   remaining space to fulfill the requested alignment create a valid
+  ///   leading block, and/or create a valid trailing block.
   static constexpr BlockResult<Derived> AllocLast(Derived*&& block,
                                                   Layout layout);
 
@@ -171,20 +150,13 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///
   /// @pre The block must be in use.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The resize completed successfully.
-  ///
-  ///    FAILED_PRECONDITION: This block is not in use.
-  ///
-  ///    RESOURCE_EXHAUSTED: The available space is insufficient to fulfill the
-  ///    request. This may be due to a large requested size, or insufficient
-  ///    remaining space to fulfill the requested alignment create a valid
-  ///    leading block, and/or create a valid trailing block.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The resize completed successfully.
+  /// * @FAILED_PRECONDITION: This block is not in use.
+  /// * @RESOURCE_EXHAUSTED: The available space is insufficient to fulfill the
+  ///   request. This may be due to a large requested size, or insufficient
+  ///   remaining space to fulfill the requested alignment create a valid
+  ///   leading block, and/or create a valid trailing block.
   constexpr BlockResult<Derived> Resize(size_t new_inner_size);
 
   /// Marks the block as free.

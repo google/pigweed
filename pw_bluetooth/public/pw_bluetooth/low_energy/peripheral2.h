@@ -62,17 +62,11 @@ class AdvertisedPeripheral2 {
   /// Returns Ready when advertising has stopped due to a call to
   /// `StopAdvertising()` or due to error. Awakens `cx` on stopping.
   ///
-  /// @return @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Advertising was stopped successfully after a call to
-  ///    ``StopAdvertising()``.
-  ///
-  ///    CANCELLED: An internal error occurred and the advertisement was
-  ///    cancelled.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: Advertising was stopped successfully after a call to
+  ///   `StopAdvertising()`.
+  /// * @CANCELLED: An internal error occurred and the advertisement was
+  ///   cancelled.
   virtual async2::Poll<pw::Status> PendStop(async2::Context& cx) = 0;
 
  private:

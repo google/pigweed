@@ -35,7 +35,6 @@ sphinx_docs_library(
         "_extensions/module_metadata.py",
         "_extensions/modules_index.py",
         "_extensions/pigweed_live.py",
-        "_extensions/pw_status_codes.py",
         "_extensions/seed_metadata.py",
         "_extensions/sitemap.py",
         "bazel_compatibility.rst",

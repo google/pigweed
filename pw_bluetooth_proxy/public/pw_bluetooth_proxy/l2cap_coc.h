@@ -81,13 +81,11 @@ class L2capCoc : public SingleChannelProxy {
   ///
   /// @param[in] additional_rx_credits Number of credits to dispense.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  /// UNAVAILABLE:   Send could not be queued due to lack of memory in the
-  /// client-provided rx_multibuf_allocator (transient error).
-  ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
-  /// @endrst
+  /// @returns
+  /// * @OK: The packet was sent.
+  /// * @UNAVAILABLE: Send could not be queued due to lack of memory in the
+  ///   client-provided rx_multibuf_allocator (transient error).
+  /// * @FAILED_PRECONDITION: Channel is not `State::kRunning`.
   pw::Status SendAdditionalRxCredits(uint16_t additional_rx_credits)
       PW_LOCKS_EXCLUDED(rx_mutex_);
 

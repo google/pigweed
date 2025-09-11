@@ -426,19 +426,13 @@ class PW_MULTIBUF_DEPRECATED MultiBuf : private MultiBufChunks {
   /// @param[out] dest Destination into which to copy data from the `MultiBuf`.
   /// @param[in] position Offset in the `MultiBuf` from which to start.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: All bytes were copied into the destination. The
-  ///    :cpp:class:`pw::StatusWithSize` includes the number of bytes copied,
-  ///    which is the size of the :cpp:class:`MultiBuf`.
-  ///
-  ///    RESOURCE_EXHAUSTED: Some bytes were copied, but the
-  ///    :cpp:class:`MultiBuf` was larger than the destination buffer. The
-  ///    :cpp:class:`pw::StatusWithSize` includes the number of bytes copied.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: All bytes were copied into the destination. The
+  ///   `pw::StatusWithSize` includes the number of bytes copied, which is the
+  ///   size of the `MultiBuf`.
+  /// * @RESOURCE_EXHAUSTED: Some bytes were copied, but the `MultiBuf` was
+  ///   larger than the destination buffer. The `pw::StatusWithSize` includes
+  ///   the number of bytes copied.
   StatusWithSize CopyTo(ByteSpan dest, size_t position = 0) const;
 
   /// Copies bytes from the provided buffer into the multibuf.
@@ -446,18 +440,12 @@ class PW_MULTIBUF_DEPRECATED MultiBuf : private MultiBufChunks {
   /// @param[in] source Data to copy into the `MultiBuf`.
   /// @param[in] position Offset in the `MultiBuf` from which to start.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: All bytes were copied. The :cpp:class:`pw::StatusWithSize` includes
-  ///    the number of bytes copied, which is the size of the `MultiBuf`.
-  ///
-  ///    RESOURCE_EXHAUSTED: Some bytes were copied, but the source was larger
-  ///    than the destination. The :cpp:class:`pw::StatusWithSize` includes the
-  ///    number of bytes copied.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: All bytes were copied. The `pw::StatusWithSize` includes the number
+  ///   of bytes copied, which is the size of the `MultiBuf`.
+  /// * @RESOURCE_EXHAUSTED: Some bytes were copied, but the source was larger
+  ///   than the destination. The `pw::StatusWithSize` includes the number of
+  ///   bytes copied.
   StatusWithSize CopyFrom(ConstByteSpan source, size_t position = 0) {
     return CopyFromAndOptionallyTruncate(source, position, /*truncate=*/false);
   }
@@ -475,20 +463,12 @@ class PW_MULTIBUF_DEPRECATED MultiBuf : private MultiBufChunks {
   /// @param[in] source Data to copy into the `MultiBuf`.
   /// @param[in] position Offset in the `MultiBuf` from which to start.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: All bytes were copied and the :cpp:class:`MultiBuf` was truncated.
-  ///    The :cpp:class:`pw::StatusWithSize` includes the new
-  ///    :cpp:func:`MultiBuf::size`.
-  ///
-  ///    RESOURCE_EXHAUSTED: Some bytes were copied, but the source buffer was
-  ///    larger than the :cpp:class:`MultiBuf`. The returned
-  ///    :cpp:class:`pw::StatusWithSize` includes the number of bytes copied,
-  ///    which is the size of the :cpp:class:`MultiBuf`.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: All bytes were copied and the `MultiBuf` was truncated. The
+  ///   `pw::StatusWithSize` includes the new `MultiBuf::size`.
+  /// * @RESOURCE_EXHAUSTED: Some bytes were copied, but the source buffer was
+  ///   larger than the `MultiBuf`. The returned `pw::StatusWithSize` includes
+  ///   the number of bytes copied, which is the size of the `MultiBuf`.
   StatusWithSize CopyFromAndTruncate(ConstByteSpan source,
                                      size_t position = 0) {
     return CopyFromAndOptionallyTruncate(source, position, /*truncate=*/true);

@@ -74,12 +74,9 @@ class RfcommChannel final : public SingleChannelProxy {
   /// @param[in] payload_from_controller_fn        Read callback to be invoked
   /// on Rx frames.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
-  ///  UNAVAILABLE: If channel could not be created.
-  /// @endrst
+  /// @returns @Result{the channel}
+  /// * @INVALID_ARGUMENT: Arguments are invalid. Check the logs.
+  /// * @UNAVAILABLE: A channel could not be created.
   static pw::Result<RfcommChannel> Create(
       L2capChannelManager& l2cap_channel_manager,
       multibuf::MultiBufAllocator& rx_multibuf_allocator,

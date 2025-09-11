@@ -136,19 +136,11 @@ class StringBuilder {
   /// status remains non-OK until it is cleared with
   /// `pw::StringBuilder::clear()` or `pw::StringBuilder::clear_status()`.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: No errors have occurred.
-  ///
-  ///    RESOURCE_EXHAUSTED: Output to the ``StringBuilder`` was truncated.
-  ///
-  ///    INVALID_ARGUMENT: ``printf``-style formatting failed.
-  ///
-  ///    OUT_OF_RANGE: An operation outside the buffer was attempted.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: No errors have occurred.
+  /// * @RESOURCE_EXHAUSTED: Output to the `StringBuilder` was truncated.
+  /// * @INVALID_ARGUMENT: `printf`-style formatting failed.
+  /// * @OUT_OF_RANGE: An operation outside the buffer was attempted.
   Status status() const { return static_cast<Status::Code>(status_); }
 
   /// Returns `status()` and `size()` as a `StatusWithSize`.

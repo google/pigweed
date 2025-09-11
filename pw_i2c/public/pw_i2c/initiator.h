@@ -115,24 +115,15 @@ class Initiator {
   /// addresses. This method fails a runtime assertion if this precondition
   /// isn't met.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The transaction or transactions succeeded.
-  ///
-  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
-  ///    and complete the I2C transaction in time.
-  ///
-  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
-  ///    didn't respond or was unable to process the request.
-  ///
-  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
-  ///
-  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
-  ///    features or combination of i2c messages.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The transaction or transactions succeeded.
+  /// * @DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///   and complete the I2C transaction in time.
+  /// * @UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///   didn't respond or was unable to process the request.
+  /// * @FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  /// * @UNIMPLEMENTED: The interface doesn't support the necessary I2C
+  ///   features or combination of I2C messages.
   Status WriteReadFor(Address device_address,
                       ConstByteSpan tx_buffer,
                       ByteSpan rx_buffer,
@@ -180,27 +171,17 @@ class Initiator {
   /// 7-bit addresses. This method fails a runtime assertion if this
   /// precondition isn't met.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The transaction succeeded.
-  ///
-  ///    INVALID_ARGUMENT: The arguments can never be valid. For example,
-  ///    a WriteContinuation without a preceding Write message.
-  ///
-  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
-  ///    and complete the I2C transaction in time.
-  ///
-  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
-  ///    didn't respond or was unable to process the request.
-  ///
-  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
-  ///
-  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
-  ///    features or combination of i2c messages.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The transaction succeeded.
+  /// * @INVALID_ARGUMENT: The arguments can never be valid. For example,
+  ///   a `WriteContinuation` without a preceding `Write` message.
+  /// * @DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///   and complete the I2C transaction in time.
+  /// * @UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///   didn't respond or was unable to process the request.
+  /// * @FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  /// * @UNIMPLEMENTED: The interface doesn't support the necessary I2C
+  ///   features or combination of I2C messages.
   Status TransferFor(span<const Message> messages,
                      chrono::SystemClock::duration timeout) {
     return DoValidateAndTransferFor(messages, timeout);
@@ -242,24 +223,15 @@ class Initiator {
   /// addresses. This method fails a runtime assertion if this precondition
   /// isn't met.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The transaction succeeded.
-  ///
-  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
-  ///    and complete the I2C transaction in time.
-  ///
-  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
-  ///    didn't respond or was unable to process the request.
-  ///
-  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
-  ///
-  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
-  ///    features or combination of i2c messages.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The transaction succeeded.
+  /// * @DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///   and complete the I2C transaction in time.
+  /// * @UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///   didn't respond or was unable to process the request.
+  /// * @FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  /// * @UNIMPLEMENTED: The interface doesn't support the necessary I2C
+  ///   features or combination of I2C messages.
   Status WriteFor(Address device_address,
                   ConstByteSpan tx_buffer,
                   chrono::SystemClock::duration timeout) {
@@ -297,24 +269,15 @@ class Initiator {
   /// addresses. This method fails a runtime assertion if this precondition
   /// isn't met.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The transaction succeeded.
-  ///
-  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
-  ///    and complete the I2C transaction in time.
-  ///
-  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
-  ///    didn't respond or was unable to process the request.
-  ///
-  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
-  ///
-  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
-  ///    features or combination of i2c messages.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The transaction succeeded.
+  /// * @DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///   and complete the I2C transaction in time.
+  /// * @UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///   didn't respond or was unable to process the request.
+  /// * @FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  /// * @UNIMPLEMENTED: The interface doesn't support the necessary I2C
+  ///   features or combination of I2C messages.
   Status ReadFor(Address device_address,
                  ByteSpan rx_buffer,
                  chrono::SystemClock::duration timeout) {
@@ -350,24 +313,15 @@ class Initiator {
   /// addresses. This method fails a runtime assertion if this precondition
   /// isn't met.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The transaction succeeded.
-  ///
-  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
-  ///    and complete the I2C transaction in time.
-  ///
-  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
-  ///    didn't respond or was unable to process the request.
-  ///
-  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
-  ///
-  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
-  ///    features or combination of i2c messages.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The transaction succeeded.
+  /// * @DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///   and complete the I2C transaction in time.
+  /// * @UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///   didn't respond or was unable to process the request.
+  /// * @FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  /// * @UNIMPLEMENTED: The interface doesn't support the necessary I2C
+  ///   features or combination of I2C messages.
   Status ProbeDeviceFor(Address device_address,
                         chrono::SystemClock::duration timeout) {
     std::byte ignored_buffer[1] = {};  // Read a byte to probe.

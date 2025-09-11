@@ -45,31 +45,17 @@ Status OverwriteChannelId(ByteSpan rpc_packet, uint32_t channel_id_under_128);
 
 /// Extracts the channel ID from a pw_rpc packet.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: returns the channel ID in the packet
-///
-///    DATA_LOSS: the packet is corrupt and the channel ID could not be found.
-///
-/// @endrst
+/// @returns @Result{the channel ID}
+/// * @DATA_LOSS: The packet is corrupt and the channel ID could not be found.
 Result<uint32_t> ExtractChannelId(ConstByteSpan packet);
 
 /// Rewrites an encoded packet's channel ID in place. Both channel IDs MUST be
 /// less than 128.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Successfully replaced the channel ID
-///
-///    DATA_LOSS: parsing the packet failed
-///
-///    OUT_OF_RANGE: the encoded packet's channel ID was 128 or larger
-///
-/// @endrst
+/// @returns
+/// * @OK: Successfully replaced the channel ID.
+/// * @DATA_LOSS: Parsing the packet failed.
+/// * @OUT_OF_RANGE: The encoded packet's channel ID was 128 or larger.
 template <uint32_t kNewChannelId>
 Status ChangeEncodedChannelId(ByteSpan rpc_packet) {
   static_assert(kNewChannelId < 128u,

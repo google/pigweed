@@ -125,19 +125,10 @@ Result<T> Find(stream::Reader& reader, uint32_t field_number) {
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<uint32_t> FindUint32(ConstByteSpan message,
                                    uint32_t field_number) {
   return internal::Find<uint32_t, &Decoder::ReadUint32>(message, field_number);
@@ -153,19 +144,10 @@ inline Result<uint32_t> FindUint32(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<uint32_t> FindUint32(stream::Reader& message_stream,
                                    uint32_t field_number) {
   return internal::Find<uint32_t, &StreamDecoder::ReadUint32>(message_stream,
@@ -185,19 +167,10 @@ using Uint32StreamFinder = StreamFinder<uint32_t, &StreamDecoder::ReadUint32>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int32_t> FindInt32(ConstByteSpan message, uint32_t field_number) {
   return internal::Find<int32_t, &Decoder::ReadInt32>(message, field_number);
 }
@@ -212,19 +185,10 @@ inline Result<int32_t> FindInt32(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int32_t> FindInt32(stream::Reader& message_stream,
                                  uint32_t field_number) {
   return internal::Find<int32_t, &StreamDecoder::ReadInt32>(message_stream,
@@ -244,19 +208,10 @@ using Int32StreamFinder = StreamFinder<int32_t, &StreamDecoder::ReadInt32>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int32_t> FindSint32(ConstByteSpan message,
                                   uint32_t field_number) {
   return internal::Find<int32_t, &Decoder::ReadSint32>(message, field_number);
@@ -272,19 +227,10 @@ inline Result<int32_t> FindSint32(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int32_t> FindSint32(stream::Reader& message_stream,
                                   uint32_t field_number) {
   return internal::Find<int32_t, &StreamDecoder::ReadSint32>(message_stream,
@@ -304,19 +250,10 @@ using Sint32StreamFinder = StreamFinder<int32_t, &StreamDecoder::ReadSint32>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<uint64_t> FindUint64(ConstByteSpan message,
                                    uint32_t field_number) {
   return internal::Find<uint64_t, &Decoder::ReadUint64>(message, field_number);
@@ -332,19 +269,10 @@ inline Result<uint64_t> FindUint64(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<uint64_t> FindUint64(stream::Reader& message_stream,
                                    uint32_t field_number) {
   return internal::Find<uint64_t, &StreamDecoder::ReadUint64>(message_stream,
@@ -364,19 +292,10 @@ using Uint64StreamFinder = StreamFinder<uint64_t, &StreamDecoder::ReadUint64>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int64_t> FindInt64(ConstByteSpan message, uint32_t field_number) {
   return internal::Find<int64_t, &Decoder::ReadInt64>(message, field_number);
 }
@@ -391,19 +310,10 @@ inline Result<int64_t> FindInt64(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int64_t> FindInt64(stream::Reader& message_stream,
                                  uint32_t field_number) {
   return internal::Find<int64_t, &StreamDecoder::ReadInt64>(message_stream,
@@ -423,19 +333,10 @@ using Int64StreamFinder = StreamFinder<int64_t, &StreamDecoder::ReadInt64>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int64_t> FindSint64(ConstByteSpan message,
                                   uint32_t field_number) {
   return internal::Find<int64_t, &Decoder::ReadSint64>(message, field_number);
@@ -451,19 +352,10 @@ inline Result<int64_t> FindSint64(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int64_t> FindSint64(stream::Reader& message_stream,
                                   uint32_t field_number) {
   return internal::Find<int64_t, &StreamDecoder::ReadSint64>(message_stream,
@@ -483,19 +375,10 @@ using Sint64StreamFinder = StreamFinder<int64_t, &StreamDecoder::ReadSint64>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<bool> FindBool(ConstByteSpan message, uint32_t field_number) {
   return internal::Find<bool, &Decoder::ReadBool>(message, field_number);
 }
@@ -510,19 +393,10 @@ inline Result<bool> FindBool(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<bool> FindBool(stream::Reader& message_stream,
                              uint32_t field_number) {
   return internal::Find<bool, &StreamDecoder::ReadBool>(message_stream,
@@ -542,19 +416,10 @@ using BoolStreamFinder = StreamFinder<bool, &StreamDecoder::ReadBool>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<uint32_t> FindFixed32(ConstByteSpan message,
                                     uint32_t field_number) {
   return internal::Find<uint32_t, &Decoder::ReadFixed32>(message, field_number);
@@ -570,19 +435,10 @@ inline Result<uint32_t> FindFixed32(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<uint32_t> FindFixed32(stream::Reader& message_stream,
                                     uint32_t field_number) {
   return internal::Find<uint32_t, &StreamDecoder::ReadFixed32>(message_stream,
@@ -602,19 +458,10 @@ using Fixed32StreamFinder = StreamFinder<uint32_t, &StreamDecoder::ReadFixed32>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<uint64_t> FindFixed64(ConstByteSpan message,
                                     uint32_t field_number) {
   return internal::Find<uint64_t, &Decoder::ReadFixed64>(message, field_number);
@@ -630,19 +477,10 @@ inline Result<uint64_t> FindFixed64(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<uint64_t> FindFixed64(stream::Reader& message_stream,
                                     uint32_t field_number) {
   return internal::Find<uint64_t, &StreamDecoder::ReadFixed64>(message_stream,
@@ -662,19 +500,10 @@ using Fixed64StreamFinder = StreamFinder<uint64_t, &StreamDecoder::ReadFixed64>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int32_t> FindSfixed32(ConstByteSpan message,
                                     uint32_t field_number) {
   return internal::Find<int32_t, &Decoder::ReadSfixed32>(message, field_number);
@@ -690,19 +519,10 @@ inline Result<int32_t> FindSfixed32(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int32_t> FindSfixed32(stream::Reader& message_stream,
                                     uint32_t field_number) {
   return internal::Find<int32_t, &StreamDecoder::ReadSfixed32>(message_stream,
@@ -723,19 +543,10 @@ using Sfixed32StreamFinder =
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int64_t> FindSfixed64(ConstByteSpan message,
                                     uint32_t field_number) {
   return internal::Find<int64_t, &Decoder::ReadSfixed64>(message, field_number);
@@ -751,19 +562,10 @@ inline Result<int64_t> FindSfixed64(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<int64_t> FindSfixed64(stream::Reader& message_stream,
                                     uint32_t field_number) {
   return internal::Find<int64_t, &StreamDecoder::ReadSfixed64>(message_stream,
@@ -784,19 +586,10 @@ using Sfixed64StreamFinder =
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<float> FindFloat(ConstByteSpan message, uint32_t field_number) {
   return internal::Find<float, &Decoder::ReadFloat>(message, field_number);
 }
@@ -811,19 +604,10 @@ inline Result<float> FindFloat(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<float> FindFloat(stream::Reader& message_stream,
                                uint32_t field_number) {
   return internal::Find<float, &StreamDecoder::ReadFloat>(message_stream,
@@ -843,19 +627,10 @@ using FloatStreamFinder = StreamFinder<float, &StreamDecoder::ReadFloat>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<double> FindDouble(ConstByteSpan message, uint32_t field_number) {
   return internal::Find<double, &Decoder::ReadDouble>(message, field_number);
 }
@@ -870,20 +645,10 @@ inline Result<double> FindDouble(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
-
+/// @returns @Result{the field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<double> FindDouble(stream::Reader& message_stream,
                                  uint32_t field_number) {
   return internal::Find<double, &StreamDecoder::ReadDouble>(message_stream,
@@ -903,20 +668,12 @@ using DoubleStreamFinder = StreamFinder<double, &StreamDecoder::ReadDouble>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
+/// @note The returned string is NOT null-terminated.
 ///
-/// .. pw-status-codes::
-///
-///    OK: Returns a subspan of the buffer containing the string field.
-///    **NOTE**: The returned string is NOT null-terminated.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{a subspan of the buffer containing the string field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<std::string_view> FindString(ConstByteSpan message,
                                            uint32_t field_number) {
   return internal::Find<std::string_view, &Decoder::ReadString>(message,
@@ -935,20 +692,13 @@ inline Result<std::string_view> FindString(ConstByteSpan message, T field) {
 /// @param field_number Protobuf field number of the field.
 /// @param out The buffer to which to write the string.
 ///
-/// @returns @rst
+/// @note The returned string is NOT null-terminated.
 ///
-/// .. pw-status-codes::
-///
-///    OK: Returns the size of the copied data.
-///    **NOTE**: The returned string is NOT null-terminated.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns
+/// * @OK: Returns the size of the copied data.
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline StatusWithSize FindString(stream::Reader& message_stream,
                                  uint32_t field_number,
                                  span<char> out) {
@@ -972,19 +722,11 @@ inline StatusWithSize FindString(stream::Reader& message_stream,
 /// @param field_number Protobuf field number of the field.
 /// @param out String to which to write the found value.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the size of the copied data.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns
+/// * @OK: Returns the size of the copied data.
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline StatusWithSize FindString(stream::Reader& message_stream,
                                  uint32_t field_number,
                                  InlineString<>& out) {
@@ -1019,19 +761,10 @@ using StringFinder = Finder<std::string_view, &Decoder::ReadString>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the subspan of the buffer containing the bytes field.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the subspan of the buffer containing the bytes field}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<ConstByteSpan> FindBytes(ConstByteSpan message,
                                        uint32_t field_number) {
   return internal::Find<ConstByteSpan, &Decoder::ReadBytes>(message,
@@ -1049,19 +782,11 @@ inline Result<ConstByteSpan> FindBytes(ConstByteSpan message, T field) {
 /// @param message_stream The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the size of the copied data.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns
+/// * @OK: Returns the size of the copied data.
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline StatusWithSize FindBytes(stream::Reader& message_stream,
                                 uint32_t field_number,
                                 ByteSpan out) {
@@ -1092,19 +817,10 @@ using BytesFinder = Finder<ConstByteSpan, &Decoder::ReadBytes>;
 /// @param message The serialized message to search.
 /// @param field_number Protobuf field number of the field.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: Returns the subspan of the buffer containing the submessage.
-///
-///    NOT_FOUND: The field is not present.
-///
-///    DATA_LOSS: The serialized message is not a valid protobuf.
-///
-///    FAILED_PRECONDITION: The field exists, but is not the correct type.
-///
-/// @endrst
+/// @returns @Result{the subspan of the buffer containing the submessage}
+/// * @NOT_FOUND: The field is not present.
+/// * @DATA_LOSS: The serialized message is not a valid protobuf.
+/// * @FAILED_PRECONDITION: The field exists, but is not the correct type.
 inline Result<ConstByteSpan> FindSubmessage(ConstByteSpan message,
                                             uint32_t field_number) {
   // On the wire, a submessage is identical to bytes. This function exists only

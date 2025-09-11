@@ -181,15 +181,9 @@ class MockInitiator : public Initiator {
   /// Indicates whether the actual I2C transactions matched the expected
   /// transactions. Should be called at the end of the test.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The actual transactions matched the expected transactions.
-  ///
-  ///    OUT_OF_RANGE: The mocked set of transactions hasn't been exhausted.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The actual transactions matched the expected transactions.
+  /// * @OUT_OF_RANGE: The mocked set of transactions hasn't been exhausted.
   Status Finalize() const {
     if (expected_transaction_index_ != expected_transactions_.size()) {
       return Status::OutOfRange();

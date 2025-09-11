@@ -174,15 +174,9 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///
   /// @param  ptr           Pointer to an allocated block's usable space.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Result contains a pointer to the block.
-  ///
-  ///    OUT_OF_RANGE: Given pointer is outside the allocator's memory.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: Result contains a pointer to the block.
+  /// * @OUT_OF_RANGE: Given pointer is outside the allocator's memory.
   template <typename Ptr>
   internal::copy_const_ptr_t<Ptr, BlockType*> FromUsableSpace(Ptr ptr) const;
 

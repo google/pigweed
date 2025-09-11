@@ -39,19 +39,11 @@ namespace varint {
 /// @param max_size The maximum number of bytes to read. The upper limit is 10
 /// bytes.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: The decoded value is placed in ``output``.
-///
-///    OUT_OF_RANGE: No input is available, e.g. the stream is closed.
-///
-///    DATA_LOSS: The decoded value is too large for ``output`` or is
-///    incomplete, e.g. the input was exhausted after a partial varint was
-///    read.
-///
-/// @endrst
+/// @returns
+/// * @OK: The decoded value is placed in `output`.
+/// * @OUT_OF_RANGE: No input is available, e.g. the stream is closed.
+/// * @DATA_LOSS: The decoded value is too large for `output` or is incomplete,
+///   e.g. the input was exhausted after a partial varint was read.
 StatusWithSize Read(stream::Reader& reader,
                     int64_t* output,
                     size_t max_size = std::numeric_limits<size_t>::max());

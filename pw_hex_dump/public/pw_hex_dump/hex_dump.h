@@ -133,34 +133,22 @@ class FormattedHexDumper {
 
   /// Set the destination buffer that the hex dumper will write to line-by-line.
   ///
-  /// @return @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///   RESOURCE_EXHAUSTED: The buffer was set, but is too small to fit the
+  /// @returns
+  /// * @OK: The destination buffer was set.
+  /// * @RESOURCE_EXHAUSTED: The buffer was set, but is too small to fit the
   ///   current formatting configuration.
-  ///
-  ///   INVALID_ARGUMENT: The destination buffer is invalid (nullptr or zero-
-  ///   length).
-  ///
-  /// @endrst
+  /// * @INVALID_ARGUMENT: The destination buffer is invalid (null pointer or
+  ///   zero-length).
   Status SetLineBuffer(span<char> dest);
 
   /// Begin dumping the provided data. Does NOT populate the line buffer with
   /// a string, simply resets the statefulness to track this buffer.
   ///
-  /// @return @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///   OK: Ready to begin dump.
-  ///
-  ///   INVALID_ARGUMENT: The source data starts at null, but has been set.
-  ///
-  ///   FAILED_PRECONDITION: Line buffer too small to hold current formatting
+  /// @returns
+  /// * @OK: Ready to begin dump.
+  /// * @INVALID_ARGUMENT: The source data starts at null, but has been set.
+  /// * @FAILED_PRECONDITION: Line buffer too small to hold current formatting
   ///   settings.
-  ///
-  /// @endrst
   Status BeginDump(ConstByteSpan data);
 
   /// Dumps a single line to the line buffer.
@@ -176,18 +164,11 @@ class FormattedHexDumper {
   ///   }
   /// @endcode
   ///
-  /// @return @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///   OK:  A line has been written to the line buffer.
-  ///
-  ///   RESOURCE_EXHAUSTED:  All the data has been dumped.
-  ///
-  ///   FAILED_PRECONDITION:  Destination line buffer is too small to fit
+  /// @returns
+  /// * @OK: A line has been written to the line buffer.
+  /// * @RESOURCE_EXHAUSTED: All the data has been dumped.
+  /// * @FAILED_PRECONDITION: Destination line buffer is too small to fit
   ///   current formatting configuration.
-  ///
-  /// @endrst
   Status DumpLine();
 
  private:
@@ -215,17 +196,10 @@ class FormattedHexDumper {
 ///   0x70000000
 /// @endcode
 ///
-/// @return @rst
-///
-/// .. pw-status-codes::
-///
-///   OK: Address has been written to the buffer.
-///
-///   INVALID_ARGUMENT: The destination buffer is invalid (nullptr).
-///
-///   RESOURCE_EXHAUSTED: The destination buffer is too small. No data written.
-///
-/// @endrst
+/// @returns
+/// * @OK: Address has been written to the buffer.
+/// * @INVALID_ARGUMENT: The destination buffer is invalid (null pointer).
+/// * @RESOURCE_EXHAUSTED: The destination buffer is too small. No data written.
 Status DumpAddr(span<char> dest, uintptr_t addr);
 inline Status DumpAddr(span<char> dest, const void* ptr) {
   uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);

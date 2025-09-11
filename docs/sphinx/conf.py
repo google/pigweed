@@ -90,7 +90,6 @@ extensions = [
     "module_metadata",
     "modules_index",
     "pigweed_live",
-    "pw_status_codes",
     "pw_docgen.sphinx.google_analytics",  # Enables optional Google Analytics
     "seed_metadata",
     "sitemap",  # Custom extension to handle pigweed.dev sitemap nuances.

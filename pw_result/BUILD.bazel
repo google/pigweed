@@ -130,6 +130,13 @@ pw_size_table(
     ],
 )
 
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_result/result.h",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [

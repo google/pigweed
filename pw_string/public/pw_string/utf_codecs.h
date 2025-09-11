@@ -99,17 +99,10 @@ namespace utf8 {
 /// each byte of a multibyte sequence has a continuation character. See
 /// `pw::utf8::EncodeCharacter()` for encoding details.
 ///
-/// @return @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: The decoded code point and the number of bytes read.
-///
-///    INVALID_ARGUMENT: The string was empty or malformed.
-///
-///    OUT_OF_RANGE: The decoded code point was not in the valid range.
-///
-/// @endrst
+/// @returns @Result{the decoded code point and the number of bytes read}
+/// * @OK: The decoded code point and the number of bytes read.
+/// * @INVALID_ARGUMENT: The string was empty or malformed.
+/// * @OUT_OF_RANGE: The decoded code point was not in the valid range.
 constexpr pw::Result<utf::CodePointAndSize> ReadCodePoint(
     std::string_view str) {
   if (str.empty()) {
@@ -217,16 +210,9 @@ class EncodedCodePoint {
 /// [0x10000, 0x10FFFF] 4-bytes: b1111 0xxx 10xx xxxx 10xx xxxx 10xx xxxx
 /// @endcode
 ///
-/// @return @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: The codepoint encoded as UTF-8.
-///
-///    OUT_OF_RANGE: The code point was not in the valid range for UTF-8
-///    encoding.
-///
-/// @endrst
+/// @returns @Result{the codepoint encoded as UTF-8}
+/// * @OUT_OF_RANGE: The code point was not in the valid range for UTF-8
+///   encoding.
 constexpr Result<EncodedCodePoint> EncodeCodePoint(uint32_t code_point) {
   if (code_point <= 0x7F) {
     return EncodedCodePoint{1, {static_cast<char>(code_point)}};

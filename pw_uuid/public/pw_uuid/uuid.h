@@ -144,11 +144,10 @@ class Uuid {
   ///
   /// @param uuid_str string containing uuid
   ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The uuid is valid.
-  ///    FAILED_PRECONDITION: The string is the wrong size
-  ///    INVALID_ARGUMENT: The string is malformed
+  /// @returns
+  /// * @OK: The UUID is valid.
+  /// * @FAILED_PRECONDITION: The string is the wrong size.
+  /// * @INVALID_ARGUMENT: The string is malformed.
   static constexpr Status ValidateString(std::string_view uuid_str) {
     if (kStringSize != uuid_str.size()) {
       return Status::FailedPrecondition();
@@ -171,10 +170,9 @@ class Uuid {
   ///
   /// @param span span containing uuid
   ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The uuid is valid.
-  ///    FAILED_PRECONDITION: The span is the wrong size
+  /// @returns
+  /// * @OK: The UUID is valid.
+  /// * @FAILED_PRECONDITION: The span is the wrong size.
   static constexpr Status ValidateSpan(span<const uint8_t> span) {
     if (span.size() != kSizeBytes) {
       return Status::FailedPrecondition();

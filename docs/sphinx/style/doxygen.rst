@@ -213,113 +213,91 @@ Use ``@deprecated <description>``.
       /// @deprecated This function, class, or other entity is deprecated. Use
       /// the replacement instead.
 
-.. _docs-style-doxygen-pw_status:
+.. _docs-style-doxygen-pw_status-aliases:
 
-pw_status codes
-===============
-Use the following syntax when referring to ``pw_status`` codes:
+pw_status code aliases
+======================
+Use the following aliases when referring to :ref:`module-pw_status` codes:
 
-.. admonition:: **Yes**
-   :class: checkmark
-
-   .. code-block:: none
-
-      @pw_status{...}
-
-Replace ``...`` with a valid ``pw_status`` code. See
-:ref:`module-pw_status-quickref`.
+* ``@OK``
+* ``@CANCELLED``
+* ``@UNKNOWN``
+* ``@INVALID_ARGUMENT``
+* ``@DEADLINE_EXCEEDED``
+* ``@NOT_FOUND``
+* ``@ALREADY_EXISTS``
+* ``@PERMISSION_DENIED``
+* ``@RESOURCE_EXHAUSTED``
+* ``@FAILED_PRECONDITION``
+* ``@ABORTED``
+* ``@OUT_OF_RANGE``
+* ``@UNIMPLEMENTED``
+* ``@INTERNAL``
+* ``@UNAVAILABLE``
+* ``@DATA_LOSS``
+* ``@UNAUTHENTICATED``
 
 Doxygen converts this alias into a link to the status code's reference
 documentation.
 
-Don't use this syntax for functions or methods that return a set of
-status codes. Use ``pw-status-codes``. See :ref:`pw-status-codes`.
-
-.. _pw-status-codes:
+.. _docs-style-doxygen-pw_status-return:
 
 Functions and methods that return pw::Status codes
 ==================================================
-Use ``pw-status-codes`` to present the set of codes and descriptions as a
-two-column table:
+Use the following pattern:
 
-.. admonition:: **Yes**
-   :class: checkmark
+.. code-block:: none
 
-   .. code-block:: none
+   /// @returns
+   /// * <alias>: <description>
+   /// * <alias>: <description>
 
-      /// @returns @rst
-      ///
-      /// .. pw-status-codes::
-      ///
-      ///    <code>: <description>
-      ///
-      ///    <code>: <description>
-      ///
-      /// @endrst
+Where ``<alias>`` is one of the :ref:`docs-style-doxygen-pw_status-aliases`
+defined in the previous section and ``<description>`` is an explanation of what
+the status code means for this particular function or method.
+
+.. important::
+
+   There must be not be any blank lines between the bullet list items. Doxygen
+   ends the ``@returns`` block when it encounteres a blank line.
 
 Example:
 
-.. admonition:: **Yes**
-   :class: checkmark
+.. code-block:: none
 
-   .. code-block:: none
+   /// @returns
+   /// * @OK: The bulk read was successful.
+   /// * @RESOURCE_EXHAUSTED: The remaining space is too small to hold a new
+   ///   block.
 
-      /// @returns @rst
-      ///
-      /// .. pw-status-codes::
-      ///
-      ///    OK: The bulk read was successful.
-      ///
-      ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a
-      ///    new block.
-      ///
-      /// @endrst
+.. _docs-style-doxygen-pw_result-return:
 
-* Each ``<code>`` must be a valid :ref:`status code <module-pw_status-codes>`.
-  The part before the colon must be plaintext.
-* Each ``<description>`` should explain further what the code means in this
-  particular scenario. The description must be a single paragraph. It can use
-  inline reStructuredText features such as code formatting and cross-references.
-* ``pw-status-codes`` needs to be wrapped in ``@rst`` and ``@endrst``
-  because it's a reStructuredText directive and Doxygen doesn't natively
-  support reST. The implementation is at
-  ``//pw_docgen/py/pw_docgen/sphinx/pw_status_codes.py``.
+Functions and methods that return pw::Result
+============================================
+Use the following pattern:
 
-.. admonition:: **Yes**
-   :class: checkmark
+.. code-block:: none
 
-   .. code-block:: none
+   /// @returns @Result{<value>}
+   /// * <alias>: <description>
+   /// * <alias>: <description>
 
-      /// @returns @rst
-      ///
-      /// .. pw-status-codes::
-      ///
-      ///    OK: Data successfully written to ``buffer``.
-      ///
-      ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a
-      ///    new block. See :ref:`module-pw_example-troubleshooting`.
-      ///
-      /// @endrst
+Where ``<value>`` describes the value that's returned in the ``OK`` case,
+``<alias>`` is one of the :ref:`pw_status error codes
+<docs-style-doxygen-pw_status-aliases>` and ``<description>`` is an explanation
+of what the error code means for this particular function or method.
 
-   It's OK to use reStructuredText features like code formatting and
-   cross-references within the descriptions. The status code itself
-   must be plaintext.
+Example:
 
-.. admonition:: **No**
-   :class: error
+.. code-block:: none
 
-   .. code-block:: none
+   /// @returns @Result{a sample}
+   /// * @RESOURCE_EXHAUSTED: ADC peripheral in use.
+   /// * @DEADLINE_EXCEEDED: Timed out waiting for a sample.
+   /// * Other statuses left up to the implementer.
 
-      /// @returns @rst
-      ///
-      /// .. pw-status-codes::
-      ///
-      ///    RESOURCE_EXHAUSTED: The remaining space is too small to hold a
-      ///                        new block.
-      ///
-      /// @endrst
-
-   For items that span multiple lines, don't use whitespace like this.
+See :doxylink:`TryReadFor() <pw::analog::AnalogInput::TryReadFor>` to view how
+this example gets rendered.
 
 .. _docs-style-doxygen-namespaces:
 

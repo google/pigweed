@@ -41,15 +41,9 @@ class UartBase {
   /// interface parameters, enable the associated pins, setup the internal
   /// TX and RX buffers, etc...
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART module has been successfully initialized.
-  ///
-  ///    INTERNAL: Internal errors within the hardware abstraction layer.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The UART module has been successfully initialized.
+  /// * @INTERNAL: Internal errors within the hardware abstraction layer.
   Status Enable() { return DoEnable(true); }
 
   /// Disables the UART module. Disabling the UART shuts down communication and
@@ -59,15 +53,9 @@ class UartBase {
   /// This is usually done to save power. Interrupt handlers should also be
   /// disabled.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART module has been successfully initialized.
-  ///
-  ///    INTERNAL: Internal errors  within the hardware abstraction layer.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The UART module has been successfully initialized.
+  /// * @INTERNAL: Internal errors  within the hardware abstraction layer.
   Status Disable() { return DoEnable(false); }
 
   /// Configures the UART communication baud rate.
@@ -76,18 +64,11 @@ class UartBase {
   /// Whether the baud rate can be changed while the UART is enabled depends on
   /// the specific implementation.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART has been successfully initialized.
-  ///
-  ///    FAILED_PRECONDITION: The device is enabled and does not support
-  ///    changing settings on the fly.
-  ///
-  ///    INTERNAL: Internal errors  within the hardware abstraction layer.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The UART has been successfully initialized.
+  /// * @FAILED_PRECONDITION: The device is enabled and does not support
+  ///   changing settings on the fly.
+  /// * @INTERNAL: Internal errors  within the hardware abstraction layer.
   Status SetBaudRate(uint32_t baud_rate) { return DoSetBaudRate(baud_rate); }
 
   /// Configures the UART hardware flow control enable.
@@ -96,20 +77,12 @@ class UartBase {
   /// Whether the flow control setting rate can be changed while the UART is
   /// enabled depends on the specific implementation.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The UART has been successfully initialized.
-  ///
-  ///    FAILED_PRECONDITION: The device is enabled and does not support
-  ///    changing settings on the fly.
-  ///
-  ///    UNIMPLEMENTED: The device does not support flow control.
-  ///
-  ///    INTERNAL: Internal errors within the hardware abstraction layer.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The UART has been successfully initialized.
+  /// * @FAILED_PRECONDITION: The device is enabled and does not support
+  ///   changing settings on the fly.
+  /// * @UNIMPLEMENTED: The device does not support flow control.
+  /// * @INTERNAL: Internal errors within the hardware abstraction layer.
   Status SetFlowControl(bool enable) { return DoSetFlowControl(enable); }
 
   /// Returns the number of bytes currently available for reading.
@@ -127,15 +100,9 @@ class UartBase {
   /// buffer to an empty state. This is useful for situations where you want to
   /// disregard any previously received data and resynchronize.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The operation was successful.
-  ///
-  /// May return other implementation-specific status codes.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The operation was successful.
+  /// * May return other implementation-specific status codes.
   Status ClearPendingReceiveBytes() { return DoClearPendingReceiveBytes(); }
 
  private:

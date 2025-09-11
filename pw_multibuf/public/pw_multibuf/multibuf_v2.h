@@ -815,15 +815,9 @@ class BasicMultiBuf {
   /// @param    pos     Location from which to remove memory from the MultiBuf.
   /// @param    size    Amount of memory to remove.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK:                  The returned MultiBuf contains the removed chunks.
-  ///
-  ///    RESOURCE_EXHAUSTED:  Failed to allocate memory for the new MultiBuf's
-  ///                         metadata.
-  /// @endrst
+  /// @returns @Result{the MultiBuf containing the removed chunks}
+  /// * @RESOURCE_EXHAUSTED: Failed to allocate memory for the new %MultiBuf's
+  ///   metadata.
   Result<Instance> Remove(const_iterator pos, size_t size);
 
   /// Removes the first fragment from this object and returns it.
@@ -833,18 +827,12 @@ class BasicMultiBuf {
   ///
   /// It is an error to call this method when the MultiBuf is empty.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK:                  Returns the fragment in a new MultiBuf.
-  ///
-  ///    RESOURCE_EXHAUSTED:  Attempting to reserve space for the new MultiBuf
-  ///                         failed.
-  ///
-  /// @endrst
+  /// @returns @Result{the fragment in a new MultiBuf}
+  /// * @RESOURCE_EXHAUSTED: Attempting to reserve space for the new MultiBuf
+  ///   failed.
   Result<Instance> PopFrontFragment();
 
+  // clang-format off
   /// Removes if a range of bytes from this object.
   ///
   /// The range given by `pos` and `size` MUST fall within this MultiBuf.
@@ -863,15 +851,10 @@ class BasicMultiBuf {
   /// @param    pos     Location from which to discard memory from the MultiBuf.
   /// @param    size    Amount of memory to discard.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK:                  The memory range has been discarded.
-  ///
-  ///    RESOURCE_EXHAUSTED:  Failed to allocate memory for the new MultiBuf's
-  ///                         metadata.
-  /// @endrst
+  /// @returns @Result{an iterator pointing to the memory after the discarded range}
+  /// * @RESOURCE_EXHAUSTED:  Failed to allocate memory for the new %MultiBuf's
+  ///   metadata.
+  // clang-format on
   Result<const_iterator> Discard(const_iterator pos, size_t size) {
     return generic().Discard(pos, size);
   }

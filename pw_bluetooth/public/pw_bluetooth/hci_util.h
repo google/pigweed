@@ -26,15 +26,8 @@ namespace pw::bluetooth {
 ///
 /// @param type H4 Packet Type
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///   OK: Size of the Hci header
-///
-///   INVALID_ARGUMENT: An invalid type was provided
-///
-/// @endrst
+/// @returns @Result{the size of the HCI header}
+/// * @INVALID_ARGUMENT: An invalid type was provided.
 pw::Result<size_t> GetHciHeaderSize(emboss::H4PacketType type);
 
 /// Get the size of an Hci Payload
@@ -42,17 +35,9 @@ pw::Result<size_t> GetHciHeaderSize(emboss::H4PacketType type);
 /// @param type H4 Packet Type
 /// @param hci_header span holding at least a full header
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///   OK: Size of the Hci payload
-///
-///   INVALID_ARGUMENT: An invalid type was provided
-///
-///   OUT_OF_RANGE: The span was too small
-///
-/// @endrst
+/// @returns @Result{the size of the HCI payload}
+/// * @INVALID_ARGUMENT: An invalid type was provided.
+/// * @OUT_OF_RANGE: The span was too small.
 pw::Result<size_t> GetHciPayloadSize(emboss::H4PacketType type,
                                      pw::span<const uint8_t> hci_header);
 

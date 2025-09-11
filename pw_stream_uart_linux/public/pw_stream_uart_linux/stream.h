@@ -56,19 +56,11 @@ class UartStreamLinux : public NonSeekableReaderWriter {
   /// @param[in] path Path to the TTY device.
   /// @param[in] baud_rate Baud rate to use for the device.
   ///
-  /// @return @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The device was successfully opened and configured.
-  ///
-  ///    INVALID_ARGUMENT: An unsupported baud rate was supplied.
-  ///
-  ///    FAILED_PRECONDITION: A device was already open.
-  ///
-  ///    UNKNOWN: An error was returned by the operating system.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The device was successfully opened and configured.
+  /// * @INVALID_ARGUMENT: An unsupported baud rate was supplied.
+  /// * @FAILED_PRECONDITION: A device was already open.
+  /// * @UNKNOWN: An error was returned by the operating system.
   Status Open(const char* path, uint32_t baud_rate) {
     return Open(path, {.baud_rate = baud_rate, .flow_control = std::nullopt});
   }
@@ -78,19 +70,11 @@ class UartStreamLinux : public NonSeekableReaderWriter {
   /// @param[in] path Path to the TTY device.
   /// @param[in] config UartStreamLinux configuration structure.
   ///
-  /// @return @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The device was successfully opened and configured.
-  ///
-  ///    INVALID_ARGUMENT: Invalid config, for e.g. unsupported baud rate.
-  ///
-  ///    FAILED_PRECONDITION: A device was already open.
-  ///
-  ///    UNKNOWN: An error was returned by the operating system.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The device was successfully opened and configured.
+  /// * @INVALID_ARGUMENT: Invalid config, for e.g. unsupported baud rate.
+  /// * @FAILED_PRECONDITION: A device was already open.
+  /// * @UNKNOWN: An error was returned by the operating system.
   Status Open(const char* path, Config config);
 
   void Close();

@@ -38,23 +38,13 @@ class ElfReader {
  public:
   /// Creates an ElfReader from a stream.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The reader was initialized successfully.
-  ///
-  ///    DATA_LOSS: The input file was invalid.
-  ///
-  ///    OUT_OF_RANGE: Input stream exhausted (EOF).
-  ///
-  ///    UNIMPLEMENTED: Some aspect of the ELF file is not (yet) supported by
-  ///    this class, e.g., non-native endianness, or 64-bit ELF on a 32-bit
-  ///    host.
-  ///
-  /// May return other error codes from the underlying stream.
-  ///
-  /// @endrst
+  /// @returns @Result{the initialized reader}
+  /// * @DATA_LOSS: The input file was invalid.
+  /// * @OUT_OF_RANGE: Input stream exhausted (EOF).
+  /// * @UNIMPLEMENTED: Some aspect of the ELF file is not (yet) supported by
+  ///   this class, e.g., non-native endianness, or 64-bit ELF on a 32-bit
+  ///   host.
+  /// * May return other error codes from the underlying stream.
   static Result<ElfReader> FromStream(stream::SeekableReader& stream);
 
   /// Gets the associated stream.
@@ -68,18 +58,11 @@ class ElfReader {
   ///
   /// @param[in] name The name of the desired section.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Successfully found the desired section and seeked the stream to
-  ///    it. The associated size is the size of the associated section.
-  ///
-  ///    NOT_FOUND: No section was found with the desired name.
-  ///
-  /// May return other error codes from the underlying stream.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: Successfully found the desired section and seeked the stream to
+  ///   it. The associated size is the size of the associated section.
+  /// * @NOT_FOUND: No section was found with the desired name.
+  /// * May return other error codes from the underlying stream.
   StatusWithSize SeekToSection(std::string_view name) {
     return std::visit([name](auto&& impl) { return impl.SeekToSection(name); },
                       impl_);
@@ -89,18 +72,11 @@ class ElfReader {
   ///
   /// @param[in] name The name of the desired section.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Successfully read the desired section.
-  ///    The result value is a vector of the section data.
-  ///
-  ///    NOT_FOUND: No section was found with the desired name.
-  ///
-  /// May return other error codes from the underlying stream.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: Successfully read the desired section. The result value is a vector
+  ///   of the section data.
+  /// * @NOT_FOUND: No section was found with the desired name.
+  /// * May return other error codes from the underlying stream.
   Result<std::vector<std::byte>> ReadSection(std::string_view name);
 
  private:

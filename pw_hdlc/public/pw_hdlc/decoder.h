@@ -58,13 +58,11 @@ class Frame {
   std::byte control_;
 };
 
-// The Decoder class facilitates decoding of data frames using the HDLC
-// protocol, by returning packets as they are decoded and storing incomplete
-// data frames in a buffer.
-//
-// The Decoder class does not own the buffer it writes to. It can be used to
-// write bytes to any buffer. The DecoderBuffer template class, defined below,
-// allocates a buffer.
+/// Facilitates decoding of data frames using the HDLC protocol by returning
+/// packets as they are decoded and storing incomplete data frames in a buffer.
+///
+/// `Decoder` does not own the buffer it writes to. It can be used to write
+/// bytes to any buffer. The `DecoderBuffer` template class allocates a buffer.
 class Decoder {
  public:
   constexpr Decoder(ByteSpan buffer)
@@ -81,28 +79,19 @@ class Decoder {
 
   /// @brief Parses a single byte of an HDLC stream.
   ///
-  /// @returns @rst
-  /// A ``pw::Result`` with the complete frame if the byte completes a
-  /// frame. The status can be one of the following:
+  /// @note A subsequent call to `Process()` will invalidate the frame.
   ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: A frame was successfully decoded. The ``Result`` contains
-  ///    the ``Frame``, which is invalidated by the next ``Process()`` call.
-  ///
-  ///    UNAVAILABLE: No frame is available.
-  ///
-  ///    RESOURCE_EXHAUSTED: A frame completed, but it was too large
-  ///    to fit in the decoder's buffer.
-  ///
-  ///    DATA_LOSS: A frame completed, but it was invalid. The frame
-  ///    was incomplete or the frame check sequence verification failed.
-  ///
-  /// @endrst
+  /// @returns @Result{the decoded frame}
+  /// * @UNAVAILABLE - No frame is available.
+  /// * @RESOURCE_EXHAUSTED - A frame completed, but it was too large to fit in
+  ///   the decoder's buffer.
+  /// * @DATA_LOSS - A frame completed, but it was invalid. The frame was
+  ///   incomplete or the frame check sequence verification failed.
   Result<Frame> Process(std::byte new_byte);
 
-  // Returns the buffer space required for a `Decoder` to successfully decode a
-  // frame whose on-the-wire HDLC encoded size does not exceed `max_frame_size`.
+  /// @returns The buffer space required for a `Decoder` to successfully decode
+  /// a frame whose on-the-wire HDLC encoded size does not exceed
+  /// `max_frame_size`.
   static constexpr size_t RequiredBufferSizeForFrameSize(
       size_t max_frame_size) {
     // Flag bytes aren't stored in the internal buffer, so we can save a couple
@@ -124,10 +113,10 @@ class Decoder {
     }
   }
 
-  // Returns the maximum size of the Decoder's frame buffer.
+  /// @returns The maximum size of the Decoder's frame buffer.
   size_t max_size() const { return buffer_.size(); }
 
-  // Clears and resets the decoder.
+  /// Clears and resets the decoder.
   void Clear() {
     state_ = State::kInterFrame;
     Reset();
@@ -170,22 +159,22 @@ class Decoder {
   State state_;
 };
 
-// DecoderBuffers declare a buffer along with a Decoder.
+/// Declares a buffer along with a `Decoder`.
 template <size_t kSizeBytes>
 class DecoderBuffer : public Decoder {
  public:
   DecoderBuffer() : Decoder(frame_buffer_) {}
 
-  /// DecoderBuffer is not movable, as the decoder stores pointers into the
+  /// `DecoderBuffer` is not movable, as the decoder stores pointers into the
   /// frame buffer.
   DecoderBuffer(DecoderBuffer&&) = delete;
 
-  /// DecoderBuffer is not movable, as the decoder stores pointers into the
+  /// `DecoderBuffer` is not movable, as the decoder stores pointers into the
   /// frame buffer.
   DecoderBuffer& operator=(DecoderBuffer&&) = delete;
 
-  // Returns the maximum length of the bytes that can be inserted in the bytes
-  // buffer.
+  /// @returns The maximum length of the bytes that can be inserted into the
+  /// bytes buffer.
   static constexpr size_t max_size() { return kSizeBytes; }
 
  private:
@@ -193,5 +182,7 @@ class DecoderBuffer : public Decoder {
 
   std::array<std::byte, kSizeBytes> frame_buffer_;
 };
+
+/// @}
 
 }  // namespace pw::hdlc

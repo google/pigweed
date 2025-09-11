@@ -576,6 +576,7 @@ def should_add_doxygen_link(module_name) -> bool:
         'pw_preprocessor',
         'pw_protobuf',
         'pw_random',
+        'pw_result',
         'pw_rpc',
         'pw_span',
         'pw_spi',

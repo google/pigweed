@@ -66,19 +66,12 @@ class CustomWorkQueue : public thread::ThreadCore {
   ///
   /// @param[in] work_item The entry to enqueue.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Success. Entry was enqueued for execution.
-  ///
-  ///    FAILED_PRECONDITION: The work queue is shutting down. Entries are no
-  ///    longer permitted.
-  ///
-  ///    RESOURCE_EXHAUSTED: Internal work queue is full. Entry was not
-  ///    enqueued.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: Entry was enqueued for execution.
+  /// * @FAILED_PRECONDITION: The work queue is shutting down. Entries are no
+  ///   longer permitted.
+  /// * @RESOURCE_EXHAUSTED: Internal work queue is full. Entry was not
+  ///   enqueued.
   Status PushWork(WorkItem&& work_item) PW_LOCKS_EXCLUDED(lock_) {
     return InternalPushWork(std::move(work_item));
   }

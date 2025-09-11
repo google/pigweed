@@ -56,15 +56,9 @@ namespace pw::sys_io {
 ///
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: A byte was successfully read and is in ``dest``.
-///
-///    RESOURCE_EXHAUSTED: The underlying source vanished.
-///
-/// @endrst
+/// @returns
+/// * @OK: A byte was successfully read and is in `dest`.
+/// * @RESOURCE_EXHAUSTED: The underlying source vanished.
 Status ReadByte(std::byte* dest);
 
 /// Reads a single byte from the `pw_sys_io` backend, if available.
@@ -73,17 +67,10 @@ Status ReadByte(std::byte* dest);
 ///
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: A byte was successfully read and is in ``dest``.
-///
-///    UNAVAILABLE: No byte is available to read; try later.
-///
-///    UNIMPLEMENTED: The function is not supported on this target.
-///
-/// @endrst
+/// @returns
+/// * @OK: A byte was successfully read and is in `dest`.
+/// * @UNAVAILABLE: No byte is available to read; try later.
+/// * @UNIMPLEMENTED: The function is not supported on this target.
 Status TryReadByte(std::byte* dest);
 
 /// Writes a single byte out the `pw_sys_io` backend. The function blocks until
@@ -93,13 +80,8 @@ Status TryReadByte(std::byte* dest);
 ///
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: A byte was successfully written.
-///
-/// @endrst
+/// @returns
+/// * @OK: A byte was successfully written.
 Status WriteByte(std::byte b);
 
 /// Writes a string out the `pw_sys_io` backend.
@@ -112,17 +94,10 @@ Status WriteByte(std::byte b);
 ///
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: All the bytes from the source string were successfully
-///    written.
-///
-/// In all cases, the number of bytes successfully written are returned as
-/// part of the ``StatusWithSize``.
-///
-/// @endrst
+/// @returns
+/// * @OK: All the bytes from the source string were successfully written.
+/// * In all cases, the number of bytes successfully written are returned as
+///   part of the `StatusWithSize`.
 StatusWithSize WriteLine(std::string_view s);
 
 /// Fills a byte span from the `pw_sys_io` backend using `ReadByte()`.
@@ -133,16 +108,10 @@ StatusWithSize WriteLine(std::string_view s);
 /// undefined. This function blocks until either an error occurs or all bytes
 /// are successfully read from the backend's `ReadByte()` implementation.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: The destination span was successfully filled.
-///
-/// In all cases, the number of bytes successuflly read to the destination
-/// span are returned as part of the ``StatusWithSize``.
-///
-/// @endrst
+/// @returns
+/// * @OK: The destination span was successfully filled.
+/// * In all cases, the number of bytes successuflly read to the destination
+///   span are returned as part of the `StatusWithSize`.
 StatusWithSize ReadBytes(ByteSpan dest);
 
 /// Writes a span of bytes out the `pw_sys_io` backend using `WriteByte()`.
@@ -153,16 +122,10 @@ StatusWithSize ReadBytes(ByteSpan dest);
 /// until either an error occurs, or all bytes are successfully written from the
 /// backend's `WriteByte()` implementation.
 ///
-/// @returns @rst
-///
-/// .. pw-status-codes::
-///
-///    OK: All the bytes from the source span were successfully written.
-///
-/// In all cases, the number of bytes successfully written are returned as
-/// part of the ``StatusWithSize``.
-///
-/// @endrst
+/// @returns
+/// * @OK: All the bytes from the source span were successfully written.
+/// * In all cases, the number of bytes successfully written are returned as
+///   part of the `StatusWithSize`.
 StatusWithSize WriteBytes(ConstByteSpan src);
 
 }  // namespace pw::sys_io

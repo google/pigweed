@@ -150,13 +150,10 @@ class ProxyHost {
   ///                              flow control events encountered by the
   ///                              channel. See `l2cap_channel_common.h`.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
-  ///  UNAVAILABLE:      If channel could not be created because no memory was
-  ///                    available to accommodate an additional ACL connection.
-  /// @endrst
+  /// @returns @Result{the channel}
+  /// * @INVALID_ARGUMENT: Arguments are invalid. Check the logs.
+  /// * @UNAVAILABLE: A channel could not be created because no memory was
+  ///   available to accommodate an additional ACL connection.
   pw::Result<L2capCoc> AcquireL2capCoc(
       pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
       uint16_t connection_handle,
@@ -205,13 +202,10 @@ class ProxyHost {
   ///                                       errors encountered by the channel.
   ///                                       See `l2cap_channel_common.h`.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
-  ///  UNAVAILABLE:      If channel could not be created because no memory was
-  ///                    available to accommodate an additional ACL connection.
-  /// @endrst
+  /// @returns @Result{the channel}
+  /// * @INVALID_ARGUMENT: Arguments are invalid. Check the logs.
+  /// * @UNAVAILABLE: A channel could not be created because no memory was
+  ///   available to accommodate an additional ACL connection.
   pw::Result<BasicL2capChannel> AcquireBasicL2capChannel(
       multibuf::MultiBufAllocator& rx_multibuf_allocator,
       uint16_t connection_handle,
@@ -235,13 +229,10 @@ class ProxyHost {
   ///                              flow control events encountered by the
   ///                              channel. See `l2cap_channel_common.h`.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
-  ///  UNAVAILABLE:      If channel could not be created because no memory was
-  ///                    available to accommodate an additional ACL connection.
-  /// @endrst
+  /// @returns @Result{the channel}
+  /// * @INVALID_ARGUMENT: Arguments are invalid. Check the logs.
+  /// * @UNAVAILABLE: A channel could not be created because no memory was
+  ///   available to accommodate an additional ACL connection.
   pw::Result<GattNotifyChannel> AcquireGattNotifyChannel(
       int16_t connection_handle,
       uint16_t attribute_handle,
@@ -272,12 +263,9 @@ class ProxyHost {
   ///                              encountered by the channel. See
   ///                              `l2cap_channel_common.h`.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
-  ///  UNAVAILABLE: If channel could not be created.
-  /// @endrst
+  /// @returns @Result{the channel}
+  /// * @INVALID_ARGUMENT: Arguments are invalid. Check the logs.
+  /// * @UNAVAILABLE: A channel could not be created.
   pw::Result<RfcommChannel> AcquireRfcommChannel(
       multibuf::MultiBufAllocator& rx_multibuf_allocator,
       uint16_t connection_handle,

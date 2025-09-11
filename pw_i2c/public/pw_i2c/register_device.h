@@ -110,28 +110,17 @@ class RegisterDevice : public Device {
   /// @param[in] timeout The maximum duration to block waiting for both
   /// exclusive bus access and the completion of the I2C transaction.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The bulk write was successful.
-  ///
-  ///    DEADLINE_EXCEEDED: Unable to acquire exclusive bus access and
-  ///    complete the transaction in time.
-  ///
-  ///    FAILED_PRECONDITION: The interface is not initialized or enabled.
-  ///
-  ///    INTERNAL: An issue occurred while building ``register_data``.
-  ///
-  ///    INVALID_ARGUMENT: ``register_address`` is larger than the 10-bit
-  ///    address space.
-  ///
-  ///    OUT_OF_RANGE: The size of ``buffer`` is less than the size
-  ///    of ``register_address`` plus the size of ``register_data``.
-  ///
-  ///    UNAVAILABLE: The device took too long to respond to the NACK.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The bulk write was successful.
+  /// * @DEADLINE_EXCEEDED: Unable to acquire exclusive bus access and
+  ///   complete the transaction in time.
+  /// * @FAILED_PRECONDITION: The interface is not initialized or enabled.
+  /// * @INTERNAL: An issue occurred while building `register_data`.
+  /// * @INVALID_ARGUMENT: `register_address` is larger than the 10-bit address
+  ///   space.
+  /// * @OUT_OF_RANGE: The size of `buffer` is less than the size of
+  ///   `register_address` plus the size of `register_data`.
+  /// * @UNAVAILABLE: The device took too long to respond to the NACK.
   Status WriteRegisters(uint32_t register_address,
                         ConstByteSpan register_data,
                         ByteSpan buffer,
@@ -176,25 +165,15 @@ class RegisterDevice : public Device {
   /// @param[in] timeout The maximum duration to block waiting for both
   /// exclusive bus access and the completion of the I2C transaction.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The bulk read was successful.
-  ///
-  ///    DEADLINE_EXCEEDED: Unable to acquire exclusive bus access and
-  ///    complete the transaction in time.
-  ///
-  ///    FAILED_PRECONDITION: The interface is not initialized or enabled.
-  ///
-  ///    INTERNAL: An issue occurred while building ``return_data``.
-  ///
-  ///    INVALID_ARGUMENT: ``register_address`` is larger than the 10-bit
-  ///    address space.
-  ///
-  ///    UNAVAILABLE: The device took too long to respond to the NACK.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The bulk read was successful.
+  /// * @DEADLINE_EXCEEDED: Unable to acquire exclusive bus access and
+  ///   complete the transaction in time.
+  /// * @FAILED_PRECONDITION: The interface is not initialized or enabled.
+  /// * @INTERNAL: An issue occurred while building `return_data`.
+  /// * @INVALID_ARGUMENT: `register_address` is larger than the 10-bit
+  ///   address space.
+  /// * @UNAVAILABLE: The device took too long to respond to the NACK.
   Status ReadRegisters(uint32_t register_address,
                        ByteSpan return_data,
                        chrono::SystemClock::duration timeout);
@@ -233,25 +212,15 @@ class RegisterDevice : public Device {
   /// @param[in] timeout The maximum duration to block waiting for both
   /// exclusive bus access and the completion of the I2C transaction.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: The write was successful.
-  ///
-  ///    DEADLINE_EXCEEDED: Unable to acquire exclusive bus access
-  ///    and complete the transaction in time.
-  ///
-  ///    FAILED_PRECONDITION: The interface is not initialized or enabled.
-  ///
-  ///    INTERNAL: An issue occurred while writing the data.
-  ///
-  ///    INVALID_ARGUMENT: ``register_address`` is larger than the 10-bit
-  ///    address space.
-  ///
-  ///    UNAVAILABLE: The device took too long to respond to the NACK.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: The write was successful.
+  /// * @DEADLINE_EXCEEDED: Unable to acquire exclusive bus access and complete
+  ///   the transaction in time.
+  /// * @FAILED_PRECONDITION: The interface is not initialized or enabled.
+  /// * @INTERNAL: An issue occurred while writing the data.
+  /// * @INVALID_ARGUMENT: `register_address` is larger than the 10-bit address
+  ///   space.
+  /// * @UNAVAILABLE: The device took too long to respond to the NACK.
   Status WriteRegister(uint32_t register_address,
                        std::byte register_data,
                        chrono::SystemClock::duration timeout);
@@ -287,25 +256,15 @@ class RegisterDevice : public Device {
   /// @param[in] timeout The maximum duration to block waiting for both
   /// exclusive bus access and the completion of the I2C transaction.
   ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///
-  ///    OK: Returns the register data.
-  ///
-  ///    DEADLINE_EXCEEDED: Unable to acquire exclusive bus access and
-  ///    complete the transaction in time.
-  ///
-  ///    FAILED_PRECONDITION: The interface is not initialized or enabled.
-  ///
-  ///    INTERNAL: An issue occurred while building the return data.
-  ///
-  ///    INVALID_ARGUMENT: ``register_address`` is larger than the 10-bit
-  ///    address space.
-  ///
-  ///    UNAVAILABLE: The device took too long to respond to the NACK.
-  ///
-  /// @endrst
+  /// @returns
+  /// * @OK: Returns the register data.
+  /// * @DEADLINE_EXCEEDED: Unable to acquire exclusive bus access and
+  ///   complete the transaction in time.
+  /// * @FAILED_PRECONDITION: The interface is not initialized or enabled.
+  /// * @INTERNAL: An issue occurred while building the return data.
+  /// * @INVALID_ARGUMENT: `register_address` is larger than the 10-bit address
+  ///   space.
+  /// * @UNAVAILABLE: The device took too long to respond to the NACK.
   Result<std::byte> ReadRegister(uint32_t register_address,
                                  chrono::SystemClock::duration timeout);
 
