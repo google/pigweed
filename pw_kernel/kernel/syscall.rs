@@ -195,22 +195,6 @@ pub fn handle_syscall<'a, K: Kernel>(
         SysCallId::ChannelTransact => handle_channel_transact(kernel, args),
         SysCallId::ChannelRead => handle_channel_read(kernel, args),
         SysCallId::ChannelRespond => handle_channel_respond(kernel, args),
-        SysCallId::DebugNoOp => Ok(0),
-        SysCallId::DebugAdd => {
-            let a = args.next_usize()?;
-            let b = args.next_usize()?;
-            log_if::debug_if!(
-                SYSCALL_DEBUG,
-                "syscall: DebugAdd({:#x}, {:#x}) sleeping",
-                a as usize,
-                b as usize,
-            );
-            crate::sleep_until(kernel, kernel.now() + crate::Duration::from_secs(1));
-            log_if::debug_if!(SYSCALL_DEBUG, "sycall: DebugAdd woken");
-            a.checked_add(b)
-                .map(|res| res.cast_into())
-                .ok_or(Error::OutOfRange)
-        }
         // TODO: Remove this syscall when logging is added.
         SysCallId::DebugPutc => {
             let arg = args.next_u32()?;

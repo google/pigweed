@@ -210,10 +210,8 @@ pub enum SysCallId {
     ChannelRespond = 0x0003,
 
     // System calls prefixed with 0xF000 are reserved development/debugging use.
-    DebugNoOp = 0xf000,
-    DebugAdd = 0xf001,
-    DebugPutc = 0xf002,
-    DebugShutdown = 0xf003,
+    DebugPutc = 0xf000,
+    DebugShutdown = 0xf001,
 }
 
 impl From<u16> for SysCallId {
@@ -448,8 +446,6 @@ pub trait SysCallInterface {
     ) -> Result<u32>;
     fn channel_respond(object_handle: u32, buffer: *mut u8, buffer_len: usize) -> Result<()>;
 
-    fn debug_noop() -> Result<()>;
-    fn debug_add(a: u32, b: u32) -> Result<u32>;
     fn debug_putc(a: u32) -> Result<u32>;
     // TODO: Consider adding an feature flagged PowerManager object and move
     // this shutdown call to it.

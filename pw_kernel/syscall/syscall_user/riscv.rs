@@ -50,8 +50,6 @@ syscall_veneer!(ChannelRead, channel_read(
      buffer_len: usize,
 ));
 syscall_veneer!(ChannelRespond, channel_respond(object_handle: u32, buffer: *mut u8, buffer_len: usize));
-syscall_veneer!(DebugNoOp, noop());
-syscall_veneer!(DebugAdd, add(a: u32, b: u32));
 syscall_veneer!(DebugPutc, putc(a: u32));
 syscall_veneer!(DebugShutdown, shutdown(a: u32));
 
@@ -82,18 +80,9 @@ impl SysCallInterface for SysCall {
             .to_result_u32()
     }
 
+    #[inline(always)]
     fn channel_respond(handle: u32, buffer: *mut u8, buffer_len: usize) -> Result<()> {
         SysCallReturnValue(unsafe { channel_respond(handle, buffer, buffer_len) }).to_result_unit()
-    }
-
-    #[inline(always)]
-    fn debug_noop() -> Result<()> {
-        SysCallReturnValue(unsafe { noop() }).to_result_unit()
-    }
-
-    #[inline(always)]
-    fn debug_add(a: u32, b: u32) -> Result<u32> {
-        SysCallReturnValue(unsafe { add(a, b) }).to_result_u32()
     }
 
     #[inline(always)]

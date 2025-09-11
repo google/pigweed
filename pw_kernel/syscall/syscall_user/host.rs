@@ -50,16 +50,6 @@ impl SysCallInterface for SysCall {
     }
 
     #[inline(always)]
-    fn debug_noop() -> Result<()> {
-        Err(pw_status::Error::Unimplemented)
-    }
-
-    #[inline(always)]
-    fn debug_add(_a: u32, _b: u32) -> Result<u32> {
-        Err(pw_status::Error::Unimplemented)
-    }
-
-    #[inline(always)]
     fn debug_putc(_a: u32) -> Result<u32> {
         Err(pw_status::Error::Unimplemented)
     }
