@@ -2384,6 +2384,10 @@ TEST_F(BasicL2capChannelTest, ReadPacketToController) {
 #if PW_THREAD_JOINING_ENABLED
 // Have multiple threads write to a BasicL2cap channel. Verify all resulting ACL
 // packets are sent towards controller in the correct order per channel.
+// This test be run repetitively with googletest by using:
+// clang-format off
+// bazelisk --config=googletest //pw_bluetooth_proxy:pw_bluetooth_proxy_test -- --gtest_filter=BasicL2capChannelTest.MultithreadedWrite --gtest_repeat=1000
+// clang-format on
 TEST_F(BasicL2capChannelTest, MultithreadedWrite) {
   constexpr unsigned int kNumThreads = 40;
   constexpr unsigned int kPacketsPerThread = kTestL2capQueueCapacity;

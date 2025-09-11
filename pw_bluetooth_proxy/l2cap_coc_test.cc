@@ -423,6 +423,10 @@ TEST_F(L2capCocWriteTest, MultipleWritesMultipleChannels) {
 #if PW_THREAD_JOINING_ENABLED
 // Have multiple threads write to a L2capCoc channel. Verify all resulting ACL
 // packets are sent towards controller in the correct order per channel.
+// This test be run repetitively with googletest by using:
+// clang-format off
+// bazelisk --config=googletest //pw_bluetooth_proxy:pw_bluetooth_proxy_test -- --gtest_filter=L2capCocWriteTest.MultithreadedWrite --gtest_repeat=1000
+// clang-format on
 // TODO: https://pwbug.dev/441841355 - Update test to send larger packets and
 // verify segment order is correct.
 TEST_F(L2capCocWriteTest, MultithreadedWrite) {
