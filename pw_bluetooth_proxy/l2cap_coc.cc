@@ -75,9 +75,13 @@ L2capCoc::L2capCoc(L2capCoc&& other)
 Status L2capCoc::DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) {
   if (payload.size() > tx_mtu_) {
     PW_LOG_ERROR(
-        "Payload (%zu bytes) exceeds MTU (%d bytes). So will not process.",
+        "Payload (%zu bytes) exceeds MTU (%d bytes). So will not process. "
+        "local_cid: %#x, remote_cid: %#x, state: %u",
         payload.size(),
-        tx_mtu_);
+        tx_mtu_,
+        local_cid(),
+        remote_cid(),
+        cpp23::to_underlying(state()));
     return Status::InvalidArgument();
   }
   return pw::OkStatus();

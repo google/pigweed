@@ -154,10 +154,22 @@ StatusWithMultiBuf L2capChannel::Write(pw::multibuf::MultiBuf&& payload) {
 
 StatusWithMultiBuf L2capChannel::WriteLocked(pw::multibuf::MultiBuf&& payload) {
   if (!payload.IsContiguous()) {
+    PW_LOG_WARN(
+        "btproxy: L2capChannel::WriteLocked received non-contiguous payload. "
+        "local_cid: %#x, remote_cid: %#x, state: %u",
+        local_cid(),
+        remote_cid(),
+        cpp23::to_underlying(state()));
     return {Status::InvalidArgument(), std::move(payload)};
   }
 
   if (state() != State::kRunning) {
+    PW_LOG_WARN(
+        "btproxy: L2capChannel::WriteLocked called when not running. "
+        "local_cid: %#x, remote_cid: %#x, state: %u",
+        local_cid(),
+        remote_cid(),
+        cpp23::to_underlying(state()));
     return {Status::FailedPrecondition(), std::move(payload)};
   }
 
@@ -206,6 +218,14 @@ StatusWithMultiBuf L2capChannel::QueuePayload(multibuf::MultiBuf&& buf) {
   {
     std::lock_guard lock(tx_mutex_);
     if (payload_queue_.full()) {
+      PW_LOG_WARN(
+          "DGR L2capChannel::QueuePayload called with full payload. "
+          "q size: %u, "
+          "local_cid: %#x, remote_cid: %#x, state: %u",
+          payload_queue_.size(),
+          local_cid(),
+          remote_cid(),
+          cpp23::to_underlying(state()));
       notify_on_dequeue_ = true;
       return {Status::Unavailable(), std::move(buf)};
     }
