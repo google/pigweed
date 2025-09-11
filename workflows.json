@@ -325,6 +325,25 @@
       "targets": [
         "//pw_kernel/..."
       ]
+    },
+    {
+      "name": "clang_tidy",
+      "build_config": {
+        "name": "clang_tidy_config",
+        "description": "Clang-Tidy config",
+        "build_type": "bazel",
+        "args": [
+          "--config=clang-tidy"
+        ],
+        "env": {},
+        "driver_options": {
+          "@type": "pw.build.proto.BazelDriverOptions",
+          "no_test": true
+        }
+      },
+      "targets": [
+        "//..."
+      ]
     }
   ],
   "tools": [
