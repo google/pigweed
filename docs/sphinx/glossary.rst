@@ -13,6 +13,25 @@ Development host
 ----------------
 The computer that you develop software on.
 
+.. _docs-glossary-informed-poll:
+
+-------------
+Informed poll
+-------------
+The informed poll programming model is the core design philosophy behind
+``pw_async2``.  The central idea is that asynchronous work is encapsulated in
+objects called :doxylink:`Tasks <pw::async2::Task>`. Instead of registering
+callbacks for different events, a central :doxylink:`Dispatcher
+<pw::async2::Dispatcher>` *polls* these tasks to see if they can make progress.
+The polling is *informed* because the task coordinates with its event source
+regarding when it's ready to make more progress. The event source notifies the
+dispatcher when the task is ready to proceed and therefore should be polled
+again.
+
+Learn more:
+
+* :doc:`pw_async2/informed_poll`
+
 .. _docs-glossary-facade:
 
 ------

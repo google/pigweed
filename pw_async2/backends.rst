@@ -11,10 +11,9 @@ listed below or roll your own. If you roll your own, please consider
 .. _epoll: https://man7.org/linux/man-pages/man7/epoll.7.html
 
 * :ref:`module-pw_async2_basic`. A backend that uses a
-  thread-notification-based :doxylink:`pw::async2::Dispatcher`.
-* :ref:`module-pw_async2_epoll`. A backend that uses a
-  :doxylink:`pw::async2::Dispatcher` backed by Linux's `epoll`_ notification
-  system.
+  thread-notification-based :doxylink:`Dispatcher <pw::async2::Dispatcher>`.
+* :ref:`module-pw_async2_epoll`. A backend that uses a ``Dispatcher`` backed by
+  Linux's `epoll`_ notification system.
 
 .. toctree::
    :maxdepth: 1

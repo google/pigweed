@@ -22,7 +22,7 @@
 
 namespace pw::async2 {
 
-/// @submodule{pw_async2,combiners}
+/// @submodule{pw_async2,combinators}
 
 template <typename... Pendables>
 class Selector;
@@ -86,7 +86,7 @@ void VisitSelectResult(ResultVariant&& variant,
 
 }  // namespace internal
 
-/// @submodule{pw_async2,combiners}
+/// @submodule{pw_async2,combinators}
 
 /// A pendable value which returns the result of the first of several pendable
 /// values to complete.

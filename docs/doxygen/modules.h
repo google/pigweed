@@ -136,7 +136,7 @@
 /// @ingroup pw_async2
 /// @brief Dispatcher implementation interfaces
 
-/// @defgroup pw_async2_combiners Combining tasks
+/// @defgroup pw_async2_combinators Combinators
 /// @ingroup pw_async2
 /// @brief Helpers for interacting with multiple pendables
 

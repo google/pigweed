@@ -53,7 +53,7 @@ introduce you to the two most fundamental components of ``pw_async2``: the
 
 What's a Task?
 ==============
-A :doxylink:`pw::async2::Task` is the basic unit of execution in this
+A :doxylink:`Task <pw::async2::Task>` is the basic unit of execution in this
 framework. It's an object that represents a job to be done, like blinking an
 LED, processing sensor data, or, in our case, running a vending machine.
 
@@ -84,8 +84,8 @@ Here you'll find the incomplete implementation of ``DoPend``:
   :linenos:
   :lines: 14-
 
-The ``DoPend`` method returns a :doxylink:`pw::async2::Poll<>`. A ``Poll`` can
-be in one of two states:
+The ``DoPend`` method returns a :doxylink:`Poll\<\> <pw::async2::Poll>`. A
+``Poll`` can be in one of two states:
 
 *   ``Ready()``: The task has finished its work.
 *   ``Pending()``: The task is not yet finished and should be run again later.
@@ -95,10 +95,10 @@ immediately without doing any work.
 
 What's a Dispatcher?
 ====================
-A :doxylink:`pw::async2::Dispatcher` is the engine that runs the tasks. It's a
-simple, cooperative scheduler. You give it tasks by calling ``Post()``, and
-then you tell it to run them by calling ``RunUntilStalled()`` or
-``RunToCompletion()``.
+A :doxylink:`Dispatcher <pw::async2::Dispatcher>` is the engine that runs the
+tasks. It's a simple, cooperative scheduler. You give it tasks by calling
+``Post()``, and then you tell it to run them by calling ``RunUntilStalled()``
+or ``RunToCompletion()``.
 
 The dispatcher maintains a queue of tasks that are ready to be polled. When a
 run is triggered, it pulls a task from the queue and invokes its ``DoPend()``
@@ -422,10 +422,10 @@ Also add these stub implementations to the top of your
      static_cast<void>(key);
    }
 
-This should be a good starting stub. Notice how the ``Pend`` member function just
-immediately returns the value of ``key_pressed_``, which is only ever set to
-``kNone``. We will fix that later, but let's integrate the keypad into the rest
-of the code first.
+This should be a good starting stub. Notice how the ``Pend`` member function
+just immediately returns the value of ``key_pressed_``, which is only ever set
+to ``kNone``. We will fix that later, but let's integrate the keypad into the
+rest of the code first.
 
 2. Add the ``Keypad`` to the vending machine
 ============================================
@@ -494,8 +494,8 @@ The next step is harder, implementing the ``Keypad::Press`` member function
 correctly.
 
 Since the keypad ISR is asynchronous, you will need to synchronize access to
-the stored event data. For this codelab, we use
-:doxylink:`pw::sync::InterruptSpinLock` which is safe to acquire from an ISR in
+the stored event data. For this codelab, we use :doxylink:`InterruptSpinLock
+<pw::sync::InterruptSpinLock>` which is safe to acquire from an ISR in
 production use. Alternatively you can use atomic operations.
 
 We'll also use ``PW_GUARDED_BY`` to add a compile-time check that the protected
@@ -603,13 +603,14 @@ incomplete to show you what happens if you make this misstep.
 .. topic:: When to store a waker
 
    Generally if you are writing the leaf logic that decides that
-   :doxylink:`pw::async2::Pending` should be returned from your task, then you
-   should also be storing a :doxylink:`pw::async2::Waker` at the same time,
-   so you can wake up the task when the data you are waiting for is available.
+   :doxylink:`Pending <pw::async2::Pending>` should be returned from your task,
+   then you should also be storing a :doxylink:`Waker <pw::async2::Waker>` at
+   the same time, so you can wake up the task when the data you are waiting for
+   is available.
 
    One ``Waker`` wakes up one task. If your code needs to wake up multiple
-   tasks, you should use :doxylink:`pw::async2::WakerQueue` instead of a single
-   waker instance.
+   tasks, you should use :doxylink:`WakerQueue <pw::async2::WakerQueue>` instead
+   of a single waker instance.
 
 Let's set up the waiter.
 
@@ -625,7 +626,8 @@ Let's set up the waiter.
 
       pw::async2::Waker waker_;
 
-3. Setup the waker right before returning :doxylink:`pw::async2::Pending`
+3. Setup the waker right before returning :doxylink:`Pending
+   <pw::async2::Pending>`
 
    To do this correctly, you use  :doxylink:`PW_ASYNC_STORE_WAKER`, giving it
    the context argument passed in to the ``Pend()``, the waker to store to, and
@@ -917,8 +919,8 @@ Using ``Selector`` and ``Select``
   yourself in a loop.
 
   Once you process the ``AllPendablesCompleted`` result when using
-  ``VisitSelectResult`` (see below), you could then reset the ``Selector`` to once
-  again try all the pendables again.
+  ``VisitSelectResult`` (see below), you could then reset the ``Selector`` to
+  once again try all the pendables again.
 
 
 For the vending machine, we'll use ``Select``, so we can wait on multiple keypad
@@ -970,8 +972,8 @@ Using ``VisitSelectResult``
 processing the result of the ``Select`` function or the ``Selector::Pend``
 member function call.
 
-The result contains a single ``Ready()`` result, but because of how the result is
-stored, there is a bit of C++ template magic to unpack it for each possible
+The result contains a single ``Ready()`` result, but because of how the result
+is stored, there is a bit of C++ template magic to unpack it for each possible
 type. ``VisitSelectResult`` does its best to hide most of the details, but you
 need to specify an ordered list of lambda functions to handle each specific
 pendable result.

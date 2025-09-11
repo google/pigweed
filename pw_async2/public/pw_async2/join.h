@@ -17,7 +17,7 @@
 
 namespace pw::async2 {
 
-/// @submodule{pw_async2,combiners}
+/// @submodule{pw_async2,combinators}
 
 /// A pendable value which joins together several separate pendable values.
 ///
@@ -91,5 +91,7 @@ class Join {
 
 template <typename... Pendables>
 Join(Pendables&&...) -> Join<Pendables...>;
+
+/// @}
 
 }  // namespace pw::async2

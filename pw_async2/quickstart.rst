@@ -24,16 +24,22 @@ following command:
 
    bazelisk run //pw_async2/examples:count --config=cxx20
 
+---------------------------
+1. Understand informed poll
+---------------------------
+Informed poll is the core design philosophy behind ``pw_async2``. Please read
+:ref:`module-pw_async2-informed-poll` before attempting to use ``pw_async2``.
+
 .. _module-pw_async2-quickstart-rules:
 
 ---------------------
-1. Set up build rules
+2. Set up build rules
 ---------------------
 All ``pw_async2`` projects must add a dependency on the ``dispatcher`` target.
-This target defines the :doxylink:`pw::async2::Task` class, an asynchronous
-unit of work analogous to a thread, as well as the
-:doxylink:`pw::async2::Dispatcher` class, an event loop used to run ``Task``
-instances to completion.
+This target defines the :doxylink:`Task <pw::async2::Task>` class, an
+asynchronous unit of work analogous to a thread, as well as the
+:doxylink:`Dispatcher <pw::async2::Dispatcher>` class, an event loop used to
+run ``Task`` instances to completion.
 
 .. tab-set::
 
@@ -63,7 +69,7 @@ instances to completion.
 .. _module-pw_async2-quickstart-dependencies:
 
 ----------------------
-2. Inject dependencies
+3. Inject dependencies
 ----------------------
 Interfaces which wish to add new tasks to the event loop should accept and
 store a ``Dispatcher&`` reference.
@@ -80,21 +86,21 @@ run asynchronous work on the dispatcher's event loop.
 .. _module-pw_async2-quickstart-oneshot:
 
 ---------------------------------------
-3. Post one-shot work to the dispatcher
+4. Post one-shot work to the dispatcher
 ---------------------------------------
 Simple, one-time work can be queued on the dispatcher via
-:doxylink:`pw::async2::EnqueueHeapFunc`.
+:doxylink:`EnqueueHeapFunc <pw::async2::EnqueueHeapFunc>`.
 
 .. _module-pw_async2-quickstart-tasks:
 
 -------------------------------
-4. Post tasks to the dispatcher
+5. Post tasks to the dispatcher
 -------------------------------
-Async work that involves a series of asynchronous operations should be
-made into a task. This can be done by either implementing a custom task
-(see :ref:`module-pw_async2-guides-implementing-tasks`) or
-by writing a C++20 coroutine (see :doxylink:`pw::async2::Coro`) and storing it
-in a :doxylink:`pw::async2::CoroOrElseTask`.
+Async work that involves a series of asynchronous operations should be made
+into a task. This can be done by either implementing a custom task (see
+:ref:`module-pw_async2-guides-implementing-tasks`) or by writing a C++20
+coroutine (see :doxylink:`Coro <pw::async2::Coro>`) and storing it in a
+:doxylink:`CoroOrElseTask <pw::async2::CoroOrElseTask>`.
 
 .. literalinclude:: examples/count.cc
    :language: cpp
@@ -104,17 +110,18 @@ in a :doxylink:`pw::async2::CoroOrElseTask`.
 
 The resulting task must either be stored somewhere that has a lifetime longer
 than the async operations (such as in a static or as a member of a long-lived
-class) or dynamically allocated using :doxylink:`pw::async2::AllocateTask`.
+class) or dynamically allocated using :doxylink:`AllocateTask
+<pw::async2::AllocateTask>`.
 
 Finally, the interface instructs the dispatcher to run the task by invoking
-:doxylink:`pw::async2::Dispatcher::Post`.
+:doxylink:`Dispatcher::Post() <pw::async2::Dispatcher::Post>`.
 
 See `//pw_async2/examples/count.cc`_ to view the complete example.
 
 .. _module-pw_async2-quickstart-toolchain:
 
 --------------------------------------
-5. Build with an appropriate toolchain
+6. Build with an appropriate toolchain
 --------------------------------------
 If using coroutines, remember to build your project with a toolchain
 that supports C++20 at minimum (the first version of C++ with coroutine
