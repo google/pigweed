@@ -394,9 +394,9 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
     AclConnection* connection_ptr = FindAclConnection(conn_handle);
 
     if (!connection_ptr) {
-      PW_LOG_WARN(
-          "btproxy: Viewed disconnect (reason: %#.2hhx) for connection %#x, "
-          "but was unable to find an existing open AclConnection.",
+      PW_LOG_INFO(
+          "btproxy: Viewed disconnect (reason: %#.2hhx) for unacquired "
+          "connection %#x.",
           cpp23::to_underlying(dc_event->reason().Read()),
           conn_handle);
       return;
