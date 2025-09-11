@@ -434,7 +434,8 @@ std::optional<H4PacketWithH4> L2capCoc::GenerateNextTxPacket() {
   tx_sdu_offset_ += sdu_bytes_in_segment;
 
   if (tx_sdu_offset_ == sdu_span.size()) {
-    // This segment was the final (or only) PDU of the SDU.
+    // This segment was the final (or only) PDU of the SDU payload. So all
+    // content has been copied from the front payload so it can be released.
     PopFrontPayload();
     tx_sdu_offset_ = 0;
     is_continuing_segment_ = false;

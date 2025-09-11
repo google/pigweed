@@ -92,9 +92,6 @@ std::optional<H4PacketWithH4> RfcommChannel::GenerateNextTxPacket() {
   PW_CHECK(result2.ok());
   emboss::AclDataFrameWriter acl = result2.value();
 
-  // At this point we assume we can return a PDU with the payload.
-  PopFrontPayload();
-
   emboss::BFrameWriter bframe = emboss::MakeBFrameView(
       acl.payload().BackingStorage().data(), acl.payload().SizeInBytes());
   PW_CHECK(bframe.IsComplete());
@@ -149,6 +146,9 @@ std::optional<H4PacketWithH4> RfcommChannel::GenerateNextTxPacket() {
   PW_CHECK(acl.Ok());
   PW_CHECK(bframe.Ok());
   PW_CHECK(rfcomm.Ok());
+
+  // All content has been copied from the front payload so it can be released.
+  PopFrontPayload();
 
   return h4_packet;
 }

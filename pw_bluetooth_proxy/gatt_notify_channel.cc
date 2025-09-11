@@ -47,9 +47,6 @@ std::optional<H4PacketWithH4> GattNotifyChannel::GenerateNextTxPacket() {
   }
   H4PacketWithH4 h4_packet = std::move(result.value());
 
-  // At this point we assume we can return a PDU with the payload.
-  PopFrontPayload();
-
   // Write ATT PDU.
   Result<emboss::AclDataFrameWriter> acl =
       MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
@@ -75,6 +72,9 @@ std::optional<H4PacketWithH4> GattNotifyChannel::GenerateNextTxPacket() {
   PW_CHECK(
       TryToCopyToEmbossStruct(att_notify->attribute_value(), attribute_value));
   PW_CHECK(att_notify->Ok());
+
+  // All content has been copied from the front payload, so release it.
+  PopFrontPayload();
 
   return h4_packet;
 }

@@ -311,7 +311,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // taking L2capChannelManager channel_mutex_ lock.
   StatusWithMultiBuf WriteLocked(pw::multibuf::MultiBuf&& payload);
 
-  // Pop front buffer. Queue must be nonempty.
+  // Pop front buffer (which will release its memory). Queue must be nonempty.
   void PopFrontPayload() PW_EXCLUSIVE_LOCKS_REQUIRED(tx_mutex_);
 
   // Returns span over front buffer. Queue must be nonempty.
