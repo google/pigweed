@@ -375,6 +375,37 @@
       "targets": [
         "//..."
       ]
+    },
+    {
+      "name": "tsan_build",
+      "build_config": {
+        "name": "tsan_config",
+        "description": "TSAN config",
+        "build_type": "bazel",
+        "args": [
+          "--config=tsan"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "tsan_googletest",
+      "build_config": {
+        "name": "tsan_googletest_config",
+        "description": "TSAN Googletest config",
+        "build_type": "bazel",
+        "args": [
+          "--config=tsan",
+          "--config=googletest"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//..."
+      ]
     }
   ],
   "tools": [
@@ -470,6 +501,14 @@
       "builds": [
         "asan_build",
         "asan_googletest"
+      ]
+    },
+    {
+      "name": "tsan",
+      "description": "TSAN-related builds",
+      "builds": [
+        "tsan_build",
+        "tsan_googletest"
       ]
     }
   ]
