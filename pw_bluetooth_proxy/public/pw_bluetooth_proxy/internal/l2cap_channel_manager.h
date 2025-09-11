@@ -70,7 +70,7 @@ class L2capChannelManager {
   // received packet on a channel. Instead call ReportPacketsMayBeReadyToSend().
   // Rx processing will then call this function when complete.
   void DrainChannelQueuesIfNewTx()
-      PW_LOCKS_EXCLUDED(channels_mutex_, tx_status_mutex_);
+      PW_LOCKS_EXCLUDED(channels_mutex_, drain_status_mutex_);
 
   // Drain channel queues even if no channel explicitly requested it. Should be
   // used for events triggering queue space at the ACL level.
@@ -174,12 +174,15 @@ class L2capChannelManager {
   IntrusiveForwardList<L2capChannel>::iterator round_robin_terminus_
       PW_GUARDED_BY(channels_mutex_);
 
-  // Guard access to tx related state.
-  sync::Mutex tx_status_mutex_ PW_ACQUIRED_BEFORE(channels_mutex_);
+  // Guard access to tx related state flags.
+  sync::Mutex drain_status_mutex_ PW_ACQUIRED_AFTER(channels_mutex_);
 
-  // True if new tx packets have been queued or new tx credits have been
-  // received since the last DrainChannelQueuesIfNewTx.
-  bool new_tx_since_drain_ PW_GUARDED_BY(tx_status_mutex_) = false;
+  // True if new tx packets are queued or new tx resources have become
+  // available.
+  bool drain_needed_ PW_GUARDED_BY(drain_status_mutex_) = false;
+
+  // True if a drain is running.
+  bool drain_running_ PW_GUARDED_BY(drain_status_mutex_) = false;
 
   // Channel connection status tracker and delegate holder.
   L2capStatusTracker status_tracker_;
