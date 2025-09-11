@@ -86,8 +86,9 @@ DETOKENIZER_JNI_METHOD(jlong, newNativeDetokenizerCsv)(JNIEnv* env,
   return PointerToHandle(detok);
 }
 
-DETOKENIZER_JNI_METHOD(void,
-                       deleteNativeDetokenizer)(JNIEnv*, jclass, jlong handle) {
+DETOKENIZER_JNI_METHOD(void, deleteNativeDetokenizer)(JNIEnv*,
+                                                      jobject,
+                                                      jlong handle) {
   delete HandleToPointer(handle);
 }
 
