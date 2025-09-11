@@ -42,6 +42,13 @@
 
 namespace pw::bluetooth::proxy {
 
+// ########## Test Constants
+
+// Should align with L2capChannel::kQueueCapacity.
+// TODO: https://pwbug.dev/349700888 - Update uses once capacity is
+// configurable.
+inline constexpr size_t kTestL2capQueueCapacity = 5;
+
 // ########## Util functions
 
 struct AclFrameWithStorage {

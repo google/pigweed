@@ -22,7 +22,6 @@
 
 namespace pw::bluetooth::proxy {
 namespace {
-
 using containers::FlatMap;
 
 // ########## L2capCocTest
@@ -239,13 +238,11 @@ TEST_F(L2capCocWriteTest, MultipleWritesSameChannel) {
 // types.
 TEST_F(L2capCocWriteTest, FlowControlDueToAclCredits) {
   uint16_t kHandle = 123;
-  // Should align with L2capChannel::kQueueCapacity.
-  static constexpr size_t kL2capQueueCapacity = 5;
   // We will send enough packets to use up ACL LE credits and to fill the
   // queue. And then send one more to verify we get an unavailable.
   const uint16_t kAclLeCredits = 2;
   const uint16_t kExpectedSuccessfulWrites =
-      kAclLeCredits + kL2capQueueCapacity;
+      kAclLeCredits + kTestL2capQueueCapacity;
   // Set plenty of kL2capTxCredits to ensure that isn't the bottleneck.
   const uint16_t kL2capTxCredits = kExpectedSuccessfulWrites + 1;
 
@@ -307,13 +304,11 @@ TEST_F(L2capCocWriteTest, FlowControlDueToAclCredits) {
 // TODO: https://pwbug.dev/380299794 - Add equivalent test for other channel
 // types (where appropriate).
 TEST_F(L2capCocWriteTest, UnavailableWhenSendQueueIsFullDueToL2capCocCredits) {
-  // Should align with L2capChannel::kQueueCapacity.
-  static constexpr size_t kL2capQueueCapacity = 5;
   // We will send enough packets to use up L2CAP CoC credits and to fill the
   // queue. And then send one more to verify we get an unavailable.
   const uint16_t kL2capTxCredits = 2;
   const uint16_t kExpectedSuccessfulWrites =
-      kL2capTxCredits + kL2capQueueCapacity;
+      kL2capTxCredits + kTestL2capQueueCapacity;
   // Set plenty of kAclLeCredits to ensure that isn't the bottleneck.
   const uint16_t kAclLeCredits = kExpectedSuccessfulWrites + 1;
 

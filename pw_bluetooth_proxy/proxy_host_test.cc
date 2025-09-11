@@ -41,7 +41,6 @@
 namespace pw::bluetooth::proxy {
 
 namespace {
-
 using containers::FlatMap;
 
 // Return a populated H4 command buffer of a type that proxy host doesn't
