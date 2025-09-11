@@ -49,10 +49,10 @@ class MergerTest(fake_filesystem_unittest.TestCase):
     def setUp(self):
         self.setUpPyfakefs()
         self.workspace_root = Path('/workspace')
-        self.execution_root = Path(
+        execution_root = Path(
             '/home/somebody/.cache/bazel/_bazel_somebody/123abc/execroot/_main'
         )
-        self.output_path = self.execution_root / 'bazel-out'
+        self.output_path = execution_root / 'bazel-out'
 
         self.fs.create_dir(self.workspace_root)
         self.fs.create_dir(self.output_path)
@@ -76,8 +76,6 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         ):
             if args == ['bazel', 'info', 'output_path']:
                 return str(self.output_path)
-            if args == ['bazel', 'info', 'execution_root']:
-                return str(self.execution_root)
             raise AssertionError('Unhandled Bazel request')
 
         self.mock_subprocess.side_effect = check_output_side_effect

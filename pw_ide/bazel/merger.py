@@ -148,14 +148,14 @@ def main() -> int:
             encoding="utf-8",
             cwd=workspace_root,
         ).strip()
-        output_path = Path(output_path_str)
+        bazel_output_path = Path(output_path_str)
     except subprocess.CalledProcessError as e:
         print(f"Error getting bazel output_path: {e}", file=sys.stderr)
         return 1
 
-    if not output_path.exists():
+    if not bazel_output_path.exists():
         print(
-            f"Bazel output directory '{output_path}' not found.",
+            f"Bazel output directory '{bazel_output_path}' not found.",
             file=sys.stderr,
         )
         print(
@@ -164,19 +164,8 @@ def main() -> int:
         )
         return 1
 
-    try:
-        execution_root_str = subprocess.check_output(
-            ["bazel", "info", "execution_root"],
-            encoding="utf-8",
-            cwd=workspace_root,
-        ).strip()
-        real_bazel_out = Path(execution_root_str) / "bazel-out"
-    except subprocess.CalledProcessError as e:
-        print(f"Error getting bazel execution_root: {e}", file=sys.stderr)
-        return 1
-
     # Search for fragments with our unique suffix.
-    all_fragments = list(output_path.rglob(f"*{_FRAGMENT_SUFFIX}"))
+    all_fragments = list(bazel_output_path.rglob(f"*{_FRAGMENT_SUFFIX}"))
 
     if not all_fragments:
         print(
@@ -225,7 +214,7 @@ def main() -> int:
                 directory=command_dict["directory"],
                 arguments=command_dict["arguments"],
             )
-            resolved_cmd = resolve_bazel_out_paths(cmd, real_bazel_out)
+            resolved_cmd = resolve_bazel_out_paths(cmd, bazel_output_path)
             filtered_cmd = filter_unsupported_march_args(resolved_cmd)
             processed_commands.append(filtered_cmd._asdict())
 
@@ -243,7 +232,7 @@ def main() -> int:
 
 
 def resolve_bazel_out_paths(
-    command: CompileCommand, real_bazel_out: Path
+    command: CompileCommand, bazel_output_path: Path
 ) -> CompileCommand:
     """Replaces bazel-out paths with their real paths."""
     marker = 'bazel-out/'
@@ -254,7 +243,7 @@ def resolve_bazel_out_paths(
             parts = arg.split(marker, 1)
             prefix = parts[0]
             suffix = parts[1]
-            new_path = real_bazel_out.joinpath(*suffix.split('/'))
+            new_path = bazel_output_path.joinpath(*suffix.split('/'))
             new_arg = prefix + str(new_path)
             new_args.append(new_arg)
         else:
@@ -263,7 +252,7 @@ def resolve_bazel_out_paths(
     new_file = command.file
     if command.file.startswith(marker):
         path_suffix = command.file[len(marker) :]
-        new_file = str(real_bazel_out.joinpath(*path_suffix.split('/')))
+        new_file = str(bazel_output_path.joinpath(*path_suffix.split('/')))
 
     return command._replace(arguments=new_args, file=new_file)
 
