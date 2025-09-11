@@ -26,6 +26,25 @@ pub fn start() {
     type K = arch::Arch;
     let kernel = K {};
 
+// Channel handlers are declared first so that initiators can reference them.
+// Unlike other object templates, handlers return a tuple of two ForeignRcs.
+// The first is a `dyn KernelObject<K>` which is suitable for adding to a
+// processes object table.  The second is a `ChannelHandlerObject<K>` which
+// is suitable for creating a `ChannelInitiator` object
+{%- for app_name in apps %}
+    {%- set app = apps[app_name] %}
+    {%- for object_name in app.process.ordered_object_names %}
+    {%- set object = app.process.objects[object_name] %}
+        {% if object.type == "channel_handler" -%}
+            let (
+                object_{{app_name}}_{{object_name | lower}},
+                object_{{app_name}}_{{object_name | lower}}_handler
+            ) = {% include "object_channel_handler" %};
+        {%- endif -%}
+        // Other objects declared later.
+    {%- endfor -%}
+{%- endfor -%}
+
 {%- for app_name in apps %}
     {%- set app = apps[app_name] %}
     let start_fn_{{app_name}} = {{app.start_fn_address | to_hex}}_usize;
@@ -43,11 +62,16 @@ pub fn start() {
         ),
     ]);
 
-    {%- for object_name in app.process.objects %}
+    {%- for object_name in app.process.ordered_object_names %}
     {%- set object = app.process.objects[object_name] %}
 
-        let object_{{object_name | lower}} =
-        {% if object.type == "ticker" -%}
+        let object_{{app_name}}_{{object_name | lower}} =
+        {% if object.type == "channel_handler" -%}
+                // Reference to handler object already declared above.
+                object_{{app_name}}_{{object_name | lower}}
+        {% elif object.type == "channel_initiator" -%}
+            {% include "object_channel_initiator" %}
+        {% elif object.type == "ticker" -%}
             {% include "object_ticker" %}
         {%- endif -%}
         ;
@@ -57,8 +81,8 @@ pub fn start() {
         static_foreign_box!(
             [ForeignRc<<K as kernel::Arch>::AtomicUsize, dyn KernelObject<K>>; {{app.process.objects | length}}],
             [
-            {%- for object_name in app.process.objects %}
-                object_{{object_name | lower}},
+            {%- for object_name in app.process.ordered_object_names %}
+                object_{{app_name}}_{{object_name | lower}},
             {%- endfor -%}
             ]
         )

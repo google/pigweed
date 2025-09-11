@@ -14,6 +14,7 @@
 
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
+use core::ops::Range;
 use core::ptr::NonNull;
 
 use foreign_box::{ForeignBox, ForeignRc};
@@ -21,8 +22,9 @@ use list::*;
 use pw_log::info;
 use pw_status::Result;
 
-use crate::Kernel;
+use crate::memory::MemoryConfig;
 use crate::object::{KernelObject, ObjectTable};
+use crate::{Kernel, MemoryRegionType};
 
 /// The memory backing a thread's stack before it has been started.
 ///
@@ -236,6 +238,11 @@ impl<K: Kernel> Process<K> {
         }
     }
 
+    pub fn range_has_access(&self, access_type: MemoryRegionType, range: Range<usize>) -> bool {
+        self.memory_config
+            .range_has_access(access_type, range.start, range.end)
+    }
+
     /// A simple ID for debugging purposes, currently the pointer to the thread
     /// structure itself.
     ///
@@ -419,6 +426,13 @@ impl<K: Kernel> Thread<K> {
             self.id() as usize,
             to_string(self.state) as &str
         );
+    }
+
+    /// Returns a reference to the thread's parent process.
+    pub fn process(&self) -> &Process<K> {
+        // SAFETY: The returned process references is bound to an immutable
+        // borrow of the thread the `process` pointer can not change.
+        unsafe { &*self.process }
     }
 
     /// A simple ID for debugging purposes, currently the pointer to the thread

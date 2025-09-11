@@ -55,7 +55,7 @@ pub trait AtomicZero {
 }
 
 pub trait Atomic<T>:
-    AtomicNew<T> + AtomicLoad<T> + AtomicStore<T> + AtomicAdd<T> + AtomicSub<T>
+    AtomicNew<T> + AtomicLoad<T> + AtomicStore<T> + AtomicAdd<T> + AtomicSub<T> + Send + Sync
 {
 }
 

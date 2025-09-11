@@ -56,6 +56,8 @@ system_codegen = rule(
         "templates": attr.string_keyed_label_dict(
             allow_files = True,
             default = {
+                "object_channel_handler": "//pw_kernel/tooling/system_generator/templates/objects:channel_handler.rs.tmpl",
+                "object_channel_initiator": "//pw_kernel/tooling/system_generator/templates/objects:channel_initiator.rs.tmpl",
                 "object_ticker": "//pw_kernel/tooling/system_generator/templates/objects:ticker.rs.tmpl",
                 "system": "//pw_kernel/tooling/system_generator/templates:system.rs.tmpl",
             },

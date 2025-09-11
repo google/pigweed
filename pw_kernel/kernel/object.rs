@@ -26,8 +26,12 @@ use crate::Kernel;
 use crate::sync::event::{Event, EventConfig, EventSignaler};
 use crate::sync::spinlock::SpinLock;
 
+mod buffer;
+mod channel;
 mod ticker;
 
+pub use buffer::SyscallBuffer;
+pub use channel::{ChannelHandlerObject, ChannelInitiatorObject};
 pub use ticker::{TickerCallback, TickerObject};
 
 /// Trait that all kernel objects implement.
@@ -38,7 +42,36 @@ pub trait KernelObject<K: Kernel>: Any + Send + Sync {
     ///
     /// Blocks until any of the signals in `signal_mask` are active on the object
     /// or `deadline` has expired.
-    fn object_wait(&self, ctx: K, signal_mask: Signals, deadline: Instant<K::Clock>) -> Result<()>;
+    #[allow(unused_variables)]
+    fn object_wait(
+        &self,
+        kernel: K,
+        signal_mask: Signals,
+        deadline: Instant<K::Clock>,
+    ) -> Result<()> {
+        Err(Error::Unimplemented)
+    }
+
+    #[allow(unused_variables)]
+    fn channel_transact(
+        &self,
+        kernel: K,
+        send_buffer: SyscallBuffer,
+        recv_buffer: SyscallBuffer,
+        deadline: Instant<K::Clock>,
+    ) -> Result<usize> {
+        Err(Error::Unimplemented)
+    }
+
+    #[allow(unused_variables)]
+    fn channel_read(&self, kernel: K, offset: usize, read_buffer: SyscallBuffer) -> Result<usize> {
+        Err(Error::Unimplemented)
+    }
+
+    #[allow(unused_variables)]
+    fn channel_respond(&self, ctx: K, response_buffer: SyscallBuffer) -> Result<()> {
+        Err(Error::Unimplemented)
+    }
 }
 
 list::define_adapter!(pub ObjectWaiterListAdapter<K: Kernel> => ObjectWaiter<K>::link);

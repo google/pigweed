@@ -19,39 +19,179 @@ use syscall_defs::{SysCallId, SysCallInterface, SysCallReturnValue};
 
 pub struct SysCall {}
 
+macro_rules! syscall_asm {
+    ($id:ident, 0) => {
+        naked_asm!("
+            push  {{r4-r5, r11}}
+            mov   r11, {id}
+            svc   0
+            mov   r0, r4
+            mov   r1, r5
+            pop  {{r4-r5, r11}}
+            bx lr
+            ",
+            id = const SysCallId::$id as u32
+        )
+    };
+
+    ($id:ident, 1) => {
+        naked_asm!("
+            push  {{r4-r5, r11}}
+            mov   r11, {id}
+            mov   r4, r0
+            svc   0
+            mov   r0, r4
+            mov   r1, r5
+            pop  {{r4-r5, r11}}
+            bx lr
+            ",
+            id = const SysCallId::$id as u32
+        )
+    };
+
+    ($id:ident, 2) => {
+        naked_asm!("
+            push  {{r4-r5, r11}}
+            mov   r11, {id}
+            mov   r4, r0
+            mov   r5, r1
+            svc   0
+            mov   r0, r4
+            mov   r1, r5
+            pop  {{r4-r5, r11}}
+            bx lr
+            ",
+            id = const SysCallId::$id as u32
+        )
+    };
+
+    ($id:ident, 3) => {
+        naked_asm!("
+            push  {{r4-r6, r11}}
+            mov   r11, {id}
+            mov   r4, r0
+            mov   r5, r1
+            mov   r6, r2
+            svc   0
+            mov   r0, r4
+            mov   r1, r5
+            pop  {{r4-r6, r11}}
+            bx lr
+            ",
+            id = const SysCallId::$id as u32
+        )
+    };
+
+    ($id:ident, 4) => {
+        naked_asm!("
+            push  {{r4-r7, r11}}
+            mov   r11, {id}
+            mov   r4, r0
+            mov   r5, r1
+            mov   r6, r2
+            mov   r7, r3
+            svc   0
+            mov   r0, r4
+            mov   r1, r5
+            pop  {{r4-r7, r11}}
+            bx lr
+            ",
+            id = const SysCallId::$id as u32
+        )
+    };
+
+    ($id:ident, 2_u64) => {
+        // The u64 arg here is naturally aligned so the 4 arg wrapper is used.
+        syscall_asm!($id, 4)
+    };
+
+    ($id:ident, 5_u64) => {
+        naked_asm!("
+            push  {{r4-r11}}
+            mov   r11, {id}
+            mov   r4, r0
+            mov   r5, r1
+            mov   r6, r2
+            mov   r7, r3
+            ldr   r8, [sp, #(8 * 4)]
+            // Stack is padded so that the u64 is 8 byte aligned
+            ldr   r9, [sp, #(10 * 4)]
+            ldr   r10, [sp, #(11 * 4)]
+            svc   0
+            mov   r0, r4
+            mov   r1, r5
+            pop  {{r4-r11}}
+            bx lr
+            ",
+            id = const SysCallId::$id as u32
+        )
+    };
+}
+
 macro_rules! syscall_veneer {
-    ($id:ident, $name:ident($($arg_name:ident: $arg_type:ty),*)) => {
+    ($id:ident, $arg_slots:tt, $name:ident($($arg_name:ident: $arg_type:ty),*)) => {
         #[unsafe(naked)]
         unsafe extern "C" fn $name($($arg_name: $arg_type),*) -> i64 {
-            naked_asm!("
-                push  {{r4-r7, r11}}
-                mov   r11, {id}
-                mov   r4, r0
-                mov   r5, r1
-                mov   r6, r2
-                mov   r7, r3
-                svc   0
-                mov   r0, r4
-                mov   r1, r5
-                pop  {{r4-r7, r11}}
-                bx lr
-                ",
-                id = const SysCallId::$id as u32
-            );
+            syscall_asm!($id, $arg_slots)
         }
     };
 }
 
-syscall_veneer!(ObjectWait, object_wait(handle: u32, signals: u32, deadline: u64));
-syscall_veneer!(DebugNoOp, noop());
-syscall_veneer!(DebugAdd, add(a: u32, b: u32));
-syscall_veneer!(DebugPutc, putc(a: u32));
-syscall_veneer!(DebugShutdown, shutdown(a: u32));
+syscall_veneer!(ObjectWait, 2_u64, object_wait(handle: u32, signals: u32, deadline: u64));
+syscall_veneer!(ChannelTransact, 5_u64, channel_transact(
+    object_handle: u32,
+    send_data: *mut u8,
+    send_len: usize,
+    recv_data: *mut u8,
+    recv_len: usize,
+    deadline: u64
+));
+syscall_veneer!(ChannelRead, 4, channel_read(
+    handle: u32,
+    offset: usize,
+    buffer: *mut u8,
+    buffer_len: usize
+));
+syscall_veneer!(ChannelRespond, 3, channel_respond(
+    handle: u32,
+    buffer: *mut u8,
+    buffer_len: usize
+));
+syscall_veneer!(DebugNoOp, 0, noop());
+syscall_veneer!(DebugAdd, 2, add(a: u32, b: u32));
+syscall_veneer!(DebugPutc, 1, putc(a: u32));
+syscall_veneer!(DebugShutdown, 1, shutdown(a: u32));
 
 impl SysCallInterface for SysCall {
     #[inline(always)]
     fn object_wait(handle: u32, signals: u32, deadline: u64) -> Result<()> {
         SysCallReturnValue(unsafe { object_wait(handle, signals, deadline) }).to_result_unit()
+    }
+
+    #[inline(always)]
+    fn channel_transact(
+        handle: u32,
+        send_data: *mut u8,
+        send_len: usize,
+        recv_data: *mut u8,
+        recv_len: usize,
+        deadline: u64,
+    ) -> Result<u32> {
+        SysCallReturnValue(unsafe {
+            channel_transact(handle, send_data, send_len, recv_data, recv_len, deadline)
+        })
+        .to_result_u32()
+    }
+
+    #[inline(always)]
+    fn channel_read(handle: u32, offset: usize, buffer: *mut u8, buffer_len: usize) -> Result<u32> {
+        SysCallReturnValue(unsafe { channel_read(handle, offset, buffer, buffer_len) })
+            .to_result_u32()
+    }
+
+    #[inline(always)]
+    fn channel_respond(handle: u32, buffer: *mut u8, buffer_len: usize) -> Result<()> {
+        SysCallReturnValue(unsafe { channel_respond(handle, buffer, buffer_len) }).to_result_unit()
     }
 
     #[inline(always)]

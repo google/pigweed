@@ -14,23 +14,49 @@
 #![no_main]
 #![no_std]
 
+use pw_status::{Error, Result};
 use syscall_user::*;
 use userspace::entry;
 
+const IPC_HANDLE: u32 = 0;
+
+const OBJECT_READABLE: u32 = 0x1;
+
+const MAX_DEADLINE: u64 = u64::MAX;
+
+fn main() -> Result<()> {
+    loop {
+        // Wait for an IPC to come in.
+        SysCall::object_wait(IPC_HANDLE, OBJECT_READABLE, MAX_DEADLINE)?;
+
+        // Read the payload.
+        let mut buffer = [0u8; 4];
+        let len = SysCall::channel_read(IPC_HANDLE, 0, buffer.as_mut_ptr(), 4)?;
+        if len != 4 {
+            return Err(Error::Unknown);
+        };
+
+        // Convert the payload to a character and make it upper case.
+        let Some(c) = char::from_u32(u32::from_ne_bytes(buffer)) else {
+            return Err(Error::Unknown);
+        };
+        let c = c.to_ascii_uppercase();
+
+        // Respond to the IPC with the uppercase character.
+        let mut response_buffer = [0u8; 4];
+        c.encode_utf8(&mut response_buffer);
+        SysCall::channel_respond(IPC_HANDLE, response_buffer.as_mut_ptr(), 4)?;
+    }
+}
+
 #[entry]
 fn entry() -> ! {
-    for i in 0..20 {
-        let _ = SysCall::debug_putc(u32::from('B') + i);
+    if let Err(e) = main() {
+        let _ = SysCall::debug_putc(u32::from('!'));
+        let _ = SysCall::debug_shutdown(e as u32);
     }
 
-    loop {
-        // Access memory out side of our address space to demonstrate that
-        // memory protection is functional.
-        unsafe {
-            let bad = core::ptr::with_exposed_provenance::<usize>(0x80100000_usize);
-            let _ = bad.read_volatile();
-        }
-    }
+    loop {}
 }
 
 #[panic_handler]

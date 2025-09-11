@@ -14,6 +14,7 @@
 #![no_std]
 #![no_main]
 
+use riscv_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, exit};
 use target_common::{TargetInterface, declare_target};
 use {console_backend as _, entry as _, kernel as _};
 mod codegen;
@@ -25,6 +26,16 @@ impl TargetInterface for Target {
 
     fn main() -> ! {
         codegen::start();
+        loop {}
+    }
+
+    fn shutdown(code: u32) -> ! {
+        pw_log::info!("Shutting down with code {}", code as u32);
+        let status = match code {
+            0 => EXIT_SUCCESS,
+            _ => EXIT_FAILURE,
+        };
+        exit(status);
         loop {}
     }
 }

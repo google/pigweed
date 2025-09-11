@@ -32,12 +32,10 @@ pub use object::NullObjectTable;
 #[doc(hidden)]
 pub use scheduler::thread::{Process, Stack, StackStorage, StackStorageExt, Thread, ThreadState};
 use scheduler::timer::TimerQueue;
-use scheduler::{SchedulerState, thread};
+use scheduler::{PreemptDisableGuard, SchedulerState, ThreadLocalState, thread};
 pub use scheduler::{sleep_until, start_thread, yield_timeslice};
 use sync::spinlock::{BareSpinLock, SpinLock, SpinLockGuard};
-
-use crate::scheduler::{PreemptDisableGuard, ThreadLocalState};
-pub use crate::syscall::SyscallArgs;
+pub use syscall::SyscallArgs;
 
 pub trait Arch: 'static + Copy + thread::ThreadArg {
     type ThreadState: ThreadState;

@@ -14,6 +14,8 @@
 
 exports_files(
     [
+        "channel_handler.rs.tmpl",
+        "channel_initiator.rs.tmpl",
         "ticker.rs.tmpl",
     ],
 )

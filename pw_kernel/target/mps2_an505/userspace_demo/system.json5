@@ -26,9 +26,16 @@
       process: {
         name: "process one",
         objects: {
+            // Object 0
             TICKER: {
                 type: "ticker"
             },
+            // Object 1
+            IPC: {
+              type: "channel_initiator",
+              handler_app: "two",
+              handler_object_name: "IPC",
+            }
         },
         threads: [
           {
@@ -43,6 +50,12 @@
       ram_size_bytes: 65536,    // 64Kb
       process: {
         name: "process two",
+        objects: {
+            // Object 0
+            IPC: {
+              type: "channel_handler",
+            },
+        },
         threads: [
           {
             name: "thread two a",

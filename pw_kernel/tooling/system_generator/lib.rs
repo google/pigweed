@@ -24,6 +24,8 @@ use minijinja::{Environment, State};
 
 pub mod system_config;
 
+use system_config::SystemConfig;
+
 #[derive(Debug, Parser)]
 pub struct Cli {
     #[command(flatten)]
@@ -93,10 +95,13 @@ pub trait SystemGenerator {
     }
 }
 
-pub fn parse_config(cli: &Cli) -> Result<system_config::SystemConfig> {
+pub fn parse_config(cli: &Cli) -> Result<SystemConfig> {
     let json5_str =
         fs::read_to_string(&cli.common_args.config).context("Failed to read config file")?;
-    serde_json5::from_str(&json5_str).context("Failed to parse config file")
+    let mut config: SystemConfig =
+        serde_json5::from_str(&json5_str).context("Failed to parse config file")?;
+    config.calculate_and_validate()?;
+    Ok(config)
 }
 
 pub fn generate<T: SystemGenerator>(cli: &Cli, system_generator: &mut T) -> Result<()> {

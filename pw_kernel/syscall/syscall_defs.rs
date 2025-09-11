@@ -155,6 +155,7 @@
 //! - [`wait_group_remove()`]
 
 #![no_std]
+
 use pw_status::{Error, Result};
 
 pub struct SysCallReturnValue(pub i64);
@@ -198,9 +199,15 @@ impl From<Result<u64>> for SysCallReturnValue {
     }
 }
 
+#[derive(Copy, Clone)]
 #[repr(u16)]
+#[non_exhaustive]
 pub enum SysCallId {
+    // IDs are not ABI stable yet and are subject to change.
     ObjectWait = 0x0000,
+    ChannelTransact = 0x0001,
+    ChannelRead = 0x0002,
+    ChannelRespond = 0x0003,
 
     // System calls prefixed with 0xF000 are reserved development/debugging use.
     DebugNoOp = 0xf000,
@@ -209,17 +216,10 @@ pub enum SysCallId {
     DebugShutdown = 0xf003,
 }
 
-impl TryFrom<u16> for SysCallId {
-    type Error = Error;
-
-    fn try_from(value: u16) -> core::result::Result<Self, Error> {
-        match value {
-            // Safety: match
-            0x0000..=0x0000 | 0xf000..=0xf003 => {
-                Ok(unsafe { core::mem::transmute::<u16, SysCallId>(value) })
-            }
-            _ => Err(Error::InvalidArgument),
-        }
+impl From<u16> for SysCallId {
+    fn from(value: u16) -> Self {
+        // SAFETY: SysCallId is repr(u16) and non-exhaustive.
+        unsafe { core::mem::transmute::<u16, SysCallId>(value) }
     }
 }
 
@@ -362,6 +362,16 @@ unsafe extern "C" {
     /// and set `SIGNAL_READABLE` on the initiator channel object.
     ///
     /// The maximum size of buffer that may be passed is `isize::MAX`.
+    ///
+    /// # Returns
+    /// - `0`: On success.
+    /// - [`Error::OutOfRange`]: The initiator's `recv_buffer` is not large enough
+    ///   to fit the provided `buffer`.
+    /// - [`Error::FailedPrecondition`]: No transaction was pending on the channel.
+    ///   This can happen in the middle of handling a transaction if the initiator
+    ///   cancels the transaction.
+    /// - [`Error::PermissionDenied`]: `buffer` does not reference a valid memory
+    ///   region in this processes' address space.
     pub fn channel_respond(object_handle: u32, buffer: *mut u8, buffer_len: usize) -> isize;
 
     /// Raise `SIGNAL_USER` on a paired object's peer
@@ -422,6 +432,22 @@ unsafe extern "C" {
 
 pub trait SysCallInterface {
     fn object_wait(handle: u32, signal_mask: u32, deadline: u64) -> Result<()>;
+    fn channel_transact(
+        handle: u32,
+        send_data: *mut u8,
+        send_len: usize,
+        recv_data: *mut u8,
+        recv_len: usize,
+        deadline: u64,
+    ) -> Result<u32>;
+    fn channel_read(
+        object_handle: u32,
+        offset: usize,
+        buffer: *mut u8,
+        buffer_len: usize,
+    ) -> Result<u32>;
+    fn channel_respond(object_handle: u32, buffer: *mut u8, buffer_len: usize) -> Result<()>;
+
     fn debug_noop() -> Result<()>;
     fn debug_add(a: u32, b: u32) -> Result<u32>;
     fn debug_putc(a: u32) -> Result<u32>;

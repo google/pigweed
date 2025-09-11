@@ -17,7 +17,7 @@
 
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
-use core::mem::ManuallyDrop;
+use core::mem::{ManuallyDrop, offset_of};
 use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
@@ -221,6 +221,21 @@ impl<A: AtomicUsize, T: ?Sized> ForeignRcState<A, T> {
         // this is the first `ForeignRc` reference, consistent with the
         // lifecycle.
         ForeignRc { state: self }
+    }
+}
+
+impl<A: AtomicUsize, T: Sized> ForeignRcState<A, T> {
+    /// Return a new [`ForeignRc`] from a reference to a [`ForeignRcState`]'s
+    /// inner storage.
+    ///
+    /// # Safety
+    /// The caller must guarantee that `inner: &T` is a reference storage that
+    /// is contained inside a [`ForeignRcState<A, T>`].
+    pub unsafe fn create_ref_from_inner(inner: &T) -> ForeignRc<A, T> {
+        let inner = NonNull::from_ref(inner);
+        let state: &Self = unsafe { inner.byte_sub(offset_of!(Self, inner)).cast().as_ref() };
+        state.ref_count.fetch_add(1, Ordering::SeqCst);
+        ForeignRc { state }
     }
 }
 

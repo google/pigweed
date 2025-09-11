@@ -31,6 +31,8 @@ rust_library(
         "lib.rs",
         "memory.rs",
         "object.rs",
+        "object/buffer.rs",
+        "object/channel.rs",
         "object/ticker.rs",
         "panic.rs",
         "scheduler.rs",

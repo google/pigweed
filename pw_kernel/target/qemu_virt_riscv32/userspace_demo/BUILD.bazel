@@ -64,5 +64,6 @@ rust_binary(
         "//pw_kernel/target/qemu_virt_riscv32:entry",
         "//pw_kernel/userspace",
         "//pw_log/rust:pw_log",
+        "@rust_crates//:riscv-semihosting",
     ],
 )
