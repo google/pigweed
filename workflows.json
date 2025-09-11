@@ -344,6 +344,37 @@
       "targets": [
         "//..."
       ]
+    },
+    {
+      "name": "asan_build",
+      "build_config": {
+        "name": "asan_config",
+        "description": "ASAN config",
+        "build_type": "bazel",
+        "args": [
+          "--config=asan"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "asan_googletest",
+      "build_config": {
+        "name": "asan_googletest_config",
+        "description": "ASAN Googletest config",
+        "build_type": "bazel",
+        "args": [
+          "--config=asan",
+          "--config=googletest"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//..."
+      ]
     }
   ],
   "tools": [
@@ -431,6 +462,14 @@
         "k_qemu_virt_riscv32",
         "k_rp2350",
         "k_lint"
+      ]
+    },
+    {
+      "name": "asan",
+      "description": "ASAN-related builds",
+      "builds": [
+        "asan_build",
+        "asan_googletest"
       ]
     }
   ]
