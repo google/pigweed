@@ -131,6 +131,33 @@ cc_args(
     ],
 )
 
+filegroup(
+    name = "extra_builtins",
+    srcs = ["extra_builtins.h"],
+)
+
+# TODO: https://pwbug.dev/434778918 - Workaround for missing builtins.
+cc_args(
+    name = "restore_missing_builtins",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-include",
+        "{extra_builtins}",
+    ],
+    data = [
+        ":extra_builtins",
+    ],
+    format = {
+        "extra_builtins": ":extra_builtins",
+    },
+    # This prevents the -include from happening during linker script
+    # preprocessing.
+    requires_not_none = "@rules_cc//cc/toolchains/variables:source_file",
+)
+
 cc_args(
     name = "cortex_common",
     actions = [
@@ -219,6 +246,7 @@ cc_toolchain(
     name = "arm_clang_toolchain_cortex-m",
     args = [
         ":cxx_compiler_flags",
+        ":restore_missing_builtins",
         "@llvm_toolchain//:llvm-libc_args",
         ":thumb_abi",
         ":cortex_common",
