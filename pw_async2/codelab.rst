@@ -596,23 +596,65 @@ It's so simple… what could go wrong?
 
 6. Fix the crash: Registering a waker
 =====================================
-The crash message is intentionally blatant about what went wrong. The
-implementation of ``Keypad::Pend`` I told you to write was intentionally
-incomplete to show you what happens if you make this misstep.
+We intentionally had you implement ``Keypad::Pend()`` so it returned
+:doxylink:`Pending() <pw::async2::Pending>`, without storing a waker, as that
+triggers an assertion. It is a clear signal that the code has no way of waking
+up the task, so we crash on detecting it.
 
-.. topic:: When to store a waker
+The crash message is there to help you, and be explicit about what went wrong,
+and may run into it yourself creating your own pendable types.
 
-   Generally if you are writing the leaf logic that decides that
-   :doxylink:`Pending <pw::async2::Pending>` should be returned from your task,
-   then you should also be storing a :doxylink:`Waker <pw::async2::Waker>` at
-   the same time, so you can wake up the task when the data you are waiting for
-   is available.
+Generally if you are writing the leaf logic that decides that
+:doxylink:`Pending() <pw::async2::Pending>` should be returned, then you should
+also store a :doxylink:`Waker <pw::async2::Waker>` before returning that value.
+
+.. topic:: What is a ``Waker``?
+
+   A :doxylink:`Waker <pw::async2::Waker>` is the other half of the
+   :ref:`informed poll model <module-pw_async2-informed-poll>`.
+
+   A ``Waker`` is a lightweight object that allows you to tell the
+   :doxylink:`Dispatcher <pw::async2::Dispatcher>` to wake a task. When a
+   ``Task::DoPend()`` call returns :doxylink:`Pending() <pw::async2::Pending>`,
+   the task is put to sleep so that the dispatcher doesn't have to repeatedly
+   poll the task.
+
+   To wake a task, you invoke the :doxylink:`Wake() <pw::async2::Waker::Wake>`
+   method on the ``Waker``. Note however by design the ``Wake()`` call consumes
+   the ``Waker``, so to invoke it you must actually write
+   ``std::move(waker_).Wake();``. This is to make it clear that the task can be
+   only woken once through a given waker.
+
+   Wakers are default-constructed in an empty state, and moving the value means
+   the location that is moved from is reset to an empty state. If you invoke
+   ``Wake()`` on an empty ``Waker``, the call is a no-op.
+
+   You set up the waker to a non-empty value using one of four macros we provide:
+
+   - :doxylink:`PW_ASYNC_STORE_WAKER` and :doxylink:`PW_ASYNC_CLONE_WAKER`
+
+     The first creates a waker for a given context. The second clones an
+     existing waker, allowing the original and/or the clone to wake the task.
+
+     This pair of macros ensure a single task will be woken. They will assert if
+     a waker for a different task is created (or cloned) when the destination
+     waker already is set up for some task.
+
+   - :doxylink:`PW_ASYNC_TRY_STORE_WAKER` and :doxylink:`PW_ASYNC_TRY_CLONE_WAKER`
+
+     This is an alternative to `PW_ASYNC_STORE_WAKER`, and returns ``false``
+     instead of crashing, allowing the pendable to signal to the caller that the
+     ``Pend()`` operation failed, allowing that to be handled in some other way.
 
    One ``Waker`` wakes up one task. If your code needs to wake up multiple
-   tasks, you should use :doxylink:`WakerQueue <pw::async2::WakerQueue>` instead
-   of a single waker instance.
+   tasks, you should use :doxylink:`WakerQueue <pw::async2::WakerQueue>`
+   instead, which allows a fixed capacity list of wakers to be created. Note
+   that you use the same macros (``PW_ASYNC_STORE_WAKER``, ...) with
+   ``WakerQueue``, at which point they will indicate an error if you run out of
+   capacity in the queue.
 
-Let's set up the waiter.
+Let's fix ``Keypad::Pend()`` so we store a waker using the context, which is
+what is needed to eliminate the crash.
 
 1. First include ``pw_async2/waker.h`` at the top of your
    `//pw_async2/codelab/vending_machine.h`_ header.
@@ -629,28 +671,27 @@ Let's set up the waiter.
 3. Setup the waker right before returning :doxylink:`Pending
    <pw::async2::Pending>`
 
-   To do this correctly, you use  :doxylink:`PW_ASYNC_STORE_WAKER`, giving it
+   To do this correctly, let's use :doxylink:`PW_ASYNC_STORE_WAKER`, giving it
    the context argument passed in to the ``Pend()``, the waker to store to, and
    a ``wait_reason_string`` to help debug issues.
 
+   The change to the end of ``Keypad::Pend`` should look like this:
+
+   .. code-block:: diff
+
+      + PW_ASYNC_STORE_WAKER(cx, waker_, "keypad press");
+        return pw::async2::Pending();
+
    .. tip::
 
-      Pass a meaningful string for last ``wait_reason_string``, as this will
-      help you debug issues.
-
-   Here's what the end of ``Keypad::Pend`` should look like:
-
-   .. code-block:: cpp
-
-      PW_ASYNC_STORE_WAKER(cx, waker_, "keypad press");
-      return pw::async2::Pending();
-
+      Always pass a meaningful string for last ``wait_reason_string``, as this
+      will help you debug issues.
 
 We haven't yet modified ``Keypad::Press`` to use the waker yet, and we will need
 to. But first let's show what happens if you forget this step. This time there
 will not be a crash!
 
-8. Forgetting to wake the task
+7. Forgetting to wake the task
 ==============================
 
 Let's see what happens if you forget to wake the task.
@@ -707,12 +748,9 @@ To fix it, let's add the missing ``Wake()`` call to ``Keypad::Press``:
    key_pressed_ = key;
    std::move(waker_).Wake();
 
-We move the waker out of ``waker_`` first to consume it. That way the next
-interrupt won't wake the task if the task is actually waiting on something else.
-
-Note it is completely safe to make the ``Wake()`` call if the waker is in
-an "empty" state, such as when no waker has yet been stored using
-``PW_ASYNC_STORE_WAKER``. Doing that is a no-op.
+Remember, the call to ``Wake()`` consumes the waker, which is why we must move
+the value out of ``waker_`` first. In fact it won't compile if you forget this
+step because we want to make that consumption visible to the caller.
 
 .. tip::
 
@@ -728,7 +766,7 @@ an "empty" state, such as when no waker has yet been stored using
    ``LogRegisteredTasks`` will still print out what it can, but for more
    information you may need to consider enabling them temporarily.
 
-9. Verify your event handler
+8. Verify your event handler
 ============================
 .. code-block:: sh
 
@@ -1250,7 +1288,7 @@ Here's what the three states need to do.
      a call to ``front()``. Keep the item in the queue until you turn off the
      dispensing motor; you'll need to reference the number.
   2. Call ``item_drop_sensor_.Clear()`` so the sensor is ready for a new item.
-  3. Start the motor with a call to ``SetDispenerMotorState()``.
+  3. Start the motor with a call to ``SetDispenserMotorState()``.
   4. Move to the ``kDispensing`` state.
 
 - ``kDispensing``
