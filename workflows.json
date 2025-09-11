@@ -406,6 +406,37 @@
       "targets": [
         "//..."
       ]
+    },
+    {
+      "name": "ubsan_build",
+      "build_config": {
+        "name": "ubsan_config",
+        "description": "UBSAN config",
+        "build_type": "bazel",
+        "args": [
+          "--config=ubsan"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//..."
+      ]
+    },
+    {
+      "name": "ubsan_googletest",
+      "build_config": {
+        "name": "ubsan_googletest_config",
+        "description": "UBSAN Googletest config",
+        "build_type": "bazel",
+        "args": [
+          "--config=ubsan",
+          "--config=googletest"
+        ],
+        "env": {}
+      },
+      "targets": [
+        "//..."
+      ]
     }
   ],
   "tools": [
@@ -509,6 +540,14 @@
       "builds": [
         "tsan_build",
         "tsan_googletest"
+      ]
+    },
+    {
+      "name": "ubsan",
+      "description": "UBSAN-related builds",
+      "builds": [
+        "ubsan_build",
+        "ubsan_googletest"
       ]
     }
   ]
