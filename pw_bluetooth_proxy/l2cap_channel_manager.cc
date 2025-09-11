@@ -114,14 +114,19 @@ void L2capChannelManager::ForceDrainChannelQueues() {
 }
 
 void L2capChannelManager::ReportNewTxPacketsOrCredits() {
+  std::lock_guard lock(tx_status_mutex_);
+
   new_tx_since_drain_ = true;
 }
 
 void L2capChannelManager::DrainChannelQueuesIfNewTx() {
-  if (!new_tx_since_drain_) {
-    return;
+  {
+    std::lock_guard lock(tx_status_mutex_);
+    if (!new_tx_since_drain_) {
+      return;
+    }
+    new_tx_since_drain_ = false;
   }
-  new_tx_since_drain_ = false;
 
   pw::containers::FlatMap<AclTransportType,
                           std::optional<AclDataChannel::SendCredit>,

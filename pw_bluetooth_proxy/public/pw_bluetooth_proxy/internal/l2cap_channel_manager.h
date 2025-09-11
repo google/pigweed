@@ -23,6 +23,7 @@
 #include "pw_bluetooth_proxy/internal/l2cap_status_tracker.h"
 #include "pw_bluetooth_proxy/internal/locked_l2cap_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
+#include "pw_sync/lock_annotations.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -68,7 +69,8 @@ class L2capChannelManager {
   // the channels_mutex_ lock, it can't be directly called while handling a
   // received packet on a channel. Instead call ReportPacketsMayBeReadyToSend().
   // Rx processing will then call this function when complete.
-  void DrainChannelQueuesIfNewTx() PW_LOCKS_EXCLUDED(channels_mutex_);
+  void DrainChannelQueuesIfNewTx()
+      PW_LOCKS_EXCLUDED(channels_mutex_, tx_status_mutex_);
 
   // Drain channel queues even if no channel explicitly requested it. Should be
   // used for events triggering queue space at the ACL level.
@@ -157,6 +159,8 @@ class L2capChannelManager {
   std::atomic<std::optional<uint16_t>> le_acl_data_packet_length_{std::nullopt};
 
   // Enforce mutual exclusion of all operations on channels.
+  // This is ACQUIRED_BEFORE AclDataChannel::credit_mutex_ which is annotated on
+  // that member variable.
   sync::Mutex channels_mutex_;
 
   // List of registered L2CAP channels.
@@ -170,9 +174,12 @@ class L2capChannelManager {
   IntrusiveForwardList<L2capChannel>::iterator round_robin_terminus_
       PW_GUARDED_BY(channels_mutex_);
 
+  // Guard access to tx related state.
+  sync::Mutex tx_status_mutex_ PW_ACQUIRED_BEFORE(channels_mutex_);
+
   // True if new tx packets have been queued or new tx credits have been
   // received since the last DrainChannelQueuesIfNewTx.
-  std::atomic_bool new_tx_since_drain_ = false;
+  bool new_tx_since_drain_ PW_GUARDED_BY(tx_status_mutex_) = false;
 
   // Channel connection status tracker and delegate holder.
   L2capStatusTracker status_tracker_;
