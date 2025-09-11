@@ -914,8 +914,10 @@ bool AclDataChannel::HandleAclData(Direction direction,
         MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_span);
     PW_CHECK_OK(recombined_acl);
     recombined_acl->header().handle().Write(acl.header().handle().Read());
+    // Controller to Host are always flushable (except for loopback), per
+    // Volume 4, Part E, 5.4.2, Packet_Boundary_Flag table.
     recombined_acl->header().packet_boundary_flag().Write(
-        emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+        emboss::AclDataPacketBoundaryFlag::FIRST_FLUSHABLE);
     recombined_acl->header().broadcast_flag().Write(
         acl.header().broadcast_flag().Read());
     recombined_acl->data_total_length().Write(h4_span.size() -

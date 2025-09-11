@@ -4256,8 +4256,10 @@ TEST_F(AclFragTest, UnhandledRecombinedPdu) {
     Result<emboss::AclDataFrameWriter> acl =
         MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_recombined);
     acl->header().handle().Write(kHandle);
+    // Controller to Host are always flushable (except for loopback), per
+    // Volume 4, Part E, 5.4.2, Packet_Boundary_Flag table.
     acl->header().packet_boundary_flag().Write(
-        emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+        emboss::AclDataPacketBoundaryFlag::FIRST_FLUSHABLE);
     acl->header().broadcast_flag().Write(
         emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
     acl->data_total_length().Write(
