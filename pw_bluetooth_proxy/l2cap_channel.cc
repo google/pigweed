@@ -52,8 +52,7 @@ void L2capChannel::MoveFields(L2capChannel& other) {
     std::lock_guard other_lock(other.tx_mutex_);
     payload_queue_ = std::move(other.payload_queue_);
     notify_on_dequeue_ = other.notify_on_dequeue_;
-    l2cap_channel_manager_.DeregisterChannel(other);
-    l2cap_channel_manager_.RegisterChannel(*this);
+    l2cap_channel_manager_.MoveChannelRegistration(other, *this);
   }
   other.Undefine();
 }
@@ -65,7 +64,6 @@ L2capChannel::L2capChannel(L2capChannel&& other)
 
 L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
   if (this != &other) {
-    l2cap_channel_manager_.DeregisterChannel(*this);
     MoveFields(other);
   }
   return *this;
@@ -90,8 +88,11 @@ L2capChannel::~L2capChannel() {
   if (state_ != State::kClosed) {
     // Note, DeregisterChannel locks channels_mutex_. This is used to block
     // channels being destroyed during Tx.
-    // TODO: https://pwbug.dev/402454277 - Update comment after we no longer
+    // TODO: https://pwbug.dev/422222575 - Update comment after we no longer
     // use channels_mutex_ to block ChannelProxy dtor.
+    // TODO: https://pwbug.dev/422222575 - Deregister should be handled before
+    // l2cap dtor. Current code leaves partially destroyed channel in the
+    // channels_ list.
     l2cap_channel_manager_.DeregisterChannel(*this);
     ClearQueue();
   }

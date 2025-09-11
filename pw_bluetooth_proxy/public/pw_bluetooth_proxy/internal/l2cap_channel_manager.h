@@ -50,6 +50,11 @@ class L2capChannelManager {
   void DeregisterChannel(L2capChannel& channel)
       PW_LOCKS_EXCLUDED(channels_mutex_);
 
+  // Atomically replace from channel with to channel in the channels collection.
+  // Used to support channel move semantics.
+  void MoveChannelRegistration(L2capChannel& from, L2capChannel& to)
+      PW_LOCKS_EXCLUDED(channels_mutex_);
+
   // Deregister and close all channels then propagate `event` to clients.
   void DeregisterAndCloseChannels(L2capChannelEvent event)
       PW_LOCKS_EXCLUDED(channels_mutex_);
@@ -143,6 +148,10 @@ class L2capChannelManager {
  private:
   // Circularly advance `it`, wrapping around to front if `it` reaches the end.
   void Advance(IntrusiveForwardList<L2capChannel>::iterator& it)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(channels_mutex_);
+
+  // RegisterChannel with channels_mutex_ already acquired.
+  void RegisterChannelLocked(L2capChannel& channel)
       PW_EXCLUSIVE_LOCKS_REQUIRED(channels_mutex_);
 
   // Stop proxying L2CAP packets addressed to `channel` and stop sending L2CAP

@@ -33,6 +33,10 @@ L2capChannelManager::L2capChannelManager(AclDataChannel& acl_data_channel)
 
 void L2capChannelManager::RegisterChannel(L2capChannel& channel) {
   std::lock_guard lock(channels_mutex_);
+  RegisterChannelLocked(channel);
+}
+
+void L2capChannelManager::RegisterChannelLocked(L2capChannel& channel) {
   // Insert new channels before `lrd_channel_`.
   IntrusiveForwardList<L2capChannel>::iterator before_it =
       channels_.before_begin();
@@ -68,6 +72,13 @@ void L2capChannelManager::DeregisterChannelLocked(L2capChannel& channel) {
 void L2capChannelManager::DeregisterChannel(L2capChannel& channel) {
   std::lock_guard lock(channels_mutex_);
   DeregisterChannelLocked(channel);
+}
+
+void L2capChannelManager::MoveChannelRegistration(L2capChannel& from,
+                                                  L2capChannel& to) {
+  std::lock_guard lock(channels_mutex_);
+  DeregisterChannelLocked(from);
+  RegisterChannelLocked(to);
 }
 
 void L2capChannelManager::DeregisterAndCloseChannels(L2capChannelEvent event) {
