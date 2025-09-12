@@ -349,7 +349,6 @@ cc_library(
     strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [
-        ":chunk",
         "//pw_assert:assert",
         "//pw_bytes",
         "//pw_containers:dynamic_deque",

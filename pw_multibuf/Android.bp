@@ -91,5 +91,38 @@ cc_library_static {
     ],
 }
 
-// # TODO: https://pwbug.dev/384615147 - Add targets for other multibuf targets
-// including allocator_async.
+cc_library_static {
+    name: "pw_multibuf_v2",
+    defaults: [
+        "pw_android_common_backends",
+        "pw_android_common_target_support",
+    ],
+    export_include_dirs: [
+        "public",
+    ],
+    srcs: [
+        "multibuf_v2.cc"
+    ],
+    header_libs: [
+        "pw_assert",
+    ],
+    export_header_lib_headers: [
+        "pw_assert",
+    ],
+    static_libs: [
+        "pw_allocator",
+        "pw_bytes",
+        "pw_preprocessor",
+        "pw_containers",
+        "pw_result",
+        "pw_span",
+    ],
+    export_static_lib_headers: [
+        "pw_allocator",
+        "pw_bytes",
+        "pw_containers",
+        "pw_preprocessor",
+        "pw_result",
+        "pw_span",
+    ],
+}
