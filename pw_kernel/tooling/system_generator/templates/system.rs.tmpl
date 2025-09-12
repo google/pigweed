@@ -47,18 +47,18 @@ pub fn start() {
 
 {%- for app_name in apps %}
     {%- set app = apps[app_name] %}
-    let start_fn_{{app_name}} = {{app.start_fn_address | to_hex}}_usize;
+    let start_fn_{{app_name}} = {{app.start_fn_address | hex}}_usize;
 
     const MEMORY_CONFIG_{{app_name | upper }}: MemoryConfig = MemoryConfig::const_new(&[
         kernel::MemoryRegion::new(
             kernel::MemoryRegionType::ReadOnlyExecutable,
-            {{app.flash_start_address | to_hex}},
-            {{(app.flash_start_address + app.flash_size_bytes) | to_hex}},
+            {{app.flash_start_address | hex}},
+            {{(app.flash_start_address + app.flash_size_bytes) | hex}},
         ),
         kernel::MemoryRegion::new(
             kernel::MemoryRegionType::ReadWriteData,
-            {{app.ram_start_address | to_hex}},
-            {{(app.ram_start_address + app.ram_size_bytes) | to_hex}},
+            {{app.ram_start_address | hex}},
+            {{(app.ram_start_address + app.ram_size_bytes) | hex}},
         ),
     ]);
 
@@ -101,7 +101,7 @@ pub fn start() {
             "{{thread.name}}",
             process_{{app_name}},
             start_fn_{{app_name}},
-            {{app.initial_sp | to_hex}},
+            {{app.initial_sp | hex}},
             {{thread.stack_size_bytes}}
         )
     };

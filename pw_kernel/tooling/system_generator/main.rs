@@ -14,11 +14,39 @@
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
-use system_generator::{Cli, DefaultSystemGenerator, SystemGenerator};
+use serde::{Deserialize, Serialize};
+use system_generator::{ArchConfigInterface, Cli, SystemGenerator, system_config};
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "type")]
+#[serde(rename_all = "lowercase")]
+pub enum ArchConfig {
+    Armv8M(system_config::Armv8MConfig),
+    RiscV(system_config::RiscVConfig),
+}
+
+// SystemGenerator supports Armv8m and RiscV by default.
+// New architectures which are implemented out of tree can
+// implement ArchConfigInterface with all required architectures.
+impl ArchConfigInterface for ArchConfig {
+    fn get_arch_crate_name(&self) -> &'static str {
+        match self {
+            ArchConfig::Armv8M(config) => config.get_arch_crate_name(),
+            ArchConfig::RiscV(config) => config.get_arch_crate_name(),
+        }
+    }
+
+    fn get_start_fn_address(&self, flash_start_address: usize) -> usize {
+        match self {
+            ArchConfig::Armv8M(config) => config.get_start_fn_address(flash_start_address),
+            ArchConfig::RiscV(config) => config.get_start_fn_address(flash_start_address),
+        }
+    }
+}
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let config = system_generator::parse_config(&cli)?;
-    let mut system_generator = <DefaultSystemGenerator as SystemGenerator>::new(config);
-    system_generator::generate(&cli, &mut system_generator).map_err(|e| anyhow!("{e}"))
+    let config = system_generator::parse_config::<ArchConfig>(&cli)?;
+    let mut system_generator = SystemGenerator::new(cli, config)?;
+    system_generator.generate().map_err(|e| anyhow!("{e}"))
 }

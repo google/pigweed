@@ -16,16 +16,36 @@ use anyhow::{Result, anyhow};
 use hashlink::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 
+use crate::ArchConfigInterface;
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct SystemConfig {
-    pub arch: String,
+pub struct SystemConfig<A: ArchConfigInterface> {
+    pub arch: A,
     pub kernel: KernelConfig,
     #[serde(default)]
     pub apps: LinkedHashMap<String, AppConfig>,
     #[serde(skip_deserializing)]
     pub arch_crate_name: &'static str,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Armv8MConfig {
+    #[serde(flatten)]
+    pub nvic: Armv8MNvicConfig,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Armv8MNvicConfig {
+    pub vector_table_start_address: usize,
+    pub vector_table_size_bytes: usize,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RiscVConfig;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -106,7 +126,7 @@ pub struct ThreadConfig {
     stack_size_bytes: usize,
 }
 
-impl SystemConfig {
+impl<A: ArchConfigInterface> SystemConfig<A> {
     fn handler_exists(&self, app_name: &str, object_name: &str) -> bool {
         let Some(app) = self.apps.get(app_name) else {
             return false;

@@ -14,9 +14,9 @@
 
 load("@rules_rust//rust:defs.bzl", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
-load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 load("//pw_kernel:flags.bzl", "KERNEL_DEVICE_COMMON_FLAGS")
 load("//pw_kernel/target/qemu_virt_riscv32:defs.bzl", "TARGET_COMPATIBLE_WITH")
+load("//pw_kernel/tooling:system_linker_script.bzl", "system_linker_script")
 
 platform(
     name = "qemu_virt_riscv32",
@@ -34,7 +34,6 @@ platform(
         KERNEL_DEVICE_COMMON_FLAGS | {
             "//pw_kernel/config:kernel_config": ":config",
             "//pw_kernel/subsys/console:console_backend": ":console",
-            "//pw_kernel/target:linker_script": ":linker_script",
         },
     ),
     visibility = [":__subpackages__"],
@@ -84,9 +83,16 @@ rust_library(
     ],
 )
 
-pw_linker_script(
+filegroup(
+    name = "linker_script_template",
+    srcs = ["system.ld.tmpl"],
+    visibility = [":__subpackages__"],
+)
+
+system_linker_script(
     name = "linker_script",
-    linker_script = "system.ld",
+    system_config = "//pw_kernel/target:system_config_file",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    template = ":linker_script_template",
+    visibility = [":__subpackages__"],
 )

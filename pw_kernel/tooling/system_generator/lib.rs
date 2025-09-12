@@ -12,15 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use core::str::FromStr;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::{Context, Error, Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use clap::{Args, Parser, Subcommand};
 use minijinja::{Environment, State};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 pub mod system_config;
 
@@ -58,6 +59,7 @@ fn parse_template(s: &str) -> Result<(String, PathBuf), String> {
 #[derive(Subcommand, Debug)]
 enum Command {
     CodegenSystem,
+    SystemLinkerScript,
     AppLinkerScript(AppLinkerScriptArgs),
 }
 
@@ -67,22 +69,102 @@ pub struct AppLinkerScriptArgs {
     pub app_name: String,
 }
 
-pub trait SystemGenerator {
-    fn new(config: system_config::SystemConfig) -> Self;
-    fn config(&self) -> &system_config::SystemConfig;
-    fn populate_addresses(&mut self);
+pub trait ArchConfigInterface {
+    fn get_arch_crate_name(&self) -> &'static str;
+    fn get_start_fn_address(&self, flash_start_address: usize) -> usize;
+}
 
-    fn render_system(&mut self, env: &mut Environment) -> Result<String> {
-        let template = env.get_template("system")?;
-        match template.render(self.config()) {
+pub fn parse_config<A: ArchConfigInterface + DeserializeOwned>(
+    cli: &Cli,
+) -> Result<system_config::SystemConfig<A>> {
+    let json5_str =
+        fs::read_to_string(&cli.common_args.config).context("Failed to read config file")?;
+    let mut config: SystemConfig<A> =
+        serde_json5::from_str(&json5_str).context("Failed to parse config file")?;
+    config.calculate_and_validate()?;
+    Ok(config)
+}
+
+const FLASH_ALIGNMENT: usize = 4;
+const RAM_ALIGNMENT: usize = 8;
+
+impl ArchConfigInterface for system_config::Armv8MConfig {
+    fn get_arch_crate_name(&self) -> &'static str {
+        "arch_arm_cortex_m"
+    }
+
+    fn get_start_fn_address(&self, flash_start_address: usize) -> usize {
+        // On Armv8M, the +1 is to denote thumb mode.
+        flash_start_address + 1
+    }
+}
+
+impl ArchConfigInterface for system_config::RiscVConfig {
+    fn get_arch_crate_name(&self) -> &'static str {
+        "arch_riscv"
+    }
+
+    fn get_start_fn_address(&self, flash_start_address: usize) -> usize {
+        flash_start_address
+    }
+}
+
+pub struct SystemGenerator<'a, A: ArchConfigInterface> {
+    cli: Cli,
+    config: system_config::SystemConfig<A>,
+    env: Environment<'a>,
+}
+
+impl<'a, A: ArchConfigInterface + Serialize> SystemGenerator<'a, A> {
+    pub fn new(cli: Cli, config: system_config::SystemConfig<A>) -> Result<Self> {
+        let mut instance = Self {
+            cli,
+            config,
+            env: Environment::new(),
+        };
+
+        instance.env.add_filter("hex", hex);
+        for (name, path) in instance.cli.common_args.templates.clone() {
+            let template = fs::read_to_string(path)?;
+            instance.env.add_template_owned(name, template)?;
+        }
+
+        instance.populate_addresses();
+
+        Ok(instance)
+    }
+
+    pub fn generate(&mut self) -> Result<()> {
+        let out_str = match &self.cli.command {
+            Command::CodegenSystem => self.render_system()?,
+            Command::SystemLinkerScript => self.render_system_linker_script()?,
+            Command::AppLinkerScript(args) => self.render_app_linker_script(&args.app_name)?,
+        };
+
+        let mut file = File::create(&self.cli.common_args.output)?;
+        file.write_all(out_str.as_bytes())
+            .context("Failed to write output")
+    }
+
+    fn render_system(&self) -> Result<String> {
+        let template = self.env.get_template("system")?;
+        match template.render(&self.config) {
             Ok(str) => Ok(str),
             Err(e) => Err(anyhow!(e)),
         }
     }
 
-    fn render_app_linker_script(&mut self, env: &Environment, app_name: &String) -> Result<String> {
-        let template = env.get_template("app")?;
-        match template.render(self.config().apps.get(app_name)) {
+    fn render_system_linker_script(&self) -> Result<String> {
+        let template = self.env.get_template("system")?;
+        match template.render(&self.config) {
+            Ok(str) => Ok(str),
+            Err(e) => Err(anyhow!(e)),
+        }
+    }
+
+    fn render_app_linker_script(&self, app_name: &String) -> Result<String> {
+        let template = self.env.get_template("app")?;
+        match template.render(self.config.apps.get(app_name)) {
             Ok(str) => Ok(str),
             Err(e) => Err(anyhow!(e)),
         }
@@ -92,78 +174,6 @@ pub trait SystemGenerator {
     fn align(value: usize, alignment: usize) -> usize {
         debug_assert!(alignment.is_power_of_two());
         (value + alignment - 1) & !(alignment - 1)
-    }
-}
-
-pub fn parse_config(cli: &Cli) -> Result<SystemConfig> {
-    let json5_str =
-        fs::read_to_string(&cli.common_args.config).context("Failed to read config file")?;
-    let mut config: SystemConfig =
-        serde_json5::from_str(&json5_str).context("Failed to parse config file")?;
-    config.calculate_and_validate()?;
-    Ok(config)
-}
-
-pub fn generate<T: SystemGenerator>(cli: &Cli, system_generator: &mut T) -> Result<()> {
-    let mut env = Environment::new();
-    env.add_filter("to_hex", to_hex);
-
-    for (name, path) in &cli.common_args.templates {
-        let template = fs::read_to_string(path)?;
-        env.add_template_owned(name, template)?;
-    }
-
-    system_generator.populate_addresses();
-
-    let out_str = match &cli.command {
-        Command::CodegenSystem => system_generator.render_system(&mut env)?,
-        Command::AppLinkerScript(args) => {
-            system_generator.render_app_linker_script(&env, &args.app_name)?
-        }
-    };
-    // println!("OUT:\n{}", out_str);
-
-    let mut file = File::create(&cli.common_args.output)?;
-    file.write_all(out_str.as_bytes())
-        .context("Failed to write output")
-}
-
-// The DefaultSystemGenerator below supports Armv8m and RiscV.
-// New architectures which are implemented out of tree can
-// depend on this crate with a custom SystemGenerator impl.
-
-const FLASH_ALIGNMENT: usize = 4;
-const RAM_ALIGNMENT: usize = 8;
-
-#[derive(Debug, PartialEq)]
-pub enum Arch {
-    Armv8M,
-    RiscV,
-}
-
-impl FromStr for Arch {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "armv8m" => Ok(Arch::Armv8M),
-            "riscv" => Ok(Arch::RiscV),
-            _ => Err(anyhow!("'{}' is not a valid architecture", s)),
-        }
-    }
-}
-
-pub struct DefaultSystemGenerator {
-    config: system_config::SystemConfig,
-}
-
-impl SystemGenerator for DefaultSystemGenerator {
-    fn new(config: system_config::SystemConfig) -> Self {
-        DefaultSystemGenerator { config }
-    }
-
-    fn config(&self) -> &system_config::SystemConfig {
-        &self.config
     }
 
     fn populate_addresses(&mut self) {
@@ -177,11 +187,7 @@ impl SystemGenerator for DefaultSystemGenerator {
             self.config.kernel.ram_start_address + self.config.kernel.ram_size_bytes;
         next_ram_start_address = Self::align(next_ram_start_address, RAM_ALIGNMENT);
 
-        let arch = self.config.arch.parse().unwrap();
-        self.config.arch_crate_name = match arch {
-            Arch::Armv8M => "arch_arm_cortex_m",
-            Arch::RiscV => "arch_riscv",
-        };
+        self.config.arch_crate_name = self.config.arch.get_arch_crate_name();
 
         for app in self.config.apps.values_mut() {
             app.flash_start_address = next_flash_start_address;
@@ -194,11 +200,10 @@ impl SystemGenerator for DefaultSystemGenerator {
             next_ram_start_address =
                 Self::align(app.ram_start_address + app.ram_size_bytes, RAM_ALIGNMENT);
 
-            app.start_fn_address = match arch {
-                // On Armv8M, the +1 is to denote thumb mode.
-                Arch::Armv8M => app.flash_start_address + 1,
-                Arch::RiscV => app.flash_start_address,
-            };
+            app.start_fn_address = self
+                .config
+                .arch
+                .get_start_fn_address(app.flash_start_address);
 
             app.initial_sp = app.ram_start_address + app.ram_size_bytes;
         }
@@ -207,6 +212,6 @@ impl SystemGenerator for DefaultSystemGenerator {
 
 // Custom filters
 #[must_use]
-pub fn to_hex(_state: &State, value: usize) -> String {
+pub fn hex(_state: &State, value: usize) -> String {
     format!("{value:#x}")
 }

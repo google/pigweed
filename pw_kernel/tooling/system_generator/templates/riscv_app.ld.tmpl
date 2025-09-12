@@ -26,9 +26,9 @@ ENTRY(_start)
 MEMORY
 {
   /* Internal Flash */
-  FLASH(rx) : ORIGIN = {{flash_start_address | to_hex }}, LENGTH = {{flash_size_bytes}}
+  FLASH(rx) : ORIGIN = {{flash_start_address | hex }}, LENGTH = {{flash_size_bytes}}
   /* Internal SRAM */
-  RAM(rwx) : ORIGIN = {{ram_start_address | to_hex }}, LENGTH = {{ram_size_bytes}}
+  RAM(rwx) : ORIGIN = {{ram_start_address | hex }}, LENGTH = {{ram_size_bytes}}
 
   /* Each memory region above has an associated .*.unused_space section that
    * overlays the unused space at the end of the memory segment. These segments

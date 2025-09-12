@@ -31,16 +31,15 @@ ENTRY(Reset)
 
 MEMORY
 {
-  /* TODO: b/234892223 - Make it possible for projects to freely customize
-   * memory regions.
-   */
-
   /* Vector Table (typically in flash) */
-  VECTOR_TABLE(rx) : ORIGIN = 0x10000000, LENGTH = 2048
+  VECTOR_TABLE(rx) : ORIGIN = {{arch.vector_table_start_address | hex}},
+                     LENGTH = {{arch.vector_table_size_bytes}}
   /* Internal Flash */
-  FLASH(rx) : ORIGIN = 0x10000800, LENGTH = 2046K
+  FLASH(rx) : ORIGIN = {{kernel.flash_start_address | hex}},
+              LENGTH = {{kernel.flash_size_bytes}}
   /* Internal SRAM */
-  RAM(rwx) : ORIGIN = 0x20000000, LENGTH = 64K
+  RAM(rwx) : ORIGIN = {{kernel.ram_start_address | hex}},
+             LENGTH = {{kernel.ram_size_bytes}}
 
   /* Each memory region above has an associated .*.unused_space section that
    * overlays the unused space at the end of the memory segment. These segments
@@ -99,11 +98,6 @@ SECTIONS
   .code : ALIGN(4)
   {
     . = ALIGN(4);
-
-    /* RP235x boot header */
-    KEEP(*(.start_block));
-    KEEP(*(.boot_info));
-
     /* cortex-m-rt expects these to be nearby each other because short branches
      * are used.
      */
@@ -159,15 +153,6 @@ SECTIONS
     *(.data*)
     . = ALIGN(4);
   } >RAM AT> FLASH
-
-  /* Picotool entries go at the end of text. */
-  .bi_entries : ALIGN(4)
-  {
-      __bi_entries_start = .;
-      KEEP(*(.bi_entries));
-      . = ALIGN(4);
-      __bi_entries_end = .;
-  } > FLASH
 
   /* Represents unused space in the FLASH segment. This MUST be the last section
    * assigned to the FLASH region.
@@ -240,11 +225,10 @@ SECTIONS
   }
 }
 
-
-
 /* Symbols used by core_init.c: */
 /* Start of .static_init_ram in FLASH. */
 _pw_static_init_flash_start = LOADADDR(.static_init_ram);
+
 /* Region of .static_init_ram in RAM. */
 _pw_static_init_ram_start = ADDR(.static_init_ram);
 _pw_static_init_ram_end = _pw_static_init_ram_start + SIZEOF(.static_init_ram);
@@ -271,53 +255,6 @@ PROVIDE(DebugMonitor = DefaultHandler);
 PROVIDE(PendSV = DefaultHandler);
 PROVIDE(SysTick = DefaultHandler);
 PROVIDE(HardFault = HardFault_);
-
-
-/* rp235x-pac crate handlers */
-PROVIDE(TIMER0_IRQ_0 = DefaultHandler);
-PROVIDE(TIMER0_IRQ_1 = DefaultHandler);
-PROVIDE(TIMER0_IRQ_2 = DefaultHandler);
-PROVIDE(TIMER0_IRQ_3 = DefaultHandler);
-PROVIDE(TIMER1_IRQ_0 = DefaultHandler);
-PROVIDE(TIMER1_IRQ_1 = DefaultHandler);
-PROVIDE(TIMER1_IRQ_2 = DefaultHandler);
-PROVIDE(TIMER1_IRQ_3 = DefaultHandler);
-PROVIDE(PWM_IRQ_WRAP_0 = DefaultHandler);
-PROVIDE(PWM_IRQ_WRAP_1 = DefaultHandler);
-PROVIDE(DMA_IRQ_0 = DefaultHandler);
-PROVIDE(DMA_IRQ_1 = DefaultHandler);
-PROVIDE(DMA_IRQ_2 = DefaultHandler);
-PROVIDE(DMA_IRQ_3 = DefaultHandler);
-PROVIDE(USBCTRL_IRQ = DefaultHandler);
-PROVIDE(PIO0_IRQ_0 = DefaultHandler);
-PROVIDE(PIO0_IRQ_1 = DefaultHandler);
-PROVIDE(PIO1_IRQ_0 = DefaultHandler);
-PROVIDE(PIO1_IRQ_1 = DefaultHandler);
-PROVIDE(PIO2_IRQ_0 = DefaultHandler);
-PROVIDE(PIO2_IRQ_1 = DefaultHandler);
-PROVIDE(IO_IRQ_BANK0 = DefaultHandler);
-PROVIDE(IO_IRQ_BANK0_NS = DefaultHandler);
-PROVIDE(IO_IRQ_QSPI = DefaultHandler);
-PROVIDE(IO_IRQ_QSPI_NS = DefaultHandler);
-PROVIDE(SIO_IRQ_FIFO = DefaultHandler);
-PROVIDE(SIO_IRQ_BELL = DefaultHandler);
-PROVIDE(SIO_IRQ_FIFO_NS = DefaultHandler);
-PROVIDE(SIO_IRQ_BELL_NS = DefaultHandler);
-PROVIDE(SIO_IRQ_MTIMECMP = DefaultHandler);
-PROVIDE(CLOCKS_IRQ = DefaultHandler);
-PROVIDE(SPI0_IRQ = DefaultHandler);
-PROVIDE(SPI1_IRQ = DefaultHandler);
-PROVIDE(UART0_IRQ = DefaultHandler);
-PROVIDE(UART1_IRQ = DefaultHandler);
-PROVIDE(ADC_IRQ_FIFO = DefaultHandler);
-PROVIDE(I2C0_IRQ = DefaultHandler);
-PROVIDE(I2C1_IRQ = DefaultHandler);
-PROVIDE(OTP_IRQ = DefaultHandler);
-PROVIDE(TRNG_IRQ = DefaultHandler);
-PROVIDE(PLL_SYS_IRQ = DefaultHandler);
-PROVIDE(PLL_USB_IRQ = DefaultHandler);
-PROVIDE(POWMAN_IRQ_POW = DefaultHandler);
-PROVIDE(POWMAN_IRQ_TIMER  = DefaultHandler);
 
 /* arm-none-eabi expects `end` symbol to point to start of heap for sbrk. */
 PROVIDE(end = _pw_zero_init_ram_end);

@@ -20,6 +20,7 @@ system_image(
     name = "kernelspace_demo",
     kernel = ":target",
     platform = "//pw_kernel/target/pw_rp2350",
+    system_config = ":system_config",
     tags = ["kernel"],
 )
 
@@ -27,6 +28,11 @@ system_image_test(
     name = "kernelspace_demo_test",
     image = ":kernelspace_demo",
     target_compatible_with = TARGET_COMPATIBLE_WITH,
+)
+
+filegroup(
+    name = "system_config",
+    srcs = ["system.json5"],
 )
 
 rust_binary(
@@ -41,9 +47,9 @@ rust_binary(
         "//pw_kernel/arch/arm_cortex_m:arch_arm_cortex_m",
         "//pw_kernel/kernel",
         "//pw_kernel/subsys/console:console_backend",
-        "//pw_kernel/target:linker_script",
         "//pw_kernel/target:target_common",
         "//pw_kernel/target/pw_rp2350:entry",
+        "//pw_kernel/target/pw_rp2350:linker_script",
         "//pw_log/rust:pw_log",
     ],
 )

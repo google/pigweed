@@ -14,6 +14,15 @@
 
 load("@rules_rust//rust:defs.bzl", "rust_test")
 load("//pw_kernel/target/pw_rp2350:defs.bzl", "TARGET_COMPATIBLE_WITH")
+load("//pw_kernel/tooling:system_linker_script.bzl", "system_linker_script")
+
+system_linker_script(
+    name = "linker_script",
+    system_config = "system.json5",
+    tags = ["kernel"],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    template = "//pw_kernel/target/pw_rp2350:linker_script_template",
+)
 
 rust_test(
     name = "unittest_runner",
@@ -24,11 +33,11 @@ rust_test(
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     use_libtest_harness = False,
     deps = [
+        ":linker_script",
         "//pw_kernel/kernel",
         "//pw_kernel/kernel/tests:integration_tests",
         "//pw_kernel/lib/unittest:unittest_core",
         "//pw_kernel/subsys/console:console_backend",
-        "//pw_kernel/target:linker_script",
         "//pw_kernel/target:target_common",
         "//pw_kernel/target/pw_rp2350:entry",
         "//pw_log/rust:pw_log",

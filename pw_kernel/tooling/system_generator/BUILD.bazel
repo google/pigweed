@@ -46,5 +46,6 @@ rust_binary(
         ":system_generator",
         "@rust_crates//:anyhow",
         "@rust_crates//:clap",
+        "@rust_crates//:serde",
     ],
 )

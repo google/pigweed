@@ -21,24 +21,4 @@
     ram_start_address: 0x81000000,
     ram_size_bytes: 65536,           // 64Kb
   },
-  apps: {
-    ticker: {
-      flash_size_bytes: 261120, // 255Kb
-      ram_size_bytes: 65536,    // 64Kb
-      process: {
-        name: "ticker process",
-        objects: {
-            TICKER: {
-                type: "ticker"
-            },
-        },
-        threads: [
-          {
-            name: "ticker thread",
-            stack_size_bytes: 1024,
-          },
-        ],
-      },
-    },
-  },
 }

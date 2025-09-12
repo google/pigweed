@@ -21,6 +21,7 @@ system_image(
     name = "kernelspace_demo",
     kernel = ":target",
     platform = "//pw_kernel/target/qemu_virt_riscv32",
+    system_config = ":system_config",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
 )
@@ -37,6 +38,11 @@ system_image_test(
     target_compatible_with = TARGET_COMPATIBLE_WITH,
 )
 
+filegroup(
+    name = "system_config",
+    srcs = ["system.json5"],
+)
+
 rust_binary(
     name = "target",
     srcs = [
@@ -49,9 +55,9 @@ rust_binary(
         "//pw_kernel/arch/riscv:arch_riscv",
         "//pw_kernel/kernel",
         "//pw_kernel/subsys/console:console_backend",
-        "//pw_kernel/target:linker_script",
         "//pw_kernel/target:target_common",
         "//pw_kernel/target/qemu_virt_riscv32:entry",
+        "//pw_kernel/target/qemu_virt_riscv32:linker_script",
         "//pw_log/rust:pw_log",
         "@rust_crates//:riscv-semihosting",
     ],

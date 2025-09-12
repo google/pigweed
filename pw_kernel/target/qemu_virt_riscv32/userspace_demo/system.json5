@@ -12,7 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 {
-  arch: "riscv",
+  arch: {
+    type: "riscv",
+  },
   kernel: {
     flash_start_address: 0x80000000,
     flash_size_bytes: 261120,        // 255Kb

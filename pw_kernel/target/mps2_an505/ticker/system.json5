@@ -12,7 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 {
-  arch: "armv8m",
+  arch: {
+    type: "armv8m",
+    vector_table_start_address: 0x10000000,
+    vector_table_size_bytes: 2048,
+  },
   kernel: {
     flash_start_address: 0x10000800,
     flash_size_bytes: 261120,        // 255Kb

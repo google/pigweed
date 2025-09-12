@@ -13,32 +13,14 @@
 // the License.
 {
   arch: {
-    type: "riscv",
+    type: "armv8m",
+    vector_table_start_address: 0x10000000,
+    vector_table_size_bytes: 2048,
   },
   kernel: {
-    flash_start_address: 0x80000000,
+    flash_start_address: 0x10000800,
     flash_size_bytes: 261120,        // 255Kb
-    ram_start_address: 0x81000000,
+    ram_start_address: 0x38000000,
     ram_size_bytes: 65536,           // 64Kb
-  },
-  apps: {
-    ticker: {
-      flash_size_bytes: 261120, // 255Kb
-      ram_size_bytes: 65536,    // 64Kb
-      process: {
-        name: "ticker process",
-        objects: {
-            TICKER: {
-                type: "ticker"
-            },
-        },
-        threads: [
-          {
-            name: "ticker thread",
-            stack_size_bytes: 1024,
-          },
-        ],
-      },
-    },
   },
 }
