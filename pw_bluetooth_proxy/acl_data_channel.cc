@@ -39,8 +39,10 @@ AclDataChannel::AclConnection::AclConnection(
     : transport_(transport),
       connection_handle_(connection_handle),
       num_pending_packets_(num_pending_packets),
-      leu_signaling_channel_(l2cap_channel_manager, connection_handle),
-      aclu_signaling_channel_(l2cap_channel_manager, connection_handle) {
+      leu_signaling_channel_(L2capLeUSignalingChannel::Create(
+          l2cap_channel_manager, connection_handle)),
+      aclu_signaling_channel_(L2capAclUSignalingChannel::Create(
+          l2cap_channel_manager, connection_handle)) {
   PW_LOG_INFO(
       "btproxy: AclConnection ctor. transport_: %u, connection_handle_: %#x",
       cpp23::to_underlying(transport_),

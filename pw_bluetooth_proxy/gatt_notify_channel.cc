@@ -116,10 +116,12 @@ pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
     PW_LOG_ERROR("Attribute handle cannot be 0.");
     return pw::Status::InvalidArgument();
   }
-  return GattNotifyChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
-                           /*connection_handle=*/connection_handle,
-                           /*attribute_handle=*/attribute_handle,
-                           std::move(event_fn));
+  GattNotifyChannel channel(/*l2cap_channel_manager=*/l2cap_channel_manager,
+                            /*connection_handle=*/connection_handle,
+                            /*attribute_handle=*/attribute_handle,
+                            std::move(event_fn));
+  channel.Init();
+  return channel;
 }
 
 GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,

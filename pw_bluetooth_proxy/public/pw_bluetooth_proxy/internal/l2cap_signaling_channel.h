@@ -36,6 +36,7 @@ class L2capSignalingChannel : public BasicL2capChannel {
                                  AclTransportType transport,
                                  uint16_t fixed_cid);
 
+  L2capSignalingChannel(L2capSignalingChannel&&);
   L2capSignalingChannel& operator=(L2capSignalingChannel&& other);
 
   // Process the payload of a CFrame. Implementations should return true if the

@@ -181,14 +181,16 @@ Result<RfcommChannel> RfcommChannel::Create(
     return Status::InvalidArgument();
   }
 
-  return RfcommChannel(l2cap_channel_manager,
-                       rx_multibuf_allocator,
-                       connection_handle,
-                       rx_config,
-                       tx_config,
-                       channel_number,
-                       std::move(payload_from_controller_fn),
-                       std::move(event_fn));
+  RfcommChannel channel(l2cap_channel_manager,
+                        rx_multibuf_allocator,
+                        connection_handle,
+                        rx_config,
+                        tx_config,
+                        channel_number,
+                        std::move(payload_from_controller_fn),
+                        std::move(event_fn));
+  channel.Init();
+  return channel;
 }
 
 bool RfcommChannel::DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) {

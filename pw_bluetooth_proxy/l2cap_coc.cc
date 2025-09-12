@@ -111,15 +111,17 @@ pw::Result<L2capCoc> L2capCoc::Create(
     return pw::Status::InvalidArgument();
   }
 
-  return L2capCoc(
-      /*rx_multibuf_allocator=*/rx_multibuf_allocator,
-      /*l2cap_channel_manager=*/l2cap_channel_manager,
-      /*signaling_channel=*/signaling_channel,
-      /*connection_handle=*/connection_handle,
-      /*rx_config=*/rx_config,
-      /*tx_config=*/tx_config,
-      /*event_fn=*/std::move(event_fn),
-      /*receive_fn=*/std::move(receive_fn));
+  L2capCoc channel(/*rx_multibuf_allocator=*/rx_multibuf_allocator,
+                   /*l2cap_channel_manager=*/l2cap_channel_manager,
+                   /*signaling_channel=*/signaling_channel,
+                   /*connection_handle=*/connection_handle,
+                   /*rx_config=*/rx_config,
+                   /*tx_config=*/tx_config,
+                   /*event_fn=*/std::move(event_fn),
+                   /*receive_fn=*/std::move(receive_fn));
+
+  channel.Init();
+  return channel;
 }
 
 pw::Status L2capCoc::ReplenishRxCredits(uint16_t additional_rx_credits) {

@@ -39,7 +39,7 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     return pw::Status::InvalidArgument();
   }
 
-  return BasicL2capChannel(
+  BasicL2capChannel channel(
       l2cap_channel_manager,
       rx_multibuf_allocator,
       /*connection_handle=*/connection_handle,
@@ -49,6 +49,8 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
       /*payload_from_host_fn=*/std::move(payload_from_host_fn),
       /*event_fn=*/std::move(event_fn));
+  channel.Init();
+  return channel;
 }
 
 Status BasicL2capChannel::DoCheckWriteParameter(

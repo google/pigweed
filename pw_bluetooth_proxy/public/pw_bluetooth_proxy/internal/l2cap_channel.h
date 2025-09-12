@@ -43,6 +43,8 @@ class L2capChannelManager;
 class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
  public:
   enum class State {
+    // Channel is new or has been moved from.
+    kUndefined,
     kRunning,
     // Channel is stopped, but the L2CAP connection has not been closed.
     kStopped,
@@ -50,8 +52,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
     // HCI_Disconnection_Complete event, L2CAP_DISCONNECTION_RSP packet, or
     // HCI_Reset Command packet; or `ProxyHost` dtor has been called.
     kClosed,
-    // Channel has been moved from and is no longer a valid object.
-    kUndefined,
+
   };
 
   // L2capChannels can be held by a Holder that the channel will provide tx
@@ -238,6 +239,10 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       uint16_t remote_cid,
       OptionalPayloadReceiveCallback&& payload_from_controller_fn,
       OptionalPayloadReceiveCallback&& payload_from_host_fn);
+
+  // Complete initialization and registration of the channel. Must be called
+  // after ctor for channel to be active.
+  void Init();
 
   // Returns whether or not ACL connection handle & L2CAP channel identifiers
   // are valid parameters for a packet.
@@ -502,7 +507,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   L2capChannelManager& l2cap_channel_manager_;
 
-  State state_;
+  State state_ = State::kUndefined;
 
   // ACL connection handle.
   uint16_t connection_handle_;

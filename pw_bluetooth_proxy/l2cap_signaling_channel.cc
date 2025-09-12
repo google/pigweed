@@ -47,13 +47,26 @@ L2capSignalingChannel::L2capSignalingChannel(
                         /*event_fn=*/nullptr),
       l2cap_channel_manager_(l2cap_channel_manager) {}
 
-L2capSignalingChannel& L2capSignalingChannel::operator=(
-    L2capSignalingChannel&& other) {
+L2capSignalingChannel::L2capSignalingChannel(L2capSignalingChannel&& other)
+    : BasicL2capChannel(static_cast<BasicL2capChannel&&>(other)),
+      l2cap_channel_manager_(other.l2cap_channel_manager_) {
   std::lock_guard lock(mutex_);
   std::lock_guard other_lock(other.mutex_);
   pending_connections_ = std::move(other.pending_connections_);
+  pending_configurations_ = std::move(other.pending_configurations_);
+  next_identifier_ = std::exchange(other.next_identifier_, 0);
+}
 
-  BasicL2capChannel::operator=(std::move(other));
+L2capSignalingChannel& L2capSignalingChannel::operator=(
+    L2capSignalingChannel&& other) {
+  BasicL2capChannel::operator=(static_cast<BasicL2capChannel&&>(other));
+
+  std::lock_guard lock(mutex_);
+  std::lock_guard other_lock(other.mutex_);
+  pending_connections_ = std::move(other.pending_connections_);
+  pending_configurations_ = std::move(other.pending_configurations_);
+  next_identifier_ = std::exchange(other.next_identifier_, 0);
+
   return *this;
 }
 

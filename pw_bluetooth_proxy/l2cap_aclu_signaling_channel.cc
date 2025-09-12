@@ -21,6 +21,14 @@
 
 namespace pw::bluetooth::proxy {
 
+// static
+L2capAclUSignalingChannel L2capAclUSignalingChannel::Create(
+    L2capChannelManager& l2cap_channel_manager, uint16_t connection_handle) {
+  L2capAclUSignalingChannel channel{l2cap_channel_manager, connection_handle};
+  channel.Init();
+  return channel;
+}
+
 L2capAclUSignalingChannel::L2capAclUSignalingChannel(
     L2capChannelManager& l2cap_channel_manager, uint16_t connection_handle)
     : L2capSignalingChannel(
