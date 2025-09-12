@@ -15,18 +15,18 @@
 #include <cstdlib>
 #include <new>
 
-void operator delete(void* ptr) noexcept { free(ptr); }
-void operator delete[](void* ptr) noexcept { free(ptr); }
+void operator delete(void* __ptr) noexcept { free(__ptr); }
+void operator delete[](void* __ptr) noexcept { free(__ptr); }
 
-void operator delete(void* ptr, std::align_val_t) noexcept { free(ptr); }
-void operator delete[](void* ptr, std::align_val_t) noexcept { free(ptr); }
+void operator delete(void* __ptr, std::align_val_t) noexcept { free(__ptr); }
+void operator delete[](void* __ptr, std::align_val_t) noexcept { free(__ptr); }
 
-void operator delete(void* ptr, std::size_t) noexcept { free(ptr); }
-void operator delete[](void* ptr, std::size_t) noexcept { free(ptr); }
+void operator delete(void* __ptr, std::size_t) noexcept { free(__ptr); }
+void operator delete[](void* __ptr, std::size_t) noexcept { free(__ptr); }
 
-void operator delete(void* ptr, std::size_t, std::align_val_t) noexcept {
-  free(ptr);
+void operator delete(void* __ptr, std::size_t, std::align_val_t) noexcept {
+  free(__ptr);
 }
-void operator delete[](void* ptr, std::size_t, std::align_val_t) noexcept {
-  free(ptr);
+void operator delete[](void* __ptr, std::size_t, std::align_val_t) noexcept {
+  free(__ptr);
 }
