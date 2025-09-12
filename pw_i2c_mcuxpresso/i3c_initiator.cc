@@ -188,7 +188,6 @@ pw::Status I3cMcuxpressoInitiator::SetStaticAddressList(
 pw::Status I3cMcuxpressoInitiator::DoSetDasa(pw::i2c::Address static_addr) {
   std::array<std::byte, 1> dasa_buffer = {
       static_cast<std::byte>(static_addr.GetAddress() << 1)};
-  PW_LOG_INFO("  sending SETDASA 0x%02x", static_addr.GetAddress());
   PW_TRY(DoTransferCcc(
       I3cCccAction::kWrite, I3cCcc::kSetdasaDirect, static_addr, dasa_buffer));
 
@@ -230,9 +229,6 @@ pw::Status I3cMcuxpressoInitiator::AddAssignedI3cAddress(
                 i3c_assigned_addresses_.end(),
                 address) == i3c_assigned_addresses_.end()) {
     i3c_assigned_addresses_.push_back(address);
-  } else {
-    PW_LOG_WARN("Address was already in i3c_assigned_addresses_: 0x%02x",
-                address.GetAddress());
   }
   return pw::OkStatus();
 }
@@ -242,9 +238,6 @@ void I3cMcuxpressoInitiator::ForgetAssignedAddress(pw::i2c::Address address) {
       i3c_assigned_addresses_.begin(), i3c_assigned_addresses_.end(), address);
   if (to_erase != i3c_assigned_addresses_.end()) {
     i3c_assigned_addresses_.erase(to_erase);
-  } else {
-    PW_LOG_WARN("Request to forget unknown address: 0x%02x",
-                address.GetAddress());
   }
 }
 
@@ -406,12 +399,7 @@ pw::Status I3cMcuxpressoInitiator::DoTransferCcc(I3cCccAction rnw,
     transfer.dataSize = 0;
     transfer.busType = kI3C_TypeI3CSdr;
 
-    pw::Status pw_status =
-        InitiateNonBlockingTransferUntil(kCccDeadline, &transfer);
-    if (!pw_status.ok()) {
-      PW_LOG_ERROR("Error sending I3C CCC prefix: %d", pw_status.code());
-      return pw_status;
-    }
+    PW_TRY(InitiateNonBlockingTransferUntil(kCccDeadline, &transfer));
 
     transfer.flags = kI3C_TransferRepeatedStartFlag;
     transfer.slaveAddress = uint32_t{address.GetSevenBit()};
@@ -422,11 +410,7 @@ pw::Status I3cMcuxpressoInitiator::DoTransferCcc(I3cCccAction rnw,
     transfer.dataSize = buffer.size();
     transfer.busType = kI3C_TypeI3CSdr;
 
-    pw_status = InitiateNonBlockingTransferUntil(kCccDeadline, &transfer);
-    if (!pw_status.ok()) {
-      PW_LOG_ERROR("Error sending I3C CCC data: %d", pw_status.code());
-    }
-    return pw_status;
+    return InitiateNonBlockingTransferUntil(kCccDeadline, &transfer);
   }
   return HalStatusToPwStatus(status);
 }
