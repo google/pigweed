@@ -115,7 +115,7 @@ TEST(PendFuncAwaitable, TestTemplateDeductionAndSize) {
   // A PendFuncAwaitable with an unspecified Func template parameter will
   // default to pw::Function. This allows the same container to hold a variety
   // of different callables, but it may either reserve extra inline storage or
-  // dynamically allocate momeory, depending on how pw::Function is configured.
+  // dynamically allocate memory, depending on how pw::Function is configured.
   std::optional<PendFuncAwaitable<int>> a;
   a.emplace([](Context&) -> Poll<int> { return Ready(4); });
   a.emplace(&ReturnsReady8);
