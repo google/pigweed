@@ -46,7 +46,7 @@ void WaitUntilDetachedThreadsCleanedUp() {
   // One may be tempted to use the context's task_handle to wait until it's a
   // nullptr. However, there's still a race condition that the task has not
   // finished the execution of vTaskDelete. In addition during this time the
-  // the task_handle has been cleared meaning we cannot call vTaskDelete.
+  // task_handle has been cleared meaning we cannot call vTaskDelete.
   this_thread::sleep_for(
       chrono::SystemClock::for_at_least(std::chrono::milliseconds(50)));
 }

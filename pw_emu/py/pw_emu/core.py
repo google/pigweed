@@ -702,7 +702,7 @@ class Launcher(ABC):
         handles information.
 
         Typically an internal monitor channel is used to inquire information
-        about the the configured channels (e.g. TCP ports, pty paths) and
+        about the configured channels (e.g. TCP ports, pty paths) and
         :py:attr:`pw_emu.core.Launcher._handles` is updated via
         :py:meth:`pw_emu.core.Handles.add_channel_tcp`,
         :py:meth:`pw_emu.core.Handles.add_channel_pty`, etc.

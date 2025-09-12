@@ -86,7 +86,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // Enable or disable the privacy feature. When enabled, the controller will be
   // configured to use a new random address if it is currently allowed to do so.
   // If setting the random address is not allowed the update will be deferred
-  // until the the next successful attempt triggered by a call to
+  // until the next successful attempt triggered by a call to
   // TryRefreshRandomAddress().
   //
   // If an IRK has been assigned and |enabled| is true, then the generated

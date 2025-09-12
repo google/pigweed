@@ -15,7 +15,7 @@
 
 This module does not implement any actual signing logic; that is left up to the
 remote signing service. This module takes care of uploading bundles to GCS for
-signing, waiting the the signed version to appear, and downloading the signed
+signing, waiting the signed version to appear, and downloading the signed
 bundle from the output bucket. It can be used either as an entry point by
 invoking it as a runnable module and providing all the necessary arguments (run
 the tool with --help for details), or as a library by instantiating

@@ -483,7 +483,7 @@ class WindowList:
         try:
             self.active_panes.remove(pane)
         except ValueError:
-            # ValueError will be raised if the the pane is not found
+            # ValueError will be raised if the pane is not found
             pass
         return pane
 
@@ -503,8 +503,8 @@ class WindowList:
                     self.active_panes[existing_pane_index]
                 )
             except ValueError:
-                # ValueError will be raised if the the pane at
-                # existing_pane_index can't be accessed.
+                # ValueError will be raised if the pane at existing_pane_index
+                # can't be accessed.
                 # Focus on the main menu if the existing pane is hidden.
                 self.application.focus_main_menu()
 

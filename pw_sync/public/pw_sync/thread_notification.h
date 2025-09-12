@@ -59,8 +59,8 @@ class ThreadNotification {
   ///
   /// Clears the notification latch.
   ///
-  /// Returns true if the thread was notified, meaning the the internal latch
-  /// was reset successfully.
+  /// Returns true if the thread was notified, meaning the internal latch was
+  /// reset successfully.
   ///
   /// @important This should only be used by a single consumer thread.
   [[nodiscard]] bool try_acquire();

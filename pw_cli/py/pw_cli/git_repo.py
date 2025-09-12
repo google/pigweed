@@ -466,7 +466,7 @@ def find_git_repo(path_in_repo: Path, tool_runner: ToolRunner) -> GitRepo:
         GitError: The specified path does not live in a Git repository.
 
     Returns:
-        A GitRepo representing the the enclosing repository that tracks the
+        A GitRepo representing the enclosing repository that tracks the
         specified file or folder.
     """
     git_tool = _GitTool(

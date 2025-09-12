@@ -48,7 +48,7 @@ class Client {
   // locally-preferred MTU.
   //
   // Upon successful exchange, the bearer will be updated to use the resulting
-  // MTU and |callback| will be notified with the the resulting MTU.
+  // MTU and |callback| will be notified with the resulting MTU.
   //
   // MTU exchange support is optional per v5.3 Vol. 3 Part F Table 4.1, so if
   // the exchange fails because the peer doesn't support it, the bearer's MTU

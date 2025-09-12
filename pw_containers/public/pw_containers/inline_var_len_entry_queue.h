@@ -266,10 +266,10 @@ static inline uint32_t pw_InlineVarLenEntryQueue_MaxSize(
 uint32_t pw_InlineVarLenEntryQueue_SizeBytes(
     pw_InlineVarLenEntryQueue_ConstHandle queue);
 
-/// Returns the the maximum number of bytes that can be stored in the queue.
-/// This is largest possible value of `size_bytes()`, and the size of the
-/// largest single entry that can be stored in this queue. Attempting to store a
-/// larger entry is invalid and results in a crash.
+/// Returns the maximum number of bytes that can be stored in the queue. This is
+/// largest possible value of `size_bytes()`, and the size of the largest single
+/// entry that can be stored in this queue. Attempting to store a larger entry
+/// is invalid and results in a crash.
 static inline uint32_t pw_InlineVarLenEntryQueue_MaxSizeBytes(
     pw_InlineVarLenEntryQueue_ConstHandle queue);
 

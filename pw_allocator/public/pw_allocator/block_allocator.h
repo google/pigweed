@@ -133,7 +133,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   /// state of the allocator.
   ///
   /// The largest allocation possible at any given time is the inner size of the
-  /// the largest free block. This method may be expensive to call if the block
+  /// largest free block. This method may be expensive to call if the block
   /// allocator implementation does not track its largest block. As a result, it
   /// should primarily be used for diagnostic purposes after an allocation
   /// failure, e.g.

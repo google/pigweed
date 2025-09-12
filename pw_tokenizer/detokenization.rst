@@ -491,8 +491,8 @@ This implementation supports:
 
      - If the precision is specified as ``0``, it is interpreted to mean ``1``.
 
-     - ``e`` formatting is used if the the exponent would be less than ``-4`` or
-       is greater than or equal to the precision.
+     - ``e`` formatting is used if the exponent would be less than ``-4`` or is
+       greater than or equal to the precision.
 
      - Trailing zeros are removed unless the ``#`` flag is set.
 
@@ -508,8 +508,8 @@ This implementation supports:
 
      - If the precision is specified as ``0``, it is interpreted to mean ``1``.
 
-     - ``E`` formatting is used if the the exponent would be less than ``-4`` or
-       is greater than or equal to the precision.
+     - ``E`` formatting is used if the exponent would be less than ``-4`` or is
+       greater than or equal to the precision.
 
      - Trailing zeros are removed unless the ``#`` flag is set.
 

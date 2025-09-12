@@ -355,8 +355,8 @@ class FakeController final : public ControllerTestDoubleBase,
     le_create_connection_cb_ = std::move(callback);
   }
 
-  // Sets a callback to be invoked when the the base controller parameters
-  // change due to a HCI command. These parameters are:
+  // Sets a callback to be invoked when the base controller parameters change
+  // due to a HCI command. These parameters are:
   //
   //   - The local name.
   //   - The local class of device.

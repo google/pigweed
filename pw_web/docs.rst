@@ -403,7 +403,7 @@ To create your own subset, find the codepoints you want to add and:
    source env/bin/activate
    pip install fonttools brotli
 
-2. Download the the raw `MaterialSybmolsRounded woff2 file <https://github.com/google/material-design-icons/tree/master/variablefont>`_
+2. Download the raw `MaterialSybmolsRounded woff2 file <https://github.com/google/material-design-icons/tree/master/variablefont>`_
 
 .. code-block:: bash
 

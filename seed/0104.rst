@@ -166,7 +166,7 @@ The framebuffer does not own the underlying pixel buffer. In other words
 the deletion of a framebuffer will not free the underlying pixel data.
 
 Framebuffers do not have methods for reading or writing to the underlying pixel
-buffer. This is the responsibility of the the selected graphics library which
+buffer. This is the responsibility of the selected graphics library which
 can be given the pixel buffer pointer retrieved by calling ``data()``.
 
 .. code-block:: cpp

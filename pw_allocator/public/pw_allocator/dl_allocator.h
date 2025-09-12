@@ -40,9 +40,9 @@ using DlBlock = DetailedBlock<OffsetType, GenericFastSortedItem>;
 /// not currently supported.
 ///
 /// Note that Doug Lea's "bins" are provided by pw_allocator's buckets. Both the
-/// the "fast" and "small" bins hold a single size, and can therefore be
-/// implemented using `UnorderedBucket`. The "large" bins hold a range of sizes
-/// a use `FastSortedBucket` to quickly return best-fit blocks as requested.
+/// "fast" and "small" bins hold a single size, and can therefore be implemented
+/// using `UnorderedBucket`. The "large" bins hold a range of sizes a use
+/// `FastSortedBucket` to quickly return best-fit blocks as requested.
 template <typename BlockType = DlBlock<uintptr_t>>
 class DlAllocator : public BlockAllocator<BlockType> {
  private:
