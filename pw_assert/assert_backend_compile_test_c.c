@@ -31,7 +31,6 @@ static void EnsureNullIsIncluded(void) {
 #include <stdbool.h>
 
 #include "pw_assert/assert.h"
-#include "pw_assert/short.h"
 #include "pw_status/status.h"
 
 #ifdef __cplusplus
@@ -169,6 +168,38 @@ void AssertBackendCompileTestsInC(void) {
     PW_CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
   }
 
+  {  // Compile tests for PW_CHECK_OK().
+    PW_CHECK_OK(PW_STATUS_OK);
+    PW_CHECK_OK(PW_STATUS_OK, "msg");
+    PW_CHECK_OK(PW_STATUS_OK, "msg: %d", 5);
+    PW_DCHECK_OK(PW_STATUS_OK);
+    PW_DCHECK_OK(PW_STATUS_OK, "msg");
+    PW_DCHECK_OK(PW_STATUS_OK, "msg: %d", 5);
+  }
+
+  {  // TEST(Assert, Basic)
+    MAYBE_SKIP_TEST;
+    PW_ASSERT(false);
+    PW_ASSERT(123 == 456);
+  }
+
+  {  // Compile tests for PW_ASSERT().
+    PW_ASSERT(true);
+    PW_ASSERT(123 != 456);
+
+    PW_DASSERT(true);
+    PW_DASSERT(123 != 456);
+  }
+
+  EnsureNullIsIncluded();
+}
+
+#ifndef CHECK
+
+#include "pw_assert/short.h"
+
+// NOLINTNEXTLINE(google-readability-function-size)
+void AssertBackendCompileTestsInCWithShortNames(void) {
   {  // TEST(Check, ShortNamesWork) {
     MAYBE_SKIP_TEST;
 
@@ -195,29 +226,6 @@ void AssertBackendCompileTestsInC(void) {
     CHECK_INT_LE(Add3(1, 2, 3), Add3(1, 2, 3), "INT: " FAIL_IF_DISPLAYED);
     CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
   }
-
-  {  // Compile tests for PW_CHECK_OK().
-    PW_CHECK_OK(PW_STATUS_OK);
-    PW_CHECK_OK(PW_STATUS_OK, "msg");
-    PW_CHECK_OK(PW_STATUS_OK, "msg: %d", 5);
-    PW_DCHECK_OK(PW_STATUS_OK);
-    PW_DCHECK_OK(PW_STATUS_OK, "msg");
-    PW_DCHECK_OK(PW_STATUS_OK, "msg: %d", 5);
-  }
-
-  {  // TEST(Assert, Basic)
-    MAYBE_SKIP_TEST;
-    PW_ASSERT(false);
-    PW_ASSERT(123 == 456);
-  }
-
-  {  // Compile tests for PW_ASSERT().
-    PW_ASSERT(true);
-    PW_ASSERT(123 != 456);
-
-    PW_DASSERT(true);
-    PW_DASSERT(123 != 456);
-  }
-
-  EnsureNullIsIncluded();
 }
+
+#endif  // CHECK

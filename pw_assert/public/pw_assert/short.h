@@ -17,6 +17,10 @@
 
 // Optional short CHECK name definitions
 
+#ifdef CHECK
+#error "CHECK macros already defined"
+#endif  // CHECK
+
 // clang-format off
 // Checks that always run even in production.
 #define CRASH                 PW_CRASH

@@ -36,7 +36,7 @@
 // TODO: b/235289499 - Add verification of the actually recorded asserts
 // statements.
 
-#include "pw_assert/short.h"
+#include "pw_assert/check.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
@@ -168,6 +168,43 @@ TEST(Check, ComparisonArgumentsWithCommas) {
   PW_CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
 }
 
+pw::Status MakeStatus(pw::Status status) { return status; }
+
+TEST(Check, CheckOkMacrosCompile) {
+  MAYBE_SKIP_TEST;
+  pw::Status status = pw::Status::Unknown();
+
+  // Typical case with long names.
+  PW_CHECK_OK(status);
+  PW_CHECK_OK(status, "msg");
+  PW_CHECK_OK(status, "msg: %d", 5);
+
+  // Status from a literal.
+  PW_CHECK_OK(pw::OkStatus());
+
+  // Status from a function.
+  PW_CHECK_OK(MakeStatus(pw::OkStatus()));
+
+  // Status from C enums.
+  PW_CHECK_OK(PW_STATUS_OK);
+}
+
+// These are defined in assert_test.c, to test C compatibility.
+extern "C" void AssertBackendCompileTestsInC();
+
+TEST(Check, AssertBackendCompileTestsInC) {
+  MAYBE_SKIP_TEST;
+  AssertBackendCompileTestsInC();
+}
+
+}  // namespace
+
+#ifndef CHECK
+
+#include "pw_assert/short.h"
+
+namespace {
+
 TEST(Check, ShortNamesWork) {
   MAYBE_SKIP_TEST;
 
@@ -193,40 +230,21 @@ TEST(Check, ShortNamesWork) {
 
   CHECK_INT_LE(Add3(1, 2, 3), Add3(1, 2, 3), "INT: " FAIL_IF_DISPLAYED);
   CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
-}
 
-pw::Status MakeStatus(pw::Status status) { return status; }
-
-TEST(Check, CheckOkMacrosCompile) {
-  MAYBE_SKIP_TEST;
   pw::Status status = pw::Status::Unknown();
-
-  // Typical case with long names.
-  PW_CHECK_OK(status);
-  PW_CHECK_OK(status, "msg");
-  PW_CHECK_OK(status, "msg: %d", 5);
-
-  // Short names.
   CHECK_OK(status);
   CHECK_OK(status, "msg");
   CHECK_OK(status, "msg: %d", 5);
-
-  // Status from a literal.
-  PW_CHECK_OK(pw::OkStatus());
-
-  // Status from a function.
-  PW_CHECK_OK(MakeStatus(pw::OkStatus()));
-
-  // Status from C enums.
-  PW_CHECK_OK(PW_STATUS_OK);
 }
 
 // These are defined in assert_test.c, to test C compatibility.
-extern "C" void AssertBackendCompileTestsInC();
+extern "C" void AssertBackendCompileTestsInCWithShortNames();
 
-TEST(Check, AssertBackendCompileTestsInC) {
+TEST(Check, AssertBackendCompileTestsInCWithShortNames) {
   MAYBE_SKIP_TEST;
-  AssertBackendCompileTestsInC();
+  AssertBackendCompileTestsInCWithShortNames();
 }
 
 }  // namespace
+
+#endif  // CHECK
