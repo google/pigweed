@@ -18,7 +18,11 @@ import * as os from 'os';
 import { loadLegacySettings, loadLegacySettingsFile } from '../settings/legacy';
 import { settings, workingDir } from '../settings/vscode';
 import { globStream } from 'glob';
-import { CDB_FILE_NAME } from './paths';
+import {
+  CDB_FILE_DIR,
+  CDB_FILE_NAME,
+  LAST_BAZEL_COMMAND_FILE_NAME,
+} from './paths';
 import logger from '../logging';
 import {
   CompilationDatabase,
@@ -222,7 +226,10 @@ if contains -- $argv[1] build run test
   if [ $BAZEL_EXIT_CODE -eq 0 ];
     echo "Updating compile commands..." >&2
     $BAZEL_REAL run @pigweed//pw_ide/bazel:update_compile_commands
-    if [ $status -ne 0 ];
+    if [ $status -eq 0 ];
+      mkdir -p ${CDB_FILE_DIR}
+      echo $argv > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
+    else
       echo "⚠️  Update command failed, continuing..." >&2
     end
   end
@@ -251,7 +258,10 @@ if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; the
   if [ $BAZEL_EXIT_CODE -eq 0 ]; then
     echo "Updating compile commands..." >&2
     $BAZEL_REAL run @pigweed//pw_ide/bazel:update_compile_commands
-    if [ $? -ne 0 ]; then
+    if [ $? -eq 0 ]; then
+      mkdir -p ${CDB_FILE_DIR}
+      echo "$*" > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
+    else
       echo "⚠️  Update command failed, continuing..." >&2
     fi
   fi
@@ -282,7 +292,10 @@ if contains -- $argv[1] build run test
     $BAZEL_REAL --quiet run $CANONICALIZED_ARGS --show_result=0 \
       ${generatorTarget} -- \
       --target "$argv" --cwd (pwd) --bazelCmd "$BAZEL_REAL"
-    if [ $status -ne 0 ]
+    if [ $status -eq 0 ];
+      mkdir -p ${CDB_FILE_DIR}
+      echo $argv > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
+    else
       echo "⚠️ Compile commands generation failed (exit code $status), continuing..." >&2
     end
   end
@@ -310,7 +323,10 @@ set -uo pipefail
     $BAZEL_REAL --quiet run $CANONICALIZED_ARGS --show_result=0 \
       ${generatorTarget} -- \
       --target "$*" --cwd "$(pwd)" --bazelCmd "$BAZEL_REAL"
-    if [ $? -ne 0 ]; then
+    if [ $? -eq 0 ]; then
+      mkdir -p ${CDB_FILE_DIR}
+      echo "$*" > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
+    else
       echo "⚠️ Compile commands generation failed (exit code $?), continuing..." >&2
     fi
   fi

@@ -21,6 +21,8 @@ import { settings, workingDir } from '../settings/vscode';
 
 export const CDB_FILE_NAME = 'compile_commands.json' as const;
 
+export const LAST_BAZEL_COMMAND_FILE_NAME = 'pwLastBazelCommand.txt' as const;
+
 export const CDB_FILE_DIR = '.compile_commands';
 
 export const CDB_FILE_DIRS = [

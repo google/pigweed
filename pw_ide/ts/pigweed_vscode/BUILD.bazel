@@ -24,6 +24,10 @@ filegroup(
         "src/clangd/compileCommandsGenerator.ts",
         "src/clangd/compileCommandsGeneratorUI.ts",
         "src/clangd/parser.ts",
+        "src/clangd/paths.ts",
+        "src/clangd/unprocessedMapping.ts",
+        "src/logging.ts",
+        "src/settings/vscode.ts",
         "tsconfig.json",
     ],
 )

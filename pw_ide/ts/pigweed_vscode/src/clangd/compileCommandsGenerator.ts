@@ -22,6 +22,7 @@ import {
   CompilationDatabaseMap,
   CompileCommand,
 } from './parser';
+import { CDB_FILE_DIR, LAST_BAZEL_COMMAND_FILE_NAME } from './paths';
 import { LoggerUI, UIManager } from './compileCommandsGeneratorUI';
 
 type CQueryItem = [string, string[]];
@@ -828,35 +829,26 @@ export async function parseBazelBuildCommand(
   };
 }
 
-export function saveLastBazelCommandInUserSettings(
+export function saveLastBazelCommand(
   cwd: string,
   bazelCmd: string,
   tuiManager?: UIManager | LoggerUI,
 ) {
   try {
-    const settingsPath = path.join(cwd, '.vscode', 'settings.json');
-
-    if (fs.existsSync(settingsPath)) {
-      const originalContent = fs.readFileSync(settingsPath, 'utf-8');
-      const formattingOptions: FormattingOptions = {
-        keepLines: true,
-        insertSpaces: true,
-        tabSize: 2,
-        eol: '\n',
-      };
-      const jsonPath = ['pigweed.bazelCompileCommandsLastBuildCommand'];
-      const edits = modify(originalContent, jsonPath, bazelCmd, {
-        formattingOptions,
-      });
-      const updatedContent = applyEdits(originalContent, edits);
-      fs.writeFileSync(settingsPath, updatedContent, 'utf-8');
-      tuiManager?.addStdout('Saved last bazel command to user settings.json.');
+    const compileCommandsDir = path.join(cwd, CDB_FILE_DIR);
+    if (!fs.existsSync(compileCommandsDir)) {
+      fs.mkdirSync(compileCommandsDir, { recursive: true });
     }
-  } catch (e: any) {
-    tuiManager?.addStderr(
-      'Failed to save last bazel command to user settings.json: ' +
-        e.toString(),
+    const filePath = path.join(
+      compileCommandsDir,
+      LAST_BAZEL_COMMAND_FILE_NAME,
     );
+    fs.writeFileSync(filePath, bazelCmd, 'utf-8');
+    tuiManager?.addStdout(
+      `Saved last bazel command to ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}.`,
+    );
+  } catch (e: any) {
+    tuiManager?.addStderr('Failed to save last bazel command: ' + e.toString());
   }
 }
 
@@ -888,7 +880,7 @@ async function runAsCli() {
     parsedArgs['cwd'],
   );
 
-  const cdbFileDir = parsedArgs['cdbFileDir'] || '.compile_commands';
+  const cdbFileDir = parsedArgs['cdbFileDir'] || CDB_FILE_DIR;
 
   await generateCompileCommandsWithStatus(
     parsedArgs['bazelCmd'],
@@ -899,11 +891,7 @@ async function runAsCli() {
     bazelArgs,
     tuiManager,
   );
-  saveLastBazelCommandInUserSettings(
-    parsedArgs['cwd'],
-    parsedArgs['target'],
-    tuiManager,
-  );
+  saveLastBazelCommand(parsedArgs['cwd'], parsedArgs['target'], tuiManager);
 }
 if (require.main === module) {
   runAsCli();

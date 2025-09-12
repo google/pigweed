@@ -12,13 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
+import * as path from 'path';
 import { getReliableBazelExecutable } from '../bazel';
-import { getTarget } from './paths';
+import { getTarget, CDB_FILE_DIR, LAST_BAZEL_COMMAND_FILE_NAME } from './paths';
 import { clangdPath } from './bazel';
-import { settings } from '../settings/vscode';
+import { settings, workingDir } from '../settings/vscode';
 
-export default function getCipdReport(): Promise<any> {
+export default function getCipdReport() {
   const report: any = {};
 
   // Check if clangd is found
@@ -42,8 +43,19 @@ export default function getCipdReport(): Promise<any> {
   report['bazelCompileCommandsManualBuildCommand'] =
     settings.bazelCompileCommandsManualBuildCommand() || '';
 
-  report['bazelCompileCommandsLastBuildCommand'] =
-    settings.bazelCompileCommandsLastBuildCommand() || '';
+  const lastCommandPath = path.join(
+    workingDir.get(),
+    CDB_FILE_DIR,
+    LAST_BAZEL_COMMAND_FILE_NAME,
+  );
+  if (existsSync(lastCommandPath)) {
+    report['bazelCompileCommandsLastBuildCommand'] = readFileSync(
+      lastCommandPath,
+      'utf-8',
+    ).trim();
+  } else {
+    report['bazelCompileCommandsLastBuildCommand'] = '';
+  }
 
   return report;
 }

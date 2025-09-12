@@ -28,7 +28,7 @@ import { spawn } from 'child_process';
 
 import { getReliableBazelExecutable } from './bazel';
 import { settings, workingDir } from './settings/vscode';
-import { saveLastBazelCommandInUserSettings } from './clangd/compileCommandsGenerator';
+import { saveLastBazelCommand } from './clangd/compileCommandsGenerator';
 
 function spawnAsync(
   command: string,
@@ -97,7 +97,7 @@ async function generateAspectCompileCommands(
   }
 
   logger.finish('✅ Compile commands generated successfully.');
-  saveLastBazelCommandInUserSettings(cwd, `build ${buildCmd}`, logger);
+  saveLastBazelCommand(cwd, `build ${buildCmd}`, logger);
 }
 
 async function generateAqueryCompileCommands(
@@ -125,7 +125,7 @@ async function generateAqueryCompileCommands(
 
   if (exitCode === 0) {
     logger.finish('✅ Compile commands generated successfully.');
-    saveLastBazelCommandInUserSettings(cwd, `build ${buildCmd}`, logger);
+    saveLastBazelCommand(cwd, `build ${buildCmd}`, logger);
   } else {
     logger.finishWithError(
       `❌ Compile commands generation failed with exit code ${exitCode}.`,
