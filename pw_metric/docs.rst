@@ -649,6 +649,20 @@ user-supplied set of on-device metrics via RPC. This facility is intended to
 function from the early stages of device bringup through production in the
 field.
 
+The ``MetricService`` provides two distinct methods for retrieving metrics, each
+suited for different transport characteristics.
+
+``MetricService.Get`` (Server Streaming)
+This method uses a server-streaming RPC to send all registered metrics to the
+caller in batches. This approach is straightforward and works well on reliable,
+synchronous transports where the client is always ready to receive data.
+
+``MetricService.Walk`` (Unary)
+The unary `Walk` RPC offers a client-driven, paginated mechanism. This is
+suitable for asynchronous transports where the server cannot guarantee the
+transport is ready, and for large metric collections that may not fit within a
+transport's MTU. This is the recommended method for metric retrieval.
+
 The metrics are fetched by calling the ``MetricService.Get`` RPC method, which
 streams all registered metrics to the caller in batches (server streaming RPC).
 Batching the returned metrics avoids requiring a large buffer or large RPC MTU.
@@ -749,9 +763,17 @@ metrics. This does not include the RPC service.
 -------------
 Metric Parser
 -------------
-The metric_parser Python Module requests the system metrics via RPC, then parses the
-response while detokenizing the group and metrics names, and returns the metrics
-in a dictionary organized by group and value.
+The ``metric_parser`` Python module provides functions to fetch and parse
+metrics from a device via RPC. It detokenizes the metric and group names and
+returns the data as a nested dictionary.
+
+The module provides two functions corresponding to the server's RPC methods:
+
+* ``get_all_metrics()``: Uses the paginated ``MetricService.Walk`` RPC and
+  handles all client-side pagination logic automatically. This is recommended
+  for asynchronous transports and for fetching large metric sets.
+
+* ``parse_metrics()``: Uses the server-streaming ``MetricService.Get`` RPC.
 
 ----------------
 Design tradeoffs
@@ -833,10 +855,12 @@ Roadmap & Status
   metrics are enabled or disabled at compile time. This may rely on of C++20's
   support for zero-sized members to fully remove the cost.
 
-- **Async RPC** - The current RPC service exports the metrics by streaming
-  them to the client in batches. However, the current solution streams all the
-  metrics to completion; this may block the RPC thread. In the future we will
-  have an async solution where the user is in control of flow priority.
+- **(Completed) Paginated RPC for Asynchronous Transports** - The original
+  server-streaming ``Get`` RPC is unsuitable for asynchronous transports where
+  the server cannot guarantee transport readiness. This has been addressed by
+  the introduction of the ``MetricService.Walk`` unary RPC, which uses a
+  paginated, client-driven approach for reliable metric collection. This
+  pattern also supports large metric sets that exceed the transport MTU.
 
 - **Timer integration** - We would like to add a stopwatch type mechanism to
   time multiple in-flight events.
@@ -853,6 +877,7 @@ Roadmap & Status
   proto structure, where instead of a name or token field, a tag field is
   provided. This could result in elegant export to an easily machine parsable
   and compact representation on the host. We may investigate this in the
+
   future.
 
 - **Safer data structures** - At a cost of 4B per metric and 4B per group, it
