@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,21 +15,25 @@
 #include "pw_metric/metric_service_nanopb.h"
 
 #include "pw_log/log.h"
+#include "pw_metric_proto/metric_service.rpc.pb.h"
 #include "pw_rpc/nanopb/test_method_context.h"
+#include "pw_rpc/test_helpers.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::metric {
 namespace {
 
-#define MetricMethodContext \
+#define GET_METHOD_CONTEXT \
   PW_NANOPB_TEST_METHOD_CONTEXT(MetricService, Get, 4, 256)
+
+#define WALK_METHOD_CONTEXT PW_NANOPB_TEST_METHOD_CONTEXT(MetricService, Walk)
 
 TEST(MetricService, EmptyGroupAndNoMetrics) {
   // Empty root group.
   PW_METRIC_GROUP(root, "/");
 
   // Run the RPC and ensure it completes.
-  MetricMethodContext context(root.metrics(), root.children());
+  GET_METHOD_CONTEXT context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
   EXPECT_EQ(OkStatus(), context.status());
@@ -48,7 +52,7 @@ TEST(MetricService, FlatMetricsNoGroupsOneResponseOnly) {
   PW_METRIC(root, e, "e", 1.0);
 
   // Run the RPC and ensure it completes.
-  MetricMethodContext context(root.metrics(), root.children());
+  GET_METHOD_CONTEXT context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
   EXPECT_EQ(OkStatus(), context.status());
@@ -73,7 +77,7 @@ TEST(MetricService, NestedGroupsButOnlyOneBatch) {
   root.Add(inner);
 
   // Run the RPC and ensure it completes.
-  MetricMethodContext context(root.metrics(), root.children());
+  GET_METHOD_CONTEXT context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
   EXPECT_EQ(OkStatus(), context.status());
@@ -107,7 +111,7 @@ TEST(MetricService, NestedGroupsWithBatches) {
   root.Add(inner_2);
 
   // Run the RPC and ensure it completes.
-  MetricMethodContext context(root.metrics(), root.children());
+  GET_METHOD_CONTEXT context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
   EXPECT_EQ(OkStatus(), context.status());
@@ -167,7 +171,7 @@ TEST(MetricService, TokenPaths) {
   root.Add(inner_2);
 
   // Run the RPC and ensure it completes.
-  MetricMethodContext context(root.metrics(), root.children());
+  GET_METHOD_CONTEXT context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
   EXPECT_EQ(OkStatus(), context.status());
@@ -201,6 +205,160 @@ TEST(MetricService, TokenPaths) {
     EXPECT_EQ(found_matches, 1);
   }
 }
+
+//
+// Walk() RPC Tests
+//
+
+TEST(MetricService, Walk) {
+  PW_METRIC_GROUP(root, "/");
+  PW_METRIC(root, a, "a", 1u);
+  PW_METRIC(root, b, "b", 2u);
+  PW_METRIC_GROUP(inner, "inner");
+  PW_METRIC(inner, x, "x", 3u);
+  root.Add(inner);
+
+  WALK_METHOD_CONTEXT ctx{root.metrics(), root.children()};
+  EXPECT_EQ(OkStatus(), ctx.call({}));
+  const pw_metric_proto_WalkResponse& response = ctx.response();
+
+  EXPECT_EQ(3u, response.metrics_count);
+  EXPECT_TRUE(response.done);
+  EXPECT_FALSE(response.has_cursor);
+}
+
+TEST(MetricService, WalkWithPagination) {
+  PW_METRIC_GROUP(root, "/");
+  PW_METRIC(root, m0, "m0", 0u);
+  PW_METRIC(root, m1, "m1", 1u);
+  PW_METRIC(root, m2, "m2", 2u);
+  PW_METRIC(root, m3, "m3", 3u);
+  PW_METRIC(root, m4, "m4", 4u);
+  PW_METRIC(root, m5, "m5", 5u);
+  PW_METRIC(root, m6, "m6", 6u);
+  PW_METRIC(root, m7, "m7", 7u);
+  PW_METRIC(root, m8, "m8", 8u);
+  PW_METRIC(root, m9, "m9", 9u);
+  PW_METRIC(root, m10, "m10", 10u);
+
+  WALK_METHOD_CONTEXT ctx{root.metrics(), root.children()};
+
+  // First page. The nanopb response can hold a max of 10 metrics.
+  // Because metrics are pushed to the front of the intrusive list, the walk
+  // will process them in reverse order of declaration (m10, m9, ..., m1).
+  EXPECT_EQ(OkStatus(), ctx.call({}));
+  const pw_metric_proto_WalkResponse& response1 = ctx.response();
+  EXPECT_EQ(10u, response1.metrics_count);
+  EXPECT_FALSE(response1.done);
+  EXPECT_TRUE(response1.has_cursor);
+
+  // The cursor should be the address of the next metric to process (m0).
+  EXPECT_EQ(response1.cursor, reinterpret_cast<uint64_t>(&m0));
+
+  // Second page.
+  pw_metric_proto_WalkRequest request = pw_metric_proto_WalkRequest_init_zero;
+  request.has_cursor = true;
+  request.cursor = response1.cursor;
+  EXPECT_EQ(OkStatus(), ctx.call(request));
+  const pw_metric_proto_WalkResponse& response2 = ctx.response();
+  EXPECT_EQ(1u, response2.metrics_count);
+  EXPECT_TRUE(response2.done);
+  EXPECT_FALSE(response2.has_cursor);
+}
+
+TEST(MetricService, WalkWithInvalidCursor) {
+  PW_METRIC_GROUP(root, "/");
+  PW_METRIC(root, a, "a", 1u);
+
+  WALK_METHOD_CONTEXT ctx{root.metrics(), root.children()};
+
+  pw_metric_proto_WalkRequest request = pw_metric_proto_WalkRequest_init_zero;
+  request.has_cursor = true;
+  request.cursor = 12345;  // An invalid, non-zero address.
+
+  EXPECT_EQ(Status::NotFound(), ctx.call(request));
+}
+
+// This test validates the core reason for using an address-based cursor.
+// It ensures that if the metric tree is mutated between paginated calls,
+// a stale cursor pointing to a now-deleted metric fails gracefully.
+TEST(MetricService, WalkWithStaleCursorAfterMutation) {
+  PW_METRIC_GROUP(root, "/");
+  PW_METRIC(root, m0, "m0", 0u);
+  PW_METRIC(root, m1, "m1", 1u);
+  PW_METRIC(root, m2, "m2", 2u);
+  PW_METRIC(root, m3, "m3", 3u);
+  PW_METRIC(root, m4, "m4", 4u);
+  PW_METRIC(root, m5, "m5", 5u);
+  PW_METRIC(root, m6, "m6", 6u);
+  PW_METRIC(root, m7, "m7", 7u);
+  PW_METRIC(root, m8, "m8", 8u);
+  PW_METRIC(root, m9, "m9", 9u);
+  PW_METRIC(root, m10, "m10", 10u);
+
+  WALK_METHOD_CONTEXT ctx{root.metrics(), root.children()};
+
+  // First page: The response can hold a max of 10 metrics.
+  EXPECT_EQ(OkStatus(), ctx.call({}));
+  const pw_metric_proto_WalkResponse& response1 = ctx.response();
+  EXPECT_EQ(10u, response1.metrics_count);
+  EXPECT_FALSE(response1.done);
+  EXPECT_TRUE(response1.has_cursor);
+
+  // The cursor will point to the next metric to be processed (m0).
+  EXPECT_EQ(response1.cursor, reinterpret_cast<uint64_t>(&m0));
+
+  // Mutate the tree: remove the metric the cursor points to.
+  root.metrics().remove(m0);
+
+  // Second page: Use the now-stale cursor.
+  pw_metric_proto_WalkRequest request = pw_metric_proto_WalkRequest_init_zero;
+  request.has_cursor = true;
+  request.cursor = response1.cursor;
+
+  // This call must fail because the metric at the cursor address is gone.
+  EXPECT_EQ(Status::NotFound(), ctx.call(request));
+}
+
+TEST(MetricService, WalkPaginatesCorrectlyWhenPageIsFull) {
+  PW_METRIC_GROUP(root, "/");
+  // The nanopb response can hold 10 metrics. Create 11 to force pagination.
+  PW_METRIC(root, m0, "m0", 0u);
+  PW_METRIC(root, m1, "m1", 1u);
+  PW_METRIC(root, m2, "m2", 2u);
+  PW_METRIC(root, m3, "m3", 3u);
+  PW_METRIC(root, m4, "m4", 4u);
+  PW_METRIC(root, m5, "m5", 5u);
+  PW_METRIC(root, m6, "m6", 6u);
+  PW_METRIC(root, m7, "m7", 7u);
+  PW_METRIC(root, m8, "m8", 8u);
+  PW_METRIC(root, m9, "m9", 9u);
+  PW_METRIC(root, m10, "m10", 10u);
+
+  WALK_METHOD_CONTEXT ctx{root.metrics(), root.children()};
+
+  // First page should contain exactly 10 metrics.
+  EXPECT_EQ(OkStatus(), ctx.call({}));
+  const pw_metric_proto_WalkResponse& response1 = ctx.response();
+  EXPECT_EQ(10u, response1.metrics_count);
+  EXPECT_FALSE(response1.done);
+  EXPECT_TRUE(response1.has_cursor);
+  EXPECT_EQ(response1.cursor, reinterpret_cast<uint64_t>(&m0));
+}
+
+#if GTEST_HAS_DEATH_TEST
+TEST(MetricService, WalkWithMaxDepthExceeded) {
+  PW_METRIC_GROUP(root, "l0");
+  PW_METRIC_GROUP(root, l1, "l1");
+  PW_METRIC_GROUP(l1, l2, "l2");
+  PW_METRIC_GROUP(l2, l3, "l3");
+  PW_METRIC_GROUP(l3, l4, "l4");
+  PW_METRIC(l4, a, "a", 1u);
+
+  WALK_METHOD_CONTEXT ctx{root.metrics(), root.children()};
+  EXPECT_DEATH_IF_SUPPORTED(static_cast<void>(ctx.call({})), ".*");
+}
+#endif  // GTEST_HAS_DEATH_TEST
 
 }  // namespace
 }  // namespace pw::metric

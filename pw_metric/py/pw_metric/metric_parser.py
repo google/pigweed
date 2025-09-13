@@ -1,4 +1,5 @@
-# Copyright 2022 The Pigweed Authors
+#!/usr/bin/env python3
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +17,7 @@ from collections import defaultdict
 import json
 import logging
 from typing import Any
+
 from pw_tokenizer import detokenize
 
 _LOG = logging.getLogger(__name__)
@@ -34,9 +36,7 @@ def _insert(metrics, path_names, value):
         elif path_name in metrics:
             # the value in this position isn't a float or int,
             # then collision occurs, throw an error.
-            assert ValueError(
-                'Variable already exists: {p}'.format(p=path_name)
-            )
+            raise ValueError('Variable already exists: {p}'.format(p=path_name))
         else:
             metrics[path_name] = value
 
@@ -46,13 +46,17 @@ def parse_metrics(
     detokenizer: detokenize.Detokenizer | None,
     timeout_s: float | None,
 ):
-    """Detokenizes metric names and retrieves their values."""
+    """Fetches metrics using the legacy streaming RPC.
+
+    For a more robust, transport-agnostic method, use get_all_metrics.
+    """
     # Creates a defaultdict that can infinitely have other defaultdicts
     # without a specified type.
     metrics: defaultdict = _tree()
     if not detokenizer:
-        _LOG.error('No metrics token database set.')
-        return metrics
+        _LOG.warning(
+            'No metrics token database set; metric names will be tokens'
+        )
     stream_response = rpcs.pw.metric.proto.MetricService.Get(
         pw_rpc_timeout_s=timeout_s
     )
@@ -63,11 +67,18 @@ def parse_metrics(
         for metric in metric_response.metrics:
             path_names = []
             for path in metric.token_path:
-                path_name = str(
-                    detokenize.DetokenizedString(
-                        path, detokenizer.lookup(path), b'', False
-                    )
-                ).strip('"')
+                if detokenizer:
+                    lookup_result = detokenizer.lookup(path)
+                    if lookup_result:
+                        path_name = str(
+                            detokenize.DetokenizedString(
+                                path, lookup_result, b'', False
+                            )
+                        ).strip('"')
+                    else:
+                        path_name = f'${path:08x}'
+                else:
+                    path_name = f'${path:08x}'
                 path_names.append(path_name)
             value = (
                 metric.as_float
@@ -77,4 +88,74 @@ def parse_metrics(
             # inserting path_names into metrics.
             _insert(metrics, path_names, value)
     # Converts default dict objects into standard dictionaries.
+    return json.loads(json.dumps(metrics))
+
+
+def get_all_metrics(
+    rpcs: Any,
+    detokenizer: detokenize.Detokenizer | None,
+    timeout_s: float | None,
+) -> dict:
+    """Fetches all metrics using the paginated Walk RPC.
+
+    This unary, client-driven RPC is suitable for asynchronous transports where
+    the server cannot guarantee the transport is ready to send. Its paginated
+    nature also makes it ideal for large metric sets that may exceed the
+    transport MTU.
+    """
+    metrics: defaultdict = _tree()
+    if not detokenizer:
+        _LOG.warning(
+            'No metrics token database set. Metric names will be shown as '
+            'tokens'
+        )
+
+    cursor = 0
+    # Repeatedly call the Walk RPC, passing the cursor from the previous
+    # response until the server indicates the walk is complete.
+    while True:
+        # The python generated proto uses WalkRequest instead of Message
+        request = rpcs.pw.metric.proto.WalkRequest(cursor=cursor)
+        status, response = rpcs.pw.metric.proto.MetricService.Walk(
+            request, pw_rpc_timeout_s=timeout_s
+        )
+
+        if not status.ok():
+            _LOG.error('RPC failed: %s', status)
+            break
+
+        for metric in response.metrics:
+            path_names = []
+            # The token_path field contains the full, flattened path to the
+            # metric, with the final element being the metric's own name.
+            for path in metric.token_path:
+                if detokenizer:
+                    lookup_result = detokenizer.lookup(path)
+                    if lookup_result:
+                        path_name = str(
+                            detokenize.DetokenizedString(
+                                path, lookup_result, b'', False
+                            )
+                        ).strip('"')
+                    else:
+                        path_name = f'${path:08x}'
+                else:
+                    path_name = f'${path:08x}'
+                path_names.append(path_name)
+
+            value = (
+                metric.as_float
+                if metric.HasField('as_float')
+                else metric.as_int
+            )
+            _insert(metrics, path_names, value)
+
+        if response.done:
+            break
+
+        if not response.HasField('cursor'):
+            _LOG.error('RPC response is not done but is missing a cursor')
+            return {}
+        cursor = response.cursor
+
     return json.loads(json.dumps(metrics))

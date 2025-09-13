@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,22 +15,29 @@
 
 #include <cstring>
 
-#include "pw_log/log.h"
+#include "pw_containers/intrusive_list.h"
 #include "pw_metric/metric.h"
 #include "pw_metric_proto/metric_service.rpc.pb.h"
 #include "pw_span/span.h"
+#include "pw_status/status.h"
 
 namespace pw::metric {
 
-// The MetricService will send metrics when requested by Get(). For now, each
-// Get() request results in a stream of responses, containing the metrics from
-// the supplied list of groups and metrics. This includes recursive traversal
-// of subgroups. In the future, filtering will be supported.
+// Implementation of the pw.metric.MetricService RPC service.
 //
-// An important limitation of the current implementation is that the Get()
-// method is blocking, and sends all metrics at once (though batched). In the
-// future, we may switch to offering an async version where the Get() method
-// returns immediately, and someone else is responsible for pumping the queue.
+// This service provides two RPC methods to fetch metrics from a device:
+//
+//   - Walk: A unary, client-driven RPC suitable for asynchronous transports
+//     where the server cannot guarantee transport readiness. Its paginated
+//     nature makes it ideal for large metric sets that may exceed the
+//     transport's MTU. This is the preferred method for fetching metrics.
+//
+//   - Get: A legacy server-streaming RPC. This method is blocking and sends
+//     all metrics in a single stream, which may not be suitable for all
+//     transports.
+//
+// Both methods recursively traverse all metric groups. Future versions may
+// add support for filtering.
 class MetricService final
     : public proto::pw_rpc::nanopb::MetricService::Service<MetricService> {
  public:
@@ -38,8 +45,18 @@ class MetricService final
                 const IntrusiveList<Group>& groups)
       : metrics_(metrics), groups_(groups) {}
 
+  // The legacy streaming RPC for fetching metrics. The paginated Walk() RPC is
+  // preferred.
   void Get(const pw_metric_proto_MetricRequest& request,
            ServerWriter<pw_metric_proto_MetricResponse>& response);
+
+  // The paginated unary RPC for fetching metrics. This method is recommended
+  // for asynchronous transports and for fetching large metric sets.
+  Status Walk(const pw_metric_proto_WalkRequest& request,
+              pw_metric_proto_WalkResponse& response);
+
+  const IntrusiveList<Metric>& metrics() const { return metrics_; }
+  const IntrusiveList<Group>& groups() const { return groups_; }
 
  private:
   const IntrusiveList<Metric>& metrics_;

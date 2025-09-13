@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -65,7 +65,35 @@ message MetricResponse {
   repeated Metric metrics = 1;
 }
 
+message WalkRequest {
+  // When present, continue reporting from this cursor. If omitted,
+  // the walk starts from the beginning.
+  optional uint64 cursor = 1;
+}
+
+message WalkResponse {
+  repeated Metric metrics = 1;
+
+  // A cursor for the next request. May be omitted on the final response.
+  optional uint64 cursor = 2;
+
+  // If true, the walk is complete and the client should not make another
+  // request.
+  bool done = 3;
+}
+
 service MetricService {
   // Returns metrics or groups matching the requested paths.
   rpc Get(MetricRequest) returns (stream MetricResponse) {}
+
+  // Walks the metric tree and returns a single page of metrics.
+  //
+  // The number of metrics returned per page is variable. The server will pack
+  // as many metrics as possible into the response, respecting the transport's
+  // MTU. For nanopb backends, this is determined by the `max_count` option; for
+  // pwpb, the page size is fully dynamic.
+  //
+  // Returns an `OUT_OF_RANGE` status if the requested `cursor` is invalid
+  // (i.e. it is non-zero and past the end of the metric list).
+  rpc Walk(WalkRequest) returns (WalkResponse) {}
 }
