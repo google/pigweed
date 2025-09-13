@@ -253,9 +253,6 @@ export class Root extends LitElement {
                       type="text"
                       class="vscode-input"
                       @click=${(e: MouseEvent) => e.stopPropagation()}
-                      @keydown=${(e: KeyboardEvent) => {
-                        e.stopPropagation();
-                      }}
                       .value=${currentManualTarget}
                       @input=${this._handleManualBazelInputChange}
                       placeholder="//..."
