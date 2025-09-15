@@ -17,18 +17,12 @@ load("@rules_python//sphinxdocs:sphinx.bzl", "sphinx_build_binary", "sphinx_docs
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
-package(default_visibility = ["//visibility:public"])
-
 licenses(["notice"])
 
-exports_files([
-    "module_metadata.json",
-    "module_metadata_schema.json",
-])
+package(default_visibility = ["//docs:__subpackages__"])
 
 sphinx_docs_library(
-    # TODO: https://pwbug.dev/377679855 - Rename this to "docs" after merging.
-    name = "not_prefixed",
+    name = "extensions",
     srcs = [
         "_extensions/bug.py",
         "_extensions/kconfig.py",
@@ -37,6 +31,39 @@ sphinx_docs_library(
         "_extensions/pigweed_live.py",
         "_extensions/seed_metadata.py",
         "_extensions/sitemap.py",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
+)
+
+sphinx_docs_library(
+    name = "static",
+    srcs = [
+        "_static/css/pigweed.css",
+        "_static/js/changelog.js",
+        "_static/js/pigweed.js",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+copy_directory(
+    name = "rust_files",
+    src = "//pw_rust:docs_dir",
+    out = "rustdoc",
+    visibility = ["//visibility:private"],
+)
+
+sphinx_docs_library(
+    name = "rust",
+    srcs = [":rust_files"],
+    prefix = "rustdoc/",
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
+)
+
+sphinx_docs_library(
+    name = "content",
+    srcs = [
         "api/index.rst",
         "bazel_compatibility.rst",
         "build_system.rst",
@@ -52,18 +79,6 @@ sphinx_docs_library(
         "targets.rst",
         "third_party_support.rst",
         "toolchain.rst",
-    ],
-    target_compatible_with = incompatible_with_mcu(),
-)
-
-# TODO: https://pwbug.dev/377679855 - Merge this into "not_prefixed"
-# (which will be renamed to "docs" after the merge).
-sphinx_docs_library(
-    name = "prefixed",
-    srcs = [
-        "_static/css/pigweed.css",
-        "_static/js/changelog.js",
-        "_static/js/pigweed.js",
         "blog/01-kudzu.rst",
         "blog/02-bazel-feature-flags.rst",
         "blog/03-pigweed-sdk.rst",
@@ -144,99 +159,8 @@ sphinx_docs_library(
         "style/rest.rst",
         "style/writing.rst",
         "style_guide.rst",
-    ],
-    target_compatible_with = incompatible_with_mcu(),
-)
-
-copy_directory(
-    name = "rust_files",
-    src = "//pw_rust:docs_dir",
-    out = "rustdoc",
-)
-
-sphinx_docs_library(
-    name = "rust",
-    srcs = [":rust_files"],
-    prefix = "rustdoc/",
-    target_compatible_with = incompatible_with_mcu(),
-)
-
-sphinx_build_binary(
-    name = "sphinx_build",
-    tags = ["manual"],
-    target_compatible_with = incompatible_with_mcu(),
-    deps = [
-        "//pw_build/py:pigweed_build",
-        "//pw_build/py:pw_build",
-        "//pw_build/py:pw_project_builder",
-        "//pw_console/py:pw_console",
-        "//pw_containers/py:inline_var_len_entry_queue",
-        "//pw_docgen/py:pw_docgen",
-        "//pw_emu/py:pw_emu",
-        "//pw_env_setup/py:pw_env_setup",
-        "//pw_env_setup/py:pw_env_setup_private",
-        "//pw_hdlc/py:pw_hdlc",
-        "//pw_ide/py:pw_ide",
-        "//pw_log/py:pw_log",
-        "//pw_log_rpc/py:pw_log_rpc",
-        "//pw_presubmit/py:pw_presubmit",
-        "//pw_protobuf_compiler/py:pw_protobuf_compiler",
-        "//pw_rpc/py:pw_rpc_benchmark",
-        "//pw_status/py:pw_status",
-        "//pw_system/py:device_sim",
-        "//pw_system/py:pw_system_benchmark_runner",
-        "//pw_system/py:pw_system_console",
-        "//pw_system/py:pw_system_lib",
-        "//pw_tokenizer/py:pw_tokenizer",
-        "//pw_transfer/py:pw_transfer",
-        "//pw_unit_test/py:pw_unit_test",
-        "//pw_watch/py:pw_watch",
-        "//pw_watch/py:watch",
-        "@pigweed_python_packages//jsonschema",
-        "@pigweed_python_packages//kconfiglib",
-        "@pigweed_python_packages//pydata_sphinx_theme",
-        "@pigweed_python_packages//pytz",
-        "@pigweed_python_packages//sphinx",
-        "@pigweed_python_packages//sphinx_argparse",
-        "@pigweed_python_packages//sphinx_copybutton",
-        "@pigweed_python_packages//sphinx_design",
-        "@pigweed_python_packages//sphinx_reredirects",
-        "@pigweed_python_packages//sphinxcontrib_doxylink",
-        "@pigweed_python_packages//sphinxcontrib_mermaid",
-        "@rules_python//python/runfiles",
-    ],
-)
-
-# Use Sphinx to build the main pigweed.dev website.
-#
-# The main `docs` target must output a directory containing the fully
-# built pigweed.dev website. It must output a directory, not an archive,
-# because our deploy code expects a directory when it uploads the website
-# code and assets to our CDN.
-sphinx_docs(
-    name = "docs",
-    config = "conf.py",
-    extra_opts = [
-        "--silent",
-        "--fail-on-warning",
-        "--jobs",
-        "16",
-    ],
-    formats = [
-        "html",
-    ],
-    sphinx = ":sphinx_build",
-    strip_prefix = "docs/sphinx/",
-    tags = ["manual"],
-    target_compatible_with = incompatible_with_mcu(),
-    deps = [
-        ":not_prefixed",
-        ":prefixed",
-        ":rust",
         "//:docs",
         "//docker:docs",
-        "//docs/doxygen:html",
-        "//docs/doxygen:xml",
         "//kudzu:docs",
         "//pw_alignment:docs",
         "//pw_allocator:docs",
@@ -427,5 +351,87 @@ sphinx_docs(
         "//seed:docs",
         "//targets:docs",
         "//third_party:docs",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
+)
+
+sphinx_build_binary(
+    name = "sphinx_build",
+    tags = ["manual"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pw_build/py:pigweed_build",
+        "//pw_build/py:pw_build",
+        "//pw_build/py:pw_project_builder",
+        "//pw_console/py:pw_console",
+        "//pw_containers/py:inline_var_len_entry_queue",
+        "//pw_docgen/py:pw_docgen",
+        "//pw_emu/py:pw_emu",
+        "//pw_env_setup/py:pw_env_setup",
+        "//pw_env_setup/py:pw_env_setup_private",
+        "//pw_hdlc/py:pw_hdlc",
+        "//pw_ide/py:pw_ide",
+        "//pw_log/py:pw_log",
+        "//pw_log_rpc/py:pw_log_rpc",
+        "//pw_presubmit/py:pw_presubmit",
+        "//pw_protobuf_compiler/py:pw_protobuf_compiler",
+        "//pw_rpc/py:pw_rpc_benchmark",
+        "//pw_status/py:pw_status",
+        "//pw_system/py:device_sim",
+        "//pw_system/py:pw_system_benchmark_runner",
+        "//pw_system/py:pw_system_console",
+        "//pw_system/py:pw_system_lib",
+        "//pw_tokenizer/py:pw_tokenizer",
+        "//pw_transfer/py:pw_transfer",
+        "//pw_unit_test/py:pw_unit_test",
+        "//pw_watch/py:pw_watch",
+        "//pw_watch/py:watch",
+        "@pigweed_python_packages//jsonschema",
+        "@pigweed_python_packages//kconfiglib",
+        "@pigweed_python_packages//pydata_sphinx_theme",
+        "@pigweed_python_packages//pytz",
+        "@pigweed_python_packages//sphinx",
+        "@pigweed_python_packages//sphinx_argparse",
+        "@pigweed_python_packages//sphinx_copybutton",
+        "@pigweed_python_packages//sphinx_design",
+        "@pigweed_python_packages//sphinx_reredirects",
+        "@pigweed_python_packages//sphinxcontrib_doxylink",
+        "@pigweed_python_packages//sphinxcontrib_mermaid",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+# Use Sphinx to build the main pigweed.dev website.
+#
+# The main `docs` target must output a directory containing the fully
+# built pigweed.dev website. It must output a directory, not an archive,
+# because our deploy code expects a directory when it uploads the website
+# code and assets to our CDN.
+sphinx_docs(
+    name = "docs",
+    config = "conf.py",
+    extra_opts = [
+        "--silent",
+        "--fail-on-warning",
+        "--jobs",
+        "16",
+    ],
+    formats = [
+        "html",
+    ],
+    sphinx = ":sphinx_build",
+    strip_prefix = "docs/sphinx/",
+    tags = ["manual"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":content",
+        ":extensions",
+        ":rust",
+        ":static",
+        "//docs/doxygen:html",
+        "//docs/doxygen:xml",
     ],
 )
