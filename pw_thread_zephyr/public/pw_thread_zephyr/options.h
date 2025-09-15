@@ -142,6 +142,10 @@ constexpr NativeOptions GetNativeOptions(NativeContext& context,
   } else {
     options.set_stack(context.stack());
   }
+
+  if (attributes.name()[0] != '\0') {
+    options.set_name(attributes.name());
+  }
   return options;
 }
 
