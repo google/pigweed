@@ -50,6 +50,11 @@ class McuxpressoInitiator final : public Initiator {
   void Enable() PW_LOCKS_EXCLUDED(mutex_);
   void Disable() PW_LOCKS_EXCLUDED(mutex_);
 
+  // Returns a pointer to the underlying MCUXpresso I2C peripheral base address
+  // structure. This can be used for direct interaction with the I2C hardware
+  // register.
+  I2C_Type* base() const { return base_; }
+
   ~McuxpressoInitiator() final;
 
  private:
