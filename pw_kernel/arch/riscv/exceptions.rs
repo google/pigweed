@@ -53,22 +53,14 @@ impl<'a> SyscallArgs<'a> for RiscVSyscallArgs<'a> {
 
     #[inline(always)]
     fn next_u64(&mut self) -> Result<u64> {
-        // RISC-V 32 bit ABI aligns 64 bit values such that the low order word
-        // always starts on an even register number and the high order word is
-        // always the next register.
+        // Note: This follows the PSABI calling convention[1] which differs from
+        // the outdated (but still returned in search results) ABI from the ISA[2].
+        // The PSABI is what both gcc and llvm based toolchains implement.
         //
-        // Example: foo(a: usize, b: u64)
-        // a is store in register a0
-        // b is stored in registers a2 and a3
-        // register a1 is unused
-        //
-        // See: https://riscv.org/wp-content/uploads/2024/12/riscv-calling.pdf
-
-        // Round up to next even index.
-        let index = (self.cur_index + 1) % 2;
-        let low: u64 = self.frame.a(index)?.cast_into();
-        let high: u64 = self.frame.a(index + 1)?.cast_into();
-        self.cur_index = index + 2;
+        // 1: https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/main/riscv-cc.adoc#integer-calling-convention
+        // 2: https://riscv.org/wp-content/uploads/2024/12/riscv-calling.pdf
+        let low: u64 = self.next_usize()?.cast_into();
+        let high: u64 = self.next_usize()?.cast_into();
 
         Ok(low | high << 32)
     }
