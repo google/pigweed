@@ -83,14 +83,14 @@ data which are one or more of the following:
 .. grid:: 3
 
    .. grid-item-card:: :octicon:`code` API reference
-      :link: ../doxygen/group__pw__multibuf__v2.html
+      :link: ../api/cc/group__pw__multibuf__v2.html
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 
       Detailed description of pw_multibuf's current API
 
    .. grid-item-card:: :octicon:`code-square` Legacy API
-      :link: ../doxygen/group__pw__multibuf__v1.html
+      :link: ../api/cc/group__pw__multibuf__v1.html
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 

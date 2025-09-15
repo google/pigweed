@@ -144,7 +144,7 @@ manage memory.
       Integrate pw_allocator into your project and learn common use cases
 
    .. grid-item-card:: :octicon:`code-square` API reference
-      :link: ../doxygen/group__pw__allocator.html
+      :link: ../api/cc/group__pw__allocator.html
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 

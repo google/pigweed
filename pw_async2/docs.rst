@@ -89,7 +89,7 @@ Learn more
 .. grid:: 2
 
    .. grid-item-card:: :octicon:`code-square` Reference
-      :link: ../doxygen/group__pw__async2.html
+      :link: ../api/cc/group__pw__async2.html
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 

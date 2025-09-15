@@ -63,7 +63,7 @@ Check out :ref:`module-pw_bytes-guide` for more code samples.
       Integrate pw_bytes into your project and learn common use cases
 
    .. grid-item-card:: :octicon:`code-square` API reference
-      :link: ../doxygen/group__pw__bytes.html
+      :link: ../api/cc/group__pw__bytes.html
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 

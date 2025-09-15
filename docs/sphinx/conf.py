@@ -302,9 +302,9 @@ doxygen_xml_path = (
 # perspective of the Sphinx build system. The organization of the
 # source files (as Sphinx sees it) can be viewed by running this:
 # bazelisk build //docs:sources
-tagfile_path = os.path.abspath("doxygen/doxygen/index.tag")
+tagfile_path = os.path.abspath("doxygen/api/cc/index.tag")
 # The relative path that Doxylink should use when creating links.
-doxygen_site_path = "./doxygen"
+doxygen_site_path = "./api/cc"
 doxylink = {
     "doxylink": (tagfile_path, doxygen_site_path),
 }

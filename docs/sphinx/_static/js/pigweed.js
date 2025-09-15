@@ -144,7 +144,7 @@ window.pw.dev = () => {
   // or staging site.
   const selector = 'ul.nav a.reference.external';
   const links = Array.from(document.querySelectorAll(selector));
-  const prefix = 'https://pigweed.dev/doxygen/';
+  const prefix = 'https://pigweed.dev/api/cc/';
   links.forEach((link) => {
     if (!link.href.startsWith(prefix)) {
       return;

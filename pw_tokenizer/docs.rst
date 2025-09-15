@@ -119,4 +119,4 @@ A quick overview of how the tokenized version works:
    api
 
 .. TODO: b/441605063 - Replace with Doxylink after variadic macro bug is fixed.
-.. _PW_TOKENIZE_STRING: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_STRING: ../api/cc/group__pw__tokenizer__tokenize.html#define-members

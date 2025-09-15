@@ -1545,15 +1545,15 @@ Moved: :doxylink:`pw_sync`
    backends
 
 .. TODO: b/441605063 - Replace with Doxylinks after variadic macro bug is fixed
-.. _PW_ACQUIRED_AFTER: ../doxygen/group__pw__sync.html#define-members
-.. _PW_ACQUIRED_BEFORE: ../doxygen/group__pw__sync.html#define-members
-.. _PW_ASSERT_EXCLUSIVE_LOCK: ../doxygen/group__pw__sync.html#define-members
-.. _PW_ASSERT_SHARED_LOCK: ../doxygen/group__pw__sync.html#define-members
-.. _PW_EXCLUSIVE_LOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
-.. _PW_EXCLUSIVE_LOCKS_REQUIRED: ../doxygen/group__pw__sync.html#define-members
-.. _PW_EXCLUSIVE_TRYLOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
-.. _PW_LOCKS_EXCLUDED: ../doxygen/group__pw__sync.html#define-members
-.. _PW_SHARED_LOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
-.. _PW_SHARED_LOCKS_REQUIRED: ../doxygen/group__pw__sync.html#define-members
-.. _PW_SHARED_TRYLOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
-.. _PW_UNLOCK_FUNCTION: ../doxygen/group__pw__sync.html#define-members
+.. _PW_ACQUIRED_AFTER: ../api/cc/group__pw__sync.html#define-members
+.. _PW_ACQUIRED_BEFORE: ../api/cc/group__pw__sync.html#define-members
+.. _PW_ASSERT_EXCLUSIVE_LOCK: ../api/cc/group__pw__sync.html#define-members
+.. _PW_ASSERT_SHARED_LOCK: ../api/cc/group__pw__sync.html#define-members
+.. _PW_EXCLUSIVE_LOCK_FUNCTION: ../api/cc/group__pw__sync.html#define-members
+.. _PW_EXCLUSIVE_LOCKS_REQUIRED: ../api/cc/group__pw__sync.html#define-members
+.. _PW_EXCLUSIVE_TRYLOCK_FUNCTION: ../api/cc/group__pw__sync.html#define-members
+.. _PW_LOCKS_EXCLUDED: ../api/cc/group__pw__sync.html#define-members
+.. _PW_SHARED_LOCK_FUNCTION: ../api/cc/group__pw__sync.html#define-members
+.. _PW_SHARED_LOCKS_REQUIRED: ../api/cc/group__pw__sync.html#define-members
+.. _PW_SHARED_TRYLOCK_FUNCTION: ../api/cc/group__pw__sync.html#define-members
+.. _PW_UNLOCK_FUNCTION: ../api/cc/group__pw__sync.html#define-members

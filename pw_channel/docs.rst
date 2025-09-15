@@ -38,7 +38,7 @@ flow control, backpressure, composability, and more.
       And more.
 
    .. grid-item-card:: :octicon:`code-square` Reference
-      :link: ../doxygen/group__pw__channel.html
+      :link: ../api/cc/group__pw__channel.html
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 

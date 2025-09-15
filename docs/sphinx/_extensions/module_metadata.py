@@ -232,7 +232,7 @@ def rustdoc_url(module_name: str) -> str:
 def doxygen_url(module_name: str) -> str:
     """Returns the Doxygen URL for a given module."""
     module_name = module_name.replace("_", "__")
-    return f'https://pigweed.dev/doxygen/group__{module_name}.html'
+    return f'https://pigweed.dev/api/cc/group__{module_name}.html'
 
 
 def concat_tags(*tag_lists: list[str]) -> list[str]:

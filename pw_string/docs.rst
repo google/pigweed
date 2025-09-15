@@ -102,7 +102,7 @@ meets your needs.
       Integrate pw_string into your project and learn common use cases
 
    .. grid-item-card:: :octicon:`code-square` API Reference
-      :link: ../doxygen/group__pw__string.html
+      :link: ../api/cc/group__pw__string.html
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 

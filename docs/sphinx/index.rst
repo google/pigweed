@@ -201,3 +201,4 @@ Talk to us
    community/index
    What's new <changelog>
    Blog <blog/index>
+   api/index

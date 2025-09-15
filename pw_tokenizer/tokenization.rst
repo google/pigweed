@@ -814,11 +814,11 @@ Decoding tooling deployment
      or binaries.
 
 .. TODO: b/441605063 - Replace with Doxylinks after variadic macro bug is fixed
-.. _PW_TOKEN_FMT: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
-.. _PW_TOKENIZE_FORMAT_STRING: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
-.. _PW_TOKENIZE_REPLACE_FORMAT_STRING: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
-.. _PW_TOKENIZE_STRING: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
-.. _PW_TOKENIZE_STRING_EXPR: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
-.. _PW_TOKENIZE_TO_BUFFER: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
-.. _PW_TOKENIZE_TO_BUFFER_DOMAIN: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
-.. _PW_TOKENIZE_TO_BUFFER_MASK: ../doxygen/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKEN_FMT: ../api/cc/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_FORMAT_STRING: ../api/cc/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_REPLACE_FORMAT_STRING: ../api/cc/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_STRING: ../api/cc/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_STRING_EXPR: ../api/cc/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_TO_BUFFER: ../api/cc/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_TO_BUFFER_DOMAIN: ../api/cc/group__pw__tokenizer__tokenize.html#define-members
+.. _PW_TOKENIZE_TO_BUFFER_MASK: ../api/cc/group__pw__tokenizer__tokenize.html#define-members
