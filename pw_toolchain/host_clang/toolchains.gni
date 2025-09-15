@@ -62,6 +62,7 @@ _defaults = {
   default_configs = pigweed_default_configs + [
                       "$dir_pw_build:link_with_lld",
                       "$dir_pw_build:extra_debugging",
+                      "$dir_pw_toolchain/cc/args:warning_suppression_allowlist",
                       "$dir_pw_toolchain/host_clang:no_system_libcpp",
                       "$dir_pw_toolchain/host_clang:xcode_sysroot",
                       "$dir_pw_toolchain/host_clang:no_ms_compatibility",

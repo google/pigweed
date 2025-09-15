@@ -119,7 +119,7 @@ cc_feature_set(
     name = "asan_constraint",
     # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
     # -fsanitize=address is not be specified during Rust linking.
-    all_of = [":rules_rust_unsupported_feature"],
+    all_of = ["//pw_toolchain/cc/feature:rules_rust_unsupported_feature"],
 )
 
 bool_flag(
@@ -145,7 +145,7 @@ cc_feature_set(
     name = "msan_constraint",
     # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
     # -fsanitize=memory is not be specified during Rust linking.
-    all_of = [":rules_rust_unsupported_feature"],
+    all_of = ["//pw_toolchain/cc/feature:rules_rust_unsupported_feature"],
 )
 
 bool_flag(
@@ -171,7 +171,7 @@ cc_feature_set(
     name = "ubsan_constraint",
     # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
     # -fsanitize=undefined is not be specified during Rust linking.
-    all_of = [":rules_rust_unsupported_feature"],
+    all_of = ["//pw_toolchain/cc/feature:rules_rust_unsupported_feature"],
 )
 
 bool_flag(
@@ -197,7 +197,7 @@ cc_feature_set(
     name = "tsan_constraint",
     # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
     # -fsanitize=undefined is not be specified during Rust linking.
-    all_of = [":rules_rust_unsupported_feature"],
+    all_of = ["//pw_toolchain/cc/feature:rules_rust_unsupported_feature"],
 )
 
 bool_flag(
@@ -218,26 +218,11 @@ cc_feature(
     feature_name = "fuzztest",
 )
 
-# This is a sentinel feature defined by rules_rust. This is enabled by default
-# during normal compilation, and whenever Rust binaries are being linked it is
-# disabled.
-cc_feature(
-    name = "rules_rust_unsupported_feature",
-    feature_name = "rules_rust_unsupported_feature",
-)
-
-# This is a sentinel feature defined by rules_go. This is enabled by default
-# during normal compilation, and during cgo compilation it is disabled.
-cc_feature(
-    name = "rules_go_unsupported_feature",
-    feature_name = "rules_go_unsupported_feature",
-)
-
 cc_feature_constraint(
     name = "rules_go_constraint",
 
     # This constraint is saying "not not Golang" (yes Golang / only Golang).
-    none_of = [":rules_go_unsupported_feature"],
+    none_of = ["//pw_toolchain/cc/feature:rules_go_unsupported_feature"],
 )
 
 cc_args(
@@ -396,6 +381,7 @@ cc_toolchain(
         "//pw_toolchain/cc/args:wnon_virtual_dtor",
         "//pw_toolchain/cc/args:common_warnings",
         "//pw_toolchain/cc/args:color_diagnostics",
+        "//pw_toolchain/cc/args:warning_suppression_allowlist",
     ] + (
         ["//pw_toolchain/cc/args:internal_strict_warnings"] if pigweed_is_root() else []
     ) + [
@@ -411,8 +397,8 @@ cc_toolchain(
     enabled_features = [
         ":supports_pic",
         ":module_maps",
-        ":rules_go_unsupported_feature",
-        ":rules_rust_unsupported_feature",
+        "//pw_toolchain/cc/feature:rules_go_unsupported_feature",
+        "//pw_toolchain/cc/feature:rules_rust_unsupported_feature",
         "//pw_toolchain/cc/capability:compiler_is_clang",
         "//pw_toolchain/cc/capability:linker_is_clang",
     ] + select({

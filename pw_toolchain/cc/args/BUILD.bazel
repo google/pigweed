@@ -417,3 +417,32 @@ cc_args(
     iterate_over = "@rules_cc//cc/toolchains/variables:dependent_module_map_files",
     requires_not_none = "@rules_cc//cc/toolchains/variables:dependent_module_map_files",
 )
+
+filegroup(
+    name = "warning_exceptions",
+    srcs = ["warning_exceptions.txt"],
+)
+
+cc_args(
+    name = "warning_suppression_allowlist",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "--warning-suppression-mappings={warning_exceptions}",
+    ],
+    data = [
+        ":warning_exceptions",
+    ],
+    format = {
+        "warning_exceptions": ":warning_exceptions",
+    },
+    requires_any_of = [
+        # Because cgo compilation involves another layer of sandboxing,
+        # this file is not found during cgo compilation. Once
+        # `--warning-suppression-mappings` is listed in cgoAbsEnvFlags in
+        # rules_go, this can be removed.
+        "//pw_toolchain/cc/feature:rules_go_unsupported_feature",
+    ],
+)
