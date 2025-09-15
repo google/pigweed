@@ -688,7 +688,7 @@ the GNI file specified in the environment config file.
 
 It's straightforward to use these variables.
 
-.. code-block:: cpp
+.. code-block::
 
    import("//build_overrides/pigweed_environment.gni")
 

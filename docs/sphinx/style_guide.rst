@@ -173,7 +173,7 @@ C/C++ build targets include a list of fields. The primary fields are:
 
 Assets within each field must be listed in alphabetical order.
 
-.. code-block:: cpp
+.. code-block::
 
    # Here is a brief example of a GN build file.
 

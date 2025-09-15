@@ -43,7 +43,7 @@ to the entry function (if it's otherwise unused in your project).
 
 Default:
 
-.. code-block:: cpp
+.. code-block::
 
    __isr_vector_table:
      .word  __stack_start
@@ -56,7 +56,7 @@ Default:
 
 Using CPU exception module:
 
-.. code-block:: cpp
+.. code-block::
 
    __isr_vector_table:
      .word  __stack_start

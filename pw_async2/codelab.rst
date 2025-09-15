@@ -505,7 +505,7 @@ Normally you would have to add the correct dependencies to the
 `//pw_async2/codelab/BUILD.bazel`_ file, but we've already included them to save
 you some work. But if something went wrong, they are straightforward:
 
-.. code-block:: cpp
+.. code-block::
 
    "//pw_sync:interrupt_spin_lock",
    "//pw_sync:lock_annotations",
