@@ -31,10 +31,10 @@
 //! Every kernel object has a set of signals that can be pending and waited
 //! upon.  The exact meaning and semantics of each signal vary between kernel
 //! objects.  The signal types are:
-//! - [`SIGNAL_READABLE`]: Object is readable.
-//! - [`SIGNAL_WRITABLE`]: Object is writable.
-//! - [`SIGNAL_ERROR`]: Object is in an error state.
-//! - [`SIGNAL_USER`]: User defined signal.  Useful for out of band signaling
+//! - `Signals::READABLE`: Object is readable.
+//! - `Signals::WRITABLE`: Object is writable.
+//! - `Signals::ERROR`: Object is in an error state.
+//! - `Signals::USER`: User defined signal.  Useful for out of band signaling
 //!   between peers on a [Channel](#channel).
 //!
 //! Any kernel object can be waited for signals to assert using the
@@ -68,8 +68,8 @@
 //! - The initiator starts the transaction by providing send and receive
 //!   buffers to one of the two transact system calls ([`channel_transact()`] or
 //!   [`channel_async_transact()`]). This has the additional side effect of
-//!   clearing [`SIGNAL_READABLE`] and [`SIGNAL_WRITABLE`] on the initiator.
-//! - The handler's [`SIGNAL_READABLE`] will become asserted.
+//!   clearing `Signals::READABLE` and `Signals::WRITABLE` on the initiator.
+//! - The handler's `Signals::READABLE` will become asserted.
 //! - The handler can now read the message in multiple calls to
 //!   [`channel_read()`] causing the kernel to copy the data from the
 //!   initiator's send buffer to the buffer provided to [`channel_read()`].
@@ -78,34 +78,34 @@
 //!   from the handler's buffer to the initiator's receive buffer.
 //!   There is no built in mechanism for the handler to signal an error
 //!   to the initiator.  This is left to the higher level protocol used to
-//!   communicate over the channel.  This will clear [`SIGNAL_READABLE`] and
-//!   [`SIGNAL_WRITABLE`] on the handler and raise [`SIGNAL_READABLE`] on
+//!   communicate over the channel.  This will clear `Signals::READABLE` and
+//!   `Signals::WRITABLE` on the handler and raise `Signals::READABLE` on
 //!   the initiator.
 //!
 //! The handler's only ways of communicating with the initiator are by
 //! - responding to an initiated transaction
-//! - raising [`SIGNAL_USER`] on the initiator by calling
+//! - raising `Signals::USER` on the initiator by calling
 //!   [`object_raise_peer_user_signal()`]
 //!
 //! #### Initiator Signals
-//! - [`SIGNAL_WRITABLE`] indicates there is no pending transaction and one
+//! - `Signals::WRITABLE` indicates there is no pending transaction and one
 //!   can be started. Cleared on transaction initiation.
-//! - [`SIGNAL_READABLE`] indicates the handler has responded to the
+//! - `Signals::READABLE` indicates the handler has responded to the
 //!   pending transaction.  Cleared on transaction initiation.
-//! - [`SIGNAL_ERROR`] indicates pending transaction has an error.  Cleared
+//! - `Signals::ERROR` indicates pending transaction has an error.  Cleared
 //!   when the initiator is waited on.
-//! - [`SIGNAL_USER`] indicates the handler calls [`object_raise_peer_user_signal()`].
+//! - `Signals::USER` indicates the handler calls [`object_raise_peer_user_signal()`].
 //!   Cleared when the initiator is waited on.
 //!
 //! #### Handler Signals
-//! - [`SIGNAL_READABLE`] indicates there is a pending transaction.  Cleared when
+//! - `Signals::READABLE` indicates there is a pending transaction.  Cleared when
 //!   the handler calls [`channel_respond()`].
-//! - [`SIGNAL_WRITABLE`] indicates there is a pending transaction.  Cleared when
+//! - `Signals::WRITABLE` indicates there is a pending transaction.  Cleared when
 //!   the handler calls [`channel_respond()`].
-//! - [`SIGNAL_ERROR`] indicates a pending transaction error.  No error states
+//! - `Signals::ERROR` indicates a pending transaction error.  No error states
 //!   are defined at the moment.  In the future an error may be raised when
 //!   the remote peer closes.
-//! - [`SIGNAL_USER`] indicates the initiator calls [`object_raise_peer_user_signal()`].
+//! - `Signals::USER` indicates the initiator calls [`object_raise_peer_user_signal()`].
 //!   Cleared when the initiator is waited on.
 //!
 //! ### Wait Group
@@ -156,6 +156,7 @@
 
 #![no_std]
 
+use bitflags::bitflags;
 use pw_status::{Error, Result};
 
 pub struct SysCallReturnValue(pub i64);
@@ -221,20 +222,33 @@ impl From<u16> for SysCallId {
     }
 }
 
-/// A mask of objects signals
-pub type SignalMask = u32;
+/// A set of object signals
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Signals(u32);
 
-/// Bit in a [`SignalMask`] indicating that a object is readable.
-pub const SIGNAL_READABLE: SignalMask = 1 << 0;
+bitflags! {
+    impl Signals: u32 {
+        /// Object is readable.
+        const READABLE = 1 << 0;
 
-/// Bit in a [`SignalMask`] indicating that a object is writable.
-pub const SIGNAL_WRITABLE: SignalMask = 1 << 1;
+        /// Object is writeable.
+        const WRITEABLE = 1 << 1;
 
-/// Bit in a [`SignalMask`] indicating that a object is in an error state.
-pub const SIGNAL_ERROR: SignalMask = 1 << 2;
+        /// Object is in an error state.
+        const ERROR = 1 << 2;
 
-/// Bit in a [`SignalMask`] that has protocol specific meaning.
-pub const SIGNAL_USER: SignalMask = 1 << 16;
+        /// Object has a protocol specific user signal pending.
+        const USER = 1 << 16;
+    }
+}
+
+impl Signals {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self(0)
+    }
+}
 
 /// Return value from the [`object_wait()`] syscall.
 ///
@@ -245,13 +259,13 @@ pub struct WaitReturn {
     pub status: isize,
 
     /// Signals pending on this object.
-    pub pending_signals: SignalMask,
+    pub pending_signals: Signals,
 
     /// `user_data` of the wait group member.
     pub wait_group_user_data: usize,
 
     /// Signals pending on the wait group member.
-    pub wait_group_pending_signals: SignalMask,
+    pub wait_group_pending_signals: Signals,
 }
 
 unsafe extern "C" {
@@ -266,9 +280,9 @@ unsafe extern "C" {
     /// - Non-blocking: `deadline` == 0
     /// - Infinite blocking: `deadline` == `u64::MAX`
     ///
-    /// This call will cause `SIGNAL_READABLE` to be cleared on the initiator
+    /// This call will cause `Signals::READABLE` to be cleared on the initiator
     /// channel object at the beginning of execution.  However by the time it
-    /// returns without error, `SIGNAL_READABLE` will be set again.
+    /// returns without error, `Signals::READABLE` will be set again.
     ///
     /// The maximum size of buffers that may be passed is `isize::MAX`.
     ///
@@ -298,7 +312,7 @@ unsafe extern "C" {
     /// canceled.)  `send_data` and `recv_data` may overlap or be the same
     /// buffer.
     ///
-    /// This call will cause `SIGNAL_READABLE` to be cleared on the initiator
+    /// This call will cause `Signals::READABLE` to be cleared on the initiator
     /// channel object.  It will be signaled by the handler side when it
     /// responds.
     ///
@@ -357,7 +371,7 @@ unsafe extern "C" {
     /// Respond to and complete a pending transaction
     ///
     /// Causes the kernel to copy `buffer` into the initiator's `recv_buffer`
-    /// and set `SIGNAL_READABLE` on the initiator channel object.
+    /// and set `Signals::READABLE` on the initiator channel object.
     ///
     /// The maximum size of buffer that may be passed is `isize::MAX`.
     ///
@@ -372,7 +386,7 @@ unsafe extern "C" {
     ///   region in this processes' address space.
     pub fn channel_respond(object_handle: u32, buffer: *mut u8, buffer_len: usize) -> isize;
 
-    /// Raise `SIGNAL_USER` on a paired object's peer
+    /// Raise `Signals::USER` on a paired object's peer
     ///
     /// Since channels are unidirectional, this serves as a way for the handler
     /// to signal the initiator.
@@ -392,7 +406,7 @@ unsafe extern "C" {
     /// - [`Error::InvalidArgument`]: `object_handle` is not a valid object.
     /// - [`Error::DeadlineExceeded`]: The handler side did not respond before
     ///   `deadline` was exceeded.
-    pub fn object_wait(object_handle: u32, signal_mask: SignalMask, deadline: u64) -> WaitReturn;
+    pub fn object_wait(object_handle: u32, signal_mask: Signals, deadline: u64) -> WaitReturn;
 
     /// Adds an object to a wait group
     ///
@@ -408,7 +422,7 @@ unsafe extern "C" {
     pub fn wait_group_add(
         wait_group: u32,
         object: u32,
-        signal_mask: SignalMask,
+        signal_mask: Signals,
         user_data: usize,
     ) -> isize;
 
@@ -432,7 +446,7 @@ pub trait SysCallInterface {
     fn object_wait(handle: u32, signal_mask: u32, deadline: u64) -> Result<()>;
     fn channel_transact(
         handle: u32,
-        send_data: *mut u8,
+        send_data: *const u8,
         send_len: usize,
         recv_data: *mut u8,
         recv_len: usize,
@@ -444,7 +458,7 @@ pub trait SysCallInterface {
         buffer: *mut u8,
         buffer_len: usize,
     ) -> Result<u32>;
-    fn channel_respond(object_handle: u32, buffer: *mut u8, buffer_len: usize) -> Result<()>;
+    fn channel_respond(object_handle: u32, buffer: *const u8, buffer_len: usize) -> Result<()>;
 
     fn debug_putc(a: u32) -> Result<u32>;
     // TODO: Consider adding an feature flagged PowerManager object and move

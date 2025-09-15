@@ -12,10 +12,17 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-pub use kernel_config::KernelConfigInterface;
+use kernel_config::{KernelConfig, KernelConfigInterface};
 
-pub struct KernelConfig;
+pub struct Clock;
 
-impl KernelConfigInterface for KernelConfig {
-    const SYSTEM_CLOCK_HZ: u64 = 0;
+impl time::Clock for Clock {
+    const TICKS_PER_SEC: u64 = KernelConfig::SYSTEM_CLOCK_HZ;
+    fn now() -> time::Instant<Self> {
+        // Placeholder until a get_time() system call exists.
+        Instant::from_ticks(0)
+    }
 }
+
+pub type Instant = time::Instant<Clock>;
+pub type Duration = time::Instant<Clock>;

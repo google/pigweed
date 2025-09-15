@@ -25,7 +25,7 @@ impl SysCallInterface for SysCall {
     #[inline(always)]
     fn channel_transact(
         _handle: u32,
-        _send_data: *mut u8,
+        _send_data: *const u8,
         _send_len: usize,
         _recv_data: *mut u8,
         _recv_len: usize,
@@ -45,7 +45,7 @@ impl SysCallInterface for SysCall {
     }
 
     #[inline(always)]
-    fn channel_respond(_handle: u32, _buffer: *mut u8, _buffer_len: usize) -> Result<()> {
+    fn channel_respond(_handle: u32, _buffer: *const u8, _buffer_len: usize) -> Result<()> {
         Err(pw_status::Error::Unimplemented)
     }
 

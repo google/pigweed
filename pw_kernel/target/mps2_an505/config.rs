@@ -17,10 +17,12 @@ pub use kernel_config::{CortexMKernelConfigInterface, KernelConfigInterface};
 
 pub struct KernelConfig;
 
-impl KernelConfigInterface for KernelConfig {}
+impl KernelConfigInterface for KernelConfig {
+    const SYSTEM_CLOCK_HZ: u64 = 20_000_000;
+}
 
 impl CortexMKernelConfigInterface for KernelConfig {
-    const SYS_TICK_HZ: u32 = 20_000_000;
+    const SYS_TICK_HZ: u32 = KernelConfig::SYSTEM_CLOCK_HZ as u32;
 
     const NUM_MPU_REGIONS: usize = 8;
 }

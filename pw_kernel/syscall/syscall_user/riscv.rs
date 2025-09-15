@@ -37,7 +37,7 @@ macro_rules! syscall_veneer {
 syscall_veneer!(ObjectWait, object_wait(handle: u32, signals: u32, deadline: u64));
 syscall_veneer!(ChannelTransact, channel_transact(
     object_handle: u32, // a0
-    send_data: *mut u8, // a1
+    send_data: *const u8, // a1
     send_len: usize,    // a2
     recv_data: *mut u8, // a3
     recv_len: usize,    // a4
@@ -49,7 +49,7 @@ syscall_veneer!(ChannelRead, channel_read(
      buffer: *mut u8,
      buffer_len: usize,
 ));
-syscall_veneer!(ChannelRespond, channel_respond(object_handle: u32, buffer: *mut u8, buffer_len: usize));
+syscall_veneer!(ChannelRespond, channel_respond(object_handle: u32, buffer: *const u8, buffer_len: usize));
 syscall_veneer!(DebugPutc, putc(a: u32));
 syscall_veneer!(DebugShutdown, shutdown(a: u32));
 
@@ -62,7 +62,7 @@ impl SysCallInterface for SysCall {
     #[inline(always)]
     fn channel_transact(
         handle: u32,
-        send_data: *mut u8,
+        send_data: *const u8,
         send_len: usize,
         recv_data: *mut u8,
         recv_len: usize,
@@ -81,7 +81,7 @@ impl SysCallInterface for SysCall {
     }
 
     #[inline(always)]
-    fn channel_respond(handle: u32, buffer: *mut u8, buffer_len: usize) -> Result<()> {
+    fn channel_respond(handle: u32, buffer: *const u8, buffer_len: usize) -> Result<()> {
         SysCallReturnValue(unsafe { channel_respond(handle, buffer, buffer_len) }).to_result_unit()
     }
 

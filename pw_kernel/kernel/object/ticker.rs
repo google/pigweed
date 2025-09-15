@@ -33,8 +33,8 @@ impl<K: Kernel> TickerObject<K> {
         }
     }
     pub fn tick(&self, kernel: K) {
-        self.base.signal(kernel, Signals(0x1));
-        self.base.signal(kernel, Signals(0));
+        self.base.signal(kernel, Signals::READABLE);
+        self.base.signal(kernel, Signals::new());
     }
 }
 

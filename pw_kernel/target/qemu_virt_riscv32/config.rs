@@ -21,11 +21,13 @@ pub use kernel_config::{
 
 pub struct KernelConfig;
 
-impl KernelConfigInterface for KernelConfig {}
+impl KernelConfigInterface for KernelConfig {
+    const SYSTEM_CLOCK_HZ: u64 = 10_000_000;
+}
 
 impl RiscVKernelConfigInterface for KernelConfig {
     type Timer = TimerConfig;
-    const MTIME_HZ: u64 = 10_000_000;
+    const MTIME_HZ: u64 = KernelConfig::SYSTEM_CLOCK_HZ;
     const PMP_ENTRIES: usize = 16;
     const PMP_USERSPACE_ENTRIES: Range<usize> = Range {
         start: 0usize,

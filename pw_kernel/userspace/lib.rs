@@ -17,3 +17,6 @@
 pub use userspace_macro::arm_cortex_m_entry as entry;
 #[cfg(feature = "arch_riscv")]
 pub use userspace_macro::riscv_entry as entry;
+
+pub mod syscall;
+pub mod time;

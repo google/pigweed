@@ -24,6 +24,7 @@ rust_library(
     tags = ["kernel"],
     deps = [
         "//pw_kernel/lib/pw_status",
+        "@rust_crates//:bitflags",
     ],
 )
 

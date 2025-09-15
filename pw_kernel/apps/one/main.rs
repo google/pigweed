@@ -14,50 +14,36 @@
 #![no_main]
 #![no_std]
 
-use pw_status::{Error, Result, StatusCode};
-use syscall_user::*;
+use pw_status::{Error, Result};
 use userspace::entry;
+use userspace::syscall::{self, Signals};
+use userspace::time::Instant;
 
 const TICKER_HANDLE: u32 = 0;
 const IPC_HANDLE: u32 = 1;
 
-const OBJECT_READABLE: u32 = 0x1;
-
-#[expect(dead_code)]
-const OBJECT_WRITEABLE: u32 = 0x2;
-
-const MAX_DEADLINE: u64 = u64::MAX;
-
-fn main() -> Result<()> {
+fn test_uppercase_ipcs() -> Result<()> {
     for c in 'a'..='z' {
-        let mut send_buf = [0u8; 4];
-        let mut recv_buf = [0u8; 4];
+        let mut send_buf = [0u8; size_of::<char>()];
+        let mut recv_buf = [0u8; size_of::<char>()];
 
         // Encode the character into `send_buf` and send it over to the handler.
         c.encode_utf8(&mut send_buf);
-        let len = SysCall::channel_transact(
-            IPC_HANDLE,
-            send_buf.as_mut_ptr(),
-            4,
-            recv_buf.as_mut_ptr(),
-            4,
-            MAX_DEADLINE,
-        )?;
+        let len: usize =
+            syscall::channel_transact(IPC_HANDLE, &send_buf, &mut recv_buf, Instant::MAX)?;
 
         // The handler side always sends 4 bytes to make up a full Rust `char`
-        if len != 4 {
-            return Err(Error::Unknown);
+        if len != size_of::<char>() {
+            return Err(Error::OutOfRange);
         }
 
-        let response_val = u32::from_ne_bytes(recv_buf);
-
-        // Log the response as a character.
-        SysCall::debug_putc(response_val)?;
-
-        let Some(upper_c) = char::from_u32(response_val) else {
-            return Err(Error::Unknown);
+        // Log the response character
+        let Ok(upper_c) = u32::from_ne_bytes(recv_buf).try_into() else {
+            return Err(Error::InvalidArgument);
         };
+        syscall::debug_putc(upper_c)?;
 
+        // Verify that the remote side made the character uppercase.
         if upper_c != c.to_ascii_uppercase() {
             return Err(Error::Unknown);
         }
@@ -68,16 +54,18 @@ fn main() -> Result<()> {
 
 #[entry]
 fn entry() -> ! {
-    let ret = main();
+    let ret = test_uppercase_ipcs();
 
+    // Log that an error occurred so that the app that caused the shutdown is logged.
     if ret.is_err() {
-        let _ = SysCall::debug_putc(u32::from('!'));
+        let _ = syscall::debug_putc('!');
     }
 
     // Wait for as ticker event before shutting down the system.
-    let _ = SysCall::object_wait(TICKER_HANDLE, OBJECT_READABLE, MAX_DEADLINE);
+    let _ = syscall::object_wait(TICKER_HANDLE, Signals::READABLE, Instant::MAX);
 
-    let _ = SysCall::debug_shutdown(ret.status_code());
+    // Since this is written as a test, shut down with the return status from `main()`.
+    let _ = syscall::debug_shutdown(ret);
     loop {}
 }
 

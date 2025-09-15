@@ -19,6 +19,8 @@ rust_library(
     name = "userspace",
     srcs = [
         "lib.rs",
+        "syscall.rs",
+        "time.rs",
     ],
     crate_features = ["user_space"] + select({
         "@platforms//cpu:armv8-m": ["arch_arm_cortex_m"],
@@ -29,6 +31,14 @@ rust_library(
         ":userspace_macro",
     ],
     tags = ["kernel"],
+    deps = [
+        "//pw_kernel/config:kernel_config",
+        "//pw_kernel/lib/pw_cast",
+        "//pw_kernel/lib/pw_status",
+        "//pw_kernel/lib/time",
+        "//pw_kernel/syscall:syscall_defs",
+        "//pw_kernel/syscall:syscall_user",
+    ],
 )
 
 rust_proc_macro(

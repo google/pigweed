@@ -16,10 +16,10 @@ use core::any::Any;
 use core::cell::UnsafeCell;
 use core::ptr::NonNull;
 
-use bitflags::bitflags;
 use foreign_box::{ForeignBox, ForeignRc};
 use list::{self, Link, RandomAccessForeignList};
 use pw_status::{Error, Result};
+use syscall_defs::Signals;
 use time::Instant;
 
 use crate::Kernel;
@@ -75,25 +75,6 @@ pub trait KernelObject<K: Kernel>: Any + Send + Sync {
 }
 
 list::define_adapter!(pub ObjectWaiterListAdapter<K: Kernel> => ObjectWaiter<K>::link);
-
-#[derive(Copy, Clone)]
-pub struct Signals(u32);
-
-bitflags! {
-    impl Signals: u32 {
-        const Readable = 1 << 0;
-        const Writeable = 1 << 1;
-        const Error = 1 << 2;
-        const User = 1 << 16;
-    }
-}
-
-impl Signals {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self(0)
-    }
-}
 
 struct WaitResult {
     result: UnsafeCell<Result<Signals>>,

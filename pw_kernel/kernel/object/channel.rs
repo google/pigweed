@@ -77,8 +77,8 @@ impl<K: Kernel> KernelObject<K> for ChannelHandlerObject<K> {
         response_buffer.copy_into(0, &mut transaction.recv_buffer)?;
 
         transaction.recv_buffer.truncate(response_buffer.size());
-        self.base.state.lock(kernel).active_signals -= Signals::Readable | Signals::Writeable;
-        transaction.initiator.base.signal(kernel, Signals::Readable);
+        self.base.state.lock(kernel).active_signals -= Signals::READABLE | Signals::WRITEABLE;
+        transaction.initiator.base.signal(kernel, Signals::READABLE);
         Ok(())
     }
 }
@@ -142,14 +142,14 @@ impl<K: Kernel> KernelObject<K> for ChannelInitiatorObject<K> {
         // Clear Readable, Writable, and Error signals  on our side before
         // signaling the handler.
         self.base.state.lock(kernel).active_signals -=
-            Signals::Readable | Signals::Writeable | Signals::Error;
+            Signals::READABLE | Signals::WRITEABLE | Signals::ERROR;
 
-        self.handler.base.signal(kernel, Signals::Readable);
+        self.handler.base.signal(kernel, Signals::READABLE);
 
-        self.object_wait(kernel, Signals::Readable | Signals::Error, deadline)?;
+        self.object_wait(kernel, Signals::READABLE | Signals::ERROR, deadline)?;
 
         // TODO: konkers - Rationalize signal behavior with syscall_defs.rs.
-        self.base.state.lock(kernel).active_signals |= Signals::Writeable;
+        self.base.state.lock(kernel).active_signals |= Signals::WRITEABLE;
 
         let mut active_transaction = self.handler.active_transaction.lock();
         let recv_bytes = match &*active_transaction {

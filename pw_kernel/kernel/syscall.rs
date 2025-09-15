@@ -16,11 +16,11 @@ use foreign_box::ForeignRc;
 use pw_cast::CastInto as _;
 use pw_log::info;
 use pw_status::{Error, Result};
-use syscall_defs::{SysCallId, SysCallReturnValue};
+use syscall_defs::{Signals, SysCallId, SysCallReturnValue};
 use time::{Clock, Instant};
 
 use crate::Kernel;
-use crate::object::{KernelObject, Signals, SyscallBuffer};
+use crate::object::{KernelObject, SyscallBuffer};
 
 const SYSCALL_DEBUG: bool = false;
 

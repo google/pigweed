@@ -15,45 +15,44 @@
 #![no_std]
 
 use pw_status::{Error, Result};
-use syscall_user::*;
 use userspace::entry;
+use userspace::syscall::{self, Signals};
+use userspace::time::Instant;
 
 const IPC_HANDLE: u32 = 0;
 
-const OBJECT_READABLE: u32 = 0x1;
-
-const MAX_DEADLINE: u64 = u64::MAX;
-
-fn main() -> Result<()> {
+fn handle_uppercase_ipcs() -> Result<()> {
     loop {
         // Wait for an IPC to come in.
-        SysCall::object_wait(IPC_HANDLE, OBJECT_READABLE, MAX_DEADLINE)?;
+        syscall::object_wait(IPC_HANDLE, Signals::READABLE, Instant::MAX)?;
 
         // Read the payload.
-        let mut buffer = [0u8; 4];
-        let len = SysCall::channel_read(IPC_HANDLE, 0, buffer.as_mut_ptr(), 4)?;
-        if len != 4 {
-            return Err(Error::Unknown);
+        let mut buffer = [0u8; size_of::<char>()];
+        let len = syscall::channel_read(IPC_HANDLE, 0, &mut buffer)?;
+        if len != size_of::<char>() {
+            return Err(Error::OutOfRange);
         };
 
-        // Convert the payload to a character and make it upper case.
+        // Convert the payload to a character and make it uppercase.
         let Some(c) = char::from_u32(u32::from_ne_bytes(buffer)) else {
-            return Err(Error::Unknown);
+            return Err(Error::InvalidArgument);
         };
         let c = c.to_ascii_uppercase();
 
         // Respond to the IPC with the uppercase character.
-        let mut response_buffer = [0u8; 4];
+        let mut response_buffer = [0u8; size_of::<char>()];
         c.encode_utf8(&mut response_buffer);
-        SysCall::channel_respond(IPC_HANDLE, response_buffer.as_mut_ptr(), 4)?;
+        syscall::channel_respond(IPC_HANDLE, &response_buffer)?;
     }
 }
 
 #[entry]
 fn entry() -> ! {
-    if let Err(e) = main() {
-        let _ = SysCall::debug_putc(u32::from('!'));
-        let _ = SysCall::debug_shutdown(e as u32);
+    if let Err(e) = handle_uppercase_ipcs() {
+        // On error, log that it occurred and, since this is written as a test,
+        // shut down the system with the error code.
+        let _ = syscall::debug_putc('!');
+        let _ = syscall::debug_shutdown(Err(e));
     }
 
     loop {}

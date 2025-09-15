@@ -17,8 +17,12 @@
 pub trait KernelConfigInterface {
     /// Rate of the scheduler monotonic tick.
     const SCHEDULER_TICK_HZ: u32 = 100;
+
     /// The number of bytes allocated for each kernel stack.
     const KERNEL_STACK_SIZE_BYTES: usize = 2048;
+
+    /// The native rate at which the system clock advances.
+    const SYSTEM_CLOCK_HZ: u64;
 }
 
 /// Cortex-M specific configuration.
