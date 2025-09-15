@@ -341,7 +341,7 @@ class WorkflowsCli(multitool.MultitoolCli):
             raise AssertionError(
                 'Internal error: failed to initialize workflows manager'
             )
-        _PROJECT_BUILDER_LOGGER.propagate = False
+        _PROJECT_BUILDER_LOGGER.propagate = True
         return project_builder.run_builds(
             project_builder.ProjectBuilder(
                 build_recipes=self._workflows.program_build(args[0]),
