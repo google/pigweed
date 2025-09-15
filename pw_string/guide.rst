@@ -109,6 +109,7 @@ termination:
 .. code-block:: cpp
 
    #include <string>
+
    #include "pw_log/log.h"
    #include "pw_string/string_builder.h"
 
@@ -116,8 +117,7 @@ termination:
      // %s format strings require null terminated strings, so create one on the
      // stack with size up to kMaxNameLen, copy the string view `name` contents
      // into it, add a null terminator, and log it.
-     PW_LOG_DEBUG("The name is %s",
-                  pw::InlineString<kMaxNameLen>(name).c_str());
+     PW_LOG_DEBUG("The name is %s", pw::InlineString<kMaxNameLen>(name).c_str());
    }
 
 An example of when to prefer :cpp:class:`pw::StringBuilder` is when
@@ -182,7 +182,7 @@ capacity for the string.
 
    // Initialize from a C string.
    pw::InlineString<32> inline_string = "Literally";
-   inline_string.append('?', 3);   // contains "Literally???"
+   inline_string.append('?', 3);  // contains "Literally???"
 
    // Supports copying into known-capacity strings.
    pw::InlineString<64> other = inline_string;
@@ -235,7 +235,7 @@ use the ``pw::InlineString<>`` type, shown in the examples below:
    // Note that the first argument is a generically-sized InlineString.
    void RemoveSuffix(pw::InlineString<>& string, std::string_view suffix) {
      if (string.ends_with(suffix)) {
-        string.resize(string.size() - suffix.size());
+       string.resize(string.size() - suffix.size());
      }
    }
 

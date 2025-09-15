@@ -20,31 +20,27 @@ can be created as follows:
 
 .. code-block:: cpp
 
+   #include "RTOS.h"  // For the embOS types.
    #include "pw_thread/detached_thread.h"
    #include "pw_thread_embos/config.h"
    #include "pw_thread_embos/context.h"
    #include "pw_thread_embos/options.h"
-   #include "RTOS.h"  // For the embOS types.
 
-   constexpr OS_PRIO kFooPriority =
-       pw::thread::embos::config::kDefaultPriority;
+   constexpr OS_PRIO kFooPriority = pw::thread::embos::config::kDefaultPriority;
    constexpr OS_UINT kFooTimeSliceInterval =
        pw::thread::embos::config::kDefaultTimeSliceInterval;
    constexpr size_t kFooStackSizeWords =
        pw::thread::embos::config::kDefaultStackSizeWords;
 
-   pw::thread::embos::ContextWithStack<kFooStackSizeWords>
-       example_thread_context;
+   pw::thread::embos::ContextWithStack<kFooStackSizeWords> example_thread_context;
    void StartExampleThread() {
-     pw::thread::DetachedThread(
-         pw::thread::embos::Options()
-             .set_name("example_thread")
-             .set_priority(kFooPriority)
-             .set_time_slice_interval(kFooTimeSliceInterval)
-             .set_context(example_thread_context),
-         example_thread_function);
+     pw::thread::DetachedThread(pw::thread::embos::Options()
+                                    .set_name("example_thread")
+                                    .set_priority(kFooPriority)
+                                    .set_time_slice_interval(kFooTimeSliceInterval)
+                                    .set_context(example_thread_context),
+                                example_thread_function);
    }
-
 
 Module Configuration Options
 ============================
@@ -202,8 +198,7 @@ For ARM Cortex-M CPUs, you can do something like this:
           pw::ConstByteSpan stack) -> pw::Status {
      return encoder.WriteRawStack(stack);
    };
-   pw::thread::embos::SnapshotThread(my_thread, stack_ptr,
-                                     snapshot_encoder, cb);
+   pw::thread::embos::SnapshotThread(my_thread, stack_ptr, snapshot_encoder, cb);
 
 ``SnapshotThreads()`` wraps the singular thread capture to instead captures
 all created threads to a ``pw::thread::proto::SnapshotThreadInfo`` message.

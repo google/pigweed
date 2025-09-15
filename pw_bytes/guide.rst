@@ -87,9 +87,9 @@ Using function calls:
 
    #include "pw_bytes/units.h"
 
-   constexpr size_t kSmallBuffer = pw::bytes::KiB(2);    // 2048 bytes
-   constexpr size_t kLargeBuffer = pw::bytes::MiB(1);    // 1048576 bytes
-   constexpr size_t kTotalMemory = pw::bytes::GiB(4);    // 4 gibibytes
+   constexpr size_t kSmallBuffer = pw::bytes::KiB(2);  // 2048 bytes
+   constexpr size_t kLargeBuffer = pw::bytes::MiB(1);  // 1048576 bytes
+   constexpr size_t kTotalMemory = pw::bytes::GiB(4);  // 4 gibibytes
 
 Using user-defined literals (requires ``using namespace``):
 
@@ -139,36 +139,39 @@ Concatenate multiple sources:
 .. code-block:: cpp
 
    #include "pw_bytes/array.h"
-   #include "pw_bytes/endian.h" // For CopyInOrder
+   #include "pw_bytes/endian.h"  // For CopyInOrder
 
    constexpr auto kPart1 = pw::bytes::String("ID:");
    constexpr uint16_t kDeviceId = 0xABCD;
 
-   // Creates std::array<std::byte, 5> {'I', 'D', ':', 0xCD, 0xAB} (kDeviceId as little-endian)
+   // Creates std::array<std::byte, 5> {'I', 'D', ':', 0xCD, 0xAB} (kDeviceId as
+   // little-endian)
    constexpr auto kFullId_LE = pw::bytes::Concat(kPart1, kDeviceId);
 
-   // Creates std::array<std::byte, 5> {'I', 'D', ':', 0xAB, 0xCD} (kDeviceId as big-endian)
-   constexpr auto kFullId_BE = pw::bytes::Concat(kPart1, pw::bytes::CopyInOrder(pw::endian::big, kDeviceId));
+   // Creates std::array<std::byte, 5> {'I', 'D', ':', 0xAB, 0xCD} (kDeviceId as
+   // big-endian)
+   constexpr auto kFullId_BE = pw::bytes::Concat(
+       kPart1, pw::bytes::CopyInOrder(pw::endian::big, kDeviceId));
 
 Dynamically constructed byte sequences in fixed-size buffers
 ============================================================
 .. code-block:: cpp
 
+   #include <cstring>  // For strlen (example)
+
    #include "pw_bytes/byte_builder.h"
-   #include "pw_bytes/span.h" // For pw::ByteSpan
-   #include "pw_log/log.h"    // For PW_LOG_ERROR (example)
-   #include <cstring>         // For strlen (example)
+   #include "pw_bytes/span.h"  // For pw::ByteSpan
+   #include "pw_log/log.h"     // For PW_LOG_ERROR (example)
 
    // Example functions
    void ProcessPacket(pw::ConstByteSpan packet_data) { /* ... */ }
    void SendData(const std::byte* data, size_t size) { /* ... */ }
 
-
    void BuildPacket(pw::ByteSpan buffer) {
      pw::ByteBuilder builder(buffer);
 
-     builder.PutUint8(0x01); // Packet type
-     builder.PutUint16(0x1234, pw::endian::big); // Length in big-endian
+     builder.PutUint8(0x01);                      // Packet type
+     builder.PutUint16(0x1234, pw::endian::big);  // Length in big-endian
 
      const char* payload_str = "DATA";
      builder.append(payload_str, strlen(payload_str));
@@ -184,7 +187,7 @@ Dynamically constructed byte sequences in fixed-size buffers
    }
 
    void ExampleWithByteBuffer() {
-     pw::ByteBuffer<64> local_buffer; // Buffer is part of the ByteBuffer object
+     pw::ByteBuffer<64> local_buffer;  // Buffer is part of the ByteBuffer object
 
      local_buffer.PutUint32(0xAABBCCDD, pw::endian::little);
      // ... build more data ...
@@ -200,13 +203,15 @@ Convert integers to and from specific byte orders.
 
 .. code-block:: cpp
 
-   #include "pw_bytes/endian.h"
    #include <array>
    #include <cstdint>
 
+   #include "pw_bytes/endian.h"
+
    // Convert a value to a specific byte order for storage/transmission
    uint32_t native_value = 0x12345678;
-   uint32_t big_endian_value = pw::bytes::ConvertOrderTo(pw::endian::big, native_value);
+   uint32_t big_endian_value =
+       pw::bytes::ConvertOrderTo(pw::endian::big, native_value);
    // On a little-endian system, big_endian_value is now 0x78563412
    // On a big-endian system, big_endian_value is still 0x12345678
 
@@ -215,10 +220,12 @@ Convert integers to and from specific byte orders.
    // pw::bytes::CopyInOrder returns a std::array<std::byte, sizeof(T)>
    auto ordered_bytes = pw::bytes::CopyInOrder(pw::endian::little, native_value);
    std::memcpy(buffer.data(), ordered_bytes.data(), ordered_bytes.size());
-   // buffer now contains {0x78, 0x56, 0x34, 0x12} on a little-endian system if native_value was 0x12345678
+   // buffer now contains {0x78, 0x56, 0x34, 0x12} on a little-endian system if
+   // native_value was 0x12345678
 
    // Read a value from a buffer with a specific order
-   uint32_t read_value = pw::bytes::ReadInOrder<uint32_t>(pw::endian::little, buffer.data());
+   uint32_t read_value =
+       pw::bytes::ReadInOrder<uint32_t>(pw::endian::little, buffer.data());
    // read_value is 0x12345678 (assuming buffer was filled as above)
 
 Alignment utilities
@@ -227,9 +234,10 @@ Ensure data is correctly aligned in memory.
 
 .. code-block:: cpp
 
+   #include <cstdint>  // For std::byte, uintptr_t
+   #include <cstdlib>  // For malloc, free (example)
+
    #include "pw_bytes/alignment.h"
-   #include <cstdint> // For std::byte, uintptr_t
-   #include <cstdlib> // For malloc, free (example)
 
    // Example functions
    void* GetMemory() { return std::malloc(100); }
@@ -238,11 +246,13 @@ Ensure data is correctly aligned in memory.
 
    void AlignmentExample() {
      void* some_memory_block = GetMemory();
-     if (!some_memory_block) return;
+     if (!some_memory_block)
+       return;
      size_t memory_size = GetMemorySize();
 
      // Align pointer up to the next uint32_t boundary
-     uint32_t* aligned_ptr_u32 = pw::AlignUp(static_cast<uint32_t*>(some_memory_block), alignof(uint32_t));
+     uint32_t* aligned_ptr_u32 =
+         pw::AlignUp(static_cast<uint32_t*>(some_memory_block), alignof(uint32_t));
 
      // Check if a pointer is aligned
      if (pw::IsAlignedAs<double>(aligned_ptr_u32)) {
@@ -251,8 +261,10 @@ Ensure data is correctly aligned in memory.
      }
 
      // Get the largest aligned subspan
-     pw::ByteSpan original_span(static_cast<std::byte*>(some_memory_block), memory_size);
-     pw::ByteSpan aligned_subspan = pw::GetAlignedSubspan(original_span, alignof(uint64_t));
+     pw::ByteSpan original_span(static_cast<std::byte*>(some_memory_block),
+                                memory_size);
+     pw::ByteSpan aligned_subspan =
+         pw::GetAlignedSubspan(original_span, alignof(uint64_t));
      // aligned_subspan can now be safely used to store uint64_t values,
      // provided aligned_subspan.size() is sufficient.
 
@@ -265,10 +277,11 @@ Store extra data in the unused bits of aligned pointers.
 
 .. code-block:: cpp
 
-   #include "pw_bytes/packed_ptr.h"
    #include <cstdint>
 
-   struct alignas(4) MyNode { // Aligned to 4 bytes, so 2 LSBs are available
+   #include "pw_bytes/packed_ptr.h"
+
+   struct alignas(4) MyNode {  // Aligned to 4 bytes, so 2 LSBs are available
      int data;
      // MyNode* next;
      // bool flag1;
@@ -295,11 +308,13 @@ Perform low-level bit operations.
 
 .. code-block:: cpp
 
-   #include "pw_bytes/bit.h"
    #include <cstdint>
 
+   #include "pw_bytes/bit.h"
+
    // Sign extend a 12-bit signed value to int16_t
-   uint16_t raw_adc_value = 0x0F00; // Represents -256 in 12-bit two's complement (0b111100000000)
+   uint16_t raw_adc_value =
+       0x0F00;  // Represents -256 in 12-bit two's complement (0b111100000000)
    int16_t signed_adc_value = pw::bytes::SignExtend<12>(raw_adc_value);
    // signed_adc_value is now 0xFF00 (which is -256 in int16_t)
 
@@ -315,8 +330,9 @@ Conveniently create ``std::byte`` literals.
 
 .. code-block:: cpp
 
+   #include <cstddef>  // For std::byte
+
    #include "pw_bytes/suffix.h"
-   #include <cstddef> // For std::byte
 
    // Required to bring the operator into scope
    using ::pw::operator""_b;

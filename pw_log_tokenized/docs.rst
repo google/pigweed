@@ -22,8 +22,9 @@ Example implementation:
 
 .. code-block:: cpp
 
-   extern "C" void pw_log_tokenized_HandleLog(
-       uint32_t payload, const uint8_t message[], size_t size) {
+   extern "C" void pw_log_tokenized_HandleLog(uint32_t payload,
+                                              const uint8_t message[],
+                                              size_t size) {
      // The metadata object provides the log level, module token, and flags.
      // These values can be recorded and used for runtime filtering.
      pw::log_tokenized::Metadata metadata(payload);
@@ -119,15 +120,15 @@ The following example shows that a ``Metadata`` object can be created from a
 
 .. code-block:: cpp
 
-   extern "C" void pw_log_tokenized_HandleLog(
-       uint32_t payload,
-       const uint8_t message[],
-       size_t size_bytes) {
+   extern "C" void pw_log_tokenized_HandleLog(uint32_t payload,
+                                              const uint8_t message[],
+                                              size_t size_bytes) {
      pw::log_tokenized::Metadata metadata = payload;
      // Check the log level to see if this log is a crash.
      if (metadata.level() == PW_LOG_LEVEL_FATAL) {
-       HandleCrash(metadata, pw::ConstByteSpan(
-           reinterpret_cast<const std::byte*>(message), size_bytes));
+       HandleCrash(metadata,
+                   pw::ConstByteSpan(reinterpret_cast<const std::byte*>(message),
+                                     size_bytes));
        PW_UNREACHABLE;
      }
      // ...
@@ -141,9 +142,7 @@ object:
    // Logs an explicitly created string token.
    void LogToken(uint32_t token, int level, int line_number, int module) {
      const uint32_t payload =
-         log_tokenized::Metadata(
-             level, module, PW_LOG_FLAGS, line_number)
-             .value();
+         log_tokenized::Metadata(level, module, PW_LOG_FLAGS, line_number).value();
      std::array<std::byte, sizeof(token)> token_buffer =
          pw::bytes::CopyInOrder(endian::little, token);
 

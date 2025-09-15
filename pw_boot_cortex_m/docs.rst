@@ -42,8 +42,8 @@ pseudo-code invocation of the user-implemented functions:
      pw_boot_PreStaticConstructorInit();  // User-implemented function.
      // C++ static constructors are invoked.
      pw_boot_PreMainInit();  // User-implemented function.
-     main();  // User-implemented function.
-     pw_boot_PostMain();  // User-implemented function.
+     main();                 // User-implemented function.
+     pw_boot_PostMain();     // User-implemented function.
      PW_UNREACHABLE;
    }
 
@@ -161,7 +161,7 @@ Example vector table:
        [2] = DefaultFaultHandler,
        // HardFault handler.
        [3] = DefaultFaultHandler,
-       ...
+       // ...
    };
 
 Usage

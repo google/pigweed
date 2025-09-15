@@ -127,7 +127,6 @@ Guides
 
       bool ProcessBuffer(const pw::span<uint8_t>& buffer);
 
-
 Rationale: Since a ``pw::span`` object is essentially a pointer and a size,
 references to ``pw::span`` objects are almost always unnecessary indirection.
 
@@ -165,7 +164,7 @@ spans of binary data. Convert spans to byte spans with ``pw::as_bytes`` or
    void ProcessData(pw::span<const std::byte> data);
 
    void DoStuff() {
-     std::array<AnyType, 7> data = { ... };
+     std::array<AnyType, 7> data = {/*...*/};
      ProcessData(pw::as_bytes(pw::span(data)));
    }
 

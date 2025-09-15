@@ -89,9 +89,7 @@ around the singleton clock facade to enable dependency injection.
 
    using namespace std::literals::chrono_literals;
 
-   void ThisSleeps() {
-     pw::thread::sleep_for(42ms);
-   }
+   void ThisSleeps() { pw::thread::sleep_for(42ms); }
 
 Unlike the STL's time bound templated APIs which are not specific to a
 particular clock, Pigweed's time bound APIs are strongly typed to use the
@@ -264,9 +262,7 @@ on acquire until notifier(s) signal by invoking release.
 
    pw::sync::CountingSemaphore event_semaphore;
 
-   void NotifyEventOccurred() {
-     event_semaphore.release();
-   }
+   void NotifyEventOccurred() { event_semaphore.release(); }
 
    void HandleEventsForever() {
      while (true) {
@@ -286,13 +282,9 @@ with an arbitrary token limit of 1, meaning it's either full or empty.
 
    pw::sync::BinarySemaphore do_foo_semaphore;
 
-   void NotifyResultReady() {
-     result_ready_semaphore.release();
-   }
+   void NotifyResultReady() { result_ready_semaphore.release(); }
 
-   void BlockUntilResultReady() {
-     result_ready_semaphore.acquire();
-   }
+   void BlockUntilResultReady() { result_ready_semaphore.acquire(); }
 
 --------------------
 Threading Primitives
@@ -340,12 +332,11 @@ the native OS's threading options without getting in your way.
    pw::thread::freertos::ContextWithStack<42> example_thread_context;
 
    void StartDetachedExampleThread() {
-      pw::thread::DetachedThread(
-        pw::thread::freertos::Options()
-            .set_name("static_example_thread")
-            .set_priority(kFooPriority)
-            .set_static_context(example_thread_context),
-        example_thread_function);
+     pw::thread::DetachedThread(pw::thread::freertos::Options()
+                                    .set_name("static_example_thread")
+                                    .set_priority(kFooPriority)
+                                    .set_static_context(example_thread_context),
+                                example_thread_function);
    }
 
 Controlling the current thread

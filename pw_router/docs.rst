@@ -37,8 +37,8 @@ under heavy load.
 
 .. code-block:: c++
 
-   Status MyEgress::SendPacket(
-       ConstByteSpan packet, const PacketParser& parser) override {
+   Status MyEgress::SendPacket(ConstByteSpan packet,
+                               const PacketParser& parser) override {
      // Downcast the base PacketParser to the custom implementation that was
      // passed into RoutePacket().
      const CustomPacketParser& custom_parser =

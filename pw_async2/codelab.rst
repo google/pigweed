@@ -537,7 +537,6 @@ you some work. But if something went wrong, they are straightforward:
       std::lock_guard lock(lock_);
       key_pressed_ = key;
 
-
 4. You can start off with this implementation for ``Keypad::Pend``:
 
    .. code-block:: cpp
@@ -868,14 +867,14 @@ and a switch statement in ``DoPend`` that looks like this skeleton:
          case kWelcome: {
            // Show Welcome message
            state_ = kAwaitingPayment;
-           break; // Reenter the switch()
+           break;  // Reenter the switch()
          }
          case kAwaitingPayment: {
            // Pend on coin_slot_
 
            // Once coins are inserted...
            state_ = kAwaitingSelection;
-           break; // Reenter the switch()
+           break;  // Reenter the switch()
          }
          case kAwaitingSelection: {
            // Pend on keypad_
@@ -1092,8 +1091,7 @@ Inside the ``kAwaitingPayment`` and ``kAwaitingSelection`` states, you can then
 .. code-block:: cpp
 
    switch (state_) {
-
-     // …
+       // …
 
      case kAwaitingPayment: {
        PW_TRY_READY_ASSIGN(Input input, PendInput(cx));
@@ -1103,13 +1101,13 @@ Inside the ``kAwaitingPayment`` and ``kAwaitingSelection`` states, you can then
            break;
          }
          case kKeyPressed: {
-            /* react to the unexpected input */
-            break;
+           /* react to the unexpected input */
+           break;
          }
        }
      }
 
-     // And then something similar for the kAwaitingSelection state.
+       // And then something similar for the kAwaitingSelection state.
    }
 
 Now go ahead and try filling in the blanks in those snippets. Can you build

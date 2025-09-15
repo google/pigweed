@@ -128,11 +128,11 @@ A Nanopb implementation of the ``Blinky`` service looks like this:
 
    class BlinkyService final
        : public blinky::pw_rpc::nanopb::Blinky::Service<BlinkyService> {
-   public:
-     pw::Status ToggleLed(const pw_protobuf_Empty &, pw_protobuf_Empty &) {
+    public:
+     pw::Status ToggleLed(const pw_protobuf_Empty&, pw_protobuf_Empty&) {
        // Turn the LED off if it's currently on and vice versa
      }
-     pw::Status Blink(const blinky_BlinkRequest &request, pw_protobuf_Empty &) {
+     pw::Status Blink(const blinky_BlinkRequest& request, pw_protobuf_Empty&) {
        if (request.blink_count == 0) {
          // Stop blinking
        }
@@ -154,7 +154,7 @@ A Nanopb implementation of the ``Blinky`` service looks like this:
      pw::system::GetRpcServer().RegisterService(blinky_service);
    }
 
-   } // namespace pw::system
+   }  // namespace pw::system
 
 Declare the implementation in ``BUILD.bazel``:
 
@@ -212,7 +212,7 @@ Set up the server and register the service:
      pw::system::GetRpcServer().RegisterService(blinky_service);
    }
 
-   } // namespace pw::system
+   }  // namespace pw::system
 
 Next steps
 ==========
@@ -444,14 +444,12 @@ For example, in C++ with pw_protobuf:
    // Include the apporpriate header for your protobuf library.
    #include "pw_rpc/echo_service_pwpb.h"
 
-   constexpr pw::rpc::Channel kChannels[] = { /* ... */ };
+   constexpr pw::rpc::Channel kChannels[] = {/* ... */};
    static pw::rpc::Server server(kChannels);
 
    static pw::rpc::EchoService echo_service;
 
-   void Init() {
-     server.RegisterService(echo_service);
-   }
+   void Init() { server.RegisterService(echo_service); }
 
 See :ref:`module-pw_rpc-cpp-testing` for more C++-specific testing
 guidance.
@@ -498,14 +496,12 @@ Example
    #include "pw_rpc/benchmark.h"
    #include "pw_rpc/server.h"
 
-   constexpr pw::rpc::Channel kChannels[] = { /* ... */ };
+   constexpr pw::rpc::Channel kChannels[] = {/* ... */};
    static pw::rpc::Server server(kChannels);
 
    static pw::rpc::BenchmarkService benchmark_service;
 
-   void RegisterServices() {
-     server.RegisterService(benchmark_service);
-   }
+   void RegisterServices() { server.RegisterService(benchmark_service); }
 
 Stress testing
 ==============

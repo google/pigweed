@@ -29,7 +29,7 @@ pw_checksum/crc16_ccitt.h
 
      uint16_t crc = Crc16Ccitt::Calculate(my_data);
 
-     crc  = Crc16Ccitt::Calculate(more_data, crc);
+     crc = Crc16Ccitt::Calculate(more_data, crc);
 
 pw_checksum/crc32.h
 ===================

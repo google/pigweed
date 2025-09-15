@@ -452,13 +452,14 @@ Example
 
    // Non-async2 code.
    int ReadAndPrintAsyncValue() {
-     pw::async2::OneshotCallbackTaskFor<&ReadValue> task([](pw::Result<int> result) {
-       if (result.ok()) {
-         PW_LOG_INFO("Read value: %d", result.value());
-       } else {
-         PW_LOG_ERROR("Failed to read value: %s", result.status().str());
-       }
-     });
+     pw::async2::OneshotCallbackTaskFor<&ReadValue> task(
+         [](pw::Result<int> result) {
+           if (result.ok()) {
+             PW_LOG_INFO("Read value: %d", result.value());
+           } else {
+             PW_LOG_ERROR("Failed to read value: %s", result.status().str());
+           }
+         });
 
      PostTaskToDispatcher(task);
 
@@ -646,12 +647,12 @@ asynchronous operations without needing to be structured as a ``Task`` itself.
    // Non-async code wants to read the sensor.
    void ReadAndPrintSensor() {
      // Create a task that will call our lambda when the sensor read is done.
-     auto callback_task = OneshotCallbackTaskFor<&ReadSensorAsync>(
-       [](Result<int> result) {
-         if (result.ok()) {
-           printf("Sensor value: %d\n", *result);
-         }
-       });
+     auto callback_task =
+         OneshotCallbackTaskFor<&ReadSensorAsync>([](Result<int> result) {
+           if (result.ok()) {
+             printf("Sensor value: %d\n", *result);
+           }
+         });
 
      // Post the task to the system's dispatcher.
      GetMainDispatcher().Post(callback_task);

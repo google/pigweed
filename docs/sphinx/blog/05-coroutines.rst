@@ -139,9 +139,7 @@ An implementation like this would have a very small coroutine frame:
 
 .. code-block:: c++
 
-   Coro<int> GimmeANumber() {
-     co_return 5;
-   }
+   Coro<int> GimmeANumber() { co_return 5; }
 
 While this function would need a very large coroutine frame in order
 to store its temporary state:
@@ -286,11 +284,11 @@ arguments to the coroutine function:
 
 .. code-block:: c++
 
-   template<typename... Args>
+   template <typename... Args>
    static void* operator new(std::size_t n,
                              Allocator& alloc,
                              const Args&...) noexcept {
-      return alloc.Allocate(n);
+     return alloc.Allocate(n);
    }
 
 The user's coroutine functions will then look like this:

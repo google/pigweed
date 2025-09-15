@@ -49,7 +49,7 @@ following simplified model, ignoring most of their member functions:
 
    namespace std::chrono {
 
-   template<class Rep, class Period = std::ratio<1, 1>>
+   template <class Rep, class Period = std::ratio<1, 1>>
    class duration {
     public:
      using rep = Rep;
@@ -57,9 +57,7 @@ following simplified model, ignoring most of their member functions:
 
      constexpr rep count() const { return tick_count_; }
 
-     static constexpr duration zero() noexcept {
-       return duration(0);
-     }
+     static constexpr duration zero() noexcept { return duration(0); }
 
      // Other member functions...
 
@@ -67,7 +65,7 @@ following simplified model, ignoring most of their member functions:
      rep tick_count_;
    };
 
-   template<class Clock, class Duration = typename Clock::duration>
+   template <class Clock, class Duration = typename Clock::duration>
    class time_point {
     public:
      using duration = Duration;
@@ -131,9 +129,7 @@ As an example you can use these as follows:
 
    #include <chrono>
 
-   void Foo() {
-     Bar(std::chrono::milliseconds(42));
-   }
+   void Foo() { Bar(std::chrono::milliseconds(42)); }
 
 In addition, the inline namespace ``std::literals::chrono_literals`` includes:
 
@@ -151,9 +147,7 @@ As an example you can use these as follows:
    using std::literals::chrono_literals::ms;
    // Or if you want them all: using namespace std::chrono_literals;
 
-   void Foo() {
-     Bar(42ms);
-   }
+   void Foo() { Bar(42ms); }
 
 For these helper duration types to be compatible with API's that take a
 `SystemClock::duration` either an :ref:`implicit<Implicit lossless conversions>`
@@ -180,6 +174,7 @@ a 1kHz RTOS tick period and you would like to express a timeout duration:
    // We can instead use a defined clock and its duration for the kernel and rely
    // on implicit lossless conversions:
    #include <chrono>
+
    #include "pw_chrono/system_clock.h"
    constexpr SystemClock::duration kFooNotificationTimeout =
        std::chrono::milliseconds(42);
@@ -215,8 +210,7 @@ some values like ``0``, ``1000``, etc.
 
    #include <chrono>
 
-   constexpr std::chrono::milliseconds this_compiles =
-       std::chrono::seconds(42);
+   constexpr std::chrono::milliseconds this_compiles = std::chrono::seconds(42);
 
    // This cannot compile, because for some duration values it is lossy even
    // though this particular value can be in theory converted to whole seconds.

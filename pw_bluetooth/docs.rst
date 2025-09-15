@@ -80,8 +80,8 @@ Usage
 
 .. code-block:: cpp
 
-   #include "pw_bluetooth/hci_commands.emb.h"
    #include "pw_bluetooth/hci_android.emb.h"
+   #include "pw_bluetooth/hci_commands.emb.h"
 
 .. inclusive-language: disable
 

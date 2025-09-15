@@ -28,9 +28,9 @@ Inside of CMSIS fault handler functions, branch to ``pw_cpu_exception_Entry``.
 .. code-block:: cpp
 
    __attribute__((naked)) void HardFault_Handler(void) {
-   asm volatile(
-       " ldr r0, =pw_cpu_exception_Entry  \n"
-       " bx r0                            \n");
+     asm volatile(
+         " ldr r0, =pw_cpu_exception_Entry  \n"
+         " bx r0                            \n");
    }
 
 2. Modify a startup file

@@ -123,7 +123,7 @@ Next, instantiate the Dispatcher and post a task:
      // Spawn a thread for the dispatcher to run on.
      Thread work_thread(thread::stl::Options(), dispatcher);
 
-     Task task([](pw::async::Context& ctx){
+     Task task([](pw::async::Context& ctx) {
        printf("hello world\n");
        ctx.dispatcher->RequestStop();
      });
@@ -146,9 +146,7 @@ the current/main thread:
    int main() {
      BasicDispatcher dispatcher;
 
-     Task task([](pw::async::Context& ctx){
-       printf("hello world\n");
-     });
+     Task task([](pw::async::Context& ctx) { printf("hello world\n"); });
 
      // Execute `task` in 5 seconds.
      dispatcher.PostAfter(task, 5s);

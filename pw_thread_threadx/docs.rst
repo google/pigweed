@@ -27,8 +27,7 @@ be created as follows:
    #include "pw_thread_threadx/options.h"
    #include "tx_api.h"
 
-   constexpr UINT kFooPriority =
-       pw::thread::threadx::config::kDefaultPriority;
+   constexpr UINT kFooPriority = pw::thread::threadx::config::kDefaultPriority;
    constexpr ULONG kFooTimeSliceInterval =
        pw::thread::threadx::config::kDefaultTimeSliceInterval;
    constexpr size_t kFooStackSizeWords =
@@ -37,13 +36,12 @@ be created as follows:
    pw::thread::threadx::ContextWithStack<kFooStackSizeWords>
        example_thread_context;
    void StartExampleThread() {
-     pw::thread::DetachedThread(
-         pw::thread::threadx::Options()
-             .set_name("example_thread")
-             .set_priority(kFooPriority)
-             .set_time_slice_interval(kFooTimeSliceInterval)
-             .set_context(example_thread_context),
-         example_thread_function);
+     pw::thread::DetachedThread(pw::thread::threadx::Options()
+                                    .set_name("example_thread")
+                                    .set_priority(kFooPriority)
+                                    .set_time_slice_interval(kFooTimeSliceInterval)
+                                    .set_context(example_thread_context),
+                                example_thread_function);
    }
 
 .. list-table::
@@ -244,8 +242,7 @@ captured. For ARM Cortex-M CPUs, you can do something like this:
           pw::ConstByteSpan stack) -> pw::Status {
      return encoder.WriteRawStack(stack);
    };
-   pw::thread::threadx::SnapshotThread(my_thread, stack_ptr,
-                                       snapshot_encoder, cb);
+   pw::thread::threadx::SnapshotThread(my_thread, stack_ptr, snapshot_encoder, cb);
 
 ``SnapshotThreads()`` wraps the singular thread capture to instead captures
 all created threads to a ``pw::thread::proto::SnapshotThreadInfo`` message.

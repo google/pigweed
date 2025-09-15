@@ -30,7 +30,7 @@ threads without external lock is not allowed.
 .. code-block:: cpp
 
    class MyClass : public RefCounted<MyClass> {
-   // ...
+     // ...
    };
 
    // Empty pointer, equals to nullptr.
@@ -68,12 +68,13 @@ of `delete`. The cleanup routine is specified as a method with the signature
 .. code-block:: cpp
 
    class Foo : public pw::Recyclable<Foo>, public pw::IntrusivePtr<Foo> {
-   public:
+    public:
      // public implementation here
-   private:
+    private:
      friend class pw::Recyclable<Foo>;
+
      void pw_recycle() {
-       if (should_recycle())) {
+       if (should_recycle()) {
          do_recycle_stuff();
        } else {
          delete this;

@@ -80,17 +80,17 @@ Example use of SPI responder:
    pw::dma::McuxpressoDmaChannel rx_dma = dma.GetChannel(kRxDmaChannel);
 
    pw::spi::McuxpressoResponder spi_responder(
-      {
-         // SPI mode 3 (CPOL = 1, CPHA = 1)
-         .polarity = pw::spi::ClockPolarity::kActiveLow,  // CPOL = 1
-         .phase = pw::spi::ClockPhase::kFallingEdge,      // CPHA = 1
-         .bits_per_word = 8,
-         .bit_order = pw::spi::BitOrder::kMsbFirst,
-         .base_address = SPI14_BASE,
-         .handle_cs = true,
-      },
-      tx_dma,
-      rx_dma);
+       {
+           // SPI mode 3 (CPOL = 1, CPHA = 1)
+           .polarity = pw::spi::ClockPolarity::kActiveLow,  // CPOL = 1
+           .phase = pw::spi::ClockPhase::kFallingEdge,      // CPHA = 1
+           .bits_per_word = 8,
+           .bit_order = pw::spi::BitOrder::kMsbFirst,
+           .base_address = SPI14_BASE,
+           .handle_cs = true,
+       },
+       tx_dma,
+       rx_dma);
 
    pw::Status Init() {
      // Initialize the DMA controller
@@ -108,9 +108,10 @@ Example use of SPI responder:
 
      PW_TRY(spi_responder.Initialize());
 
-     spi_responder.SetCompletionHandler([this](pw::ByteSpan rx_data, pw::Status status) {
-      // Signal we got some data
-     });
+     spi_responder.SetCompletionHandler(
+         [this](pw::ByteSpan rx_data, pw::Status status) {
+           // Signal we got some data
+         });
 
      // Start listen for read
      PW_TRY(spi_.WriteReadAsync(kTxData, rx_buf));

@@ -25,8 +25,8 @@ A simple example illustrating only changing baud-rate and writing to a UART:
 
    constexpr const char* kUartPath = "/dev/ttyS0";
    constexpr pw::stream::UartStreamLinux::Config kConfig = {
-     .baud_rate = 115200,
-    // Flow control is unmodified on tty.
+       .baud_rate = 115200,
+       // Flow control is unmodified on tty.
    };
    pw::stream::UartStreamLinux stream;
    PW_TRY(stream.Open(kUartPath, kConfig));
@@ -34,15 +34,14 @@ A simple example illustrating only changing baud-rate and writing to a UART:
    std::array<std::byte, 10> to_write = {};
    PW_TRY(stream.Write(to_write));
 
-
 A simple example illustrating enabling flow control and writing to a UART:
 
 .. code-block:: cpp
 
    constexpr const char* kUartPath = "/dev/ttyS0";
    constexpr pw::stream::UartStreamLinux::Config kConfig = {
-     .baud_rate = 115200,
-     .flow_control = true, // Enable hardware flow control.
+       .baud_rate = 115200,
+       .flow_control = true,  // Enable hardware flow control.
    };
    pw::stream::UartStreamLinux stream;
    PW_TRY(stream.Open(kUartPath, kConfig));

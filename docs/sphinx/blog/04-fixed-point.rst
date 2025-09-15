@@ -145,39 +145,39 @@ The algorithm is roughly:
    // This is roughly a trimmed down version of the softmax regression
    // classifier.
    size_t Classify(std::span<const float> sample) const {
-       // 1. Compute activations for each category.
-       //    All activations are initially zero.
-       std::array<float, NumCategories> activations{};
-       for (size_t i = 0; i < NumCategories; i++) {
-           for (size_t j = 0; j < sample.size(); j++) {
-               activations[i] += coefficients_[i][j] * sample[j];
-           }
-           activations[i] += biases_[i];
+     // 1. Compute activations for each category.
+     //    All activations are initially zero.
+     std::array<float, NumCategories> activations{};
+     for (size_t i = 0; i < NumCategories; i++) {
+       for (size_t j = 0; j < sample.size(); j++) {
+         activations[i] += coefficients_[i][j] * sample[j];
        }
-       float max_activation = *std::max_element(activations.begin(),
-                                                activations.end());
+       activations[i] += biases_[i];
+     }
+     float max_activation =
+         *std::max_element(activations.begin(), activations.end());
 
-       // 2. Get e raised to each of these activations.
-       std::array<T, NumCategories> exp_activations;
-       for (size_t i = 0; i < NumCategories; i++) {
-           exp_activations[i] = expf(activations[i]);
+     // 2. Get e raised to each of these activations.
+     std::array<T, NumCategories> exp_activations;
+     for (size_t i = 0; i < NumCategories; i++) {
+       exp_activations[i] = expf(activations[i]);
+     }
+     float sum_exp_activations =
+         std::accumulate(exp_activations.begin(), exp_activations.end(), 0);
+
+     // 3. Compute each likelihood which us exp(x[i]) / sum(x).
+     float max_likelihood = std::numeric_limits<float>::min();
+     size_t prediction;
+     for (size_t i = 0; i < NumCategories; i++) {
+       // 0 <= result.likelihoods[i] < 1
+       result.likelihoods[i] = exp_activations[i] / sum_exp_activations;
+       if (result.likelihoods[i] > max_likelihood) {
+         max_likelihood = result.likelihoods[i];
+         prediction = i;  // The highest likelihood is the prediction.
        }
-       float sum_exp_activations = std::accumulate(exp_activations.begin(),
-                                                   exp_activations.end(), 0);
+     }
 
-       // 3. Compute each likelihood which us exp(x[i]) / sum(x).
-       float max_likelihood = std::numeric_limits<float>::min();
-       size_t prediction;
-       for (size_t i = 0; i < NumCategories; i++) {
-           // 0 <= result.likelihoods[i] < 1
-           result.likelihoods[i] = exp_activations[i] / sum_exp_activations;
-           if (result.likelihoods[i] > max_likelihood) {
-               max_likelihood = result.likelihoods[i];
-               prediction = i;  // The highest likelihood is the prediction.
-           }
-       }
-
-       return prediction;  // Return the index of the highest likelihood.
+     return prediction;  // Return the index of the highest likelihood.
    }
 
 Many of these operations involve normal floating-point comparison, addition,
@@ -264,32 +264,32 @@ The code involving ``sqrtf`` can be adjusted similarly:
 .. code-block:: c++
 
    void TouchProcessor::CharacteriseRadialDeviation(Touch& touch) {
-       // Compute center of touch.
-       int32_t sum_x_w = 0, sum_y_w = 0, sum_w = 0;
-       // touch.num_position_estimates is at most 100
-       for (size_t i = 0; i < touch.num_position_estimates; i++) {
-           sum_x_w += touch.position_estimates[i].position.x * 255;
-           sum_y_w += touch.position_estimates[i].position.y * 255;
-           sum_w += 255;
-       }
+     // Compute center of touch.
+     int32_t sum_x_w = 0, sum_y_w = 0, sum_w = 0;
+     // touch.num_position_estimates is at most 100
+     for (size_t i = 0; i < touch.num_position_estimates; i++) {
+       sum_x_w += touch.position_estimates[i].position.x * 255;
+       sum_y_w += touch.position_estimates[i].position.y * 255;
+       sum_w += 255;
+     }
 
-       // Cast is safe, since average can't exceed any of the individual values.
-       touch.center = Point{
-           .x = static_cast<int16_t>(sum_x_w / sum_w),
-           .y = static_cast<int16_t>(sum_y_w / sum_w),
-       };
+     // Cast is safe, since average can't exceed any of the individual values.
+     touch.center = Point{
+         .x = static_cast<int16_t>(sum_x_w / sum_w),
+         .y = static_cast<int16_t>(sum_y_w / sum_w),
+     };
 
-       // Compute radial deviation from center.
-       float sum_d_squared_w = 0.0f;
-       for (size_t i = 0; i < touch.num_position_estimates; i++) {
-           int32_t dx = touch.position_estimates[i].position.x - touch.center.x;
-           int32_t dy = touch.position_estimates[i].position.y - touch.center.y;
-           sum_d_squared_w += static_cast<float>(dx * dx + dy * dy) * 255;
-       }
+     // Compute radial deviation from center.
+     float sum_d_squared_w = 0.0f;
+     for (size_t i = 0; i < touch.num_position_estimates; i++) {
+       int32_t dx = touch.position_estimates[i].position.x - touch.center.x;
+       int32_t dy = touch.position_estimates[i].position.y - touch.center.y;
+       sum_d_squared_w += static_cast<float>(dx * dx + dy * dy) * 255;
+     }
 
-       // deviation = sqrt(sum((dx^2 + dy^2) * w) / sum(w))
-       touch.features[static_cast<size_t>(Touch::Feature::kRadialDeviation)]
-           = sqrtf(sum_d_squared_w / sum_w);
+     // deviation = sqrt(sum((dx^2 + dy^2) * w) / sum(w))
+     touch.features[static_cast<size_t>(Touch::Feature::kRadialDeviation)] =
+         sqrtf(sum_d_squared_w / sum_w);
    }
 
 We know beforehand the maximal values of ``dx`` and ``dy`` are +/-750, so
@@ -311,8 +311,8 @@ This makes the code:
      int32_t sum_x_w = 0, sum_y_w = 0, sum_w = touch.num_position_estimates;
      // touch.num_position_estimates is at most 100
      for (size_t i = 0; i < touch.num_position_estimates; i++) {
-         sum_x_w += touch.position_estimates[i].position.x;
-         sum_y_w += touch.position_estimates[i].position.y;
+       sum_x_w += touch.position_estimates[i].position.x;
+       sum_y_w += touch.position_estimates[i].position.y;
      }
 
      // Cast is safe, since average can't exceed any of the individual values.
@@ -324,14 +324,14 @@ This makes the code:
      // Compute radial deviation from center.
      float sum_d_squared_w = 0.0f;
      for (size_t i = 0; i < touch.num_position_estimates; i++) {
-         int32_t dx = touch.position_estimates[i].position.x - touch.center.x;
-         int32_t dy = touch.position_estimates[i].position.y - touch.center.y;
-         sum_d_squared_w += static_cast<float>(dx * dx + dy * dy);
+       int32_t dx = touch.position_estimates[i].position.x - touch.center.x;
+       int32_t dy = touch.position_estimates[i].position.y - touch.center.y;
+       sum_d_squared_w += static_cast<float>(dx * dx + dy * dy);
      }
 
      // deviation = sqrt(sum((dx^2 + dy^2) * w) / sum(w))
-     touch.features[static_cast<size_t>(Touch::Feature::kRadialDeviation)]
-         = sqrtf(sum_d_squared_w / sum_w);
+     touch.features[static_cast<size_t>(Touch::Feature::kRadialDeviation)] =
+         sqrtf(sum_d_squared_w / sum_w);
    }
 
 This allows ``sum_d_squared_w`` to fit within 31 integral bits. We can go
@@ -346,8 +346,8 @@ type and returns a fixed-point type:
 
 .. code-block:: c++
 
-   touch.features[static_cast<size_t>(Touch::Feature::kRadialDeviation)]
-       = isqrt(sum_d_squared_w / sum_w);
+   touch.features[static_cast<size_t>(Touch::Feature::kRadialDeviation)] =
+       isqrt(sum_d_squared_w / sum_w);
 
 -------
 Results

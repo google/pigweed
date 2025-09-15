@@ -309,7 +309,6 @@ function:
      PW_CRASH("libc assert() failure");
    }
 
-
 Ignored Finalizer and Destructor Registration
 =============================================
 Even if no cleanup is done during shutdown for your target, shutdown functions

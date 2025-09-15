@@ -36,14 +36,14 @@ invocation of the user-implemented functions:
 
 .. code-block:: cpp
 
-   void pw_boot_Entry() {  // Boot entry point provided by backend.
+   void pw_boot_Entry() {            // Boot entry point provided by backend.
      pw_boot_PreStaticMemoryInit();  // User-implemented function.
      // Static memory initialization.
      pw_boot_PreStaticConstructorInit();  // User-implemented function.
      // C++ static constructors are invoked.
      pw_boot_PreMainInit();  // User-implemented function.
-     main();  // User-implemented function.
-     pw_boot_PostMain();  // User-implemented function.
+     main();                 // User-implemented function.
+     pw_boot_PostMain();     // User-implemented function.
      PW_UNREACHABLE;
    }
 

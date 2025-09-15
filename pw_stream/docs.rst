@@ -120,7 +120,7 @@ Before:
      ImuSample imu_sample;
      imu.GetSample(&info);
      size_t bytes_written = imu_sample.AsCsv(temp, sizeof(temp));
-     uart.Transmit(temp, bytes_written, /*timeout_ms=*/ 200);
+     uart.Transmit(temp, bytes_written, /*timeout_ms=*/200);
    }
 
 After:
@@ -157,7 +157,7 @@ Before:
      ImuSample imu_sample;
      imu.GetSample(&info);
      size_t bytes_written = imu_sample.AsCsv(temp, sizeof(temp));
-     uart.Transmit(temp, bytes_written, /*timeout_ms=*/ 200);
+     uart.Transmit(temp, bytes_written, /*timeout_ms=*/200);
    }
 
 After:
@@ -189,7 +189,8 @@ Before:
 
 .. code-block:: cpp
 
-   Status BuildPacket(Id dest, span<const std::byte> payload,
+   Status BuildPacket(Id dest,
+                      span<const std::byte> payload,
                       span<std::byte> dest) {
      Header header;
      if (dest.size_bytes() + payload.size_bytes() < sizeof(Header)) {

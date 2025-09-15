@@ -466,7 +466,6 @@ e.g.
    // or
    #include "my_protos/bar.nanopb_rpc.pb.h"
 
-
 Why isn't there one rule to generate all the code?
 --------------------------------------------------
 There is! Like in GN, it's called ``pw_proto_library``, and has subtargets

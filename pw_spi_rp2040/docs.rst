@@ -40,8 +40,8 @@ Usage
    };
 
    pw::digital_io::Rp2040DigitalInOut display_cs_pin({
-      .pin = 12,
-      .polarity = pw::digital_io::Polarity::kActiveLow,
+       .pin = 12,
+       .polarity = pw::digital_io::Polarity::kActiveLow,
    });
    DigitalOutChipSelector spi_chip_selector(display_cs_pin);
 

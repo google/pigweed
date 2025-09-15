@@ -32,7 +32,7 @@ pw_function
 
    add(5, 6);
    add = nullptr;  // pw::Function and pw::Callback are nullable
-   add(7, 2);  // CRASH
+   add(7, 2);      // CRASH
 
    square(4);
 
@@ -41,7 +41,6 @@ pw_function
    } else {
      // ┬─┬ノ( º _ ºノ)
    }
-
 
 .. _module-pw_function-start:
 
@@ -179,7 +178,7 @@ constructors and in ``constinit`` expressions.
    class MyClass {
     public:
      // Default construction of a pw::Function is constexpr.
-     constexpr MyClass() { ... }
+     constexpr MyClass() { /* ... */ }
 
      pw::Function<void(int)> my_function;
    };
@@ -217,9 +216,7 @@ should be passed as an rvalue reference and moved into a
 
    // This function calls a pw::Function but doesn't store it, so it takes a
    // const reference.
-   void CallTheCallback(const pw::Function<void(int)>& callback) {
-     callback(123);
-   }
+   void CallTheCallback(const pw::Function<void(int)>& callback) { callback(123); }
 
    // This function move-assigns a pw::Function to another variable, so it takes
    // an rvalue reference.

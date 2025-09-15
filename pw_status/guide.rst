@@ -78,8 +78,8 @@ Then use the status object or try macros:
 
 .. code-block:: cpp
 
-   #include "pw_status/try.h"
    #include "pw_status/status.h"
+   #include "pw_status/try.h"
 
    pw::Status MyOperation() {
      PW_TRY(SubOp1());
@@ -159,13 +159,13 @@ range (27 bits).
    #include "pw_status/status_with_size.h"
 
    // An OK StatusWithSize with a size of 123.
-   StatusWithSize(123)
+   StatusWithSize(123);
 
    // A NOT_FOUND StatusWithSize with a size of 0.
-   StatusWithSize::NotFound()
+   StatusWithSize::NotFound();
 
    // A RESOURCE_EXHAUSTED StatusWithSize with a size of 10.
-   StatusWithSize::ResourceExhausted(10)
+   StatusWithSize::ResourceExhausted(10);
 
 ``pw::StatusWithSize`` is useful for cases where an operation may partially
 complete - for example read operations may read some number of bytes into an
@@ -207,8 +207,8 @@ assigning the size from the ``pw::StatusWithSize`` on ok.
 .. code-block:: cpp
 
    Status PwTryAssignExample() {
-     size_t size_value
-     PW_TRY_ASSIGN(size_value, FunctionThatReturnsStatusWithSize());
+     size_t size_value PW_TRY_ASSIGN(size_value,
+                                     FunctionThatReturnsStatusWithSize());
 
      // Do something that uses size_value. size_value is only assigned and this
      // following code executed if the PW_TRY_ASSIGN function above returns OK.

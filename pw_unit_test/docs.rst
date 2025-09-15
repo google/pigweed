@@ -13,7 +13,6 @@ pw_unit_test
       .. code-block:: c++
 
          #include "mylib.h"
-
          #include "pw_unit_test/framework.h"
 
          namespace {
@@ -24,7 +23,7 @@ pw_unit_test
            EXPECT_STREQ(expected.c_str(), actual.c_str());
          }
 
-         }
+         }  // namespace
 
    .. tab-item:: BUILD.bazel
 
@@ -54,7 +53,6 @@ pw_unit_test
       .. code-block:: c++
 
          #include "mylib.h"
-
          #include "pw_string/string.h"
 
          namespace mylib {
@@ -64,7 +62,7 @@ pw_unit_test
            return textmoji;
          }
 
-         }
+         }  // namespace mylib
 
    .. tab-item:: mylib.h
 
@@ -211,7 +209,6 @@ Create test suites and test cases:
 .. code-block:: c++
 
    #include "mylib.h"
-
    #include "pw_unit_test/framework.h"
 
    namespace {
@@ -524,23 +521,22 @@ To set up RPC-based unit tests in your application:
       #include "pw_unit_test/unit_test_service.h"
 
       pw::rpc::Channel channels[] = {
-        pw::rpc::Channel::Create<1>(&my_output),
+          pw::rpc::Channel::Create<1>(&my_output),
       };
       pw::rpc::Server server(channels);
 
       constexpr pw::ThreadAttrs kUnitTestThreadAttrs =
-      pw::ThreadAttrs()
-         .set_name("UnitTestThread")
-         .set_priority(pw::ThreadPriority::Medium())
-         .set_stack_size_bytes(4096);
+          pw::ThreadAttrs()
+              .set_name("UnitTestThread")
+              .set_priority(pw::ThreadPriority::Medium())
+              .set_stack_size_bytes(4096);
       pw::ThreadContextFor<kUnitTestThreadAttrs> unit_test_thread_context;
 
       pw::unit_test::UnitTestThread unit_test_thread;
 
       void AppInit() {
-        pw::Thread(
-           pw::GetThreadOptions(unit_test_thread_context), unit_test_thread)
-         .detach();
+        pw::Thread(pw::GetThreadOptions(unit_test_thread_context), unit_test_thread)
+            .detach();
         server.RegisterService(unit_test_thread.service());
       }
 

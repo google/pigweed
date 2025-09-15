@@ -200,9 +200,10 @@ comments should only be used for inline comments.
 
    // Use C++-style comments, except where C-style comments are necessary.
    // This returns a random number using an algorithm I found on the internet.
-   #define RANDOM_NUMBER() [] {                \
-     return 4;  /* chosen by fair dice roll */ \
-   }()
+   #define RANDOM_NUMBER()                      \
+     [] {                                       \
+       return 4; /* chosen by fair dice roll */ \
+     }()
 
 Indent code in comments with two additional spaces, making a total of three
 spaces after the ``//``. All code blocks must begin and end with an empty
@@ -265,18 +266,14 @@ about accepting ``pw::Function`` arguments, see
 
    .. code-block:: cpp
 
-      void FrobulateVector(pw::Vector<T>&& vector) {
-        Frobulate(std::move(vector));
-      }
+      void FrobulateVector(pw::Vector<T>&& vector) { Frobulate(std::move(vector)); }
 
 .. admonition:: **No**: Accepts move-only or expensive-to-copy values by value:
    :class: error
 
    .. code-block:: cpp
 
-      void FrobulateVector(pw::Vector<T> vector) {
-        Frobulate(std::move(vector));
-      }
+      void FrobulateVector(pw::Vector<T> vector) { Frobulate(std::move(vector)); }
 
 This guidance overrides the standard `Google style guidance on rvalues
 <https://google.github.io/styleguide/cppguide.html#Rvalue_references>`_.
@@ -303,13 +300,13 @@ paths, the original ``vector`` passed by the user will outlive the call to
 
 .. code-block:: cpp
 
-   pw::Vector<T> my_vec = ...;
+   pw::Vector<T> my_vec = /* ... */;
 
    // ``my_vec`` looks to be moved here, but the resulting ``rvalue`` is never
    // consumed by ``PossiblyFrobulate``.
    PossiblyFrobulate(false, std::move(my_vec));
 
-   ... // some other long-running work
+   // some other long-running work ...
 
    // ``my_vec`` is still alive here, possibly causing excess memory usage,
    // deadlocks, or even undefined behavior!
@@ -360,7 +357,6 @@ All loops and conditional statements must use braces, and be on their own line.
         DoTheThing();
       }
 
-
 .. admonition:: **No**: Missing braces
    :class: error
 
@@ -376,9 +372,12 @@ All loops and conditional statements must use braces, and be on their own line.
 
    .. code-block:: cpp
 
-      while (SomeCondition()) { x += 2; }
-      if (OtherCondition()) { DoTheThing(); }
-
+      while (SomeCondition()) {
+        x += 2;
+      }
+      if (OtherCondition()) {
+        DoTheThing();
+      }
 
 The syntax ``while (true)`` is preferred over ``for (;;)`` for infinite loops.
 
@@ -526,7 +525,7 @@ The guidance applies in two cases:
         // Main body of the loop.
         ProcessItem(my_items[i], my_measurement);
         ProcessItemMore(my_items[i], my_measurement, other_details);
-        ...
+        // ...
       }
 
 .. admonition:: **No**: Right-creeping code with the main body buried inside
@@ -543,7 +542,7 @@ The guidance applies in two cases:
             // Main body of the loop.
             ProcessItem(my_items[i], my_measurement);
             ProcessItemMore(my_items[i], my_measurement, other_details);
-            ...
+            // ...
           } else {
             LOG_ERROR("Found something strange; bailing");
             return Status::Unknown();
@@ -578,7 +577,7 @@ and standardize loop/function structure.
           continue;
         }
         // Main handling of item
-        ...
+        // ...
       }
 
       DoOtherThing();
@@ -598,7 +597,7 @@ and standardize loop/function structure.
             continue;
           } else {
             // Main handling of item
-            ...
+            // ...
           }
         }
         DoOtherThing();
@@ -766,7 +765,6 @@ areas that require debugging.
             // ...
           }
 
-
 - **Log failures of an overall workflow at the level that it was initiated** to
   provide context in which an error occurred.
 
@@ -798,7 +796,7 @@ areas that require debugging.
 
         void OnChunk(const Packet& packet) {
           static constexpr auto kLogInterval =
-            chrono::SystemClock::for_at_least(std::chrono::seconds(10));
+              chrono::SystemClock::for_at_least(std::chrono::seconds(10));
           ++count_;
           total_ += packet.size();
           PW_LOG_EVERY_N_DURATION(PW_LOG_LEVEL_DEBUG,
@@ -849,7 +847,7 @@ and provide a simple mechanism for conditional logging and for log filtering.
 
        .. code-block:: cpp
 
-          while(!task_queue_.empty()) {
+          while (!task_queue_.empty()) {
             Task task = std::move(task_queue_.back());
             task_queue_.pop_back();
             if (task.HasExpired()) {
@@ -936,8 +934,7 @@ an error and cannot be obtained another way.
         Result<EncodedMessage> result = ReadEncodedMessage(stream);
         if (!result.ok()) {
           Status status = result.status();
-          PW_LOG_DEBUG("Failed to read message: %s",
-                       pw_StatusString(status.code));
+          PW_LOG_DEBUG("Failed to read message: %s", pw_StatusString(status.code));
           return status;
         }
         // ...
@@ -1124,7 +1121,7 @@ them.
 
    }  // extern "C"
 
-   }  // namespace
+   }  // namespace other
    }  // namespace pw::nested
 
 Using directives for literals
@@ -1144,8 +1141,8 @@ of definition.
 
 .. code-block:: cpp
 
-   using namespace std::chrono;                    // Not allowed
-   using namespace std::literals::chrono_literals; // Allowed
+   using namespace std::chrono;                     // Not allowed
+   using namespace std::literals::chrono_literals;  // Allowed
 
    constexpr std::chrono::duration delay = 250ms;
 
@@ -1157,9 +1154,11 @@ type.
 .. code-block:: cpp
 
    int* const number = &that_thing;
-   constexpr const char* kString = "theory!"
+   constexpr const char* kString = "theory!";
 
-   bool FindTheOneRing(const Region& where_to_look) { ... }
+   bool FindTheOneRing(const Region& where_to_look) {
+     // ...
+   }
 
 Prefer storing references over storing pointers. Pointers are required when the
 pointer can change its target or may be ``nullptr``. Otherwise, a reference or
@@ -1189,8 +1188,7 @@ example, the following does *not* conform to Pigweed's macro style:
 .. code-block:: cpp
 
    // BAD! Definition has built-in semicolon.
-   #define PW_LOG_IF_BAD(mj) \
-     CallSomeFunction(mj);
+   #define PW_LOG_IF_BAD(mj) CallSomeFunction(mj);
 
    // BAD! Compiles without error; semicolon is missing.
    PW_LOG_IF_BAD("foo")
@@ -1200,8 +1198,7 @@ Here's how to do this instead:
 .. code-block:: cpp
 
    // GOOD; requires semicolon to compile.
-   #define PW_LOG_IF_BAD(mj) \
-     CallSomeFunction(mj)
+   #define PW_LOG_IF_BAD(mj) CallSomeFunction(mj)
 
    // GOOD; fails to compile due to lacking semicolon.
    PW_LOG_IF_BAD("foo")
@@ -1211,11 +1208,11 @@ contents can be placed in a ``do { ... } while (0)`` loop.
 
 .. code-block:: cpp
 
-   #define PW_LOG_IF_BAD(mj)  \
-     do {                     \
-       if (mj.Bad()) {        \
-         Log(#mj " is bad")   \
-       }                      \
+   #define PW_LOG_IF_BAD(mj) \
+     do {                    \
+       if (mj.Bad()) {       \
+         Log(#mj " is bad"); \
+       }                     \
      } while (0)
 
 Standalone macros at global scope that do not already require a semicolon can
@@ -1236,9 +1233,9 @@ example:
 .. code-block:: cpp
 
    #define _PW_MY_SPECIAL_MACRO(op) ...
-   ...
+   // ...
    // Code that uses _PW_MY_SPECIAL_MACRO()
-   ...
+   //...
    #undef _PW_MY_SPECIAL_MACRO
 
 Macros in private implementation files (.cc)
@@ -1248,9 +1245,9 @@ undefined after their last use; for example:
 
 .. code-block:: cpp
 
-   #define DEFINE_OPERATOR(op) \
-     T operator ## op(T x, T y) { return x op y; } \
-     static_assert(true, "Macros must be terminated with a semicolon") \
+   #define DEFINE_OPERATOR(op)                   \
+     T operator##op(T x, T y) { return x op y; } \
+     static_assert(true, "Macros must be terminated with a semicolon")
 
    DEFINE_OPERATOR(+);
    DEFINE_OPERATOR(-);

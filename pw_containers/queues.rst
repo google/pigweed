@@ -79,34 +79,38 @@ Example
 
       .. code-block:: c++
 
-         // Declare a queue with capacity sufficient for one 10-byte entry or
-         // multiple smaller entries.
-         pw::InlineVarLenEntryQueue<10> queue;
+         void GenericCapacityQueue() {
+           // Declare a queue with capacity sufficient for one 10-byte entry or
+           // multiple smaller entries.
+           pw::InlineVarLenEntryQueue<10> queue;
 
-         // Push an entry, asserting if the entry does not fit.
-         queue.push(queue, data)
+           // Push an entry, asserting if the entry does not fit.
+           queue.push(queue, data);
 
-         // Use push_overwrite() to push entries, overwriting older entries
-         // as needed.
-         queue.push_overwrite(queue, more_data)
+           // Use push_overwrite() to push entries, overwriting older entries
+           // as needed.
+           queue.push_overwrite(queue, more_data);
 
-         // Remove an entry.
-         queue.pop();
+           // Remove an entry.
+           queue.pop();
+         }
 
       Alternately, a ``InlineVarLenEntryQueue`` may be initialized in an
       existing ``uint32_t`` array.
 
       .. code-block:: c++
 
-         // Initialize a InlineVarLenEntryQueue.
-         uint32_t buffer[32];
-         auto& queue = pw::InlineVarLenEntryQueue<>::Init(buffer);
+         void InitFromArray() {
+           // Initialize a InlineVarLenEntryQueue.
+           uint32_t buffer[32];
+           auto& queue = pw::InlineVarLenEntryQueue<>::Init(buffer);
 
-         // Largest supported entry is 114 B (13 B overhead + 1 B prefix)
-         assert(queue.max_size_bytes() == 114u);
+           // Largest supported entry is 114 B (13 B overhead + 1 B prefix)
+           assert(queue.max_size_bytes() == 114u);
 
-         // Write data
-         queue.push_overwrite(data);
+           // Write data
+           queue.push_overwrite(data);
+         }
 
    .. tab-item:: C
       :sync: c

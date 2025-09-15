@@ -197,11 +197,12 @@ Include the header. The following constants are available:
 .. code-block:: cpp
 
    #include "pw_build_info/git_build_info.h"
-   #include "pw_string/string.h"
    #include "pw_log/log.h"
+   #include "pw_string/string.h"
 
    int main() {
-     PW_LOG_INFO("kGitCommit %s", pw::InlineString<40>(pw::build_info::kGitCommit).c_str());
+     PW_LOG_INFO("kGitCommit %s",
+                 pw::InlineString<40>(pw::build_info::kGitCommit).c_str());
      PW_LOG_INFO("kGitTreeDirty %d", pw::build_info::kGitTreeDirty);
      return 0;
    }

@@ -77,7 +77,7 @@ size of that MTU.
 .. code-block:: cpp
 
    class MyRpcTransport : public RpcFrameSender {
-   public:
+    public:
      size_t mtu() const override { return 128; }
 
      Status Send(RpcFrame frame) override {
@@ -106,11 +106,9 @@ A thread to feed data to a ``pw::rpc::RpcIngressHandler`` from a
    stream::SysIoReader reader;
 
    // Feed Hdlc ingress with bytes from sysio.
-   rpc::StreamRpcDispatcher<kMaxSysioRead> sysio_dispatcher(reader,
-                                                            hdlc_ingress);
+   rpc::StreamRpcDispatcher<kMaxSysioRead> sysio_dispatcher(reader, hdlc_ingress);
 
-   thread::DetachedThread(SysioDispatcherThreadOptions(),
-                          sysio_dispatcher);
+   thread::DetachedThread(SysioDispatcherThreadOptions(), sysio_dispatcher);
 
 -------------------------------------------
 Using transports: a sample three-node setup
@@ -132,8 +130,9 @@ and accessed from the same process on ``kChannelAA``:
    // Set up A->B transport over a network socket where B is a server
    // and A is a client.
    SocketRpcTransport<kSocketReadBufferSize> a_to_b_transport(
-     SocketRpcTransport<kSocketReadBufferSize>::kAsClient, "localhost",
-     kNodeBPortNumber);
+       SocketRpcTransport<kSocketReadBufferSize>::kAsClient,
+       "localhost",
+       kNodeBPortNumber);
 
    // LocalRpcEgress handles RPC packets received from other nodes and destined
    // to this node.
@@ -144,19 +143,19 @@ and accessed from the same process on ``kChannelAA``:
 
    // List of channels for all packets originated locally at A.
    std::array tx_channels = {
-     // Self-destined packets go directly to local egress.
-     Channel::Create<kChannelAA>(&local_egress),
-     // Packets to B and C go over A->B transport.
-     Channel::Create<kChannelAB>(&a_to_b_egress),
-     Channel::Create<kChannelAC>(&a_to_b_egress),
+       // Self-destined packets go directly to local egress.
+       Channel::Create<kChannelAA>(&local_egress),
+       // Packets to B and C go over A->B transport.
+       Channel::Create<kChannelAB>(&a_to_b_egress),
+       Channel::Create<kChannelAC>(&a_to_b_egress),
    };
 
    // Here we list all egresses for the packets _incoming_ from B.
    std::array b_rx_channels = {
-     // Packets on both AB and AC channels are destined locally; hence sending
-     // to the local egress.
-     ChannelEgress{kChannelAB, local_egress},
-     ChannelEgress{kChannelAC, local_egress},
+       // Packets on both AB and AC channels are destined locally; hence sending
+       // to the local egress.
+       ChannelEgress{kChannelAB, local_egress},
+       ChannelEgress{kChannelAC, local_egress},
    };
 
    // HdlcRpcIngress complements HdlcRpcEgress: all packets received on
@@ -183,8 +182,9 @@ that A is unaware of which transport and framing B is using when talking to C:
 
    // This is the server counterpart to A's client socket.
    SocketRpcTransport<kSocketReadBufferSize> b_to_a_transport(
-     SocketRpcTransport<kSocketReadBufferSize>::kAsServer, "localhost",
-     kNodeBPortNumber);
+       SocketRpcTransport<kSocketReadBufferSize>::kAsServer,
+       "localhost",
+       kNodeBPortNumber);
 
    SharedMemoryRpcTransport b_to_c_transport(/*...*/);
 
@@ -212,18 +212,18 @@ that A is unaware of which transport and framing B is using when talking to C:
    // List of channels for all packets originated locally at B (note that in
    // this example B doesn't need to talk to C directly; it only proxies for A).
    std::array tx_channels = {
-     Channel::Create<kChannelAB>(&b_to_a_egress),
+       Channel::Create<kChannelAB>(&b_to_a_egress),
    };
 
    // Here we list all egresses for the packets _incoming_ from A.
    std::array a_rx_channels = {
-     ChannelEgress{kChannelAB, local_egress},
-     ChannelEgress{kChannelAC, b_to_c_egress},
+       ChannelEgress{kChannelAB, local_egress},
+       ChannelEgress{kChannelAC, b_to_c_egress},
    };
 
    // Here we list all egresses for the packets _incoming_ from C.
    std::array c_rx_channels = {
-     ChannelEgress{kChannelAC, b_to_a_egress},
+       ChannelEgress{kChannelAC, b_to_a_egress},
    };
 
    HdlcRpcIngress<kMaxPacketSize> a_ingress(a_rx_channels);
@@ -248,12 +248,12 @@ Node C setup is straightforward since it only needs to handle ingress from B:
    SimpleRpcEgress<kMaxPacketSize> c_to_b_egress("c->b", c_to_b_transport);
 
    std::array tx_channels = {
-     Channel::Create<kChannelAC>(&c_to_b_egress),
+       Channel::Create<kChannelAC>(&c_to_b_egress),
    };
 
    // Here we list all egresses for the packets _incoming_ from B.
    std::array b_rx_channels = {
-     ChannelEgress{kChannelAC, local_egress},
+       ChannelEgress{kChannelAC, local_egress},
    };
 
    SimpleRpcIngress<kMaxPacketSize> b_ingress(b_rx_channels);

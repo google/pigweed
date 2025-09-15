@@ -35,10 +35,11 @@ Example API usage:
 
    Status ListenForButtonPress(DigitalInterrupt& button) {
      PW_TRY(button.SetInterruptHandler(Trigger::kActivatingEdge,
-       [](State sampled_state) {
-         // Handle the button press.
-         // NOTE: this may run in an interrupt context!
-       }));
+                                       [](State sampled_state) {
+                                         // Handle the button press.
+                                         // NOTE: this may run in an interrupt
+                                         // context!
+                                       }));
      return button.EnableInterruptHandler();
    }
 
@@ -229,11 +230,13 @@ example:
 
 .. code-block:: cpp
 
-   DigitalInInterrupt& in_interrupt_line;
-   DigitalIn& in_line = in_interrupt_line;
+   void ExampleAssignments() {
+     DigitalInInterrupt & in_interrupt_line;
+     DigitalIn& in_line = in_interrupt_line;
 
-   DigitalInInterrupt* in_interrupt_line_ptr;
-   DigitalIn* in_line_ptr = &in_interrupt_line_ptr->as<DigitalIn>();
+     DigitalInInterrupt* in_interrupt_line_ptr;
+     DigitalIn* in_line_ptr = &in_interrupt_line_ptr->as<DigitalIn>();
+   }
 
 Asynchronous APIs
 =================
@@ -285,8 +288,8 @@ and output.
 .. code-block:: cpp
 
    std::array<std::reference_wrapper<DigitalIoOptional>> lines = {
-     ...DigitalIn(),
-     ...DigitalOut(),
+       FooDigitalIn(),
+       FooDigitalOut(),
    };
    DigitalIoService service(lines);
    rpc_server.RegisterService(service);

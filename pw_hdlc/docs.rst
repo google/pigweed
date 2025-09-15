@@ -36,7 +36,8 @@ Encoding looks like this:
 
          int main() {
            pw::stream::SysIoWriter serial_writer;
-           Status status = pw::hdlc::WriteUIFrame(123 /* address */, data, serial_writer);
+           Status status =
+               pw::hdlc::WriteUIFrame(123 /* address */, data, serial_writer);
            if (!status.ok()) {
              PW_LOG_INFO("Writing frame failed! %s", status.str());
            }

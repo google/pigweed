@@ -48,11 +48,11 @@ pw_rpc
 
          class BlinkyService final
              : public blinky::pw_rpc::nanopb::Blinky::Service<BlinkyService> {
-         public:
-           pw::Status ToggleLed(const pw_protobuf_Empty &, pw_protobuf_Empty &) {
+          public:
+           pw::Status ToggleLed(const pw_protobuf_Empty&, pw_protobuf_Empty&) {
              // Turn the LED off if it's currently on and vice versa
            }
-           pw::Status Blink(const blinky_BlinkRequest &request, pw_protobuf_Empty &) {
+           pw::Status Blink(const blinky_BlinkRequest& request, pw_protobuf_Empty&) {
              if (request.blink_count == 0) {
                // Stop blinking
              }
@@ -74,7 +74,7 @@ pw_rpc
            pw::system::GetRpcServer().RegisterService(blinky_service);
          }
 
-         } // namespace pw::system
+         }  // namespace pw::system
 
    .. tab-item:: BUILD.bazel
 

@@ -77,7 +77,7 @@ used in your project.
             :emphasize-lines: 2
 
             #ifndef PW_LOG_INFO
-            #define PW_LOG_INFO(...) \  // Your cursor should be on this line.
+            #define PW_LOG_INFO(...) /* Your cursor should be on this line. */ \
               PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
             #endif  // PW_LOG_INFO
 

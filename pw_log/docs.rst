@@ -120,8 +120,17 @@ system, intended to be used directly.
 
    .. code-block:: cpp
 
-      PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_LEVEL_DEBUG, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Temp is %d degrees", temp);
-      PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_LEVEL_DEBUG, PW_LOG_MODULE_NAME, UNRELIABLE_DELIVERY, "It didn't work!");
+      PW_LOG(PW_LOG_LEVEL_INFO,
+             PW_LOG_LEVEL_DEBUG,
+             PW_LOG_MODULE_NAME,
+             PW_LOG_FLAGS,
+             "Temp is %d degrees",
+             temp);
+      PW_LOG(PW_LOG_LEVEL_ERROR,
+             PW_LOG_LEVEL_DEBUG,
+             PW_LOG_MODULE_NAME,
+             UNRELIABLE_DELIVERY,
+             "It didn't work!");
 
    .. note::
 
@@ -185,12 +194,13 @@ system, intended to be used directly.
 
       // Ensure at least 500ms between transfer parameter logs.
       chrono::SystemClock::duration rate_limit_ =
-         chrono::SystemClock::for_at_least(std::chrono::milliseconds(500));
+          chrono::SystemClock::for_at_least(std::chrono::milliseconds(500));
 
-      PW_LOG_EVERY_N_DURATION(PW_LOG_LEVEL_INFO,
-                              rate_limit_,
-                              "Transfer %u sending transfer parameters!"
-                              static_cast<unsigned>(session_id_));
+      PW_LOG_EVERY_N_DURATION(
+          PW_LOG_LEVEL_INFO,
+          rate_limit_,
+          "Transfer %u sending transfer parameters!" static_cast<unsigned>(
+              session_id_));
 
 --------------------
 Module configuration
@@ -250,9 +260,7 @@ source files, not headers. For example:
    #include "pw_log/log.h"
    #include "pw_rpc/server.h"
 
-   int MyFunction() {
-     PW_LOG_INFO("hello???");
-   }
+   int MyFunction() { PW_LOG_INFO("hello???"); }
 
 .. c:macro:: PW_LOG_MODULE_NAME
 
@@ -406,7 +414,8 @@ move to tokenization:
 
 .. code-block:: cpp
 
-   LOG(INFO) << TOKEN("My temperature is ") << temperature << TOKEN(". State: ") << state;
+   LOG(INFO) << TOKEN("My temperature is ") << temperature << TOKEN(". State: ")
+             << state;
 
 However, this doesn't work. The key problem is that the tokenization system
 needs to allocate the string in a linker section that is excluded from the

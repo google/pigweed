@@ -123,9 +123,7 @@ The tokenization macros above cannot be used inside other expressions.
 
   .. code-block:: cpp
 
-     void BadExample() {
-       ProcessToken(PW_TOKENIZE_STRING("This won't compile!"));
-     }
+     void BadExample() { ProcessToken(PW_TOKENIZE_STRING("This won't compile!")); }
 
   Use `PW_TOKENIZE_STRING_EXPR`_ instead.
 
@@ -367,11 +365,11 @@ The following example implements a custom tokenization macro similar to
    }  // extern "C"
    #endif
 
-   #define PW_LOG_TOKENIZED_ENCODE_MESSAGE(metadata, format, ...)          \
-     do {                                                                  \
-       PW_TOKENIZE_FORMAT_STRING("logs", UINT32_MAX, format, __VA_ARGS__); \
-       EncodeTokenizedMessage(                                             \
-           metadata, PW_TOKENIZER_REPLACE_FORMAT_STRING(__VA_ARGS__));     \
+   #define PW_LOG_TOKENIZED_ENCODE_MESSAGE(metadata, format, ...)               \
+     do {                                                                       \
+       PW_TOKENIZE_FORMAT_STRING("logs", UINT32_MAX, format, __VA_ARGS__);      \
+       EncodeTokenizedMessage(metadata,                                         \
+                              PW_TOKENIZER_REPLACE_FORMAT_STRING(__VA_ARGS__)); \
      } while (0)
 
 In this example, the ``EncodeTokenizedMessage`` function would handle encoding
@@ -395,7 +393,8 @@ stored as needed.
                                           ...) {
      va_list args;
      va_start(args, types);
-     pw::tokenizer::EncodedMessage<kLogBufferSize> encoded_message(token, types, args);
+     pw::tokenizer::EncodedMessage<kLogBufferSize> encoded_message(
+         token, types, args);
      va_end(args);
 
      HandleTokenizedMessage(metadata, encoded_message);
@@ -513,7 +512,8 @@ existing value.
 
 .. code-block:: cpp
 
-   constexpr uint32_t token = PW_TOKENIZE_STRING_MASK("domain", 0xFFFF, "Pigweed!");
+   constexpr uint32_t token =
+       PW_TOKENIZE_STRING_MASK("domain", 0xFFFF, "Pigweed!");
    uint32_t packed_word = (other_bits << 16) | token;
 
 Tokens are hashes, so tokens of any size have a collision risk. The fewer bits

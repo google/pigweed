@@ -43,9 +43,7 @@ Next, construct and use a ``BasicDispatcher``.
    #include "pw_async_basic/dispatcher.h"
 
    void DelayedPrint(pw::async::Dispatcher& dispatcher) {
-     dispatcher.PostAfter([](auto&){
-        printf("hello world\n");
-     }, 5s);
+     dispatcher.PostAfter([](auto&) { printf("hello world\n"); }, 5s);
    }
 
    int main() {

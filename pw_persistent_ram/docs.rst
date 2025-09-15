@@ -63,7 +63,7 @@ bootloaders and the application boot code do not clobber it.
         Persistent<bool> persistent_bool;
       };
       PersistentData& persistent_data =
-        *reinterpret_cast<NoinitData*>(&__noinit_begin);
+          *reinterpret_cast<NoinitData*>(&__noinit_begin);
 
       void CheckPersistentDataSize() {
         PW_DCHECK_UINT_LE(sizeof(PersistentData),

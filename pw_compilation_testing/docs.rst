@@ -31,8 +31,8 @@ Negative compilation test example
 ---------------------------------
 .. code-block:: cpp
 
-   #include "pw_unit_test/framework.h"
    #include "pw_compilation_testing/negative_compilation.h"
+   #include "pw_unit_test/framework.h"
 
    template <int kValue>
    struct MyStruct {
@@ -69,25 +69,25 @@ Negative compilation test example
      MyStruct<5> five;
      EXPECT_EQ(five.MultiplyOdd(3), 15);
 
-     // This NC test checks that a specific PW_ASSERT() fails when expected.
-     // This only works in an NC test if the PW_ASSERT() fails while the compiler
-     // is executing constexpr code. The test code is used in a constexpr
-     // statement to force compile-time evaluation.
-     #if PW_NC_TEST(MyStruct_MultiplyOdd_AssertsOnOddNumber)
+   // This NC test checks that a specific PW_ASSERT() fails when expected.
+   // This only works in an NC test if the PW_ASSERT() fails while the compiler
+   // is executing constexpr code. The test code is used in a constexpr
+   // statement to force compile-time evaluation.
+   #if PW_NC_TEST(MyStruct_MultiplyOdd_AssertsOnOddNumber)
      [[maybe_unused]] constexpr auto fail = [] {
        PW_NC_EXPECT("PW_ASSERT\(runtime_value % 2 == 0\);");
        MyStruct<3> my_struct;
        return my_struct.MultiplyOdd(4);  // Even number, PW_ASSERT should fail.
      }();
-     #endif  // PW_NC_TEST
+   #endif  // PW_NC_TEST
    }
 
    // PW_NC_TESTs can be conditionally executed using preprocessor conditionals.
    #if PW_CXX_STANDARD_IS_SUPPORTED(20)
    #if PW_NC_TEST(RequiresSomeCpp20Feature)
    [[maybe_unused]] constinit MyStruct<4> constinit_works;
-   #endif // PW_NC_TEST
-   #endif // PW_CXX_STANDARD_IS_SUPPORTED(20)
+   #endif  // PW_NC_TEST
+   #endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)
 
 ------------------------------------
 Creating a negative compilation test

@@ -170,15 +170,15 @@ thread and registered with the system's RPC server.
    // link.
    constexpr size_t kDefaultMaxBytesToReceive = 16384;
 
-   pw::transfer::TransferService transfer_service(
-       GetSystemTransferThread(), kDefaultMaxBytesToReceive);
+   pw::transfer::TransferService transfer_service(GetSystemTransferThread(),
+                                                  kDefaultMaxBytesToReceive);
 
    // Instantiate a handler for the data to be transferred. The resource ID will
    // be used by the transfer client and server to identify the handler.
    constexpr uint32_t kMagicBufferResourceId = 1;
-   char magic_buffer_to_transfer[256] = { /* ... */ };
-   SimpleBufferReadHandler magic_buffer_handler(
-       kMagicBufferResourceId, magic_buffer_to_transfer);
+   char magic_buffer_to_transfer[256] = {/* ... */};
+   SimpleBufferReadHandler magic_buffer_handler(kMagicBufferResourceId,
+                                                magic_buffer_to_transfer);
 
    }  // namespace
 
@@ -271,9 +271,7 @@ is used to manage the transfer. These handles support the following operations:
      } transfer_state;
 
      Result<pw::transfer::Client::Handle> handle = transfer_client.Read(
-         kMagicBufferResourceId,
-         writer,
-         [&transfer_state](pw::Status status) {
+         kMagicBufferResourceId, writer, [&transfer_state](pw::Status status) {
            transfer_state.status = status;
            transfer_state.notification.release();
          });
@@ -323,9 +321,7 @@ be sent.
     public:
      Status PrepareRead() final;
 
-     virtual size_t ResourceSize() const final {
-       return kMyResourceSize;
-     }
+     virtual size_t ResourceSize() const final { return kMyResourceSize; }
 
   };
 

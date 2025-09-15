@@ -106,11 +106,8 @@ Which can be encoded with the code:
    #include "example_protos/customer.pwpb.h"
 
    pw::Status EncodeCustomer(Customer::StreamEncoder& encoder) {
-     return encoder.Write({
-       age = 33,
-       name = "Joe Bloggs",
-       status = Customer::Status::INACTIVE
-     });
+     return encoder.Write(
+         {age = 33, name = "Joe Bloggs", status = Customer::Status::INACTIVE});
    }
 
 And decoded into a struct with the code:
@@ -214,11 +211,8 @@ length of the value for that field.
 
    std::byte buffer[Customer::kMaxEncodedSizeBytes];
    Customer::MemoryEncoder encoder(buffer);
-   const auto status = encoder.Write({
-     age = 22,
-     name = "Wolfgang Bjornson",
-     status = Customer::Status::ACTIVE
-   });
+   const auto status = encoder.Write(
+       {age = 22, name = "Wolfgang Bjornson", status = Customer::Status::ACTIVE});
 
    // Always check the encoder status or return values from Write calls.
    if (!status.ok()) {
@@ -239,7 +233,7 @@ constant in your own code), you can simply add it to the generated
 
    #include "example_protos/store.pwpb.h"
 
-   const std::byte image_data[kMaxImageDataSize] = { ... };
+   const std::byte image_data[kMaxImageDataSize] = {/*...*/};
 
    Store::Message store{};
    // Calling SetEncoder means we must always extend the buffer size.
@@ -479,7 +473,7 @@ structure, the following additional methods are also generated in the typed
      pw::Result<int32_t> ReadAge();
 
      pw::StatusWithSize ReadName(pw::span<char>);
-     BytesReader GetNameReader(); // Read name as a stream of bytes.
+     BytesReader GetNameReader();  // Read name as a stream of bytes.
 
      pw::Result<Customer::Status> ReadStatus();
    };
@@ -648,17 +642,16 @@ cast the enumerated type.
 
 .. code-block:: c++
 
-   #include "pw_protobuf/encoder.h"
    #include "example_protos/customer.pwpb.h"
+   #include "pw_protobuf/encoder.h"
 
    Status EncodeCustomer(pw::protobuf::StreamEncoder& encoder) {
-     PW_TRY(encoder.WriteInt32(static_cast<uint32_t>(Customer::Fields::kAge),
-                               33));
+     PW_TRY(encoder.WriteInt32(static_cast<uint32_t>(Customer::Fields::kAge), 33));
      PW_TRY(encoder.WriteString(static_cast<uint32_t>(Customer::Fields::kName),
                                 "Joe Bloggs"sv));
-     PW_TRY(encoder.WriteUint32(
-         static_cast<uint32_t>(Customer::Fields::kStatus),
-         static_cast<uint32_t>(Customer::Status::INACTIVE)));
+     PW_TRY(
+         encoder.WriteUint32(static_cast<uint32_t>(Customer::Fields::kStatus),
+                             static_cast<uint32_t>(Customer::Status::INACTIVE)));
    }
 
 Decoding
@@ -732,8 +725,8 @@ boilerplate. ``pw_protobuf`` provides convenient :doxylink:`Find APIs
 .. code-block:: cpp
 
    pw::Status PrintCustomerAge(pw::ConstByteSpan serialized_customer) {
-     pw::Result<uint32_t> age = pw::protobuf::FindUint32(
-         serialized_customer, Customer::Fields::kAge);
+     pw::Result<uint32_t> age =
+         pw::protobuf::FindUint32(serialized_customer, Customer::Fields::kAge);
      if (!age.ok()) {
        return age.status();
      }
@@ -1078,9 +1071,9 @@ that can hold the set of values encoded by it, following these rules.
   .. code-block:: c++
 
      namespace Register {
-       inline constexpr size_t kCashInMaxSize = 32;
-       inline constexpr size_t kCashOutMaxSize = 64;
-     }
+     inline constexpr size_t kCashInMaxSize = 32;
+     inline constexpr size_t kCashOutMaxSize = 64;
+     }  // namespace Register
 
      struct Register::Message {
        std::array<int32_t, kCashInMaxSize> cash_in;
@@ -1108,9 +1101,9 @@ that can hold the set of values encoded by it, following these rules.
   .. code-block:: c++
 
      namespace Product {
-       inline constexpr size_t kSkuMaxSize = 8;
-       inline constexpr size_t kSerialNumberMaxSize = 64;
-     }
+     inline constexpr size_t kSkuMaxSize = 8;
+     inline constexpr size_t kSerialNumberMaxSize = 64;
+     }  // namespace Product
 
      struct Product::Message {
        std::array<std::byte, kSkuMaxSize> sku;
@@ -1137,7 +1130,7 @@ that can hold the set of values encoded by it, following these rules.
   .. code-block:: c++
 
      namespace Employee {
-       inline constexpr size_t kNameMaxSize = 128;
+     inline constexpr size_t kNameMaxSize = 128;
      }
 
      struct Employee::Message {
@@ -1169,8 +1162,10 @@ that can hold the set of values encoded by it, following these rules.
   .. code-block:: c++
 
      struct Store::Message {
-       pw::protobuf::Callback<Store::StreamEncoder, Store::StreamDecoder> nearest_store;
-       pw::protobuf::Callback<Store::StreamEncoder, Store::StreamDecoder> employee_numbers;
+       pw::protobuf::Callback<Store::StreamEncoder, Store::StreamDecoder>
+           nearest_store;
+       pw::protobuf::Callback<Store::StreamEncoder, Store::StreamDecoder>
+           employee_numbers;
        pw::protobuf::Callback<Store::StreamEncoder, Store::StreamDecoder> directions;
        pw::protobuf::Callback<Store::StreamEncoder, Store::StreamDecoder> address;
        pw::protobuf::Callback<Store::StreamEncoder, Store::StreamDecoder> employees;
@@ -1206,7 +1201,7 @@ that can hold the set of values encoded by it, following these rules.
        pw::protobuf::OneOf<OnlineOrder::StreamEncoder,
                            OnlineOrder::StreamDecoder,
                            OnlineOrder::Fields>
-         delivery;
+           delivery;
      };
 
   Encoding a ``oneof`` field is identical to using a regular field callback.
@@ -1232,21 +1227,21 @@ that can hold the set of values encoded by it, following these rules.
   .. code-block:: c++
 
      OnlineOrder::Message message;
-     message.delivery.SetDecoder(
-         [this](OnlineOrder::Fields field, OnlineOrder::StreamDecoder& decoder) {
-           switch (field) {
-             case OnlineOrder::Fields::kShippingAddress:
-               PW_TRY(decoder.GetShippingAddressDecoder().Read(&this->shipping_address));
-               break;
-             case OnlineOrder::Fields::kPickupDate:
-               PW_TRY(decoder.GetPickupDateDecoder().Read(&this->pickup_date));
-               break;
-             default:
-               return pw::Status::DataLoss();
-           }
+     message.delivery.SetDecoder([this](OnlineOrder::Fields field,
+                                        OnlineOrder::StreamDecoder& decoder) {
+       switch (field) {
+         case OnlineOrder::Fields::kShippingAddress:
+           PW_TRY(decoder.GetShippingAddressDecoder().Read(&this->shipping_address));
+           break;
+         case OnlineOrder::Fields::kPickupDate:
+           PW_TRY(decoder.GetPickupDateDecoder().Read(&this->pickup_date));
+           break;
+         default:
+           return pw::Status::DataLoss();
+       }
 
-           return pw::OkStatus();
-         });
+       return pw::OkStatus();
+     });
 
 Message structures can be copied, but doing so will clear any assigned
 callbacks. To preserve functions applied to callbacks, ensure that the message
@@ -1378,19 +1373,19 @@ the example below.
      CONTENT = 1,
    };
 
-   enum class Function::Fields_ uint32_t {
-     NONE = 0,
-     COMPLEX_NUMBERS = 1,
-     INTEGERS_MOD_5 = 2,
-     MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE = 3,
-     OTHER = 4,
+   enum class Function::Fields_ uint32_t{
+       NONE = 0,
+       COMPLEX_NUMBERS = 1,
+       INTEGERS_MOD_5 = 2,
+       MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE = 3,
+       OTHER = 4,
 
-     kNone = NONE,
-     kComplexNumbers = COMPLEX_NUMBERS,
-     kIntegersMod5 = INTEGERS_MOD_5,
-     kMeromorphicFunctionsOnComplexPlane =
-         MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE,
-     kOther = OTHER,
+       kNone = NONE,
+       kComplexNumbers = COMPLEX_NUMBERS,
+       kIntegersMod5 = INTEGERS_MOD_5,
+       kMeromorphicFunctionsOnComplexPlane =
+           MEROMORPHIC_FUNCTIONS_ON_COMPLEX_PLANE,
+       kOther = OTHER,
    };
 
    struct Function::Message {
@@ -1445,7 +1440,7 @@ generated ``Message`` structure into an in-memory buffer.
    // Writes a proto response to the provided buffer, returning the encode
    // status and number of bytes written.
    pw::StatusWithSize WriteProtoResponse(pw::ByteSpan response) {
-     MyProto::Message message{}
+     MyProto::Message message {}
      message.magic_number = 0x1a1a2b2b;
      message.favorite_food = "cookies";
      message.calories = 600;
@@ -1806,12 +1801,11 @@ code generated API, and the second implemented by hand.
 
 .. code-block:: c++
 
-   constexpr std::array<int32_t, 5> numbers = { 4, 8, 15, 16, 23, 42 };
+   constexpr std::array<int32_t, 5> numbers = {4, 8, 15, 16, 23, 42};
 
    my_proto_encoder.WriteNumbers(numbers);
    my_proto_encoder.WritePackedInt32(
-       static_cast<uint32_t>(MyProto::Fields::kNumbers),
-       numbers);
+       static_cast<uint32_t>(MyProto::Fields::kNumbers), numbers);
 
 Enumerations
 ============
@@ -1830,9 +1824,8 @@ and the second implemented by hand.
 .. code-block:: c++
 
    my_proto_encoder.WriteAward(MyProto::Award::SILVER);
-   my_proto_encoder.WriteUint32(
-       static_cast<uint32_t>(MyProto::Fields::kAward),
-       static_cast<uint32_t>(MyProto::Award::SILVER));
+   my_proto_encoder.WriteUint32(static_cast<uint32_t>(MyProto::Fields::kAward),
+                                static_cast<uint32_t>(MyProto::Award::SILVER));
 
 Repeated Fields
 ---------------
@@ -2412,7 +2405,7 @@ different fields in a proto message:
    if (!integer.ok()) {
      // handle parsing error. i.e. return integer.status().
    }
-   uint32_t integer_value = integer.value(); // obtained the value
+   uint32_t integer_value = integer.value();  // obtained the value
 
    // Parse a string field
    String str = message.AsString(2);
@@ -2433,7 +2426,7 @@ different fields in a proto message:
    stream::IntervalReader bytes_reader = bytes.GetBytesReader();
 
    // Parse nested message `Nested nested = 4;`
-   Message nested = message.AsMessage(4).
+   Message nested = message.AsMessage(4);
    // Get the fields in the nested message.
    String nested_str = nested.AsString(1);
    Bytes nested_bytes = nested.AsBytes(2);
@@ -2530,7 +2523,6 @@ single fields directly.
        ...
      }
    }
-
 
 .. Note::
   The helper API are currently in-development and may not remain stable.

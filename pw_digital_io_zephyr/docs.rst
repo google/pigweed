@@ -33,5 +33,5 @@ Then in your application:
    #include "pw_digital_io_zephyr/digital_io.h"
    #include "zephyr/gpio.h"
 
-   constexpr pw::digital_io::ZephyrDigitalInInterrupt
-       kNodeGpio(GPIO_DT_SPEC_GET(DT_NODELABEL(my_node), gpios));
+   constexpr pw::digital_io::ZephyrDigitalInInterrupt kNodeGpio(
+       GPIO_DT_SPEC_GET(DT_NODELABEL(my_node), gpios));

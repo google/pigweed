@@ -17,7 +17,8 @@ rate:
    Serial.begin(115200);
 
    // Wait for serial port to be available
-   while (!Serial) {}
+   while (!Serial) {
+   }
 
 After ``Serial.begin(115200)`` it will busy wait until a host connects to the
 serial port.

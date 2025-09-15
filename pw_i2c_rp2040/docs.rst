@@ -10,21 +10,20 @@ pw_i2c_rp2040
 
 .. code-block:: cpp
 
+   #include "hardware/i2c.h"
    #include "pw_i2c_rp2040/initiator.h"
 
-   #include "hardware/i2c.h"
-
    constexpr pw::i2c::Rp2040Initiator::Config ki2cConfig{
-     .clock_frequency_hz = 400'000,
-     .sda_pin = 8,
-     .scl_pin = 9,
+       .clock_frequency_hz = 400'000,
+       .sda_pin = 8,
+       .scl_pin = 9,
    };
 
-    pw::i2c::Rp2040Initiator i2c_bus(ki2cConfig, i2c0);
-    // Calls these Pico SDK functions:
-    // * gpio_set_function(8, GPIO_FUNC_I2C)
-    // * gpio_set_function(9, GPIO_FUNC_I2C)
-    i2c_bus.Enable();
+   pw::i2c::Rp2040Initiator i2c_bus(ki2cConfig, i2c0);
+   // Calls these Pico SDK functions:
+   // * gpio_set_function(8, GPIO_FUNC_I2C)
+   // * gpio_set_function(9, GPIO_FUNC_I2C)
+   i2c_bus.Enable();
 
 .. pw_i2c_rp2040-example-end
 

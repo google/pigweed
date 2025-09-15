@@ -141,9 +141,8 @@ Configure and read an I2C device's registers
 
    Status Device::Enable() {
      // Set port 0 as inputs for buttons (1=input)
-     device_.WriteRegister8(Register::ConfigPort0,
-                            0xff,
-                            pw::chrono::SystemClock::for_at_least(10ms));
+     device_.WriteRegister8(
+         Register::ConfigPort0, 0xff, pw::chrono::SystemClock::for_at_least(10ms));
      // Select pullup resistors for button input (1=pullup)
      device_.WriteRegister8(Register::PullUpDownSelectionPort0,
                             0xff,

@@ -54,13 +54,13 @@ Usage
    pw::clock_tree::Element& i3c_clock;
 
    constexpr I3cMcuxpressoInitiator::Config kI3c0Config = {
-    .base_address = I3C0_BASE,
-    .i2c_baud_rate = kI3cI2cBaudRate,
-    .i3c_open_drain_baud_rate = kI3cOpenDrainBaudRate,
-    .i3c_push_pull_baud_rate = kI3cPushPullBaudRate,
-    .enable_open_drain_stop = false,  // NXP default
-    .enable_open_drain_high = true,   // necessary to allow bus to operate in
-                                      // mixed mode
+       .base_address = I3C0_BASE,
+       .i2c_baud_rate = kI3cI2cBaudRate,
+       .i3c_open_drain_baud_rate = kI3cOpenDrainBaudRate,
+       .i3c_push_pull_baud_rate = kI3cPushPullBaudRate,
+       .enable_open_drain_stop = false,  // NXP default
+       .enable_open_drain_high = true,   // necessary to allow bus to operate in
+                                         // mixed mode
    };
 
    I3cMcuxpressoInitiator i3c_0_initiator{kI3c0Config, i3c_clock};
@@ -84,13 +84,13 @@ that comes on and offline to save power.
 .. code-block:: cpp
 
    constexpr I3cMcuxpressoInitiator::Config kI3c0Config = {
-    .base_address = I3C0_BASE,
-    .i2c_baud_rate = kI3cI2cBaudRate,
-    .i3c_open_drain_baud_rate = kI3cOpenDrainBaudRate,
-    .i3c_push_pull_baud_rate = kI3cPushPullBaudRate,
-    .enable_open_drain_stop = false,  // NXP default
-    .enable_open_drain_high = true,   // necessary to allow bus to operate in
-                                      // mixed mode
+       .base_address = I3C0_BASE,
+       .i2c_baud_rate = kI3cI2cBaudRate,
+       .i3c_open_drain_baud_rate = kI3cOpenDrainBaudRate,
+       .i3c_push_pull_baud_rate = kI3cPushPullBaudRate,
+       .enable_open_drain_stop = false,  // NXP default
+       .enable_open_drain_high = true,   // necessary to allow bus to operate in
+                                         // mixed mode
    };
 
    I3cMcuxpressoInitiator i3c_0_initiator{kI3c0Config};
@@ -99,7 +99,7 @@ that comes on and offline to save power.
    // initiator can be used for regular i2c communication.
    i3c_0_initiator.Enable();
 
-   constexpr auto address = pw::i2c:Address::SevenBit<0x58>();
+   constexpr auto address = pw::i2c::Address::SevenBit<0x58>();
 
    // Assign a fixed i3c address from the static i2c address.
    i3c_0_initiator.SetDasa(address);

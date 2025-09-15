@@ -160,7 +160,8 @@ which they will send requests, and the channel ID they will use.
 
      pw::rpc::PwpbUnaryReceiver<RoomInfoResponse::Message> GetRoomInformation(
          const RoomInfoRequest::Message& request,
-         ::pw::Function<void(Status, const RoomInfoResponse::Message&)> on_response,
+         ::pw::Function<void(Status, const RoomInfoResponse::Message&)>
+             on_response,
          ::pw::Function<void(Status)> on_rpc_error = nullptr);
 
      // ...and more (see below).
@@ -170,8 +171,9 @@ RPCs can also be invoked individually as free functions:
 
 .. code-block:: c++
 
-   pw::rpc::PwpbUnaryReceiver<RoomInfoResponse::Message> call = pw_rpc::pwpb::Chat::GetRoomInformation(
-       client, channel_id, request, on_response, on_rpc_error);
+   pw::rpc::PwpbUnaryReceiver<RoomInfoResponse::Message> call =
+       pw_rpc::pwpb::Chat::GetRoomInformation(
+           client, channel_id, request, on_response, on_rpc_error);
 
 The client class has member functions for each method defined within the
 service's protobuf descriptor. The arguments to these methods vary depending on
@@ -185,12 +187,15 @@ If dynamic allocation is enabled (:c:macro:`PW_RPC_DYNAMIC_ALLOCATION` is 1), a
 
 .. code-block:: c++
 
-   my_namespace::pw_rpc::pwpb::ServiceName::DynamicClient dynamic_client(
-       client, channel_id);
-   auto call = dynamic_client.TestUnaryRpc(request, response_callback);
+   void DynamicClientExample() {
+     my_namespace::pw_rpc::pwpb::ServiceName::DynamicClient dynamic_client(
+         client, channel_id);
+     auto call = dynamic_client.TestUnaryRpc(request, response_callback);
 
-   if (call->active()) {  // Access the call as a std::unique_ptr
-     // ...
+     if (call->active()) {  // Access the call as a std::unique_ptr
+       // ...
+     }
+   }
 
 .. admonition:: Callback invocation
 
@@ -250,15 +255,15 @@ service client and receive the response.
 
    namespace {
 
-     using ChatClient = pw_rpc::pwpb::Chat::Client;
+   using ChatClient = pw_rpc::pwpb::Chat::Client;
 
-     MyChannelOutput output;
-     pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<1>(&output)};
-     pw::rpc::Client client(channels);
+   MyChannelOutput output;
+   pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<1>(&output)};
+   pw::rpc::Client client(channels);
 
-     // Callback function for GetRoomInformation.
-     void LogRoomInformation(const RoomInfoResponse::Message& response,
-                             Status status);
+   // Callback function for GetRoomInformation.
+   void LogRoomInformation(const RoomInfoResponse::Message& response,
+                           Status status);
 
    }  // namespace
 
@@ -267,8 +272,8 @@ service client and receive the response.
      ChatClient chat_client(client, 1);
 
      // The RPC will remain active as long as `call` is alive.
-     auto call = chat_client.GetRoomInformation(
-         {.room = "pigweed"}, LogRoomInformation);
+     auto call =
+         chat_client.GetRoomInformation({.room = "pigweed"}, LogRoomInformation);
      if (!call.active()) {
        // The invocation may fail. This could occur due to an invalid channel ID,
        // for example. The failure status is forwarded to the to call's

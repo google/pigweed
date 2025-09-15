@@ -87,7 +87,7 @@ iterator will progress until it sees the corrupted section and instead move to
    iterator it = ring_buffer.begin();
    for (; it != it.end(); ++it) {
      PW_LOG_WARN("Read entry of size: %u",
-                static_cast<unsigned>(it->buffer.size()));
+                 static_cast<unsigned>(it->buffer.size()));
    }
 
    // Warn if there was a failure during iteration.

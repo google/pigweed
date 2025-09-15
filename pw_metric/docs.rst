@@ -283,9 +283,7 @@ tokenizing the metric and group names.
 
          PW_METRIC(foo, "foo", 15.5f);
 
-         void MyFunc() {
-           foo.Increment();
-         }
+         void MyFunc() { foo.Increment(); }
 
    2. At local function or member function scope:
 
@@ -302,9 +300,7 @@ tokenizing the metric and group names.
       .. code-block:: cpp
 
          struct MyStructy {
-           void DoSomething() {
-             somethings.Increment();
-           }
+           void DoSomething() { somethings.Increment(); }
            // Every instance of MyStructy will have a separate somethings counter.
            PW_METRIC(somethings, "somethings", 0u);
          }
@@ -354,8 +350,8 @@ tokenizing the metric and group names.
 
    .. code-block:: cpp
 
-      #include "pw_metric/metric.h"
       #include "pw_metric/global.h"
+      #include "pw_metric/metric.h"
 
       // No need to coordinate collection of foo and bar; they're autoregistered.
       PW_METRIC_GLOBAL(foo, "foo", 0.2f);
@@ -384,8 +380,8 @@ tokenizing the metric and group names.
 
    .. code-block:: cpp
 
-      #include "pw_metric/metric.h"
       #include "pw_metric/global.h"
+      #include "pw_metric/metric.h"
 
       // No need to coordinate collection of this group; it's globally registered.
       PW_METRIC_GROUP_GLOBAL(legacy_system, "legacy_system");
@@ -428,7 +424,7 @@ hypothetical global ``Uart`` object:
    class Uart {
     public:
      Uart(span<std::byte> rx_buffer, span<std::byte> tx_buffer)
-       : rx_buffer_(rx_buffer), tx_buffer_(tx_buffer) {}
+         : rx_buffer_(rx_buffer), tx_buffer_(tx_buffer) {}
 
      // Send/receive here...
 
@@ -453,13 +449,12 @@ might consider the following approach:
      Uart(span<std::byte> rx_buffer,
           span<std::byte> tx_buffer,
           Group& parent_metrics)
-       : rx_buffer_(rx_buffer),
-         tx_buffer_(tx_buffer) {
-         // PROBLEM! parent_metrics may not be constructed if it's a reference
-         // to a static global.
-         parent_metrics.Add(tx_bytes_);
-         parent_metrics.Add(rx_bytes_);
-      }
+         : rx_buffer_(rx_buffer), tx_buffer_(tx_buffer) {
+       // PROBLEM! parent_metrics may not be constructed if it's a reference
+       // to a static global.
+       parent_metrics.Add(tx_bytes_);
+       parent_metrics.Add(rx_bytes_);
+     }
 
      // Send/receive here which increment tx/rx_bytes.
 
@@ -476,9 +471,7 @@ might consider the following approach:
 
    std::array<std::byte, 512> uart_rx_buffer;
    std::array<std::byte, 512> uart_tx_buffer;
-   Uart uart1(uart_rx_buffer,
-              uart_tx_buffer,
-              uart1_metrics);
+   Uart uart1(uart_rx_buffer, uart_tx_buffer, uart1_metrics);
 
 However, this **is incorrect**, since the ``parent_metrics`` (pointing to
 ``uart1_metrics`` in this case) may not be constructed at the point of
@@ -499,16 +492,14 @@ correctly, even when the objects are allocated globally:
    class Uart {
     public:
      // Note that metrics is not passed in here at all.
-     Uart(span<std::byte> rx_buffer,
-          span<std::byte> tx_buffer)
-       : rx_buffer_(rx_buffer),
-         tx_buffer_(tx_buffer) {}
+     Uart(span<std::byte> rx_buffer, span<std::byte> tx_buffer)
+         : rx_buffer_(rx_buffer), tx_buffer_(tx_buffer) {}
 
-      // Precondition: parent_metrics is already constructed.
-      void Init(Group& parent_metrics) {
-         parent_metrics.Add(tx_bytes_);
-         parent_metrics.Add(rx_bytes_);
-      }
+     // Precondition: parent_metrics is already constructed.
+     void Init(Group& parent_metrics) {
+       parent_metrics.Add(tx_bytes_);
+       parent_metrics.Add(rx_bytes_);
+     }
 
      // Send/receive here which increment tx/rx_bytes.
 
@@ -525,13 +516,11 @@ correctly, even when the objects are allocated globally:
 
    std::array<std::byte, 512> uart_rx_buffer;
    std::array<std::byte, 512> uart_tx_buffer;
-   Uart uart1(uart_rx_buffer,
-              uart_tx_buffer);
+   Uart uart1(uart_rx_buffer, uart_tx_buffer);
 
    void main() {
      // uart1_metrics is guaranteed to be initialized by this point, so it is
-     safe to pass it to Init().
-     uart1.Init(uart1_metrics);
+     safe to pass it to Init().uart1.Init(uart1_metrics);
    }
 
 .. attention::
@@ -550,8 +539,8 @@ work fine:
 
    class PowerSubsystem {
     public:
-      Group& metrics() { return metrics_; }
-      const Group& metrics() const { return metrics_; }
+     Group& metrics() { return metrics_; }
+     const Group& metrics() const { return metrics_; }
 
     private:
      PW_METRIC_GROUP(metrics_, "power");  // Note metrics_ declared first.
@@ -568,8 +557,8 @@ but the following one will not since the group is constructed after the metrics
 
    class PowerSubsystem {
     public:
-      Group& metrics() { return metrics_; }
-      const Group& metrics() const { return metrics_; }
+     Group& metrics() { return metrics_; }
+     const Group& metrics() const { return metrics_; }
 
     private:
      PW_METRIC(metrics_, foo, "foo", 0.2f);
@@ -698,22 +687,21 @@ For example:
 
 .. code-block:: cpp
 
-   #include "pw_rpc/server.h"
-   #include "pw_metric/metric.h"
    #include "pw_metric/global.h"
+   #include "pw_metric/metric.h"
    #include "pw_metric/metric_service_nanopb.h"
+   #include "pw_rpc/server.h"
 
    // Note: You must customize the RPC server setup; see pw_rpc.
    Channel channels[] = {
-    Channel::Create<1>(&uart_output),
+       Channel::Create<1>(&uart_output),
    };
    Server server(channels);
 
    // Metric service instance, pointing to the global metric objects.
    // This could also point to custom per-product or application objects.
-   pw::metric::MetricService metric_service(
-       pw::metric::global_metrics,
-       pw::metric::global_groups);
+   pw::metric::MetricService metric_service(pw::metric::global_metrics,
+                                            pw::metric::global_groups);
 
    void RegisterServices() {
      server.RegisterService(metric_service);

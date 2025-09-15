@@ -56,9 +56,7 @@ Example code to use GPIO pins from an NXP SDK board definition:
                              BOARD_INITPINS_D9_PORT,
                              BOARD_INITPINS_D9_PIN);
 
-   Status Init() {
-     return input.Enable();
-   }
+   Status Init() { return input.Enable(); }
 
    Status InputExample() {
      PW_TRY_ASSIGN(const DigitalIo::State state, input.GetState());
@@ -83,9 +81,7 @@ Example code to use GPIO pins from an NXP SDK board definition:
                                BOARD_INITPINS_D8_PIN,
                                pw::digital_io::State::kActive);
 
-   Status Init() {
-     return output.Enable();
-   }
+   Status Init() { return output.Enable(); }
 
    Status OutputExample() {
      return output.SetState(pw::digital_io::State::kInactive);
@@ -114,9 +110,7 @@ Example code to use GPIO pins from an NXP SDK board definition:
      PW_TRY(irq_pin.Enable());
      PW_TRY(irq_pin.SetInterruptHandler(
          pw::digital_io::InterruptTrigger::kDeactivatingEdge,
-         [](State /* state */) {
-           irq_count++;
-         }));
+         [](State /* state */) { irq_count++; }));
      PW_TRY(irq_pin.EnableInterruptHandler());
      return OkStatus();
    }
@@ -144,21 +138,20 @@ It must be used with an instance of :doxylink:`McuxpressoPintController
 
    pw::sync::VirtualInterruptSpinLock controller_lock;
 
-   pw::sync::Borrowable<McuxpressoPintController>
-       pint_controller(raw_pint_controller, controller_lock);
+   pw::sync::Borrowable<McuxpressoPintController> pint_controller(
+       raw_pint_controller, controller_lock);
 
    McuxpressoPintInterrupt irq_line0(pint_controller, kPINT_PinInt0);
 
    Status Init() {
      // Attach pin PIO0_4 to PINT interrupt 0.
-     INPUTMUX_AttachSignal(INPUTMUX, kPINT_PinInt0, kINPUTMUX_GpioPort0Pin4ToPintsel);
+     INPUTMUX_AttachSignal(
+         INPUTMUX, kPINT_PinInt0, kINPUTMUX_GpioPort0Pin4ToPintsel);
 
      PW_TRY(irq_line0.Enable());
      PW_TRY(irq_line0.SetInterruptHandler(
          pw::digital_io::InterruptTrigger::kBothEdges,
-         [](State /* state */) {
-           irq_count++;
-         }));
+         [](State /* state */) { irq_count++; }));
      PW_TRY(irq_line0.EnableInterruptHandler());
      return OkStatus();
    }

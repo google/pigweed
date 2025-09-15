@@ -34,20 +34,21 @@ Example usage with inline string arguments:
 
 .. code-block:: cpp
 
-   #include "pw_log/log.h"
    #include "pw_log/tokenized_args.h"
+
+   #include "pw_log/log.h"
 
    // bool active_
    PW_LOG_INFO("Component is " PW_LOG_TOKEN_FMT(),
-               active_ ? PW_LOG_TOKEN_EXPR("active")
-                       : PW_LOG_TOKEN_EXPR("idle"));
+               active_ ? PW_LOG_TOKEN_EXPR("active") : PW_LOG_TOKEN_EXPR("idle"));
 
 Example usage with enums:
 
 .. code-block:: cpp
 
-   #include "pw_log/log.h"
    #include "pw_log/tokenized_args.h"
+
+   #include "pw_log/log.h"
 
    namespace foo {
 
@@ -66,7 +67,7 @@ Example usage with enums:
      }
    }
 
-   } // namespace foo
+   }  // namespace foo
 
    void LogColor(foo::Color color) {
      PW_LOG("Color: [" PW_LOG_TOKEN_FMT() "]", color)

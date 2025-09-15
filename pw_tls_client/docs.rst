@@ -181,8 +181,8 @@ connection to www.google.com:
 
      // Create a TLS session. Register the transport.
      auto options = pw::tls_client::SessionOptions()
-             .set_server_name(kServerNameIndication)
-             .set_transport(socket_stream);
+                        .set_server_name(kServerNameIndication)
+                        .set_transport(socket_stream);
      auto tls_conn = pw::tls_client::Session::Create(options);
      if (!tls_conn.ok()) {
        // Handle errors.
@@ -196,7 +196,8 @@ connection to www.google.com:
        return 1;
      }
 
-     auto write_status = tls_conn.value()->Write(pw::as_bytes(pw::span{kHTTPRequest}));
+     auto write_status =
+         tls_conn.value()->Write(pw::as_bytes(pw::span{kHTTPRequest}));
      if (!write_status.ok()) {
        // Inspect/handle error with write_status.code() and
        // tls_conn.value()->GetLastTLSStatus().
@@ -221,7 +222,6 @@ connection to www.google.com:
            return 1;
          }
        }
-
      }
    }
 

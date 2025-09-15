@@ -40,12 +40,11 @@ follows:
    pw::thread::freertos::StaticContextWithStack<kFooStackSizeWords>
        example_thread_context;
    void StartExampleThread() {
-     pw::thread::DetachedThread(
-         pw::thread::freertos::Options()
-             .set_name("static_example_thread")
-             .set_priority(kFooPriority)
-             .set_static_context(example_thread_context),
-         example_thread_function);
+     pw::thread::DetachedThread(pw::thread::freertos::Options()
+                                    .set_name("static_example_thread")
+                                    .set_priority(kFooPriority)
+                                    .set_static_context(example_thread_context),
+                                example_thread_function);
    }
 
 Alternatively when ``PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED`` is
@@ -66,14 +65,12 @@ be done as follows:
        pw::thread::freertos::config::kDefaultStackSizeWords;
 
    void StartExampleThread() {
-     pw::thread::DetachedThread(
-         pw::thread::freertos::Options()
-             .set_name("dyanmic_example_thread")
-             .set_priority(kFooPriority)
-             .set_stack_size(kFooStackSizeWords),
-         example_thread_function)
+     pw::thread::DetachedThread(pw::thread::freertos::Options()
+                                    .set_name("dynamic_example_thread")
+                                    .set_priority(kFooPriority)
+                                    .set_stack_size(kFooStackSizeWords),
+                                example_thread_function)
    }
-
 
 Module Configuration Options
 ============================
@@ -268,8 +265,8 @@ For ARM Cortex-M CPUs, you can do something like this:
           pw::ConstByteSpan stack) -> pw::Status {
      return encoder.WriteRawStack(stack);
    };
-   pw::thread::threadx::SnapshotThread(my_thread, thread_state, stack_ptr,
-                                       snapshot_encoder, cb);
+   pw::thread::threadx::SnapshotThread(
+       my_thread, thread_state, stack_ptr, snapshot_encoder, cb);
 
 Some FreeRTOS ports (e.g. RISC-V) automatically store the stack pointer back
 into the running thread's TCB upon exception entry, so there's no need to inject

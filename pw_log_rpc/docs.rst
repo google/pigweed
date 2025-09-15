@@ -381,11 +381,10 @@ log drains and filters are set up.
 
 .. code-block:: cpp
 
-   #include "foo/log.h"
-
    #include <array>
    #include <cstdint>
 
+   #include "foo/log.h"
    #include "pw_chrono/system_clock.h"
    #include "pw_log/proto_utils.h"
    #include "pw_log_rpc/log_filter.h"
@@ -413,10 +412,8 @@ log drains and filters are set up.
 
    // To save RAM, share the mutex, since drains will be managed sequentially.
    pw::sync::Mutex shared_mutex;
-   std::array<std::byte, kMaxEntrySize> client1_buffer
-       PW_GUARDED_BY(shared_mutex);
-   std::array<std::byte, kMaxEntrySize> client2_buffer
-       PW_GUARDED_BY(shared_mutex);
+   std::array<std::byte, kMaxEntrySize> client1_buffer PW_GUARDED_BY(shared_mutex);
+   std::array<std::byte, kMaxEntrySize> client2_buffer PW_GUARDED_BY(shared_mutex);
    std::array<pw::log_rpc::RpcLogDrain, 2> drains = {
        pw::log_rpc::RpcLogDrain(
            1,
@@ -450,14 +447,14 @@ log drains and filters are set up.
    };
    pw::log_rpc::FilterMap filter_map(filters);
 
-   extern "C" void pw_log_tokenized_HandleLog(
-       uint32_t metadata, const uint8_t message[], size_t size_bytes) {
-     int64_t timestamp =
-         pw::chrono::SystemClock::now().time_since_epoch().count();
+   extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
+                                              const uint8_t message[],
+                                              size_t size_bytes) {
+     int64_t timestamp = pw::chrono::SystemClock::now().time_since_epoch().count();
      std::lock_guard lock(log_encode_lock);
      pw::Result<pw::ConstByteSpan> encoded_log_result =
-       pw::log::EncodeTokenizedLog(
-           metadata, message, size_bytes, timestamp, log_encode_buffer);
+         pw::log::EncodeTokenizedLog(
+             metadata, message, size_bytes, timestamp, log_encode_buffer);
 
      if (!encoded_log_result.ok()) {
        GetMultiSink().HandleDropped();

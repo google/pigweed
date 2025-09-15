@@ -114,7 +114,6 @@ Examples in C++
      mutex.unlock();
    }
 
-
 Alternatively you can use C++'s RAII helpers to ensure you always unlock.
 
 .. code-block:: cpp
@@ -256,8 +255,7 @@ Examples in C++
 
    pw::sync::TimedMutex mutex;
 
-   bool ThreadSafeCriticalSectionWithTimeout(
-       const SystemClock::duration timeout) {
+   bool ThreadSafeCriticalSectionWithTimeout(const SystemClock::duration timeout) {
      if (!mutex.try_lock_for(timeout)) {
        return false;
      }
@@ -277,8 +275,7 @@ Alternatively you can use C++'s RAII helpers to ensure you always unlock.
 
    pw::sync::TimedMutex mutex;
 
-   bool ThreadSafeCriticalSectionWithTimeout(
-       const SystemClock::duration timeout) {
+   bool ThreadSafeCriticalSectionWithTimeout(const SystemClock::duration timeout) {
      std::unique_lock lock(mutex, std::defer_lock);
      if (!lock.try_lock_for(timeout)) {
        return false;
@@ -435,7 +432,6 @@ Examples in C++
      interrupt_spin_lock.unlock();
    }
 
-
 Alternatively you can use C++'s RAII helpers to ensure you always unlock.
 
 .. code-block:: cpp
@@ -450,7 +446,6 @@ Alternatively you can use C++'s RAII helpers to ensure you always unlock.
      std::lock_guard lock(interrupt_spin_lock);
      NotThreadSafeCriticalSection();
    }
-
 
 C
 -
@@ -487,7 +482,8 @@ Example in C
 
    pw::sync::InterruptSpinLock interrupt_spin_lock;
 
-   extern pw_sync_InterruptSpinLock interrupt_spin_lock;  // This can only be created in C++.
+   extern pw_sync_InterruptSpinLock
+       interrupt_spin_lock;  // This can only be created in C++.
 
    void InterruptSafeCriticalSection(void) {
      pw_sync_InterruptSpinLock_Lock(&interrupt_spin_lock);
@@ -605,38 +601,41 @@ the macro documentation after for more details:
      void AssertReaderHeld() PW_ASSERT_SHARED_LOCK();
    };
 
-
    // Tag types for selecting a constructor.
-   struct adopt_lock_t {} inline constexpr adopt_lock = {};
-   struct defer_lock_t {} inline constexpr defer_lock = {};
-   struct shared_lock_t {} inline constexpr shared_lock = {};
+   struct adopt_lock_t {};
+   inline constexpr adopt_lock = {};
+   struct defer_lock_t {};
+   inline constexpr defer_lock = {};
+   struct shared_lock_t {};
+   inline constexpr shared_lock = {};
 
    class PW_SCOPED_LOCKABLE ScopedLocker {
      // Acquire lock, implicitly acquire *this and associate it with lock.
-     ScopedLocker(Lock *lock) PW_EXCLUSIVE_LOCK_FUNCTION(lock)
+     ScopedLocker(Lock* lock) PW_EXCLUSIVE_LOCK_FUNCTION(lock)
          : lock_(lock), locked(true) {
        lock->Lock();
      }
 
      // Assume lock is held, implicitly acquire *this and associate it with lock.
-     ScopedLocker(Lock *lock, adopt_lock_t) PW_EXCLUSIVE_LOCKS_REQUIRED(lock)
+     ScopedLocker(Lock* lock, adopt_lock_t) PW_EXCLUSIVE_LOCKS_REQUIRED(lock)
          : lock_(lock), locked(true) {}
 
      // Acquire lock in shared mode, implicitly acquire *this and associate it
      // with lock.
-     ScopedLocker(Lock *lock, shared_lock_t) PW_SHARED_LOCK_FUNCTION(lock)
+     ScopedLocker(Lock* lock, shared_lock_t) PW_SHARED_LOCK_FUNCTION(lock)
          : lock_(lock), locked(true) {
        lock->ReaderLock();
      }
 
      // Assume lock is held in shared mode, implicitly acquire *this and associate
      // it with lock.
-     ScopedLocker(Lock *lock, adopt_lock_t, shared_lock_t)
-         PW_SHARED_LOCKS_REQUIRED(lock) : lock_(lock), locked(true) {}
+     ScopedLocker(Lock* lock, adopt_lock_t, shared_lock_t)
+         PW_SHARED_LOCKS_REQUIRED(lock)
+         : lock_(lock), locked(true) {}
 
      // Assume lock is not held, implicitly acquire *this and associate it with
      // lock.
-     ScopedLocker(Lock *lock, defer_lock_t) PW_LOCKS_EXCLUDED(lock)
+     ScopedLocker(Lock* lock, defer_lock_t) PW_LOCKS_EXCLUDED(lock)
          : lock_(lock), locked(false) {}
 
      // Release *this and all associated locks, if they are still held.
@@ -809,17 +808,11 @@ instance, e.g.:
 
    class BankAccount {
     public:
-     void Deposit(int amount) {
-       balance_ += amount;
-     }
+     void Deposit(int amount) { balance_ += amount; }
 
-     void Withdraw(int amount) {
-       balance_ -= amount;
-     }
+     void Withdraw(int amount) { balance_ -= amount; }
 
-     void Balance() const {
-       return balance_;
-     }
+     void Balance() const { return balance_; }
 
     private:
      int balance_;
@@ -878,8 +871,8 @@ Example in C++
 
    #include "pw_bytes/span.h"
    #include "pw_i2c/initiator.h"
-   #include "pw_status/try.h"
    #include "pw_status/result.h"
+   #include "pw_status/try.h"
    #include "pw_sync/borrow.h"
    #include "pw_sync/mutex.h"
 
@@ -891,13 +884,12 @@ Example in C++
 
    pw::Result<ConstByteSpan> ReadI2cData(ByteSpan buffer) {
      // Block indefinitely waiting to borrow the i2c bus.
-     pw::sync::BorrowedPointer<ExampleI2c> borrowed_i2c =
-         borrowable_i2c.acquire();
+     pw::sync::BorrowedPointer<ExampleI2c> borrowed_i2c = borrowable_i2c.acquire();
 
      // Execute a sequence of transactions to get the needed data.
      PW_TRY(borrowed_i2c->WriteFor(kFirstWrite, std::chrono::milliseconds(50)));
-     PW_TRY(borrowed_i2c->WriteReadFor(kSecondWrite, buffer,
-                                       std::chrono::milliseconds(10)));
+     PW_TRY(borrowed_i2c->WriteReadFor(
+         kSecondWrite, buffer, std::chrono::milliseconds(10)));
 
      // Borrowed i2c pointer is returned when the scope exits.
      return buffer;
@@ -950,9 +942,10 @@ its lock must be passed through the :doxylink:`InlineBorrowable
 
      InlineBorrowable<Foo> foo(std::forward_as_tuple(foo_arg1, foo_arg2));
 
-     InlineBorrowable<Foo, MyLock> foo_lock(
-         std::forward_as_tuple(foo_arg1, foo_arg2),
-         std::forward_as_tuple(lock_arg1, lock_arg2));
+     InlineBorrowable<Foo, MyLock> foo_lock(std::forward_as_tuple(foo_arg1,
+                                                                  foo_arg2),
+                                            std::forward_as_tuple(lock_arg1,
+                                                                  lock_arg2));
 
   .. note:: This approach only supports list initialization starting with C++20.
 
@@ -960,11 +953,12 @@ its lock must be passed through the :doxylink:`InlineBorrowable
 
   .. code-block:: cpp
 
-     InlineBorrowable<Foo> foo([&]{ return Foo{foo_arg1, foo_arg2}; });
+     InlineBorrowable<Foo> foo([&] { return Foo{foo_arg1, foo_arg2}; });
 
-     InlineBorrowable<Foo, MyLock> foo_lock(
-         [&]{ return Foo{foo_arg1, foo_arg2}; }
-         [&]{ return MyLock{lock_arg1, lock_arg2}; }
+     InlineBorrowable<Foo, MyLock> foo_lock([&] { return Foo{foo_arg1, foo_arg2}; },
+                                            [&] {
+                                              return MyLock{lock_arg1, lock_arg2};
+                                            })
 
   .. note:: It is possible to construct and return objects that are not copyable
     or movable, thanks to mandatory copy ellision (return value optimization).
@@ -994,8 +988,7 @@ Example in C++
    pw::sync::InlineBorrowable<ExampleI2c> i2c(std::in_place, kBusId, opts);
 
    pw::Result<ConstByteSpan> ReadI2cData(
-     pw::sync::Borrowable<pw::i2c::Initiator> initiator,
-     ByteSpan buffer);
+       pw::sync::Borrowable<pw::i2c::Initiator> initiator, ByteSpan buffer);
 
    pw::Result<ConstByteSpan> ReadData(ByteSpan buffer) {
      return ReadI2cData(i2c, buffer);
@@ -1126,9 +1119,7 @@ Examples in C++
    class FooHandler() {
     public:
      // Public API invoked by other threads and/or interrupts.
-     void NewFooAvailable() {
-       new_foo_notification_.release();
-     }
+     void NewFooAvailable() { new_foo_notification_.release(); }
 
      // Thread function.
      void Run() {
@@ -1240,9 +1231,7 @@ Examples in C++
    class FooHandler() {
     public:
      // Public API invoked by other threads and/or interrupts.
-     void NewFooAvailable() {
-       new_foo_notification_.release();
-     }
+     void NewFooAvailable() { new_foo_notification_.release(); }
 
      // Thread function.
      void Run() {
@@ -1363,10 +1352,8 @@ you detect whether you ever fall behind.
    #include "pw_thread/thread_core.h"
 
    class PeriodicWorker() : public pw::thread::ThreadCore {
-    // Public API invoked by a higher frequency timer interrupt.
-    void TimeToExecute() {
-      periodic_run_semaphore_.release();
-    }
+     // Public API invoked by a higher frequency timer interrupt.
+     void TimeToExecute() { periodic_run_semaphore_.release(); }
 
     private:
      pw::sync::CountingSemaphore periodic_run_semaphore_;
@@ -1375,7 +1362,7 @@ you detect whether you ever fall behind.
      void Run() override {
        while (true) {
          size_t behind_by_n_cycles = 0;
-         periodic_run_semaphore_.acquire(); // Wait to run until it's time.
+         periodic_run_semaphore_.acquire();  // Wait to run until it's time.
          while (periodic_run_semaphore_.try_acquire()) {
            ++behind_by_n_cycles;
          }
@@ -1484,9 +1471,7 @@ Examples in C++
    class FooHandler() {
     public:
      // Public API invoked by other threads and/or interrupts.
-     void NewFooAvailable() {
-       new_foo_semaphore_.release();
-     }
+     void NewFooAvailable() { new_foo_semaphore_.release(); }
 
      // Thread function.
      void Run() {

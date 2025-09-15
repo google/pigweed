@@ -71,8 +71,8 @@ Example code:
    DeviceInfo device_info = {};
    device_info.model_number = pw::as_bytes(pw::span{"My Model"sv});
    device_info.software_revision = pw::as_bytes(pw::span{REVISION_MACRO});
-   device_info.serial_number = pw::as_bytes(
-       pw::span(serial_number.data(), serial_number.size()));
+   device_info.serial_number =
+       pw::as_bytes(pw::span(serial_number.data(), serial_number.size()));
 
    DeviceInfoService<kUsedFields, pw::bluetooth::gatt::Handle{123}>
        device_info_service{device_info};

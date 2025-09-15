@@ -193,7 +193,8 @@ The C++ service implementation class may append "Service" to the name.
 
    namespace pw::file {
 
-   class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
+   class FileSystemService
+       : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
      void List(ConstByteSpan request, RawServerWriter& writer);
    };
 

@@ -99,15 +99,14 @@ implementation that encodes the results to a protobuf.
 
    #include "pw_log/proto_utils.h"
 
-   extern "C" void pw_log_tokenized_HandleLog(
-       uint32_t payload, const uint8_t data[], size_t size) {
+   extern "C" void pw_log_tokenized_HandleLog(uint32_t payload,
+                                              const uint8_t data[],
+                                              size_t size) {
      pw::log_tokenized::Metadata metadata(payload);
      std::byte log_buffer[kLogBufferSize];
 
      Result<ConstByteSpan> result = EncodeTokenizedLog(
-         metadata,
-         pw::as_bytes(pw::span(data, size)),
-         log_buffer);
+         metadata, pw::as_bytes(pw::span(data, size)), log_buffer);
      if (result.ok()) {
        // This makes use of the encoded log proto and is custom per-product.
        // It should be implemented by the caller and is not in Pigweed.

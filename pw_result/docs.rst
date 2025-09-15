@@ -185,8 +185,8 @@ falliable operations that return values:
 
 .. code-block:: cpp
 
-   #include "pw_status/try.h"
    #include "pw_result/result.h"
+   #include "pw_status/try.h"
 
    pw::Result<int> GetAnswer();  // Example function.
 
@@ -225,19 +225,19 @@ verbose:
 .. code-block:: cpp
 
    pw::Result<Image> GetCuteCat(const Image& img) {
-      pw::Result<Image> cropped = CropToCat(img);
-      if (!cropped.ok()) {
-        return cropped.status();
-      }
-      pw::Result<Image> with_tie = AddBowTie(*cropped);
-      if (!with_tie.ok()) {
-        return with_tie.status();
-      }
-      pw::Result<Image> with_sparkles = MakeEyesSparkle(*with_tie);
-      if (!with_sparkles.ok()) {
-        return with_parkes.status();
-      }
-      return AddRainbow(MakeSmaller(*with_sparkles));
+     pw::Result<Image> cropped = CropToCat(img);
+     if (!cropped.ok()) {
+       return cropped.status();
+     }
+     pw::Result<Image> with_tie = AddBowTie(*cropped);
+     if (!with_tie.ok()) {
+       return with_tie.status();
+     }
+     pw::Result<Image> with_sparkles = MakeEyesSparkle(*with_tie);
+     if (!with_sparkles.ok()) {
+       return with_parkes.status();
+     }
+     return AddRainbow(MakeSmaller(*with_sparkles));
    }
 
 Leveraging ``PW_TRY_ASSIGN`` reduces the verbosity:
@@ -246,10 +246,10 @@ Leveraging ``PW_TRY_ASSIGN`` reduces the verbosity:
 
    // Without chaining but using PW_TRY_ASSIGN.
    pw::Result<Image> GetCuteCat(const Image& img) {
-      PW_TRY_ASSIGN(Image cropped, CropToCat(img));
-      PW_TRY_ASSIGN(Image with_tie, AddBowTie(*cropped));
-      PW_TRY_ASSIGN(Image with_sparkles, MakeEyesSparkle(*with_tie));
-      return AddRainbow(MakeSmaller(*with_sparkles));
+     PW_TRY_ASSIGN(Image cropped, CropToCat(img));
+     PW_TRY_ASSIGN(Image with_tie, AddBowTie(*cropped));
+     PW_TRY_ASSIGN(Image with_sparkles, MakeEyesSparkle(*with_tie));
+     return AddRainbow(MakeSmaller(*with_sparkles));
    }
 
 With chaining we can reduce the code even further:
@@ -258,10 +258,10 @@ With chaining we can reduce the code even further:
 
    pw::Result<Image> GetCuteCat(const Image& img) {
      return CropToCat(img)
-            .and_then(AddBoeTie)
-            .and_then(MakeEyesSparkle)
-            .transform(MakeSmaller)
-            .transform(AddRainbow);
+         .and_then(AddBoeTie)
+         .and_then(MakeEyesSparkle)
+         .transform(MakeSmaller)
+         .transform(AddRainbow);
    }
 
 ``pw::Result<T>::and_then``
@@ -364,8 +364,7 @@ should be aware that if they provide a function that returns a ``pw::Result`` to
    Result<int> ConvertStringToInteger(std::string_view);
    int MultiplyByTwo(int x);
 
-   Result<int> x = ConvertStringToInteger("42")
-                     .transform(MultiplyByTwo);
+   Result<int> x = ConvertStringToInteger("42").transform(MultiplyByTwo);
 
 Results with custom error types: ``pw::expected``
 =================================================

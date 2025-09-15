@@ -99,8 +99,7 @@ handler.
      PW_UNREACHABLE;
    }
 
-   extern "C" void pw_cpu_exception_DefaultHandler(
-       pw_cpu_exception_State* state) {
+   extern "C" void pw_cpu_exception_DefaultHandler(pw_cpu_exception_State* state) {
      // Always disable interrupts first! How this is done depends
      // on your platform.
      __disable_irq();
@@ -108,9 +107,8 @@ handler.
      crash_data.state = cpu_state;
      // The CFSR is an extremely useful register for understanding ARMv7-M and
      // ARMv8-M CPU faults. Other architectures should put something else here.
-     HandleExceptionWithString(crash_data,
-                               "Exception encountered, cfsr=0x%",
-                               cpu_state->extended.cfsr);
+     HandleExceptionWithString(
+         crash_data, "Exception encountered, cfsr=0x%", cpu_state->extended.cfsr);
    }
 
 Common Crash Handler Setup
@@ -123,10 +121,10 @@ information to the shared handler.
 .. code-block:: cpp
 
    struct CrashData {
-     pw_cpu_exception_State *cpu_state;
-     const char *reason_fmt;
-     const va_list *reason_args;
-     const char *file_name;
+     pw_cpu_exception_State* cpu_state;
+     const char* reason_fmt;
+     const va_list* reason_args;
+     const char* file_name;
      int line_number;
    };
 
@@ -152,13 +150,13 @@ checks earlier in both codepaths.
 
 .. code-block:: cpp
 
-   [[noreturn]] void HandleCrash(CrashData &crash_info) {
+   [[noreturn]] void HandleCrash(CrashData& crash_info) {
      static size_t crash_depth = 0;
      if (crash_depth > kMaxCrashDepth) {
        Abort(/*run_callbacks=*/false);
      }
      crash_depth++;
-     ...
+     // ...
    }
 
 Re-initialize Logging (Optional)
@@ -205,10 +203,10 @@ storage objects used by your Snapshot capture codepath.
    pw::persistent_ram::PersistentBuffer<2048> persistent_snapshot;
 
    void CaptureSnapshot(CrashInfo& crash_info) {
-     ...
+     // ...
      persistent_snapshot.clear();
      PersistentBufferWriter& writer = persistent_snapshot.GetWriter();
-     ...
+     // ...
    }
 
 ----------------------
@@ -239,20 +237,19 @@ was captured ("Host communication buffer full!", "Exception encountered at
      // Temporary buffer to encode serialized proto to before dumping to the
      // final ``pw::stream::Writer``.
      static std::byte proto_encode_buffer[512];
-     ...
+     // ...
      pw::protobuf::NestedEncoder<kMaxDepth> proto_encoder(proto_encode_buffer);
      pw::snapshot::Snapshot::Encoder snapshot_encoder(&proto_encoder);
      size_t length = snprintf(temp_buffer,
-                              sizeof(temp_buffer,
-                              crash_info.reason_fmt),
+                              sizeof(temp_buffer, crash_info.reason_fmt),
                               *crash_info.reason_args);
-     snapshot_encoder.WriteReason(temp_buffer, length));
+     snapshot_encoder.WriteReason(temp_buffer, length);
 
      // Final encode and write.
      Result<ConstByteSpan> encoded_proto = proto_encoder.Encode();
      PW_TRY(encoded_proto.status());
      PW_TRY(writer.Write(encoded_proto.value()));
-     ...
+     // ...
    }
 
 Capture CPU State
@@ -266,7 +263,7 @@ time once the snapshot is retrieved from the device.
 .. code-block:: cpp
 
    Status CaptureSnapshot(CrashData& crash_info) {
-     ...
+     // ...
 
      proto_encoder.clear();
 

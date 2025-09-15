@@ -123,9 +123,7 @@ client, the client's ``ProcessPacket`` function is called with the packet data.
    }  // namespace
 
    // Called when the transport layer receives an RPC packet.
-   void ProcessRpcPacket(ConstByteSpan packet) {
-     my_client.ProcessPacket(packet);
-   }
+   void ProcessRpcPacket(ConstByteSpan packet) { my_client.ProcessPacket(packet); }
 
 Note that client processing such as callbacks will be invoked within
 the body of ``ProcessPacket``.
@@ -174,13 +172,11 @@ Example
 
    // Callback invoked when a response is received. This is called synchronously
    // from Client::ProcessPacket.
-   void EchoResponse(const pw_rpc_EchoMessage& response,
-                     pw::Status status) {
+   void EchoResponse(const pw_rpc_EchoMessage& response, pw::Status status) {
      if (status.ok()) {
        PW_LOG_INFO("Received echo response: %s", response.msg);
      } else {
-       PW_LOG_ERROR("Echo failed with status %d",
-                    static_cast<int>(status.code()));
+       PW_LOG_ERROR("Echo failed with status %d", static_cast<int>(status.code()));
      }
    }
 
@@ -276,7 +272,7 @@ which processes all packets with unrecognized channel ids.
 .. code-block:: cpp
 
    // Only registered channel has id of 1.
-   std::array<Channel, 1> channels = { Channel::Create<1>(...) };
+   std::array<Channel, 1> channels = {Channel::Create<1>(/*...*/)};
    // `MyDefaultChannelOutput` is a class that implements the
    // `pw::rpc::ChannelOutput` interface. It will process all packets that don't
    // have a packet id of 1.
@@ -352,7 +348,8 @@ message payload size.
 
    namespace pw::file {
 
-   class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
+   class FileSystemService
+       : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
     public:
      void List(ConstByteSpan request, RawServerWriter& writer);
 
@@ -598,7 +595,7 @@ We also have a templated Storage type alias:
 
    template <auto kMethod>
    using Storage =
-      std::pair<MethodRequestType<kMethod>, MethodResponseType<kMethod>>;
+       std::pair<MethodRequestType<kMethod>, MethodResponseType<kMethod>>;
 
 ``Storage<some::package::pw_rpc::pwpb::SpecialService::MyMethod>`` will
 instantiate as:
@@ -654,11 +651,10 @@ variants.
 
 .. code-block:: cpp
 
-   pw_rpc_EchoMessage request{.msg = "hello" };
+   pw_rpc_EchoMessage request{.msg = "hello"};
    pw::rpc::SynchronousCallResult<pw_rpc_EchoMessage> result =
-     pw::rpc::SynchronousCall<EchoService::Echo>(rpc_client,
-                                                 channel_id,
-                                                 request);
+       pw::rpc::SynchronousCall<EchoService::Echo>(
+           rpc_client, channel_id, request);
    if (result.ok()) {
      PW_LOG_INFO("%s", result.response().msg);
    }
@@ -668,9 +664,9 @@ Additionally, the use of a generated ``Client`` object is supported:
 .. code-block:: cpp
 
    pw_rpc::nanopb::EchoService::Client client(rpc_client, channel_id);
-   pw_rpc_EchoMessage request{.msg = "hello" };
+   pw_rpc_EchoMessage request{.msg = "hello"};
    pw::rpc::SynchronousCallResult<pw_rpc_EchoMessage> result =
-     pw::rpc::SynchronousCall<EchoService::Echo>(client, request);
+       pw::rpc::SynchronousCall<EchoService::Echo>(client, request);
 
    if (result.ok()) {
      PW_LOG_INFO("%s", result.response().msg);
@@ -686,18 +682,15 @@ of response messages with variable-length fields.
    class CustomResponse : public pw_rpc_MyMethodResponseMessage {
     public:
      CustomResponse() {
-       repeated_field.SetDecoder([this](
-         MyMethodResponse::StreamDecoder& decoder) {
-           return decoder.ReadRepeatedField(values);
-         }
-       );
+       repeated_field.SetDecoder([this](MyMethodResponse::StreamDecoder& decoder) {
+         return decoder.ReadRepeatedField(values);
+       });
      }
      pw::Vector<uint32_t, 4> values();
    };
    pw::rpc::SynchronousCallResult<CustomResponse> result =
-     pw::rpc::SynchronousCall<EchoService::Echo, CustomResponse>(rpc_client,
-                                                                 channel_id,
-                                                                 request);
+       pw::rpc::SynchronousCall<EchoService::Echo, CustomResponse>(
+           rpc_client, channel_id, request);
    if (result.ok()) {
      PW_LOG_INFO("%d", result.response().values[0]);
    }
@@ -711,11 +704,12 @@ and the ``SynchronousCall()`` invocation returns :doxylink:`OkStatus()
 .. code-block:: cpp
 
    pw::Status rpc_status = pw::rpc::SynchronousCall<EchoService::Echo>(
-       rpc_client, channel_id, encoded_request,
+       rpc_client,
+       channel_id,
+       encoded_request,
        [](pw::ConstByteSpan reply, pw::Status status) {
-         PW_LOG_INFO("Received %zu bytes with status %s",
-                     reply.size(),
-                     status.str());
+         PW_LOG_INFO(
+             "Received %zu bytes with status %s", reply.size(), status.str());
        });
 
 .. warning::
@@ -737,7 +731,7 @@ Example
 
      RoomInfoRequest request;
      SynchronousCallResult<RoomInfoResponse> result =
-       SynchronousCall<Chat::GetRoomInformation>(client, channel.id(), request);
+         SynchronousCall<Chat::GetRoomInformation>(client, channel.id(), request);
 
      if (result.is_rpc_error()) {
        ShutdownClient(client);
@@ -761,7 +755,7 @@ Example
      if (result.is_timeout()) {
        RetryRoomRequest();
      } else {
-     ...
+       // ...
      }
    }
 
@@ -792,8 +786,7 @@ an RPC client and server with the same set of channels.
 
 .. code-block:: cpp
 
-   pw::rpc::Channel channels[] = {
-       pw::rpc::Channel::Create<1>(&channel_output)};
+   pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<1>(&channel_output)};
 
    // Creates both a client and a server.
    pw::rpc::ClientServer client_server(channels);
@@ -907,11 +900,10 @@ response is received. It verifies that expected data was both sent and received.
      Status BlockOnResponse(uint32_t value);
    };
 
-
    class TestService final : public MyService<TestService> {
     public:
      Status TheMethod(const pw_rpc_test_TheMethod& request,
-                         pw_rpc_test_TheMethod& response) {
+                      pw_rpc_test_TheMethod& response) {
        response.value = request.integer + 1;
        return pw::OkStatus();
      }
@@ -972,11 +964,10 @@ to with a test service implementation.
      Status SendRpcCall(uint32_t value);
    };
 
-
    class TestService final : public MyService<TestService> {
     public:
      Status TheMethod(const pw_rpc_test_TheMethod& request,
-                         pw_rpc_test_TheMethod& response) {
+                      pw_rpc_test_TheMethod& response) {
        response.value = request.integer + 1;
        return pw::OkStatus();
      }
@@ -1055,8 +1046,8 @@ timeout for the waiting part (default timeout is 100ms).
    context.call({});
 
    PW_TEST_ASSERT_OK(pw::rpc::test::SendResponseIfCalled<
-             other::pw_rpc::pwpb::OtherService::GetPart>(
-       client_context, {.value = 42}));
+                     other::pw_rpc::pwpb::OtherService::GetPart>(client_context,
+                                                                 {.value = 42}));
 
    // At this point MyService::GetData handler received the GetPartResponse.
 

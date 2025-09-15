@@ -51,9 +51,7 @@ Examples in C++
 
    using std::literals::chrono_literals::ms;
 
-   void FunctionInvokedByThread() {
-     pw::this_thread::sleep_for(42ms);
-   }
+   void FunctionInvokedByThread() { pw::this_thread::sleep_for(42ms); }
 
    void AnotherFunctionInvokedByThread() {
      pw::this_thread::sleep_until(pw::chrono::SystemClock::now() + 42ms);
@@ -93,9 +91,7 @@ Example in C++
 
    #include "pw_thread/yield.h"
 
-   void FunctionInvokedByThread() {
-     pw::this_thread::yield();
-   }
+   void FunctionInvokedByThread() { pw::this_thread::yield(); }
 
 C
 =
@@ -399,9 +395,7 @@ and note that synchronization may be needed).
    };
    Foo foo;
 
-   Thread thread(options, [&foo] {
-     foo.DoBar();
-   });
+   Thread thread(options, [&foo] { foo.DoBar(); });
 
 The legacy ``ThreadCore`` class may also be used to start a thread. This class
 was introduced before ``pw::Function`` was available and should not be used in

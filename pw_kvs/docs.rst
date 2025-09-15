@@ -24,13 +24,10 @@ pw_kvs
          constexpr size_t kMaxSectors = 6;
          constexpr size_t kMaxEntries = 64;
          static constexpr pw::kvs::EntryFormat kvs_format = {
-           .magic = 0xd253a8a9,  // Prod apps should use a random number here
-           .checksum = nullptr
-         };
+             .magic = 0xd253a8a9,  // Prod apps should use a random number here
+             .checksum = nullptr};
          pw::kvs::KeyValueStoreBuffer<kMaxEntries, kMaxSectors> kvs(
-           &pw::kvs::FlashTestPartition(),
-           kvs_format
-         );
+             &pw::kvs::FlashTestPartition(), kvs_format);
 
          kvs.Init();  // Initialize our KVS
          std::byte in;

@@ -31,8 +31,7 @@ endianness, and defining byte quantities with clear, standard units.
 
    // Combine data with specified endianness.
    constexpr auto kPacketPrefix = pw::bytes::Concat(
-       kHeader,
-       pw::bytes::CopyInOrder(pw::endian::big, kPayloadId));
+       kHeader, pw::bytes::CopyInOrder(pw::endian::big, kPayloadId));
 
    // kPacketPrefix now contains:
    // {'P', 'W', 'R', 'D', 0x12, 0x34, 0x56, 0x78}

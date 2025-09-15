@@ -77,10 +77,10 @@ Example
    }
 
    void InputLoop() {
-     while(1) {
+     while (1) {
        auto event = WaitNewInputEvent()
-       TRACE_SCOPE("Handle Event");  // measure until loop finished
-       if (event == kNewButton){
+           TRACE_SCOPE("Handle Event");  // measure until loop finished
+       if (event == kNewButton) {
          SendButton();
          PW_TRACE_END("button");  // Trace event was started in ButtonIsr
        } else {
@@ -93,7 +93,6 @@ Example
      PW_TRACE_START("button");
      SendNewInputEvent(kNewButton);
    }
-
 
 ------------
 Trace macros
@@ -260,7 +259,6 @@ of the module's files:
 
    // Enable tracing based on pw_example module config parameter.
    #define PW_TRACE_ENABLE PW_EXAMPLE_TRACE_ENABLE
-
 
 Additionally specific trace points (or sets of points) can be enabled/disabled
 using the following pattern:

@@ -42,8 +42,11 @@ SHA256
    std::byte digest[32];
 
    if (!pw::crypto::sha256::Sha256()
-       .Update(chunk1).Update(chunk2).Update(chunk...)
-       .Final().ok()) {
+            .Update(chunk1)
+            .Update(chunk2)
+            .Update(chunk...)
+            .Final()
+            .ok()) {
      // Handle errors.
    }
 
@@ -61,8 +64,8 @@ ECDSA
      // handle errors.
    }
 
-   if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
-                                               signature).ok()) {
+   if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature)
+            .ok()) {
      // handle errors.
    }
 
@@ -76,14 +79,17 @@ ECDSA
    std::byte digest[32];
 
    if (!pw::crypto::sha256::Sha256()
-       .Update(chunk1).Update(chunk2).Update(chunkN)
-       .Final(digest).ok()) {
-       // Handle errors.
+            .Update(chunk1)
+            .Update(chunk2)
+            .Update(chunkN)
+            .Final(digest)
+            .ok()) {
+     // Handle errors.
    }
 
-   if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
-                                               signature).ok()) {
-       // Handle errors.
+   if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature)
+            .ok()) {
+     // Handle errors.
    }
 
 ---
@@ -101,8 +107,12 @@ AES
 
    std::byte mac[16];
 
-   if (!pw::crypto::aes_cmac::Cmac(key).Update(chunk1).Update(chunk2)
-         .Update(chunk...).Final().ok()) {
+   if (!pw::crypto::aes_cmac::Cmac(key)
+            .Update(chunk1)
+            .Update(chunk2)
+            .Update(chunk...)
+            .Final()
+            .ok()) {
      // Handle errors.
    }
 
@@ -120,7 +130,7 @@ AES
    std::byte encrypted[16];
 
    if (!pw::crypto::unsafe::aes::EncryptBlock(key, message, encrypted).ok()) {
-       // Handle errors.
+     // Handle errors.
    }
 
 ----
@@ -138,17 +148,16 @@ ECDH
    #include "pw_crypto/ecdh.h"
 
    // Import the public key from the other party.
-   PW_TRY_ASSIGN(
-      auto public_key,
-      pw::crypto::ecdh::P256PublicKey::Import(other_x, other_y, endian));
-   PW_TRY_ASSIGN(auto keypair,
-                 pw::crypto::ecdh::P256Keypair::Generate());
+   PW_TRY_ASSIGN(auto public_key,
+                 pw::crypto::ecdh::P256PublicKey::Import(other_x,
+                                                         other_y,
+                                                         endian));
+   PW_TRY_ASSIGN(auto keypair, pw::crypto::ecdh::P256Keypair::Generate());
 
    std::byte shared_key[32];
    if (!keypair.ComputeDiffieHellman(public_key, shared_key)) {
-      // handle errors.
+     // handle errors.
    }
-
 
 2. Import a pre-existing keypair (for testing purposes) and computing a
    shared symmetric key.
@@ -158,16 +167,17 @@ ECDH
    #include "pw_crypto/ecdh.h"
 
    // Import the public key from the other party.
+   PW_TRY_ASSIGN(auto public_key,
+                 pw::crypto::ecdh::P256PublicKey::Import(other_x,
+                                                         other_y,
+                                                         endian));
    PW_TRY_ASSIGN(
-      auto public_key,
-      pw::crypto::ecdh::P256PublicKey::Import(other_x, other_y, endian));
-   PW_TRY_ASSIGN(auto keypair,
-      pw::crypto::ecdh::P256Keypair::ImportForTesting(
-         private_key, x, y, endian));
+       auto keypair,
+       pw::crypto::ecdh::P256Keypair::ImportForTesting(private_key, x, y, endian));
 
    std::byte shared_key[32];
    if (!keypair.ComputeDiffieHellman(public_key, shared_key)) {
-      // handle errors.
+     // handle errors.
    }
 
 -------------
@@ -266,32 +276,32 @@ CSPRNG for ECDH:
 .. code-block:: cpp
 
    using MbedtlsCtrDrbg =
-      ::pw::crypto::ecdh::backend::Wrapper<mbedtls_ctr_drbg_context,
-                                           mbedtls_ctr_drbg_init,
-                                           mbedtls_ctr_drbg_free>;
+       ::pw::crypto::ecdh::backend::Wrapper<mbedtls_ctr_drbg_context,
+                                            mbedtls_ctr_drbg_init,
+                                            mbedtls_ctr_drbg_free>;
    class MbedtlsCsprng final : public ::pw::crypto::ecdh::backend::Csprng {
     public:
-      MbedtlsCsprng(mbedtls_entropy_context* entropy,
-                    std::string_view personalization_string) {
-         PW_CHECK_INT_EQ(0,
-                         mbedtls_ctr_drbg_seed(ctr_drbg_.Get(),
-                                               mbedtls_entropy_func,
-                                               &entropy,
-                                               personalization_string.data(),
-                                               personalization_string.size()));
-      }
+     MbedtlsCsprng(mbedtls_entropy_context* entropy,
+                   std::string_view personalization_string) {
+       PW_CHECK_INT_EQ(0,
+                       mbedtls_ctr_drbg_seed(ctr_drbg_.Get(),
+                                             mbedtls_entropy_func,
+                                             &entropy,
+                                             personalization_string.data(),
+                                             personalization_string.size()));
+     }
 
-      GenerateResult Generate(ByteSpan out) override {
-         if (mbedtls_ctr_drbg_random(ctr_drbg_.Get(),
-                                     reinterpret_cast<unsigned char*>(out.data()),
-                                    out.size()) != 0) {
-            return GenerateResult::kFailure;
-         }
-         return GenerateResult::kSuccess;
-      }
+     GenerateResult Generate(ByteSpan out) override {
+       if (mbedtls_ctr_drbg_random(ctr_drbg_.Get(),
+                                   reinterpret_cast<unsigned char*>(out.data()),
+                                   out.size()) != 0) {
+         return GenerateResult::kFailure;
+       }
+       return GenerateResult::kSuccess;
+     }
 
     private:
-      MbedtlsCtrDrbg ctr_drbg_;
+     MbedtlsCtrDrbg ctr_drbg_;
    };
 
 .. _module-pw_crypto-boringssl:

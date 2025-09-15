@@ -34,7 +34,7 @@ write a few fields in a snapshot, you can do so with minimal memory overhead.
 
    pw::Status EncodeSnapshot(pw::stream::Writer& writer,
                              pw::ByteSpan submessage_encode_buffer,
-                             const CrashInfo &crash_info) {
+                             const CrashInfo& crash_info) {
      // Create a snapshot proto encoder.
      pw::snapshot::Snapshot::StreamEncoder snapshot_encoder(
          writer, submessage_encode_buffer);
@@ -45,8 +45,7 @@ write a few fields in a snapshot, you can do so with minimal memory overhead.
        metadata_encoder.WriteReason(EncodeReasonLog(crash_info));
        metadata_encoder.WriteFatal(true);
        metadata_encoder.WriteProjectName(pw::as_bytes(pw::span("smart-shoe")));
-       metadata_encoder.WriteDeviceName(
-           pw::as_bytes(pw::span("smart-shoe-p1")));
+       metadata_encoder.WriteDeviceName(pw::as_bytes(pw::span("smart-shoe-p1")));
      }
      return proto_encoder.status();
    }

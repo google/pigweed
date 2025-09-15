@@ -440,13 +440,14 @@ Here's one possible solution to the RPC creation exercise in
          // //modules/blinky/blinky.h
 
          // ...
-         namespace am {
+         namespace sense {
+         class Blinky final {
           public:
            // ...
            pw::Status::BlinkTwice() PW_LOCKS_EXCLUDED(lock_);
            // ...
-         }  // namespace am
-
+         };
+         }  // namespace sense
 
    .. tab-item:: blinky.cc
 

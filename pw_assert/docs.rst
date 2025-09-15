@@ -54,7 +54,8 @@ Example
      PW_CHECK(sensor_running, "Sensor failed to start; code: %s", msg);
 
      int temperature_c = ReadSensorCelcius();
-     PW_CHECK_INT_LE(temperature_c, 100,
+     PW_CHECK_INT_LE(temperature_c,
+                     100,
                      "System is way out of heat spec; state=%s",
                      ReadSensorStateString());
    }
@@ -181,7 +182,7 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
 
   .. code-block:: cpp
 
-     Foo* foo = GetTheFoo()
+     Foo* foo = GetTheFoo();
      PW_CHECK_NOTNULL(foo);
 
      Bar* bar = GetSomeBar();
@@ -212,8 +213,7 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
 
   .. code-block:: cpp
 
-     PW_CHECK_FLOAT_EXACT_GE(BatteryVoltage(), 3.2,
-                             "System state=%s", SysState());
+     PW_CHECK_FLOAT_EXACT_GE(BatteryVoltage(), 3.2, "System state=%s", SysState());
 
   Below is the full list of binary comparison assert macros, along with the
   type specifier. The specifier is irrelevant to application authors but is
@@ -361,8 +361,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
 
   .. code-block:: cpp
 
-     PW_CHECK_FLOAT_NEAR(FirstOperation(), RedundantOperation(), 0.1,
-                         "System state=%s", SysState());
+     PW_CHECK_FLOAT_NEAR(
+         FirstOperation(), RedundantOperation(), 0.1, "System state=%s", SysState());
 
 .. cpp:function:: PW_CHECK_OK(status)
 .. cpp:function:: PW_CHECK_OK(status, format, ...)

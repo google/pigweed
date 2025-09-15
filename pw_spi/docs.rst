@@ -52,7 +52,7 @@ Constructing a SPI device
    auto selector = pw::spi::MyChipSelector();
 
    auto device = pw::spi::Device(
-      pw::sync::Borrowable<Initiator>(initiator, mutex), kConfig, selector);
+       pw::sync::Borrowable<Initiator>(initiator, mutex), kConfig, selector);
 
 This example demonstrates the construction of a :doxylink:`Device
 <pw::spi::Device>` from its object dependencies and configuration data; where
@@ -74,8 +74,8 @@ Performing a transfer
 
    pw::Result<SensorData> ReadSensorData(pw::spi::Device& device) {
      std::array<std::byte, 16> raw_sensor_data;
-     constexpr std::array<std::byte, 2> kAccelReportCommand = {
-         std::byte{0x13}, std::byte{0x37}};
+     constexpr std::array<std::byte, 2> kAccelReportCommand = {std::byte{0x13},
+                                                               std::byte{0x37}};
 
      // This device supports full-duplex transfers
      PW_TRY(device.WriteRead(kAccelReportCommand, raw_sensor_data));
@@ -96,12 +96,12 @@ Performing a multi-part transaction
 
    pw::Result<SensorData> ReadSensorData(pw::spi::Device& device) {
      std::array<std::byte, 16> raw_sensor_data;
-     constexpr std::array<std::byte, 2> kAccelReportCommand = {
-         std::byte{0x13}, std::byte{0x37}};
+     constexpr std::array<std::byte, 2> kAccelReportCommand = {std::byte{0x13},
+                                                               std::byte{0x37}};
 
      // Creation of the RAII `transaction` acquires exclusive access to the bus
      pw::spi::Device::Transaction transaction =
-       device.StartTransaction(pw::spi::ChipSelectBehavior::kPerTransaction);
+         device.StartTransaction(pw::spi::ChipSelectBehavior::kPerTransaction);
 
      // This device only supports half-duplex transfers
      PW_TRY(transaction.Write(kAccelReportCommand));

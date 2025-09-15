@@ -13,7 +13,7 @@ lines of code or less!
 .. code-block:: cpp
 
    FUZZ_TEST(MyTestSuite, TestMyInterestingFunction)
-     .WithDomains(Arbitrary<size_t>(), AsciiString());
+       .WithDomains(Arbitrary<size_t>(), AsciiString());
 
 ----------
 Background

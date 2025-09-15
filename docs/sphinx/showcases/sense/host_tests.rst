@@ -26,7 +26,7 @@ tests:
         // ...
         auto event = FirstActive();
         ASSERT_NE(event, monochrome_led_.events().end());
-        EXPECT_EQ(event->state, State::kInactive);   // add this line
+        EXPECT_EQ(event->state, State::kInactive);  // add this line
         // EXPECT_EQ(event->state, State::kActive);  // comment out this line
         EXPECT_GE(ToMs(event->timestamp - start), kIntervalMs * 0);
         start = event->timestamp;

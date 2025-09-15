@@ -274,7 +274,7 @@ this check can be done at compile time.
 .. code-block:: cpp
 
    // This line fails to compile with a static_assert if the database is invalid.
-   constexpr TokenDatabase kDefaultDatabase =  TokenDatabase::Create<kData>();
+   constexpr TokenDatabase kDefaultDatabase = TokenDatabase::Create<kData>();
 
    Detokenizer OpenDatabase(std::string_view path) {
      std::vector<uint8_t> data = ReadWholeFile(path);

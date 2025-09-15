@@ -41,11 +41,11 @@ include the following:
 
   .. code-block:: cpp
 
-     #define ARG_PRINT(...)  PW_DELEGATE_BY_ARG_COUNT(_ARG_PRINT, __VA_ARGS__)
-     #define _ARG_PRINT0(a)        LOG_INFO("nothing!")
-     #define _ARG_PRINT1(a)        LOG_INFO("1 arg: %s", a)
-     #define _ARG_PRINT2(a, b)     LOG_INFO("2 args: %s, %s", a, b)
-     #define _ARG_PRINT3(a, b, c)  LOG_INFO("3 args: %s, %s, %s", a, b, c)
+     #define ARG_PRINT(...) PW_DELEGATE_BY_ARG_COUNT(_ARG_PRINT, __VA_ARGS__)
+     #define _ARG_PRINT0(a) LOG_INFO("nothing!")
+     #define _ARG_PRINT1(a) LOG_INFO("1 arg: %s", a)
+     #define _ARG_PRINT2(a, b) LOG_INFO("2 args: %s, %s", a, b)
+     #define _ARG_PRINT3(a, b, c) LOG_INFO("3 args: %s, %s, %s", a, b, c)
 
   When used, ``ARG_PRINT`` expands to the ``_ARG_PRINT#`` macro corresponding
   to the number of arguments.

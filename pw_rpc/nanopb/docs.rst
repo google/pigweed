@@ -91,8 +91,7 @@ the request succeeded.
 
 .. code-block:: c++
 
-   pw::Status GetRoomInformation(pw::rpc::
-                                 const RoomInfoRequest& request,
+   pw::Status GetRoomInformation(pw::rpc::const RoomInfoRequest& request,
                                  RoomInfoResponse& response);
 
 Server streaming RPC
@@ -102,8 +101,7 @@ A server streaming RPC receives the client's request message alongside a
 
 .. code-block:: c++
 
-   void ListUsersInRoom(pw::rpc::
-                        const ListUsersRequest& request,
+   void ListUsersInRoom(pw::rpc::const ListUsersRequest& request,
                         pw::rpc::ServerWriter<ListUsersResponse>& writer);
 
 The ``ServerWriter`` object is movable, and remains active until it is manually
@@ -168,8 +166,9 @@ RPCs can also be invoked individually as free functions:
 
 .. code-block:: c++
 
-   pw::rpc::NanopbUnaryReceiver<RoomInfoResponse> call = pw_rpc::nanopb::Chat::GetRoomInformation(
-       client, channel_id, request, on_response, on_rpc_error);
+   pw::rpc::NanopbUnaryReceiver<RoomInfoResponse> call =
+       pw_rpc::nanopb::Chat::GetRoomInformation(
+           client, channel_id, request, on_response, on_rpc_error);
 
 The client class has member functions for each method defined within the
 service's protobuf descriptor. The arguments to these methods vary depending on
@@ -235,14 +234,14 @@ service client and receive the response.
 
    namespace {
 
-     using ChatClient = pw_rpc::nanopb::Chat::Client;
+   using ChatClient = pw_rpc::nanopb::Chat::Client;
 
-     MyChannelOutput output;
-     pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<1>(&output)};
-     pw::rpc::Client client(channels);
+   MyChannelOutput output;
+   pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<1>(&output)};
+   pw::rpc::Client client(channels);
 
-     // Callback function for GetRoomInformation.
-     void LogRoomInformation(const RoomInfoResponse& response, Status status);
+   // Callback function for GetRoomInformation.
+   void LogRoomInformation(const RoomInfoResponse& response, Status status);
 
    }  // namespace
 
@@ -251,8 +250,8 @@ service client and receive the response.
      ChatClient chat_client(client, 1);
 
      // The RPC will remain active as long as `call` is alive.
-     auto call = chat_client.GetRoomInformation(
-         {.room = "pigweed"}, LogRoomInformation);
+     auto call =
+         chat_client.GetRoomInformation({.room = "pigweed"}, LogRoomInformation);
      if (!call.active()) {
        // The invocation may fail. This could occur due to an invalid channel ID,
        // for example. The failure status is forwarded to the to call's
