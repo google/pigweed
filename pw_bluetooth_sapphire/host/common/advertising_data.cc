@@ -297,11 +297,19 @@ std::string AdvertisingData::ToString() const {
 
   if (has_service_uuids) {
     result += "Service UUIDs: { ";
+
+    std::vector<std::string> uuids;
     for (const auto& [_, bounded_uuids] : service_uuids_) {
       for (const auto& uuid : bounded_uuids.set()) {
-        bt_lib_cpp_string::StringAppendf(&result, "%s, ", bt_str(uuid));
+        uuids.emplace_back(bt_str(uuid));
       }
     }
+
+    std::sort(uuids.begin(), uuids.end());
+    for (const std::string& uuid : uuids) {
+      bt_lib_cpp_string::StringAppendf(&result, "%s, ", uuid.c_str());
+    }
+
     result += "}, ";
   }
 
@@ -327,10 +335,17 @@ std::string AdvertisingData::ToString() const {
 
   if (has_solicitation_uuids) {
     result += "Solicitation UUIDs: { ";
+
+    std::vector<std::string> uuids;
     for (const auto& [_, bounded_uuids] : solicitation_uuids_) {
       for (const auto& uuid : bounded_uuids.set()) {
-        bt_lib_cpp_string::StringAppendf(&result, "%s, ", bt_str(uuid));
+        uuids.emplace_back(bt_str(uuid));
       }
+    }
+
+    std::sort(uuids.begin(), uuids.end());
+    for (const std::string& uuid : uuids) {
+      bt_lib_cpp_string::StringAppendf(&result, "%s, ", uuid.c_str());
     }
     result += "}, ";
   }
