@@ -267,7 +267,7 @@ class WorkflowsManager:
                 build_recipes.append(
                     BuildRecipe(
                         build_dir=build_dir,
-                        title=config.name,
+                        title=fragment.rerun_shortcut,
                         steps=steps,
                     )
                 )

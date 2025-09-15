@@ -164,7 +164,7 @@ class WorkflowsManagerTest(unittest.TestCase):
         self.assertEqual(len(recipes), 1)
         recipe = recipes[0]
         self.assertIsInstance(recipe, BuildRecipe)
-        self.assertEqual(recipe.title, 'tool_config')
+        self.assertEqual(recipe.title, 'check my_tool')
         self.assertEqual(len(recipe.steps), 1)
         step = recipe.steps[0]
         self.assertEqual(step.command, ['fake_executable', 'fake_arg'])
@@ -238,7 +238,7 @@ class WorkflowsManagerTest(unittest.TestCase):
         self.assertEqual(len(recipes), 1)
         recipe = recipes[0]
         self.assertIsInstance(recipe, BuildRecipe)
-        self.assertEqual(recipe.title, 'build_config')
+        self.assertEqual(recipe.title, 'build my_build')
         self.assertEqual(recipe.steps[0].targets, ['//:my_target'])
 
     def test_program_build_not_a_build_raises_error(self):
@@ -264,8 +264,8 @@ class WorkflowsManagerTest(unittest.TestCase):
         )
         recipes = manager.program_group('my_group')
         self.assertEqual(len(recipes), 2)
-        build_recipe = next(r for r in recipes if r.title == 'build_config')
-        tool_recipe = next(r for r in recipes if r.title == 'analyzer_config')
+        build_recipe = next(r for r in recipes if r.title.startswith('build '))
+        tool_recipe = next(r for r in recipes if r.title.startswith('check '))
         self.assertIsNotNone(build_recipe)
         self.assertIsNotNone(tool_recipe)
 
@@ -279,7 +279,7 @@ class WorkflowsManagerTest(unittest.TestCase):
             self.project_root,
         )
         with self.assertRaises(TypeError):
-            manager.program_group('my_build')
+            manager.program_group('build my_build')
 
     def test_expand_action_simple(self):
         """Test simple variable expansion."""
@@ -313,7 +313,7 @@ class WorkflowsManagerTest(unittest.TestCase):
         )
         recipes = manager.program_build('build_with_shared_config')
         self.assertEqual(len(recipes), 1)
-        self.assertEqual(recipes[0].title, 'shared_config')
+        self.assertEqual(recipes[0].title, 'build build_with_shared_config')
 
     def test_program_by_name_group_success(self):
         """Test program_by_name with a group."""
