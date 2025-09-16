@@ -90,6 +90,7 @@ the License.
   <!-- Layout definition for a namespace page -->
   <namespace>
     <briefdescription visible="yes"/>
+    <detaileddescription title="Overview"/>
     <memberdecl>
       <nestednamespaces visible="yes" title=""/>
       <constantgroups visible="yes" title=""/>
@@ -106,7 +107,6 @@ the License.
       <variables title=""/>
       <membergroups visible="yes"/>
     </memberdecl>
-    <detaileddescription title=""/>
     <memberdef>
       <inlineclasses title=""/>
       <typedefs title=""/>
@@ -122,9 +122,9 @@ the License.
   <!-- Layout definition for a concept page -->
   <concept>
     <briefdescription visible="yes"/>
+    <detaileddescription title="Overview"/>
     <includes visible="$SHOW_HEADERFILE"/>
     <definition visible="yes" title=""/>
-    <detaileddescription title=""/>
     <authorsection visible="yes"/>
   </concept>
 
@@ -172,7 +172,7 @@ the License.
          us. I.e. `detaileddescription` is literally the `@brief` block
          followed by the `@details` block. -->
     <briefdescription visible="no"/>
-    <detaileddescription title="Oveview" visible="yes"/>
+    <detaileddescription title="Overview" visible="yes"/>
     <groupgraph visible="$GROUP_GRAPHS"/>
     <memberdecl>
       <nestedgroups visible="yes" title="Submodules"/>

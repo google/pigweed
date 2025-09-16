@@ -327,11 +327,11 @@ h1.groupheader {
 
 h2.groupheader {
   color: var(--group-header-color);
-  font-size: 150%;
+  font-size: 140%;
   font-weight: normal;
-  margin-top: 1.75em;
-  padding-top: 8px;
-  padding-bottom: 4px;
+  margin-top: 0;
+  padding-top: 0;
+  padding-bottom: 0.5em;
   width: 100%;
   font-family: var(--font-family-title);
 }
@@ -1397,13 +1397,15 @@ table.classindex {
 }
 
 div.ingroups {
-  font-size: 8pt;
-  width: 50%;
   text-align: left;
 }
 
 div.ingroups a {
   white-space: nowrap;
+}
+
+div.ingroups p {
+  margin: 0;
 }
 
 div.header {

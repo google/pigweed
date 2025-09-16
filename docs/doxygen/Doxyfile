@@ -50,7 +50,9 @@ ALIASES                = "rst=^^\verbatim embed:rst:leading-asterisk^^" \
                          "UNAVAILABLE=\ref pw::Status::Unavailable() \"UNAVAILABLE\"" \
                          "DATA_LOSS=\ref pw::Status::DataLoss() \"DATA_LOSS\"" \
                          "UNAUTHENTICATED=\ref pw::Status::Unauthenticated() \"UNAUTHENTICATED\"" \
-                         "Result{1}=A \ref pw::Result \"Result\" containing \1 on success or one of the following error codes on failure:"
+                         "Result{1}=A \ref pw::Result \"Result\" containing \1 on success or one of the following error codes on failure:" \
+                         "maindocs=@details @htmlonly <!-- maindocs --> @endhtmlonly Main docs:" \
+                         "endmaindocs=@htmlonly <!-- endmaindocs --> @endhtmlonly" \
 
 # https://www.doxygen.nl/manual/config.html#cfg_case_sense_names
 CASE_SENSE_NAMES       = NO

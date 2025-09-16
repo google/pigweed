@@ -22,18 +22,23 @@
 // clang-format off
 
 /// @defgroup pw_alignment pw_alignment
-/// @brief Natural object alignment, guaranteed. Main docs: https://pigweed.dev/pw_alignment
+/// @brief Natural object alignment, guaranteed.
+/// @maindocs
+/// [Home](../../pw_alignment/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_allocator pw_allocator
-/// @brief Flexible, safe, and measurable memory allocation
-/// @details Main docs: [Home](../../pw_allocator/docs.html) |
+/// @brief Flexible, safe, and measurable memory allocation.
+/// @maindocs
+/// [Home](../../pw_allocator/docs.html) |
 /// [Guides](../../pw_allocator/guide.html) |
 /// [Design & roadmap](../../pw_allocator/design.html) |
 /// [Code size analysis](../../pw_allocator/code_size.html)
+/// @endmaindocs
 
 /// @defgroup pw_allocator_block Blocks
 /// @ingroup pw_allocator
-/// @brief An allocatable region of memory
+/// @brief An allocatable region of memory.
 /// @details Blocks are the fundamental type managed by several of the
 /// @ref pw_allocator_concrete_block
 
@@ -42,10 +47,6 @@
 /// @brief The following combine block mix-ins and provide both the methods
 /// they require as well as a concrete representation of the data those methods
 /// need
-
-/// @brief Blocks are defined using several stateless “mix-in” interface types
-/// @details These provide specific functionality, while deferring the detailed
-/// representation of a block to a derived type.
 
 /// @defgroup pw_allocator_block_mixins Block mix-ins
 /// @ingroup pw_allocator_block
@@ -109,20 +110,28 @@
 /// @brief Helpers for metrics, fragmentation, and buffer management
 
 /// @defgroup pw_analog pw_analog
-/// @brief Analog-to-digital converter libraries and utilities. Main docs: https://pigweed.dev/pw_analog
+/// @brief Analog-to-digital converter libraries and utilities
+/// @maindocs
+/// [Home](../../pw_analog/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_async pw_async
-/// @brief Portable APIs for asynchronous code. Main docs: https://pigweed.dev/pw_async
+/// @brief Portable APIs for asynchronous code.
+/// @maindocs
+/// [Home](../../pw_async/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_async2 pw_async2
 /// @brief Cooperative async tasks for embedded.
-/// @details Main docs: [Home](../../pw_async2/docs.html) |
+/// @maindocs
+/// [Home](../../pw_async2/docs.html) |
 /// [Quickstart](../../pw_async2/quickstart.html) |
 /// [Codelab](../../pw_async2/codelab.html) |
 /// [Guides](../../pw_async2/guides.html) |
 /// [Code size analysis](../../pw_async2/code_size.html) |
 /// [Coroutines](../../pw_async2/coroutines.html) |
 /// [Backends](../../pw_async2/backends.html)
+/// @endmaindocs
 
 /// @defgroup pw_async2_adapters Pendable adapters
 /// @ingroup pw_async2
@@ -154,28 +163,51 @@
 /// @brief Async operations that can be polled for completion and suspended. Learn more: [The pendable function interface](../../pw_async2/design.html#the-pendable-function-interface)
 
 /// @defgroup pw_async_basic pw_async_basic
-/// @brief Main docs: https://pigweed.dev/pw_async_basic
+/// @maindocs
+/// [Home](../../pw_async_basic/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_base64 pw_base64
-/// @brief Base64 encoding, decoding, and validating. Main docs: https://pigweed.dev/pw_base64
+/// @brief Base64 encoding, decoding, and validating.
+/// @maindocs
+/// [Home](../../pw_base64/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_bloat pw_bloat
-/// @brief Utilities for generating binary size reports. Main docs: https://pigweed.dev/pw_bloat
+/// @brief Utilities for generating binary size reports.
+/// @maindocs
+/// [Home](../../pw_bloat/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_bluetooth pw_bluetooth
-/// @brief Host-layer Bluetooth Low Energy APIs and utilities. Main docs: https://pigweed.dev/pw_bluetooth
+/// @brief Host-layer Bluetooth Low Energy APIs and utilities.
+/// @maindocs
+/// [Home](../../pw_bluetooth/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_bluetooth_proxy pw_bluetooth_proxy
-/// @brief Lightweight proxy for augmenting Bluetooth functionality. Main docs: https://pigweed.dev/pw_bluetooth_proxy
+/// @brief Lightweight proxy for augmenting Bluetooth functionality.
+/// @maindocs
+/// [Home](../../pw_bluetooth_proxy/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_bluetooth_sapphire pw_bluetooth_sapphire
-/// @brief Battle-tested Bluetooth with rock-solid reliability. Main docs: https://pigweed.dev/pw_bluetooth_sapphire
+/// @brief Battle-tested Bluetooth with rock-solid reliability.
+/// @maindocs
+/// [Home](../../pw_bluetooth_sapphire/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_build pw_build
-/// @brief Integrations for Bazel, GN, and CMake. Main docs: https://pigweed.dev/pw_build
+/// @brief Integrations for Bazel, GN, and CMake.
+/// @maindocs
+/// [Home](../../pw_build/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_bytes pw_bytes
-/// @brief Utilities for manipulating binary data. Main docs: https://pigweed.dev/pw_bytes
+/// @brief Utilities for manipulating binary data.
+/// @maindocs
+/// [Home](../../pw_bytes/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_bytes_ptr Packed pointers
 /// @ingroup pw_bytes
@@ -214,73 +246,139 @@
 /// @brief Aliases for `pw::span` of bytes
 
 /// @defgroup pw_channel pw_channel
-/// @brief Async, zero-copy API for sending and receiving bytes or datagrams. Main docs: https://pigweed.dev/pw_channel
+/// @brief Async, zero-copy API for sending and receiving bytes or datagrams.
+/// @maindocs
+/// [Home](../../pw_channel/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_chre pw_chre
-/// @brief Android Context Hub Runtime Environment backend. Main docs: https://pigweed.dev/pw_chre
+/// @brief Android Context Hub Runtime Environment backend.
+/// @maindocs
+/// [Home](../../pw_chre/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_chrono pw_chrono
-/// @brief Portable std::chrono for constrained embedded devices. Main docs: https://pigweed.dev/pw_chrono
+/// @brief Portable `std::chrono` for constrained embedded devices.
+/// @maindocs
+/// [Home](../../pw_chrono/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_clock_tree pw_clock_tree
-/// @brief Clock tree management for embedded devices. Main docs: https://pigweed.dev/pw_clock_tree
+/// @brief Clock tree management for embedded devices.
+/// @maindocs
+/// [Home](../../pw_clock_tree/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_clock_tree_mcuxpresso pw_clock_tree_mcuxpresso
-/// @brief NXP MCUXpresso SDK implementation for pw_clock_tree. Main docs: https://pigweed.dev/pw_clock_tree_mcuxpresso
+/// @brief NXP MCUXpresso SDK implementation for pw_clock_tree.
+/// @maindocs
+/// [Home](../../pw_clock_tree_mcuxpresso/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_containers pw_containers
-/// @brief Generic collections of objects for embedded devices: https://pigweed.dev/pw_containers
+/// @brief Generic collections of objects for embedded devices.
+/// @maindocs
+/// [Home](../../pw_containers/docs.html) |
+/// [Lists](../../pw_containers/lists.html) |
+/// [Maps](../../pw_containers/maps.html) |
+/// [Queues](../../pw_containers/queues.html) |
+/// [Sets](../../pw_containers/sets.html) |
+/// [Vectors](../../pw_containers/vectors.html) |
+/// [Utilities](../../pw_containers/utilities.html) |
+/// [Using items with multiple containers](../../pw_containers/multiple_containers.html)
+/// @endmaindocs
 
 /// @defgroup pw_crypto pw_crypto
-/// @brief Main docs: https://pigweed.dev/pw_crypto
+/// @maindocs
+/// [Home](../../pw_crypto/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_digital_io pw_digital_io
-/// @brief Digital I/O interface. Main docs: https://pigweed.dev/pw_digital_io
+/// @brief Digital I/O interface.
+/// @maindocs
+/// [Home](../../pw_digital_io/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_digital_io_mcuxpresso pw_digital_io_mcuxpresso
-/// @brief Digital I/O for NXP MCUXpresso. Main docs: https://pigweed.dev/pw_digital_io_mcuxpresso
+/// @brief Digital I/O for NXP MCUXpresso.
+/// @maindocs
+/// [Home](../../pw_digital_io_mcuxpresso/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_display pw_display
-/// @brief Graphic display support and framebuffer management. Main docs: https://pigweed.dev/pw_display
+/// @brief Graphic display support and framebuffer management.
+/// @maindocs
+/// [Home](../../pw_display/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_elf pw_elf
-/// @brief ELF file support. Main docs: https://pigweed.dev/pw_elf
+/// @brief ELF file support.
+/// @maindocs
+/// [Home](../../pw_elf/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_function pw_function
-/// @brief Embedded-friendly `std::function`: https://pigweed.dev/pw_function
+/// @brief Embedded-friendly `std::function`.
+/// @maindocs
+/// [Home](../../pw_function/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_hdlc pw_hdlc
-/// @brief Simple, robust, and efficient serial communication. Main docs: https://pigweed.dev/pw_hdlc
+/// @brief Simple, robust, and efficient serial communication.
+/// @maindocs
+/// [Home](../../pw_hdlc/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_hex_dump pw_hex_dump
-/// @brief Handy hexdump utilities. Main docs: https://pigweed.dev/pw_hex_dump
+/// @brief Handy hexdump utilities.
+/// @maindocs
+/// [Home](../../pw_hex_dump/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_i2c pw_i2c
-/// @brief Cross-platform I2C API with interactive debugging. Main docs: https://pigweed.dev/pw_i2c
+/// @brief Cross-platform I2C API with interactive debugging.
+/// @maindocs
+/// [Home](../../pw_i2c/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_i2c_linux pw_i2c_linux
-/// @brief Linux userspace implementation for pw_i2c. Main docs:
-/// https://pigweed.dev/pw_i2c_linux
+/// @brief Linux userspace implementation for pw_i2c.
+/// @maindocs
+/// [Home](../../pw_i2c_linux/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_i2c_zephyr pw_i2c_zephyr
-/// @brief Zephyr implementation for pw_i2c. Main docs:
-/// https://pigweed.dev/pw_i2c_zephyr
+/// @brief Zephyr implementation for pw_i2c.
+/// @maindocs
+/// [Home](../../pw_i2c_zephyr/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_interrupt pw_interrupt
-/// @brief Main docs: https://pigweed.dev/pw_interrupt
+/// @brief Interrupt handling utilities for embedded systems.
+/// @maindocs
+/// [Home](../../pw_interrupt/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_json pw_json
-/// @brief Simple, efficient C++ JSON serialization. Main docs: https://pigweed.dev/pw_json
+/// @brief Simple, efficient C++ JSON serialization.
+/// @maindocs
+/// [Home](../../pw_json/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_kvs pw_kvs
-/// @brief Lightweight, persistent key-value store. Main docs: https://pigweed.dev/pw_kvs
+/// @brief Lightweight, persistent key-value store.
+/// @maindocs
+/// [Home](../../pw_kvs/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_log pw_log
 /// @brief Robust and portable logging for embedded projects
-/// @details Main docs: [Home](../../pw_log/docs.html) |
+/// @maindocs
+/// [Home](../../pw_log/docs.html) |
 /// [The pw_log protobuf](../../pw_log/protobuf.html) |
 /// [Tokenized log arguments](../../pw_log/tokenized_args.html) |
 /// [Backends](../../pw_log/backends.html)
+/// @endmaindocs
 
 /// @defgroup pw_log_global_config Global config
 /// @ingroup pw_log
@@ -316,18 +414,27 @@
 /// @details Learn more: [Tokenized log arguments](../../pw_log/tokenized_args.html)
 
 /// @defgroup pw_log_string pw_log_string
-/// @brief Main docs: https://pigweed.dev/pw_log_string
+/// @maindocs
+/// [Home](../../pw_log_string/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_log_tokenized pw_log_tokenized
-/// @brief Main docs: https://pigweed.dev/pw_log_tokenized
+/// @maindocs
+/// [Home](../../pw_log_tokenized/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_malloc pw_malloc
-/// @brief Replacement interface for standard libc dynamic memory operations. Main docs: https://pigweed.dev/pw_malloc
+/// @brief Replacement interface for standard libc dynamic memory operations.
+/// @maindocs
+/// [Home](../../pw_malloc/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_multibuf pw_multibuf
 /// @brief A buffer API optimized for zero-copy messaging.
-/// @details Main docs: [Home](../../pw_multibuf/docs.html) |
+/// @maindocs
+/// [Home](../../pw_multibuf/docs.html) |
 /// [Code size analysis](../../pw_multibuf/code_size.html)
+/// @endmaindocs
 
 /// @defgroup pw_multibuf_v1 Legacy v1 API
 /// @ingroup pw_multibuf
@@ -374,38 +481,58 @@
 /// @brief Experimental API that separates out the concern of memory allocation
 
 /// @defgroup pw_numeric pw_numeric
-/// @brief Efficient mathematical utilities for embedded. Main docs: https://pigweed.dev/pw_numeric
+/// @brief Efficient mathematical utilities for embedded.
+/// @maindocs
+/// [Home](../../pw_numeric/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_perf_test pw_perf_test
-/// @brief Micro-benchmarks that are easy to write and run. Main docs: https://pigweed.dev/pw_perf_test
+/// @brief Micro-benchmarks that are easy to write and run.
+/// @maindocs
+/// [Home](../../pw_perf_test/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_persistent_ram pw_persistent_ram
-/// @brief Main docs: https://pigweed.dev/pw_persistent_ram
+/// @maindocs
+/// [Home](../../pw_persistent_ram/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_polyfill pw_polyfill
-/// @brief Main docs: https://pigweed.dev/pw_polyfill
+/// @maindocs
+/// [Home](../../pw_polyfill/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_preprocessor pw_preprocessor
-/// @brief Helpful preprocessor macros. Main docs: https://pigweed.dev/pw_preprocessor
+/// @brief Helpful preprocessor macros.
+/// @maindocs
+/// [Home](../../pw_preprocessor/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_protobuf pw_protobuf
 /// @brief Expressive interface for encoding and decoding protocol buffers
-/// @details Main docs: [Home](../../pw_protobuf/docs.html) |
+/// @maindocs
+/// [Home](../../pw_protobuf/docs.html) |
 /// [Extended size report](../../pw_protobuf/size_report.html)
+/// @endmaindocs
 
 /// @defgroup pw_protobuf_find Find APIs
 /// @ingroup pw_protobuf
 
 /// @defgroup pw_random pw_random
-/// @brief Main docs: https://pigweed.dev/pw_random
+/// @maindocs
+/// [Home](../../pw_random/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_result pw_result
 /// @brief Error propagation primitives: value-or-error
-/// @details Main docs: [Home](../../pw_random/docs.html)
+/// @maindocs
+/// [Home](../../pw_random/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_rpc pw_rpc
 /// @brief Efficient, low-code-size RPC system for embedded devices
-/// @details Main docs: [Home](../../pw_rpc/docs.html) |
+/// @maindocs
+/// [Home](../../pw_rpc/docs.html) |
 /// [Quickstart & guides](../../pw_rpc/guides.html) |
 /// [Client, server, and protobuf libraries](../../pw_rpc/libraries.html) |
 /// [C++ server and client](../../pw_rpc/cpp.html) |
@@ -416,6 +543,7 @@
 /// [Packet protocol](../../pw_rpc/protocol.html) |
 /// [Design & roadmap](../../pw_rpc/design.html) |
 /// [HDLC example](../../pw_hdlc/rpc_example/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_rpc_test Benchmarking & testing
 /// @ingroup pw_rpc
@@ -425,26 +553,35 @@
 
 /// @defgroup pw_rpc_sync Synchronous API
 /// @ingroup pw_rpc
-/// @details Main docs: [Client synchronous call
+/// @maindocs
+/// [Client synchronous call
 /// wrappers](../../pw_rpc/cpp.html#client-synchronous-call-wrappers)
+/// @endmaindocs
 
 /// @defgroup pw_rpc_config Configuration
 /// @ingroup pw_rpc
 
 /// @defgroup pw_span pw_span
-/// @brief std::span for C++17. Main docs: https://pigweed.dev/pw_span
+/// @brief std::span for C++17.
+/// @maindocs
+/// [Home](../../pw_span/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_status pw_status
 /// @brief Exception-free error propagation for embedded
-/// @details Main docs: [Home](../../pw_status/docs.html) |
+/// @maindocs
+/// [Home](../../pw_status/docs.html) |
 /// [Quickstart & guides](../../pw_status/guide.html) |
 /// [Reference](../../pw_status/reference.html)
+/// @endmaindocs
 
 /// @defgroup pw_stream pw_stream
 /// @brief A foundational interface for streaming data
-/// @details Main docs: [Home](../../pw_stream/docs.html) |
+/// @maindocs
+/// [Home](../../pw_stream/docs.html) |
 /// [Backends](../../pw_stream/backends.html) |
 /// [Python](../../pw_stream/py/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_stream_interface Interfaces
 /// @ingroup pw_stream
@@ -468,14 +605,19 @@
 /// @brief Concrete implementations of stream interfaces for general use
 
 /// @defgroup pw_stream_uart_linux pw_stream_uart_linux
-/// @brief Main docs: https://pigweed.dev/pw_stream_uart_linux
+/// @brief UART stream implementation for Linux.
+/// @maindocs
+/// [Home](../../pw_stream_uart_linux/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_string pw_string
 /// @brief Efficient, easy, and safe string manipulation
-/// @details Main docs: [Home](../../pw_string/docs.html) |
+/// @maindocs
+/// [Home](../../pw_string/docs.html) |
 /// [Get started & guides](../../pw_string/guide.html) |
 /// [Design & roadmap](../../pw_string/design.html) |
 /// [Code size analysis](../../pw_string/code_size.html)
+/// @endmaindocs
 
 /// @defgroup pw_string_inline InlineString and InlineBasicString
 /// @ingroup pw_string
@@ -494,24 +636,34 @@
 /// @brief Basic helpers for reading and writing UTF-8-encoded strings
 
 /// @defgroup pw_sync pw_sync
-/// @brief Main docs: [Home](../../pw_sync/docs.html)
+/// @maindocs
+/// [Home](../../pw_sync/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_sys_io pw_sys_io
-/// @brief Main docs: https://pigweed.dev/pw_sys_io
+/// @maindocs
+/// [Home](../../pw_sys_io/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_system pw_system
-/// @brief Main docs: https://pigweed.dev/pw_system
+/// @maindocs
+/// [Home](../../pw_system/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_thread pw_thread
-/// @brief Main docs: https://pigweed.dev/pw_thread
+/// @maindocs
+/// [Home](../../pw_thread/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_tokenizer pw_tokenizer
 /// @brief Compress strings to shrink logs by +75%
-/// @details Main docs: [Home](../../pw_tokenizer/docs.html) |
+/// @maindocs
+/// [Home](../../pw_tokenizer/docs.html) |
 /// [Quickstart](../../pw_tokenizer/get_started.html) |
 /// [Tokenization](../../pw_tokenizer/tokenization.html) |
 /// [Token databases](../../pw_tokenizer/token_databases.html) |
 /// [Detokenization](../../pw_tokenizer/detokenization.html)
+/// @endmaindocs
 
 /// @defgroup pw_tokenizer_tokenize Tokenization
 /// @ingroup pw_tokenizer
@@ -530,23 +682,38 @@
 /// @brief Tokenization customization options
 
 /// @defgroup pw_toolchain pw_toolchain
-/// @brief Embedded toolchains for GN-based Pigweed projects. Main docs: https://pigweed.dev/pw_toolchain
+/// @brief Embedded toolchains for GN-based Pigweed projects.
+/// @maindocs
+/// [Home](../../pw_toolchain/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_trace_tokenized pw_trace_tokenized
-/// @brief Main docs: https://pigweed.dev/pw_trace_tokenized
+/// @maindocs
+/// [Home](../../pw_trace_tokenized/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_transfer pw_transfer
-/// @brief Main docs: https://pigweed.dev/pw_transfer
+/// @maindocs
+/// [Home](../../pw_transfer/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_varint pw_varint
-/// @brief Functions for encoding and decoding variable length integers. Main docs: https://pigweed.dev/pw_varint
+/// @brief Functions for encoding and decoding variable length integers.
+/// @maindocs
+/// [Home](../../pw_varint/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_uart pw_uart
-/// @brief Core interfaces for UART communication. Main docs: https://pigweed.dev/pw_uart
+/// @brief Core interfaces for UART communication.
+/// @maindocs
+/// [Home](../../pw_uart/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_unit_test pw_unit_test
 /// @brief GoogleTest for embedded
-/// @details Main docs: [Home](../../pw_unit_test/docs.html)
+/// @maindocs
+/// [Home](../../pw_unit_test/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_unit_test_declaration Test declaration
 /// @ingroup pw_unit_test
@@ -579,10 +746,15 @@
 /// @ingroup pw_unit_test
 
 /// @defgroup pw_uuid pw_uuid
-/// @brief 128-bit universally unique identifier (UUID). Main docs: https://pigweed.dev/pw_uuid
+/// @brief 128-bit universally unique identifier (UUID).
+/// @maindocs
+/// [Home](../../pw_uuid/docs.html)
+/// @endmaindocs
 
 /// @defgroup pw_work_queue pw_work_queue
-/// @brief Main docs: https://pigweed.dev/pw_work_queue
+/// @maindocs
+/// [Home](../../pw_work_queue/docs.html)
+/// @endmaindocs
 
 /// @defgroup third_party third-party
 /// @brief API integrations with third-party software e.g. FreeRTOS

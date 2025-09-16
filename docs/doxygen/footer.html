@@ -81,7 +81,34 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
     `;
     document.body.appendChild(init);
   };
+  // For any given page related to a module, link back to that module's main
+  // docs. This implementation is similar to the Google Analytics solution.
+  window.pw.createDocsLinks = async () => {
+    // .ingroups is the breadcrumbs that appear below the page title. The
+    // first breadcrumb contains the link to the module's Doxygen homepage.
+    const module = document.querySelector('.ingroups .el');
+    if (!module) return;
+    // Don't use module.href because that will return a full URL. What we want
+    // is the relative path.
+    const url = module.getAttribute('href');
+    // Fetch the source code of the module's Doxygen homepage because that
+    // page contains the links to the module's main docs.
+    const response = await fetch(url);
+    const text = await response.text();
+    // Parse the main docs from the homepage source code.
+    const regex = /\<\!-- maindocs --\>(.*?)\<\!-- endmaindocs --\>/;
+    const match = text.match(regex);
+    if (!match) return;
+    const links = match[1];
+    // Insert the main docs links below the breadcrumbs.
+    const p = document.createElement('p');
+    p.innerHTML = links;
+    const div = document.querySelector('div.ingroups');
+    if (!div) return;
+    div.appendChild(p);
+  };
   window.pw.initAnalytics();
+  window.pw.createDocsLinks();
 </script>
 </body>
 </html>
