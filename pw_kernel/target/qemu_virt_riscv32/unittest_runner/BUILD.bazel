@@ -14,9 +14,9 @@
 
 load("@rules_rust//rust:defs.bzl", "rust_test")
 load("//pw_kernel/target/qemu_virt_riscv32:defs.bzl", "TARGET_COMPATIBLE_WITH")
-load("//pw_kernel/tooling:system_linker_script.bzl", "system_linker_script")
+load("//pw_kernel/tooling:target_linker_script.bzl", "target_linker_script")
 
-system_linker_script(
+target_linker_script(
     name = "linker_script",
     system_config = "system.json5",
     tags = ["kernel"],

@@ -18,7 +18,7 @@ configuration file.
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
-def _system_linker_script_impl(ctx):
+def _target_linker_script_impl(ctx):
     output = ctx.actions.declare_file(ctx.attr.name + ".ld")
 
     args = [
@@ -28,7 +28,7 @@ def _system_linker_script_impl(ctx):
         ctx.file.system_config.path,
         "--output",
         output.path,
-        "system-linker-script",
+        "target-linker-script",
     ]
 
     ctx.actions.run(
@@ -52,8 +52,8 @@ def _system_linker_script_impl(ctx):
         CcInfo(linking_context = linking_context),
     ]
 
-_system_linker_script = rule(
-    implementation = _system_linker_script_impl,
+_target_linker_script = rule(
+    implementation = _target_linker_script_impl,
     attrs = {
         "system_config": attr.label(
             doc = "System config file which defines the system.",
@@ -74,7 +74,7 @@ _system_linker_script = rule(
     doc = "Generate the system linker script based on the system config.",
 )
 
-def system_linker_script(name, system_config, template, **kwargs):
+def target_linker_script(name, system_config, template, **kwargs):
     # buildifier: disable=function-docstring-args
     """
     Wrapper function to set default platform specific arguments.
@@ -85,7 +85,7 @@ def system_linker_script(name, system_config, template, **kwargs):
             "//conditions:default": [],
         })
 
-    _system_linker_script(
+    _target_linker_script(
         name = name,
         system_config = system_config,
         template = template,

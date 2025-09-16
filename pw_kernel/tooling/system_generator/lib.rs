@@ -58,8 +58,8 @@ fn parse_template(s: &str) -> Result<(String, PathBuf), String> {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    CodegenSystem,
-    SystemLinkerScript,
+    TargetCodegen,
+    TargetLinkerScript,
     AppLinkerScript(AppLinkerScriptArgs),
 }
 
@@ -136,8 +136,8 @@ impl<'a, A: ArchConfigInterface + Serialize> SystemGenerator<'a, A> {
 
     pub fn generate(&mut self) -> Result<()> {
         let out_str = match &self.cli.command {
-            Command::CodegenSystem => self.render_system()?,
-            Command::SystemLinkerScript => self.render_system_linker_script()?,
+            Command::TargetCodegen => self.render_system()?,
+            Command::TargetLinkerScript => self.render_system_linker_script()?,
             Command::AppLinkerScript(args) => self.render_app_linker_script(&args.app_name)?,
         };
 

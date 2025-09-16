@@ -14,8 +14,8 @@
 
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 load("//pw_kernel/target/pw_rp2350:defs.bzl", "TARGET_COMPATIBLE_WITH")
-load("//pw_kernel/tooling:system_codegen.bzl", "system_codegen")
 load("//pw_kernel/tooling:system_image.bzl", "system_image")
+load("//pw_kernel/tooling:target_codegen.bzl", "target_codegen")
 
 system_image(
     name = "userspace_demo",
@@ -34,7 +34,7 @@ filegroup(
     srcs = ["system.json5"],
 )
 
-system_codegen(
+target_codegen(
     name = "codegen",
     system_config = ":system_config",
 )

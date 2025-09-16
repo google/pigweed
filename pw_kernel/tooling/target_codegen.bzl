@@ -15,7 +15,7 @@
 for a system.
 """
 
-def _system_codegen_impl(ctx):
+def _target_codegen_impl(ctx):
     output = ctx.actions.declare_file(ctx.attr.name + ".rs")
     args = []
     for (name, path) in ctx.attr.templates.items():
@@ -27,7 +27,7 @@ def _system_codegen_impl(ctx):
         ctx.file.system_config.path,
         "--output",
         output.path,
-        "codegen-system",
+        "target-codegen",
     ]
 
     ctx.actions.run(
@@ -40,8 +40,8 @@ def _system_codegen_impl(ctx):
 
     return [DefaultInfo(files = depset([output]))]
 
-system_codegen = rule(
-    implementation = _system_codegen_impl,
+target_codegen = rule(
+    implementation = _target_codegen_impl,
     attrs = {
         "system_config": attr.label(
             doc = "System config file which defines the system.",

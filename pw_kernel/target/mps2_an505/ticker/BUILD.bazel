@@ -14,8 +14,8 @@
 
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 load("//pw_kernel/target/mps2_an505:defs.bzl", "TARGET_COMPATIBLE_WITH")
-load("//pw_kernel/tooling:system_codegen.bzl", "system_codegen")
 load("//pw_kernel/tooling:system_image.bzl", "system_image", "system_image_test")
+load("//pw_kernel/tooling:target_codegen.bzl", "target_codegen")
 load("//pw_kernel/tooling/panic_detector:rust_binary_no_panics_test.bzl", "rust_binary_no_panics_test")
 
 system_image(
@@ -46,7 +46,7 @@ filegroup(
     srcs = ["system.json5"],
 )
 
-system_codegen(
+target_codegen(
     name = "codegen",
     system_config = ":system_config",
 )
