@@ -27,7 +27,7 @@ def _target_codegen_impl(ctx):
         ctx.file.system_config.path,
         "--output",
         output.path,
-        "target-codegen",
+        "render-target-template",
     ]
 
     ctx.actions.run(

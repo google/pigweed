@@ -28,7 +28,7 @@ def _target_linker_script_impl(ctx):
         ctx.file.system_config.path,
         "--output",
         output.path,
-        "target-linker-script",
+        "render-target-template",
     ]
 
     ctx.actions.run(

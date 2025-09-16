@@ -58,9 +58,8 @@ fn parse_template(s: &str) -> Result<(String, PathBuf), String> {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    TargetCodegen,
-    TargetLinkerScript,
-    AppLinkerScript(AppLinkerScriptArgs),
+    RenderTargetTemplate,
+    RenderAppTemplate(AppLinkerScriptArgs),
 }
 
 #[derive(Args, Debug)]
@@ -136,9 +135,8 @@ impl<'a, A: ArchConfigInterface + Serialize> SystemGenerator<'a, A> {
 
     pub fn generate(&mut self) -> Result<()> {
         let out_str = match &self.cli.command {
-            Command::TargetCodegen => self.render_system()?,
-            Command::TargetLinkerScript => self.render_system_linker_script()?,
-            Command::AppLinkerScript(args) => self.render_app_linker_script(&args.app_name)?,
+            Command::RenderTargetTemplate => self.render_system()?,
+            Command::RenderAppTemplate(args) => self.render_app_linker_script(&args.app_name)?,
         };
 
         let mut file = File::create(&self.cli.common_args.output)?;
@@ -147,14 +145,6 @@ impl<'a, A: ArchConfigInterface + Serialize> SystemGenerator<'a, A> {
     }
 
     fn render_system(&self) -> Result<String> {
-        let template = self.env.get_template("system")?;
-        match template.render(&self.config) {
-            Ok(str) => Ok(str),
-            Err(e) => Err(anyhow!(e)),
-        }
-    }
-
-    fn render_system_linker_script(&self) -> Result<String> {
         let template = self.env.get_template("system")?;
         match template.render(&self.config) {
             Ok(str) => Ok(str),

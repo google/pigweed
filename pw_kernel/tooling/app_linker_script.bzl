@@ -28,7 +28,7 @@ def _app_linker_script_impl(ctx):
         ctx.file.system_config.path,
         "--output",
         output.path,
-        "app-linker-script",
+        "render-app-template",
         "--app-name",
         ctx.attr.app_name,
     ]
