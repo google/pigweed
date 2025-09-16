@@ -31,8 +31,11 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
- * Wraps a StreamObserverMethodClient for use in tests. Provides methods for simulating the server
- * interactions with the client.
+ * Wraps a StreamObserverMethodClient for use in tests.
+ *
+ * Provides methods for simulating the server interactions with the client.
+ *
+ * Must use synchronized methods to support access from multiple threads.
  */
 public class TestClient {
   private static final int CHANNEL_ID = 1;
@@ -60,21 +63,22 @@ public class TestClient {
   }
 
   public TestClient(List<Service> services) {
-    Channel.Output channelOutput = packet -> {
-      if (channelOutputException != null) {
-        throw channelOutputException;
-      }
-      sentPackets.add(parsePacket(packet));
-
-      if (!enqueuedPackets.isEmpty() && enqueuedPackets.peek().shouldProcessEnqueuedPackets()) {
-        // Process any enqueued packets.
-        enqueuedPackets.remove().packets.forEach(this::processPacket);
-      }
-    };
     // TODO: b/389777782 - Update to TestClient properly support call IDs. Since the ID cannot be
     // specified, TestClient can only be used for the first call.
     client = Client.createLegacySingleCall(
-        ImmutableList.of(new Channel(CHANNEL_ID, channelOutput)), services);
+        ImmutableList.of(new Channel(CHANNEL_ID, packet -> sendPacket(packet))), services);
+  }
+
+  private synchronized void sendPacket(byte[] packet) throws ChannelOutputException {
+    if (channelOutputException != null) {
+      throw channelOutputException;
+    }
+    sentPackets.add(parsePacket(packet));
+
+    if (!enqueuedPackets.isEmpty() && enqueuedPackets.peek().shouldProcessEnqueuedPackets()) {
+      // Process any enqueued packets.
+      enqueuedPackets.remove().packets.forEach(this::processPacket);
+    }
   }
 
   public Client client() {
@@ -87,17 +91,18 @@ public class TestClient {
    *
    * <p>When Channel.Output throws an exception, TestClient does not store those outgoing packets.
    */
-  public void setChannelOutputException(@Nullable ChannelOutputException exception) {
+  public synchronized void setChannelOutputException(@Nullable ChannelOutputException exception) {
     this.channelOutputException = exception;
   }
 
   /** Returns all payloads that were sent since the last latestClientStreams call. */
-  public <T extends MessageLite> List<T> lastClientStreams(Class<T> payloadType) {
+  public synchronized<T extends MessageLite> List<T> lastClientStreams(Class<T> payloadType) {
     return sentPayloads(payloadType, PacketType.CLIENT_STREAM);
   }
 
   /** Simulates receiving SERVER_STREAM packets from the server. */
-  public void receiveServerStream(String service, String method, MessageLiteOrBuilder... payloads) {
+  public synchronized void receiveServerStream(
+      String service, String method, MessageLiteOrBuilder... payloads) {
     RpcPacket.Builder base =
         client.getPackets().startServerStream(CHANNEL_ID, service, method, Endpoint.FIRST_CALL_ID);
     for (MessageLiteOrBuilder payload : payloads) {
@@ -108,14 +113,14 @@ public class TestClient {
   /**
    * Enqueues a SERVER_STREAM packet so that the client receives it after a packet is sent.
    *
-   * This function may be called multiple times to create a queue of packets to process as different
-   * packets are sent.
+   * <p>This function may be called multiple times to create a queue of packets to process as
+   * different packets are sent.
    *
    * @param afterPackets Wait until this many packets have been sent before the client receives
    *     these stream packets. The minimum value is 1. If multiple stream packets are queued,
    *     afterPackets is counted from the packet before it in the queue.
    */
-  public void enqueueServerStream(
+  public synchronized void enqueueServerStream(
       String service, String method, int afterPackets, MessageLiteOrBuilder... payloads) {
     if (afterPackets < 1) {
       throw new IllegalArgumentException("afterPackets must be at least 1");
@@ -130,13 +135,14 @@ public class TestClient {
   }
 
   /** Simulates receiving a SERVER_ERROR packet from the server. */
-  public void receiveServerError(String service, String method, Status error) {
+  public synchronized void receiveServerError(String service, String method, Status error) {
     processPacket(client.getPackets().serverError(
         CHANNEL_ID, service, method, Endpoint.FIRST_CALL_ID, error));
   }
 
   /** Parses sent payloads for the given type of packet. */
-  private <T extends MessageLite> List<T> sentPayloads(Class<T> payloadType, PacketType type) {
+  private synchronized<T extends MessageLite> List<T> sentPayloads(
+      Class<T> payloadType, PacketType type) {
     int sentPayloadIndex = sentPayloadIndices.getOrDefault(type, 0);
 
     // Filter only the specified packets.

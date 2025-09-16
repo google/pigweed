@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +57,9 @@ public final class TransferClientTest {
       TransferParameters.create(50, 30, 0);
   private static final int MAX_RETRIES = 2;
 
-  private boolean shouldAbortFlag = false;
+  // Use an AtomicBoolean since this flag is accessed from multiple threads.
+  private AtomicBoolean shouldAbortFlag = new AtomicBoolean();
+
   private TestClient rpcClient;
   private TransferClient transferClient;
 
@@ -564,7 +567,7 @@ public final class TransferClientTest {
     ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_SHORT.toByteArray());
     assertThat(future.isDone()).isFalse();
 
-    shouldAbortFlag = true;
+    shouldAbortFlag.set(true);
     receiveWriteChunks(newLegacyChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 2)
                            .setOffset(0)
                            .setPendingBytes(1024)
@@ -1797,7 +1800,7 @@ public final class TransferClientTest {
     WriteTransfer transfer = transferClient.getWriteTransferForTest(future);
     assertThat(future.isDone()).isFalse();
 
-    shouldAbortFlag = true;
+    shouldAbortFlag.set(true);
     receiveWriteChunks(newChunk(Chunk.Type.START_ACK, transfer.getSessionId()).setResourceId(2));
 
     ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
@@ -2769,7 +2772,7 @@ public final class TransferClientTest {
             .setMaxLifetimeRetries(maxLifetimeRetries)
             .build(),
         ()
-            -> this.shouldAbortFlag,
+            -> this.shouldAbortFlag.get(),
         eventHandlerFunction);
     transferClient.setProtocolVersion(version);
   }
