@@ -122,8 +122,8 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<ScStage1Passkey> stage_1_;
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;
-  // To store the last sent SDU so that the the last_packet_ PacketReader points
-  // at valid data.
+  // To store the last sent SDU so that the last_packet_ PacketReader points at
+  // valid data.
   ByteBufferPtr last_packet_internal_;
   std::optional<fit::result<ErrorCode, ScStage1::Output>> last_results_ =
       std::nullopt;

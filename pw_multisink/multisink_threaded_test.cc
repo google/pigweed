@@ -79,7 +79,7 @@ class MessagePool {
 
 // Continuously reads logs from a multisink, using PopEntry() and stores copies
 // of the retrieved messages for later verification. The thread stops when the
-// the number of read messages and total drop count matches the expected count.
+// number of read messages and total drop count matches the expected count.
 class LogPopReaderThread : public thread::ThreadCore {
  public:
   LogPopReaderThread(MultiSink& multisink,
