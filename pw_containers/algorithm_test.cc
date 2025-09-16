@@ -373,3 +373,42 @@ PW_CONSTEXPR_TEST(AlgorithmPolyfill, FillN, {
   PW_TEST_EXPECT_EQ(pw::fill_n(values.begin(), 0, -1), values.begin());
   PW_TEST_EXPECT_EQ(values[0], 42);
 });
+
+PW_CONSTEXPR_TEST(AlgorithmPolyfill, Copy, {
+  constexpr std::array<int, 5> source = {1, 2, 3, 4, 5};
+  std::array<int, 5> dest = {0, 0, 0, 0, 0};
+  auto it = pw::copy(source.begin(), source.end(), dest.begin());
+  PW_TEST_EXPECT_EQ(it, dest.end());
+  PW_TEST_EXPECT_EQ(source[0], dest[0]);
+  PW_TEST_EXPECT_EQ(source[1], dest[1]);
+  PW_TEST_EXPECT_EQ(source[2], dest[2]);
+  PW_TEST_EXPECT_EQ(source[3], dest[3]);
+  PW_TEST_EXPECT_EQ(source[4], dest[4]);
+
+  // Test empty range
+  std::array<int, 5> dest2 = {0, 0, 0, 0, 0};
+  auto it2 = pw::copy(source.begin(), source.begin(), dest2.begin());
+  PW_TEST_EXPECT_EQ(it2, dest2.begin());
+  PW_TEST_EXPECT_EQ(dest2[0], 0);
+});
+
+PW_CONSTEXPR_TEST(AlgorithmPolyfill, CopyIf, {
+  constexpr std::array<int, 5> source = {1, 2, 3, 4, 5};
+  std::array<int, 5> dest = {0, 0, 0, 0, 0};
+  auto it = pw::copy_if(source.begin(), source.end(), dest.begin(), [](int x) {
+    return x % 2 == 0;
+  });
+  PW_TEST_EXPECT_EQ(it, dest.begin() + 2);
+  PW_TEST_EXPECT_EQ(dest[0], 2);
+  PW_TEST_EXPECT_EQ(dest[1], 4);
+  PW_TEST_EXPECT_EQ(dest[2], 0);
+
+  // Test with no elements matching
+  std::array<int, 5> dest2 = {0, 0, 0, 0, 0};
+  auto it2 =
+      pw::copy_if(source.begin(), source.end(), dest2.begin(), [](int x) {
+        return x > 10;
+      });
+  PW_TEST_EXPECT_EQ(it2, dest2.begin());
+  PW_TEST_EXPECT_EQ(dest2[0], 0);
+});

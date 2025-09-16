@@ -335,11 +335,37 @@ internal_algorithm::ContainerIter<Sequence> SearchN(Sequence& sequence,
 // Use the standard library versions if they are constexpr.
 using std::all_of;
 using std::any_of;
+using std::copy;
+using std::copy_if;
 using std::fill;
 using std::fill_n;
 using std::find_if;
 
 #else
+
+/// `constexpr` backport of `<algorithm>`'s `std::copy` for C++17.
+template <typename InputIt, typename OutputIt>
+constexpr OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
+  while (first != last) {
+    *d_first++ = *first++;
+  }
+  return d_first;
+}
+
+/// `constexpr` backport of `<algorithm>`'s `std::copy_if` for C++17.
+template <typename InputIt, typename OutputIt, typename UnaryPredicate>
+constexpr OutputIt copy_if(InputIt first,
+                           InputIt last,
+                           OutputIt d_first,
+                           UnaryPredicate pred) {
+  while (first != last) {
+    if (pred(*first)) {
+      *d_first++ = *first;
+    }
+    ++first;
+  }
+  return d_first;
+}
 
 /// `constexpr` backport of `<algorithm>`'s `std::all_of` for C++17.
 template <typename InputIt, typename Predicate>
