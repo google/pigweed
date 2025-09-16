@@ -17,6 +17,7 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:pw_facade.bzl", "pw_facade")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "pw_proto_filegroup",
@@ -62,6 +63,42 @@ cc_library(
         "//pw_containers:vector",
         "//pw_status",
     ],
+)
+
+cc_library(
+    name = "responder",
+    hdrs = [
+        "public/pw_i2c/responder.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":address",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
+pw_facade(
+    name = "responder_test_interface",
+    testonly = True,
+    hdrs = ["public/pw_i2c/responder_test_interface.h"],
+    backend = ":responder_test_backend",
+    strip_include_prefix = "public",
+    deps = [
+        ":address",
+        ":responder",
+        "//pw_bytes",
+        "//pw_function",
+        "//pw_result",
+        "//pw_status",
+        "//pw_unit_test",
+    ],
+)
+
+label_flag(
+    name = "responder_test_backend",
+    build_setting_default = "//pw_build:empty_cc_library",
 )
 
 cc_library(
@@ -151,6 +188,13 @@ pw_cc_test(
         ":message",
         "//pw_chrono:system_clock",
         "//pw_unit_test",
+    ],
+)
+
+filegroup(
+    name = "responder_test_sources",
+    srcs = [
+        "responder_test.cc",
     ],
 )
 
@@ -376,6 +420,8 @@ filegroup(
         "public/pw_i2c/initiator_mock.h",
         "public/pw_i2c/message.h",
         "public/pw_i2c/register_device.h",
+        "public/pw_i2c/responder.h",
+        "public/pw_i2c/responder_test_interface.h",
     ],
 )
 

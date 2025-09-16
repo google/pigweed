@@ -12,19 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-menu "pw_i2c"
+include_guard(GLOBAL)
 
-config PIGWEED_I2C
-  bool "Link the pw_i2c_zephyr module"
-  select PIGWEED_SYNC_MUTEX
-  select PIGWEED_CHRONO_SYSTEM_CLOCK
-  help
-    Link the library allowing I2C instantiation for Zephyr drivers.
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-config PIGWEED_I2C_RESPONDER
-  bool "Link the responder implementation for Zephyr"
-  help
-    Append the pw_i2c_zephyr.responder API to Zephyr so it can be used in any
-    Zephyr libraries.
-
-endmenu
+# Backend for the pw_i2c.responder_test.
+# This variable should be set by a backend module (e.g., pw_i2c_zephyr) to
+# point to its specific test backend target. This target provides the
+# NativeResponderTest implementation and makes the
+# "pw_i2c_backend/responder_test.h" header available.
+pw_add_backend_variable(pw_i2c.responder_test_BACKEND)

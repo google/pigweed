@@ -220,3 +220,21 @@ is 4 bytes.
 .. note::
    :doxylink:`pw::i2c::I2cService` currently only supports 7-bit i2c
    addressing.
+
+Adding a Responder Backend
+==========================
+To add a new backend for the ``Responder`` API, you must provide a concrete
+subclass of ``pw::i2c::Responder``.
+
+A critical part of creating a new backend is testing. ``pw_i2c`` includes a
+generic test suite in ``pw_i2c/responder_test.cc`` that can be used to validate
+your implementation. To enable this for your backend, you must:
+
+1. **Implement the native test interface:** Create a class named
+   ``NativeResponderTest`` that inherits from
+   ``pw::i2c::test::NativeResponderTestInterface`` (from
+   ``pw_i2c/responder_test_interface.h``).
+
+2. **Configure the test build:** Set the ``pw_i2c_responder_test`` build
+   target to use your new backend. The test suite will then run against your
+   implementation to ensure it conforms to the API contract.

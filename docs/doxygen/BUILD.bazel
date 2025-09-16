@@ -66,6 +66,7 @@ filegroup(
         "//pw_hex_dump:doxygen",
         "//pw_i2c:doxygen",
         "//pw_i2c_linux:doxygen",
+        "//pw_i2c_zephyr:doxygen",
         "//pw_interrupt:doxygen",
         "//pw_json:doxygen",
         "//pw_kvs:doxygen",

@@ -75,6 +75,29 @@ devices.
       A summary of the existing ``pw_i2c`` implementations and a guide
       on how to create your own.
 
+.. _module-pw_i2c-responder:
+
+Responder API
+=============
+``pw_i2c`` provides an API for implementing an I2C responder (target) through
+the ``pw::i2c::Responder`` abstract class. This API is defined in
+``pw_i2c/responder.h``.
+
+Using the Responder
+-------------------
+To use the ``Responder`` API, you need to:
+
+1. **Implement pw::i2c::ResponderEvents:** This interface handles I2C
+   events like ``OnStartRead`` and ``OnWrite``. A key advantage is that your
+   ``ResponderEvents`` implementation is a part of your application and is thus
+   portable (can be reused across different backends).
+
+2. **Select a backend:** Like the ``Initiator``, ``pw::i2c::Responder`` is an
+   abstract class. You must select a concrete backend implementation for your
+   target hardware in your build configuration. Currently, only the Zephyr
+   backend is implemented.
+
+
 .. toctree::
    :hidden:
    :maxdepth: 1

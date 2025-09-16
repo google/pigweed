@@ -14,6 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
+include($ENV{PW_ROOT}/pw_i2c/backend.cmake) # Include the backend variable definitions
 
 pw_add_library(pw_i2c.address STATIC
   HEADERS
@@ -51,6 +52,33 @@ pw_add_library(pw_i2c.initiator STATIC
     pw_status
   SOURCES
     initiator.cc
+)
+
+pw_add_library(pw_i2c.responder INTERFACE
+  HEADERS
+    public/pw_i2c/responder.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_bytes
+    pw_i2c.address
+    pw_status
+    pw_result
+)
+
+pw_add_library(pw_i2c.responder_test_interface INTERFACE
+  HEADERS
+    public/pw_i2c/responder_test_interface.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_i2c.address
+    pw_i2c.responder
+    pw_bytes
+    pw_function
+    pw_result
+    pw_status
+    pw_unit_test
 )
 
 pw_add_library(pw_i2c.device INTERFACE
@@ -285,4 +313,21 @@ pw_add_test(pw_i2c.i2c_message_service_test
     modules
     pw_i2c
 )
+endif()
+
+# Generic I2C Responder Test
+# This test depends on a backend to provide the NativeResponderTest implementation
+# and the "pw_i2c_backend/responder_test.h" header.
+if(NOT "${pw_i2c.responder_test_BACKEND}" STREQUAL "")
+  pw_add_test(pw_i2c.responder_test
+    SOURCES
+      responder_test.cc
+    PRIVATE_DEPS
+      pw_i2c.responder_test_interface
+      pw_unit_test
+      ${pw_i2c.responder_test_BACKEND} # Provided by the backend
+    GROUPS
+      modules
+      pw_i2c
+  )
 endif()

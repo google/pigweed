@@ -19,6 +19,14 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_i2c_zephyr/initiator.h",
+        "public/pw_i2c_zephyr/responder.h",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [

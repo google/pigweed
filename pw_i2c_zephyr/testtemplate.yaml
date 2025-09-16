@@ -14,6 +14,7 @@
 
 name: pw_i2c_zephyr
 file-map:
+  test_resources/native_sim.buf.overlay: boards/native_sim.buf.overlay
   test_resources/native_sim.conf: boards/native_sim.conf
   test_resources/native_sim.overlay: boards/native_sim.overlay
 testcase:
@@ -30,3 +31,26 @@ testcase:
         - CONFIG_PIGWEED_SYNC_MUTEX=y
       extra_args:
         - TEST_LIB=pw_i2c_zephyr.initiator_test
+    pw_i2c.responder_pio:
+      extra_configs:
+        - CONFIG_I2C_TARGET_BUFFER_MODE=n
+        - CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK=y
+        - CONFIG_PIGWEED_I2C=y
+        - CONFIG_PIGWEED_I2C_RESPONDER=y
+        - CONFIG_PIGWEED_SYNC_MUTEX=y
+      extra_args:
+        - TEST_LIB=pw_i2c.responder_test
+        - pw_i2c.responder_test_BACKEND=pw_i2c_zephyr.responder_test
+    pw_i2c.responder_buf:
+      extra_configs:
+        - CONFIG_I2C_TARGET_BUFFER_MODE=y
+        - CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK=y
+        - CONFIG_PIGWEED_I2C=y
+        - CONFIG_PIGWEED_I2C_RESPONDER=y
+        - CONFIG_PIGWEED_SYNC_MUTEX=y
+      extra_args:
+        - TEST_LIB=pw_i2c.responder_test
+        - pw_i2c.responder_test_BACKEND=pw_i2c_zephyr.responder_test
+      extra_dtc_overlay_files:
+        - "boards/native_sim.overlay"
+        - "boards/native_sim.buf.overlay"

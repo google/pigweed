@@ -36,6 +36,45 @@ if(CONFIG_PIGWEED_I2C)
   zephyr_append_cmake_library(pw_i2c_zephyr)
 endif()
 
+pw_add_library(pw_i2c_zephyr.responder STATIC
+  HEADERS
+    public/pw_i2c_zephyr/responder.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    responder.cc
+  PUBLIC_DEPS
+    # Pigweed dependencies
+    pw_function          # For pw::Function
+    pw_i2c.address       # For pw::i2c::Address
+    pw_i2c.responder     # For the pw::i2c::Responder interface
+    pw_log               # For logging
+    pw_status            # For pw::Status
+    zephyr_interface
+)
+if(CONFIG_PIGWEED_I2C_RESPONDER)
+  zephyr_append_cmake_library(pw_i2c_zephyr.responder)
+endif()
+
+pw_add_library(pw_i2c_zephyr.responder_test STATIC
+  HEADERS
+    public/pw_i2c_backend/responder_test.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    responder_test.cc
+  PUBLIC_DEPS
+    pw_i2c.address
+    pw_i2c.responder
+    pw_i2c.responder_test_interface
+    pw_i2c_zephyr.responder
+    pw_status
+    zephyr_interface
+)
+if("${pw_i2c.responder_test_BACKEND}" STREQUAL "pw_i2c_zephyr.responder_test")
+  zephyr_append_cmake_library(pw_i2c_zephyr.responder_test)
+endif()
+
 pw_add_test(pw_i2c_zephyr.initiator_test
   SOURCES
     initiator_test.cc

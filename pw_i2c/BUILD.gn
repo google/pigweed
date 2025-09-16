@@ -18,6 +18,7 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
+import("backend.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -53,6 +54,42 @@ pw_source_set("initiator") {
     "$dir_pw_status",
   ]
   sources = [ "initiator.cc" ]
+}
+
+pw_source_set("responder") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_i2c/responder.h" ]
+  public_deps = [
+    ":address",
+    "$dir_pw_bytes",
+    "$dir_pw_result",
+    "$dir_pw_status",
+  ]
+}
+
+pw_source_set("responder_test_interface") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_i2c/responder_test_interface.h" ]
+  public_deps = [
+    ":address",
+    ":responder",
+    "$dir_pw_bytes",
+    "$dir_pw_function",
+    "$dir_pw_result",
+    "$dir_pw_status",
+    "$dir_pw_unit_test",
+  ]
+}
+
+if (pw_i2c_RESPONDER_TEST_BACKEND != "") {
+  pw_test("responder_test") {
+    sources = [ "responder_test.cc" ]
+    deps = [
+      ":responder_test_interface",
+      "$dir_pw_unit_test",
+      pw_i2c_RESPONDER_TEST_BACKEND,
+    ]
+  }
 }
 
 pw_source_set("device") {
@@ -161,6 +198,9 @@ pw_test_group("tests") {
     ":i2c_service_test",
     ":i2c_message_service_test",
   ]
+  if (pw_i2c_RESPONDER_TEST_BACKEND != "") {
+    tests += [ ":responder_test" ]
+  }
 }
 
 pw_test("address_test") {

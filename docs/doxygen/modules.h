@@ -259,7 +259,12 @@
 /// @brief Cross-platform I2C API with interactive debugging. Main docs: https://pigweed.dev/pw_i2c
 
 /// @defgroup pw_i2c_linux pw_i2c_linux
-/// @brief Linux userspace implementation for pw_i2c. Main docs: https://pigweed.dev/pw_i2c_linux
+/// @brief Linux userspace implementation for pw_i2c. Main docs:
+/// https://pigweed.dev/pw_i2c_linux
+
+/// @defgroup pw_i2c_zephyr pw_i2c_zephyr
+/// @brief Zephyr implementation for pw_i2c. Main docs:
+/// https://pigweed.dev/pw_i2c_zephyr
 
 /// @defgroup pw_interrupt pw_interrupt
 /// @brief Main docs: https://pigweed.dev/pw_interrupt
