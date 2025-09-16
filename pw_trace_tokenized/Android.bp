@@ -1,0 +1,100 @@
+// Copyright 2025 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+package {
+    default_applicable_licenses: ["external_pigweed_license"],
+}
+
+cc_library {
+    name: "pw_trace",
+    defaults: [
+        "pw_android_common_backends",
+        "pw_android_common_target_support",
+    ],
+    export_include_dirs: ["public"],
+
+    header_libs: [
+        "pw_assert",
+        "pw_log",
+        "pw_trace_headers",
+    ],
+    export_header_lib_headers: [
+        "pw_assert",
+        "pw_log",
+    ],
+    static_libs: [
+        "pw_base64",
+        "pw_containers",
+        "pw_preprocessor",
+        "pw_span",
+        "pw_tokenizer",
+        "pw_tokenizer_base64",
+        "pw_varint",
+    ],
+    export_static_lib_headers: [
+        "pw_base64",
+        "pw_containers",
+        "pw_preprocessor",
+        "pw_span",
+        "pw_tokenizer",
+        "pw_tokenizer_base64",
+    ],
+    local_include_dirs: [
+        "public_overrides",
+    ],
+    srcs: [
+        "trace.cc",
+        "host_trace_time.cc",
+    ],
+}
+
+filegroup {
+    name: "pw_trace_proto_src",
+    srcs: [
+        "pw_trace_protos/trace_service.proto",
+        ":pw_chrono_protos",
+        ":pw_tokenizer_proto_options_proto",
+        ":libprotobuf-internal-protos",
+    ],
+}
+
+genrule {
+    name: "pw_trace_pwpb_rpc_header",
+    defaults: ["pw_rpc_generate_rpc_pwpb_header_with_prefix_and_protobuf"],
+    srcs: [":pw_trace_proto_src"],
+    out: [
+        "pw_trace_protos/trace_service.rpc.pwpb.h",
+    ],
+}
+
+genrule {
+    name: "pw_trace_pwpb_proto_header",
+    defaults: ["pw_rpc_generate_pwpb_header_with_prefix_and_protobuf"],
+    srcs: [":pw_trace_proto_src"],
+    out: ["pw_trace_protos/trace_service.pwpb.h"],
+}
+
+cc_library_headers {
+    name: "pw_trace_pwpb",
+    cpp_std: "c++20",
+    vendor_available: true,
+    host_supported: true,
+    generated_headers: [
+        "pw_trace_pwpb_proto_header",
+        "pw_trace_pwpb_rpc_header",
+    ],
+    export_generated_headers: [
+        "pw_trace_pwpb_proto_header",
+        "pw_trace_pwpb_rpc_header",
+    ],
+}

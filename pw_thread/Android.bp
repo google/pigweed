@@ -71,3 +71,8 @@ filegroup {
         "yield.cc",
     ],
 }
+
+cc_library_headers {
+    name: "pw_thread_iteration",
+    export_include_dirs: ["public"],
+}

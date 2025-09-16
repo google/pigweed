@@ -36,3 +36,21 @@ cc_library_static {
         "pw_chrono_stl",
     ],
 }
+
+cc_library {
+    name: "pw_thread_stl_iteration",
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    srcs: [
+        "thread_iteration.cc",
+    ],
+    header_libs: [
+        "pw_thread_iteration",
+    ],
+    static_libs: [
+        "pw_function",
+        "pw_status",
+        "pw_span",
+    ],
+}

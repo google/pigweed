@@ -31,3 +31,34 @@ cc_library_headers {
         "pw_preprocessor",
     ],
 }
+
+// Copies the proto files to a prefix directory to add the prefix to the
+// compiled proto. The prefix is taken from the directory name of the first
+// item listen in out.
+genrule_defaults {
+    name: "pw_chrono_add_prefix_to_proto",
+    cmd: "out_files=($(out)); prefix=$$(dirname $${out_files[0]}); " +
+        "mkdir -p $${prefix}; cp -t $${prefix} $(in);",
+}
+
+genrule {
+    name: "pw_chrono_protos",
+    defaults: ["pw_chrono_add_prefix_to_proto"],
+    srcs: [
+        "chrono.proto",
+    ],
+    out: [
+        "pw_chrono_protos/chrono.proto"
+    ],
+}
+
+genrule {
+    name: "pw_chrono_pwpb_header",
+    defaults: ["pw_rpc_generate_pwpb_header_with_prefix_and_protobuf"],
+    srcs: [
+        ":pw_chrono_protos",
+        ":pw_tokenizer_proto_options_proto",
+        ":libprotobuf-internal-protos",
+    ],
+    out: ["pw_chrono_protos/chrono.pwpb.h"],
+}
