@@ -14,7 +14,6 @@
 """A CLI tool for running tools, builds, and more from a workflows.json file."""
 
 import argparse
-from collections import defaultdict
 from collections.abc import Callable, Sequence
 import json
 import logging
@@ -28,7 +27,7 @@ from pw_build import project_builder
 from pw_build.proto import workflows_pb2
 from pw_build.workflows.bazel_driver import BazelBuildDriver
 from pw_build.workflows.manager import WorkflowsManager
-from pw_cli import multitool
+from pw_cli import multitool, argument_types
 from pw_config_loader import find_config
 
 _LOG = logging.getLogger(__name__)
@@ -161,15 +160,6 @@ class _WorkflowGroupPlugin(multitool.MultitoolPlugin):
         return builder.run_builds()
 
 
-def _extra_arg_handler(arg: str) -> tuple[str, str]:
-    """An argparse argument type for foo_build=--bar argument handling."""
-    assert (
-        '=' in arg
-    ), f'Invalid argument: `{arg}`, must be of the form BUILD_TYPE=--flag'
-    parts = arg.split('=', 1)
-    return parts[0], parts[1]
-
-
 class WorkflowsCli(multitool.MultitoolCli):
     """A CLI entry point for launching project-specific workflows."""
 
@@ -218,9 +208,8 @@ class WorkflowsCli(multitool.MultitoolCli):
         parser.add_argument(
             '--extra-arg',
             '-X',
-            nargs='*',
-            metavar='build_type=--argument',
-            type=_extra_arg_handler,
+            action=argument_types.DictOfListsAction,
+            metavar=('BUILD_TYPE', 'ARGUMENT'),
             help=(
                 'Forwards additional arguments to all builds of the specified '
                 'build type. These are always injected at the end of the '
@@ -374,11 +363,6 @@ class WorkflowsCli(multitool.MultitoolCli):
         if not self.config:
             self.config = self._load_config_from()
 
-        extra_args_by_type = defaultdict(list)
-        if args.extra_arg:
-            for build_type, arg in args.extra_arg:
-                extra_args_by_type[build_type].append(arg)
-
         self._workflows = WorkflowsManager(
             self.config,
             {
@@ -386,7 +370,7 @@ class WorkflowsCli(multitool.MultitoolCli):
             },
             working_dir=Path.cwd(),
             base_out_dir=args.output_dir,
-            extra_build_args=extra_args_by_type,
+            extra_build_args=args.extra_arg,
         )
 
         all_plugins = []

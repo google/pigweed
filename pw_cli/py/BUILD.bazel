@@ -73,6 +73,17 @@ pw_py_binary(
 )
 
 pw_py_test(
+    name = "argument_types_test",
+    size = "small",
+    srcs = [
+        "argument_types_test.py",
+    ],
+    deps = [
+        ":pw_cli",
+    ],
+)
+
+pw_py_test(
     name = "collect_files_test",
     size = "small",
     srcs = [

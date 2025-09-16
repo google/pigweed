@@ -56,6 +56,7 @@ pw_python_package("py") {
     "pw_cli/tool_runner.py",
   ]
   tests = [
+    "argument_types_test.py",
     "collect_files_test.py",
     "decorators_test.py",
     "envparse_test.py",
