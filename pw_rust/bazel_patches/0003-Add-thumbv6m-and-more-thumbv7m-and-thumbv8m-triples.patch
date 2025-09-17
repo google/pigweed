@@ -6,18 +6,19 @@ Subject: [PATCH] Add riscv32imac, thumbv6m and more thumbv7m and thumbv8m
 
 These are commonly used in microcontrollers.
 ---
- rust/platform/triple_mappings.bzl | 5 +++++
- 1 file changed, 5 insertions(+)
+ rust/platform/triple_mappings.bzl | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/rust/platform/triple_mappings.bzl b/rust/platform/triple_mappings.bzl
-index d28fe747..4a7e61f0 100644
+index 6070591e6..b944cbc4b 100644
 --- a/rust/platform/triple_mappings.bzl
 +++ b/rust/platform/triple_mappings.bzl
-@@ -55,10 +55,14 @@ SUPPORTED_T2_PLATFORM_TRIPLES = {
+@@ -55,11 +55,15 @@ SUPPORTED_T2_PLATFORM_TRIPLES = {
      "i686-unknown-freebsd": _support(std = True, host_tools = False),
      "powerpc-unknown-linux-gnu": _support(std = True, host_tools = True),
      "riscv32imc-unknown-none-elf": _support(std = True, host_tools = False),
 +    "riscv32imac-unknown-none-elf": _support(std = True, host_tools = False),
+     "riscv64gc-unknown-linux-gnu": _support(std = True, host_tools = False),
      "riscv64gc-unknown-none-elf": _support(std = True, host_tools = False),
      "s390x-unknown-linux-gnu": _support(std = True, host_tools = True),
 +    "thumbv6m-none-eabi": _support(std = False, host_tools = False),
@@ -25,10 +26,10 @@ index d28fe747..4a7e61f0 100644
      "thumbv7em-none-eabi": _support(std = True, host_tools = False),
      "thumbv8m.main-none-eabi": _support(std = True, host_tools = False),
 +    "thumbv8m.main-none-eabihf": _support(std = True, host_tools = False),
+     "wasm32-unknown-emscripten": _support(std = True, host_tools = False),
      "wasm32-unknown-unknown": _support(std = True, host_tools = False),
      "wasm32-wasip1": _support(std = True, host_tools = False),
-     "x86_64-apple-ios": _support(std = True, host_tools = False),
-@@ -117,6 +121,7 @@ _CPU_ARCH_TO_BUILTIN_PLAT_SUFFIX = {
+@@ -121,6 +125,7 @@ _CPU_ARCH_TO_BUILTIN_PLAT_SUFFIX = {
      "powerpc64le": "ppc64le",
      "riscv32": "riscv32",
      "riscv32imc": "riscv32",
