@@ -242,6 +242,27 @@ void FakeAdapter::FakeLowEnergy::StartDiscovery(
   callback(std::move(session));
 }
 
+hci::Result<PeriodicAdvertisingSyncHandle>
+FakeAdapter::FakeLowEnergy::SyncToPeriodicAdvertisement(
+    PeerId peer,
+    uint8_t advertising_sid,
+    SyncOptions options,
+    PeriodicAdvertisingSyncDelegate& delegate) {
+  if (sync_to_periodic_advertisement_error_) {
+    return fit::error(sync_to_periodic_advertisement_error_.value());
+  }
+
+  hci::SyncId sync_id = next_sync_id_++;
+  PeriodicAdvertisingSyncHandle handle(sync_id, [this, sync_id]() {
+    periodic_advertisement_syncs_.erase(sync_id);
+  });
+  auto [_, inserted] = periodic_advertisement_syncs_.try_emplace(
+      sync_id,
+      PeriodicAdvertisementSync{peer, advertising_sid, options, delegate});
+  PW_CHECK(inserted);
+  return fit::ok(std::move(handle));
+}
+
 void FakeAdapter::FakeLowEnergy::EnablePrivacy(bool enabled) {
   fake_address_delegate_.EnablePrivacy(enabled);
 }

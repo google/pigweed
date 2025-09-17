@@ -55,6 +55,9 @@ namespace android_emb = pw::bluetooth::vendor::android_hci;
 ::fuchsia_bluetooth_le::PhysicalLayer IsoPhyToFidl(
     pw::bluetooth::emboss::IsoPhyType phy);
 
+::fuchsia_bluetooth_le::PhysicalLayer LEPhyToFidl(
+    pw::bluetooth::emboss::LEPhy phy);
+
 [[nodiscard]] std::optional<::fuchsia_bluetooth::Appearance>
 AppearanceToNewFidl(uint16_t appearance_raw);
 

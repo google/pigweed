@@ -2771,6 +2771,15 @@ TEST(HelpersTest, IsoPhyToFidl) {
             ::fuchsia_bluetooth_le::PhysicalLayer::kLeCoded);
 }
 
+TEST(HelpersTest, LEPhyToFidl) {
+  EXPECT_EQ(LEPhyToFidl(pw::bluetooth::emboss::LEPhy::LE_1M),
+            ::fuchsia_bluetooth_le::PhysicalLayer::kLe1M);
+  EXPECT_EQ(LEPhyToFidl(pw::bluetooth::emboss::LEPhy::LE_2M),
+            ::fuchsia_bluetooth_le::PhysicalLayer::kLe2M);
+  EXPECT_EQ(LEPhyToFidl(pw::bluetooth::emboss::LEPhy::LE_CODED),
+            ::fuchsia_bluetooth_le::PhysicalLayer::kLeCoded);
+}
+
 TEST(HelpersTest, AppearanceToNewFidlValid) {
   EXPECT_EQ(AppearanceToNewFidl(128u),
             ::fuchsia_bluetooth::Appearance::kComputer);

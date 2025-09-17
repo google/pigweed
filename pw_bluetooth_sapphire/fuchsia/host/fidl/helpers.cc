@@ -76,6 +76,20 @@ namespace bthost::fidl_helpers {
   }
 }
 
+::fuchsia_bluetooth_le::PhysicalLayer LEPhyToFidl(
+    pw::bluetooth::emboss::LEPhy phy) {
+  switch (phy) {
+    case pw::bluetooth::emboss::LEPhy::LE_1M:
+      return ::fuchsia_bluetooth_le::PhysicalLayer::kLe1M;
+    case pw::bluetooth::emboss::LEPhy::LE_2M:
+      return ::fuchsia_bluetooth_le::PhysicalLayer::kLe2M;
+    case pw::bluetooth::emboss::LEPhy::LE_CODED:
+      return ::fuchsia_bluetooth_le::PhysicalLayer::kLeCoded;
+    default:
+      ZX_PANIC("invalid PHY");
+  }
+}
+
 // TODO(fxbug.dev/42076395): Add remaining codecs
 std::optional<android_emb::A2dpCodecType> FidlToCodecType(
     const fbredr::AudioOffloadFeatures& codec) {

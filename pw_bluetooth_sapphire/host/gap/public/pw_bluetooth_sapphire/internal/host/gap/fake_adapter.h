@@ -68,6 +68,13 @@ class FakeAdapter final : public Adapter {
       LowEnergyConnectionHandle* handle;
     };
 
+    struct PeriodicAdvertisementSync {
+      PeerId peer_id;
+      uint8_t advertising_sid;
+      SyncOptions options;
+      PeriodicAdvertisingSyncDelegate& delegate;
+    };
+
     explicit FakeLowEnergy(FakeAdapter* adapter)
         : adapter_(adapter), fake_address_delegate_(adapter->pw_dispatcher_) {}
     ~FakeLowEnergy() override = default;
@@ -81,11 +88,20 @@ class FakeAdapter final : public Adapter {
       return connections_;
     }
 
+    const std::unordered_map<hci::SyncId, PeriodicAdvertisementSync>&
+    periodic_advertisement_syncs() const {
+      return periodic_advertisement_syncs_;
+    }
+
     // Update the LE random address of the adapter.
     void UpdateRandomAddress(DeviceAddress& address);
 
     // Overrides the result returned to StartAdvertising() callback.
     void set_advertising_result(hci::Result<> result);
+
+    void set_sync_to_periodic_advertisement_error(bt::hci::Error error) {
+      sync_to_periodic_advertisement_error_ = error;
+    }
 
     // Notify all discovery sessions of a scan result.
     // Make sure to set the advertising data in Peer first!
@@ -145,12 +161,10 @@ class FakeAdapter final : public Adapter {
                         SessionCallback callback) override;
 
     hci::Result<PeriodicAdvertisingSyncHandle> SyncToPeriodicAdvertisement(
-        PeerId,
-        uint8_t,
-        SyncOptions,
-        PeriodicAdvertisingSyncDelegate&) override {
-      return fit::error(HostError::kNotSupported);
-    }
+        PeerId peer,
+        uint8_t advertising_sid,
+        SyncOptions options,
+        PeriodicAdvertisingSyncDelegate& delegate) override;
 
     void EnablePrivacy(bool enabled) override;
 
@@ -181,6 +195,7 @@ class FakeAdapter final : public Adapter {
    private:
     uint16_t next_scan_id_ = 0;
     FakeAdapter* adapter_;
+    hci::SyncId next_sync_id_ = hci::SyncId(1);
     AdvertisementId next_advertisement_id_ = AdvertisementId(1);
     std::unordered_map<AdvertisementId, RegisteredAdvertisement>
         advertisements_;
@@ -193,6 +208,9 @@ class FakeAdapter final : public Adapter {
     std::optional<hci::Result<>> advertising_result_override_;
     std::unordered_set<LowEnergyDiscoverySession*> discovery_sessions_;
     std::unordered_set<PeerId> cached_scan_results_;
+    std::unordered_map<hci::SyncId, PeriodicAdvertisementSync>
+        periodic_advertisement_syncs_;
+    std::optional<bt::hci::Error> sync_to_periodic_advertisement_error_;
   };
 
   LowEnergy* le() const override { return fake_le_.get(); }
