@@ -231,6 +231,26 @@ macro_rules! assert_ne {
 }
 
 #[macro_export]
+macro_rules! assert_matches {
+    ($a:expr, $($pat:pat_param)|+ ) => {
+        match $a {
+            $($pat)|+ => (),
+            _ => return Err(unittest::TestError {
+                file: file!(),
+                line: line!(),
+                message: unittest::pw_bytes::concat_static_strs!(
+                    "assert_matches!(",
+                    stringify!($a),
+                    ", ",
+                    stringify!($($pat)|+ ),
+                    ") failed"
+                ),
+            })
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! assert_true {
     ($a:expr) => {
         if !$a {
@@ -260,6 +280,26 @@ macro_rules! assert_false {
                     ") failed"
                 ),
             });
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! unwrap {
+    ($a:expr) => {
+        match $a {
+            Ok(v) => v,
+            _ => {
+                return Err(unittest::TestError {
+                    file: file!(),
+                    line: line!(),
+                    message: unittest::pw_bytes::concat_static_strs!(
+                        "unwrap!(",
+                        stringify!($a),
+                        ") failed"
+                    ),
+                })
+            }
         }
     };
 }
