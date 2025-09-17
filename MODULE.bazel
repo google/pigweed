@@ -461,6 +461,14 @@ workspace_and_buildfile(
     dev_dependency = True,
 )
 
+local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl", "local_repository")
+
+local_repository(
+    name = "pw_cc_compile_commands_test_external",
+    dev_dependency = True,
+    path = "pw_ide/bazel/compile_commands/test/external_repo",
+)
+
 # Doxygen setup
 # =============
 

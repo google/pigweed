@@ -153,6 +153,19 @@ def main() -> int:
         print(f"Error getting bazel output_path: {e}", file=sys.stderr)
         return 1
 
+    try:
+        # Use `bazel info output_base` to find the output base. Note that this
+        # is ABOVE output_path.
+        output_base = subprocess.check_output(
+            ["bazel", "info", "output_base"],
+            encoding="utf-8",
+            cwd=workspace_root,
+        ).strip()
+        output_base_path = Path(output_base)
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting bazel output_base: {e}", file=sys.stderr)
+        return 1
+
     if not bazel_output_path.exists():
         print(
             f"Bazel output directory '{bazel_output_path}' not found.",
@@ -215,8 +228,11 @@ def main() -> int:
                 arguments=command_dict["arguments"],
             )
             resolved_cmd = resolve_bazel_out_paths(cmd, bazel_output_path)
-            filtered_cmd = filter_unsupported_march_args(resolved_cmd)
-            processed_commands.append(filtered_cmd._asdict())
+            resolved_cmd = resolve_external_paths(
+                resolved_cmd, output_base_path
+            )
+            resolved_cmd = filter_unsupported_march_args(resolved_cmd)
+            processed_commands.append(resolved_cmd._asdict())
 
         with open(merged_json_path, "w") as f:
             json.dump(processed_commands, f, indent=2)
@@ -253,6 +269,56 @@ def resolve_bazel_out_paths(
     if command.file.startswith(marker):
         path_suffix = command.file[len(marker) :]
         new_file = str(bazel_output_path.joinpath(*path_suffix.split('/')))
+
+    return command._replace(arguments=new_args, file=new_file)
+
+
+def resolve_external_paths(
+    command: CompileCommand, output_base: Path
+) -> CompileCommand:
+    """Replaces external/ paths with their real paths."""
+    # For now, don't support --experimental_sibling_repository_layout.
+    marker = 'external/'
+    new_args = []
+
+    # The `external/` suffix is way more risky to replace every instance of
+    # since it breaks if you do `--foo=my_lib/bar_external/`, so only replace
+    # if the argument starts with the string (and a well-known prefix).
+    allowed_prefixes = [
+        '--sysroot',
+        '--warning-suppression-mappings',
+        '-fsanitize-blacklist',  # inclusive-language: ignore
+        '-fsanitize-ignorelist',
+        '-I',
+        '-imacros',
+        '-include',
+        '-iquote',
+        '-isysroot',
+        '-isystem',
+        '-L',
+        '-resource-dir',
+        '',
+    ]
+    for arg in command.arguments:
+        new_arg = arg
+        for prefix in allowed_prefixes:
+            if not arg.startswith(prefix + marker) and not arg.startswith(
+                prefix + '=' + marker
+            ):
+                continue
+            new_arg = arg.replace(
+                marker,
+                str(output_base / 'external') + '/',
+                1,
+            )
+        new_args.append(new_arg)
+
+    new_file = command.file
+    if command.file.startswith(marker):
+        path_suffix = command.file[len(marker) :]
+        new_file = str(
+            output_base.joinpath('external', *path_suffix.split('/'))
+        )
 
     return command._replace(arguments=new_args, file=new_file)
 

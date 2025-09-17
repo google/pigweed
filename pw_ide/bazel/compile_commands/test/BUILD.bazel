@@ -23,7 +23,8 @@ package(
 
 # All the build targets in this directory are in service of the
 # compile_commands_test suite that ensures various edge cases are properly
-# captured in collected compile commands.
+# captured in collected compile commands. For this reason, they're all tagged
+# as "manual" so they're only picked up when building the integration test.
 
 # Basic coverage of a library with virtual includes.
 cc_library(
@@ -32,6 +33,7 @@ cc_library(
     hdrs = ["public/virtual_included_header.h"],
     # Virtual include path.
     strip_include_prefix = "public",
+    tags = ["manual"],
 )
 
 # Basic coverage of a library with headers/cc files.
@@ -40,23 +42,34 @@ cc_library(
     srcs = ["basic_source_test.cc"],
     hdrs = ["public/real_included_header.h"],
     includes = ["public"],
+    tags = ["manual"],
 )
 
 # Coverage of a library that has deps, but no headers/includes/srcs.
 cc_library(
     name = "shim_library",
     implementation_deps = [":basic_library_virtual_includes"],
+    tags = ["manual"],
 )
 
 # Coverage of a binary's transitive dependencies.
 cc_binary(
     name = "basic_binary",
     srcs = ["basic_binary_test.cc"],
+    tags = ["manual"],
     deps = [
         ":basic_library_direct_includes",
         # We should still get compile commands for the transitive dependencies.
         ":shim_library",
     ],
+)
+
+# A library that depends on an external repository.
+cc_library(
+    name = "external_dep_library",
+    srcs = ["external_dep_source.cc"],
+    tags = ["manual"],
+    deps = ["@pw_cc_compile_commands_test_external//:external_lib"],
 )
 
 # Coverage of dependencies that aren't remotely related to C/C++.
@@ -66,12 +79,14 @@ cc_library(
     data = [
         "@pigweed_python_packages//sphinx",
     ],
+    tags = ["manual"],
 )
 
 # Coverage of platform_data.
 platform_data(
     name = "mcu_transition",
     platform = "//targets/rp2040",
+    tags = ["manual"],
     target = ":basic_binary",
 )
 
@@ -82,14 +97,17 @@ filegroup(
     srcs = [
         ":basic_library_direct_includes",
         ":basic_library_virtual_includes",
+        ":external_dep_library",
         ":mcu_transition",
         ":non_cpp_deps",
     ],
+    tags = ["manual"],
     visibility = ["//pw_ide/bazel:__subpackages__"],
 )
 
 pw_cc_compile_commands_fragments(
     name = "test_compile_commands",
+    tags = ["manual"],
     targets = [
         ":test_compile_commands_outputs",
     ],

@@ -49,9 +49,10 @@ class MergerTest(fake_filesystem_unittest.TestCase):
     def setUp(self):
         self.setUpPyfakefs()
         self.workspace_root = Path('/workspace')
-        execution_root = Path(
-            '/home/somebody/.cache/bazel/_bazel_somebody/123abc/execroot/_main'
+        self.output_base = Path(
+            '/home/somebody/.cache/bazel/_bazel_somebody/123abc'
         )
+        execution_root = self.output_base / 'execroot' / '_main'
         self.output_path = execution_root / 'bazel-out'
 
         self.fs.create_dir(self.workspace_root)
@@ -76,6 +77,8 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         ):
             if args == ['bazel', 'info', 'output_path']:
                 return str(self.output_path)
+            if args == ['bazel', 'info', 'output_base']:
+                return str(self.output_base)
             raise AssertionError('Unhandled Bazel request')
 
         self.mock_subprocess.side_effect = check_output_side_effect
@@ -246,6 +249,43 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         expected_arg = '-I' + str(self.output_path / 'k8-fastbuild/genfiles')
         self.assertEqual(data[0]['file'], expected_file)
         self.assertEqual(data[0]['arguments'], [expected_arg])
+
+    def test_external_repo_paths(self):
+        """Test that files in external repos are remapped to their real path."""
+        _create_fragment(
+            self.fs,
+            self.output_path,
+            't1',
+            'linux',
+            [
+                {
+                    'file': 'external/my_repo/a.cc',
+                    'directory': '__WORKSPACE_ROOT__',
+                    'arguments': [
+                        '-Iexternal/my_repo/include',
+                        '-iquote',
+                        'external/+_repo_rules8+my_external_thing',
+                    ],
+                }
+            ],
+        )
+        self.assertEqual(merger.main(), 0)
+        merged_path = (
+            self.workspace_root
+            / '.compile_commands'
+            / 'linux'
+            / 'compile_commands.json'
+        )
+        with open(merged_path, 'r') as f:
+            data = json.load(f)
+        expected_file = str(self.output_base / 'external/my_repo/a.cc')
+        expected_args = [
+            '-I' + str(self.output_base / 'external/my_repo/include'),
+            '-iquote',
+            str(self.output_base / 'external/+_repo_rules8+my_external_thing'),
+        ]
+        self.assertEqual(data[0]['file'], expected_file)
+        self.assertEqual(data[0]['arguments'], expected_args)
 
     def test_empty_fragment_file(self):
         """Test that an empty fragment file doesn't cause issues."""

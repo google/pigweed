@@ -61,6 +61,7 @@ pw_py_importable_runfile(
     src = "@llvm_toolchain//:bin/clangd",
     executable = True,
     import_location = "pw_ide.bazel.compile_commands.clangd_binary",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 
@@ -71,6 +72,7 @@ pw_py_importable_runfile(
     src = "//pw_ide/bazel:update_compile_commands",
     executable = True,
     import_location = "pw_ide.bazel.compile_commands.update_compile_commands_binary",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 

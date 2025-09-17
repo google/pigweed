@@ -41,7 +41,10 @@ from pw_ide.bazel.compile_commands import clangd_binary
 from pw_ide.bazel.compile_commands import update_compile_commands_binary
 
 
-_FILE_ALLOWLIST = (re.compile(r'.*pw_ide/bazel/compile_commands/test/.*\.cc?'),)
+_FILE_ALLOWLIST = (
+    re.compile(r'.*pw_ide/bazel/compile_commands/test/.*\.cc?'),
+    re.compile(r'.*pw_cc_compile_commands_test_external/.*\.cc'),
+)
 
 
 class CompileCommandsIntegrationTest(unittest.TestCase):
@@ -62,6 +65,9 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
     def test_run_clangd_check_on_generated_commands(self):
         """Runs clangd --check on files with compile commands."""
         files_checked = []
+        external_file_checked = False
+        external_include_path_found = False
+
         with tempfile.TemporaryDirectory() as temp_dir_str:
             temp_dir = pathlib.Path(temp_dir_str)
 
@@ -132,7 +138,28 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
                         ),
                     )
                     files_checked.append(file_path)
+
+                    if 'pw_cc_compile_commands_test_external' in file_path:
+                        external_file_checked = True
+                        expected_include_path = (
+                            'pw_cc_compile_commands_test_external'
+                        )
+                        for arg in command['arguments']:
+                            if (
+                                arg.startswith('-I')
+                                and expected_include_path in arg
+                            ):
+                                external_include_path_found = True
+                                break
+
         self.assertGreater(len(files_checked), 0)
+        self.assertTrue(
+            external_file_checked, 'External repo source file was not checked.'
+        )
+        self.assertTrue(
+            external_include_path_found,
+            'External repo include path not found in compile commands.',
+        )
 
 
 if __name__ == '__main__':
