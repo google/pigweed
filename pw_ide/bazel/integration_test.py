@@ -26,7 +26,7 @@ than `bazel test`.
 
 import json
 import os
-import pathlib
+from pathlib import Path
 import re
 import shlex
 import subprocess
@@ -41,124 +41,270 @@ from pw_ide.bazel.compile_commands import clangd_binary
 from pw_ide.bazel.compile_commands import update_compile_commands_binary
 
 
-_FILE_ALLOWLIST = (
-    re.compile(r'.*pw_ide/bazel/compile_commands/test/.*\.cc?'),
-    re.compile(r'.*pw_cc_compile_commands_test_external/.*\.cc'),
-)
+def _get_host_platform() -> str:
+    """Searches the CWD to determine the current execution platform name.
+
+    The output structure is shaped something like this:
+
+        execroot/_main/bazel-out/darwin_arm64-fastbuild/bin/pw_ide/...
+                                 ~~~~~~~~~~~~~~~~~~~~~~
+
+    So we can find the "host" platform name after the `bazel-out` bit. This
+    is a little hacky, but BUILD_EXECROOT should give us more direct access
+    to this information in Bazel 9.0.0, so for now it's good enough.
+    """
+    cwd_parts = Path.cwd().parts
+    bazel_out_idx = cwd_parts.index('bazel-out')
+    return cwd_parts[bazel_out_idx + 1]
+
+
+_HOST_PLATFORM = _get_host_platform()
+
+# Use the same suffix (e.g. fastbuild) as the host build.
+_DEVICE_PLATFORM = 'rp2040-' + _HOST_PLATFORM.split('-')[1]
+
+# Helpful pattern to cover both host and target test platforms.
+_HOST_OR_DEVICE = f'({_HOST_PLATFORM})|({_DEVICE_PLATFORM})'
+
+# All tested rules internal to @pigweed live in this package.
+_TEST_PACKAGE = r'.*pw_ide/bazel/compile_commands/test/'
+
+# All tested rules hosted in an external repo live in this package.
+_EXTERNAL_PACKAGE = r'.*pw_cc_compile_commands_test_external/'
+
+
+def _format_clangd_error(
+    clangd_result: subprocess.CompletedProcess,
+    db_path: Path,
+    command: dict,
+) -> str:
+    return '\n'.join(
+        (
+            f'clangd --check in {db_path} failed:',
+            f'ENTRY: {command}',
+            f'CMD: {shlex.join(clangd_result.args)}',
+            f'STDOUT:\n{clangd_result.stdout}',
+            f'STDERR:\n{clangd_result.stderr}',
+        )
+    )
 
 
 class CompileCommandsIntegrationTest(unittest.TestCase):
     """Integration test for the compile commands database merger."""
 
-    def setUp(self):
-        self.runfiles = runfiles.Create()
-        self.clangd_path = self.runfiles.Rlocation(*clangd_binary.RLOCATION)
-        self.updater_path = self.runfiles.Rlocation(
+    _all_compile_commands: dict[Path, list] = {}
+    _temp_dir: tempfile.TemporaryDirectory
+    clangd_path: Path
+    project_root: Path
+
+    @classmethod
+    def setUpClass(cls):
+        cls.runfiles = runfiles.Create()
+        cls.clangd_path = cls.runfiles.Rlocation(*clangd_binary.RLOCATION)
+        cls.updater_path = cls.runfiles.Rlocation(
             *update_compile_commands_binary.RLOCATION
         )
         assert 'BUILD_WORKSPACE_DIRECTORY' in os.environ, (
             'This must be `bazel run` to work properly, and cannot be tested '
             'via `bazel test`'
         )
-        self.project_root = os.environ.get('BUILD_WORKSPACE_DIRECTORY')
+        cls.project_root = os.environ.get('BUILD_WORKSPACE_DIRECTORY')
 
-    def test_run_clangd_check_on_generated_commands(self):
-        """Runs clangd --check on files with compile commands."""
-        files_checked = []
-        external_file_checked = False
-        external_include_path_found = False
+        cls._temp_dir = tempfile.TemporaryDirectory()
+        temp_dir_path = Path(cls._temp_dir.name)
 
-        with tempfile.TemporaryDirectory() as temp_dir_str:
-            temp_dir = pathlib.Path(temp_dir_str)
-
-            # Run the compile commands updater.
-            update_result = subprocess.run(
-                [self.updater_path, f'--out-dir={temp_dir}'],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            self.assertEqual(
-                update_result.returncode,
-                0,
-                f'update_compile_commands failed: {update_result.stderr}',
-            )
-
-            # For each platform's compile_commands.json...
-            compile_db_paths = list(temp_dir.rglob('compile_commands.json'))
-            self.assertGreater(
-                len(compile_db_paths), 0, 'No compile_commands.json files found'
-            )
-
-            for db_path in compile_db_paths:
-                # TODO: https://pwbug.dev/444224547 - This fails on gcc builds
-                # because `-fno-canonical-system-headers` is unknown.
-                if 'stm32f429i' in str(db_path):
-                    continue
-
-                with open(db_path, 'r') as f:
-                    compile_commands = json.load(f)
-
-                self.assertIsInstance(compile_commands, list)
-                if not compile_commands:
-                    continue
-
-                # Run clangd --check for each file.
-                for command in compile_commands:
-                    file_path = command['file']
-
-                    if not any(exp.match(file_path) for exp in _FILE_ALLOWLIST):
-                        continue
-
-                    clangd_result = subprocess.run(
-                        [
-                            self.clangd_path,
-                            f'--compile-commands-dir={db_path.parent}',
-                            f'--check={file_path}',
-                        ],
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                        # The compile commands need to run from the project root
-                        # for relative path resolution to work.
-                        cwd=self.project_root,
-                    )
-
-                    self.assertEqual(
-                        clangd_result.returncode,
-                        0,
-                        '\n'.join(
-                            (
-                                f'clangd --check in {db_path} failed:',
-                                f'ENTRY: {command}',
-                                f'CMD: {shlex.join(clangd_result.args)}',
-                                f'STDOUT:\n{clangd_result.stdout}',
-                                f'STDERR:\n{clangd_result.stderr}',
-                            )
-                        ),
-                    )
-                    files_checked.append(file_path)
-
-                    if 'pw_cc_compile_commands_test_external' in file_path:
-                        external_file_checked = True
-                        expected_include_path = (
-                            'pw_cc_compile_commands_test_external'
-                        )
-                        for arg in command['arguments']:
-                            if (
-                                arg.startswith('-I')
-                                and expected_include_path in arg
-                            ):
-                                external_include_path_found = True
-                                break
-
-        self.assertGreater(len(files_checked), 0)
-        self.assertTrue(
-            external_file_checked, 'External repo source file was not checked.'
+        # Run the compile commands updater.
+        update_result = subprocess.run(
+            [cls.updater_path, f'--out-dir={temp_dir_path}'],
+            capture_output=True,
+            text=True,
+            check=False,
         )
-        self.assertTrue(
-            external_include_path_found,
-            'External repo include path not found in compile commands.',
+        if update_result.returncode != 0:
+            raise RuntimeError(
+                'update_compile_commands failed: ' f'{update_result.stderr}'
+            )
+
+        # For each platform's compile_commands.json...
+        compile_db_paths = list(temp_dir_path.rglob('compile_commands.json'))
+        if not compile_db_paths:
+            raise RuntimeError('No compile_commands.json files found')
+
+        for db_path in compile_db_paths:
+            # TODO: https://pwbug.dev/444224547 - This fails on gcc builds
+            # because `-fno-canonical-system-headers` is unknown.
+            if 'stm32f429i' in str(db_path):
+                continue
+
+            with open(db_path, 'r') as f:
+                compile_commands = json.load(f)
+
+            if isinstance(compile_commands, list) and compile_commands:
+                cls._all_compile_commands[db_path] = compile_commands
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._temp_dir.cleanup()
+
+    def _find_commands_for_file(
+        self, file_pattern: str, platform_pattern: str | None = None
+    ) -> list[tuple[Path, dict]]:
+        """Finds all compile commands for a file matching a pattern."""
+        matches = []
+        for db_path, commands in self._all_compile_commands.items():
+            db_platform = Path(db_path).parent.parts[-1]
+            if platform_pattern and not re.match(platform_pattern, db_platform):
+                continue
+            for command in commands:
+                if re.match(file_pattern, command['file']):
+                    matches.append((db_path, command))
+        return matches
+
+    def _run_clangd_check(
+        self,
+        db_path: Path,
+        command: dict,
+    ) -> subprocess.CompletedProcess:
+        """Run clangd --check on a given file."""
+        file_path = command['file']
+        return subprocess.run(
+            [
+                self.clangd_path,
+                f'--compile-commands-dir={db_path.parent}',
+                f'--check={file_path}',
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            # The compile commands need to run from the project root
+            # for relative path resolution to work.
+            cwd=self.project_root,
+        )
+
+    def _assert_file_is_in_db_for_config(
+        self, file_pattern: str, platform_pattern: str
+    ):
+        """Asserts that a file is in the DB for a given config."""
+        matches = self._find_commands_for_file(
+            file_pattern, platform_pattern=platform_pattern
+        )
+        self.assertGreater(
+            len(matches),
+            0,
+            f'No command found for "{file_pattern}" in config '
+            f'"{platform_pattern}"',
+        )
+
+    def test_files_are_valid(
+        self,
+    ):
+        """Checks various file's compile command with clangd."""
+        matches = self._find_commands_for_file(
+            _TEST_PACKAGE + r'.*\.cc?',
+            platform_pattern=_HOST_OR_DEVICE,
+        )
+        self.assertGreater(
+            len(matches),
+            0,
+            'Test files missing from compile command databases.',
+        )
+
+        for db_path, command in matches:
+            with self.subTest(
+                f'Checking {command["file"]} from {db_path.parent}'
+            ):
+                clangd_result = self._run_clangd_check(db_path, command)
+                self.assertEqual(
+                    clangd_result.returncode,
+                    0,
+                    _format_clangd_error(clangd_result, db_path, command),
+                )
+
+    def test_external_file_is_valid(
+        self,
+    ):
+        """Checks an external file's compile command with clangd."""
+        matches = self._find_commands_for_file(
+            _EXTERNAL_PACKAGE + r'.*\.cc?',
+            platform_pattern=_HOST_OR_DEVICE,
+        )
+        self.assertGreater(
+            len(matches), 0, 'External test file command not found.'
+        )
+
+        for db_path, command in matches:
+            with self.subTest(
+                f'Checking {command["file"]} from {db_path.parent}'
+            ):
+                clangd_result = self._run_clangd_check(db_path, command)
+                self.assertEqual(
+                    clangd_result.returncode,
+                    0,
+                    _format_clangd_error(clangd_result, db_path, command),
+                )
+
+    def test_external_include_path_is_present(
+        self,
+    ):
+        """Checks for an external repo's include path."""
+        matches = self._find_commands_for_file(
+            _EXTERNAL_PACKAGE + r'.*\.cc?',
+            platform_pattern=_HOST_OR_DEVICE,
+        )
+        self.assertGreater(
+            len(matches), 0, 'External test file command not found.'
+        )
+
+        expected_include_path = 'pw_cc_compile_commands_test_external'
+        for db_path, command in matches:
+            with self.subTest(
+                f'Checking {command["file"]} from {db_path.parent}'
+            ):
+                self.assertTrue(
+                    any(
+                        arg.startswith('-I') and expected_include_path in arg
+                        for arg in command['arguments']
+                    ),
+                    'External repo include path not found in compile commands.',
+                )
+
+    def test_files_present_in_host_config(
+        self,
+    ):
+        """Checks that expected files are present for the host config."""
+        self._assert_file_is_in_db_for_config(
+            file_pattern=_TEST_PACKAGE + r'basic_source_test\.cc',
+            platform_pattern=_HOST_PLATFORM,
+        )
+        self._assert_file_is_in_db_for_config(
+            file_pattern=_TEST_PACKAGE + r'basic_source_virt_test\.cc',
+            platform_pattern=_HOST_PLATFORM,
+        )
+
+    def test_files_present_in_device_config(
+        self,
+    ):
+        """Checks that expected files are present for the device config."""
+        self._assert_file_is_in_db_for_config(
+            file_pattern=_TEST_PACKAGE + r'basic_source_test\.cc',
+            platform_pattern=_DEVICE_PLATFORM,
+        )
+        self._assert_file_is_in_db_for_config(
+            file_pattern=_TEST_PACKAGE + r'basic_source_virt_test\.cc',
+            platform_pattern=_DEVICE_PLATFORM,
+        )
+        self._assert_file_is_in_db_for_config(
+            file_pattern=_TEST_PACKAGE + r'basic_binary_test\.cc',
+            platform_pattern=_DEVICE_PLATFORM,
+        )
+
+    def test_external_file_present_in_host_config(
+        self,
+    ):
+        """Checks that an external file is present for the host config."""
+        self._assert_file_is_in_db_for_config(
+            file_pattern=_EXTERNAL_PACKAGE + r'external_source_test\.cc',
+            platform_pattern=_HOST_PLATFORM,
         )
 
 
