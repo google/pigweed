@@ -57,8 +57,7 @@ using ChannelEventCallback = pw::InlineFunction<
     // PW_FUNCTION_INLINE_CALLABLE_SIZE use that.
     std::max(sizeof(void*) * 2, PW_FUNCTION_INLINE_CALLABLE_SIZE)>;
 
-/// Result object with status and optional MultiBuf that is only present if the
-/// status is NOT `ok()`.
+/// Result object with status and optional MultiBuf.
 // `pw::Result` can't be used because it only has a value for `ok()` status.
 // `std::expected` can't be used because it only has a value OR a status.
 struct StatusWithMultiBuf {
