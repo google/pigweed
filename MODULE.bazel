@@ -232,6 +232,7 @@ crate.from_cargo(
         "thumbv6m-none-eabi",
         "thumbv7m-none-eabi",
         "thumbv8m.main-none-eabihf",
+        "aarch64-unknown-none",
         "riscv32imc-unknown-none-elf",
         "riscv32imac-unknown-none-elf",
     ],

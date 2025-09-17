@@ -10,10 +10,18 @@ These are commonly used in microcontrollers.
  1 file changed, 6 insertions(+)
 
 diff --git a/rust/platform/triple_mappings.bzl b/rust/platform/triple_mappings.bzl
-index 6070591e6..b944cbc4b 100644
+index 6070591e6..8d42562ae 100644
 --- a/rust/platform/triple_mappings.bzl
 +++ b/rust/platform/triple_mappings.bzl
-@@ -55,11 +55,15 @@ SUPPORTED_T2_PLATFORM_TRIPLES = {
+@@ -47,6 +47,7 @@ SUPPORTED_T2_PLATFORM_TRIPLES = {
+     "aarch64-linux-android": _support(std = True, host_tools = False),
+     "aarch64-pc-windows-msvc": _support(std = True, host_tools = True),
+     "aarch64-unknown-fuchsia": _support(std = True, host_tools = False),
++    "aarch64-unknown-none": _support(std = True, host_tools = False),
+     "aarch64-unknown-uefi": _support(std = True, host_tools = False),
+     "arm-unknown-linux-gnueabi": _support(std = True, host_tools = True),
+     "armv7-linux-androideabi": _support(std = True, host_tools = False),
+@@ -55,11 +56,15 @@ SUPPORTED_T2_PLATFORM_TRIPLES = {
      "i686-unknown-freebsd": _support(std = True, host_tools = False),
      "powerpc-unknown-linux-gnu": _support(std = True, host_tools = True),
      "riscv32imc-unknown-none-elf": _support(std = True, host_tools = False),
@@ -29,7 +37,7 @@ index 6070591e6..b944cbc4b 100644
      "wasm32-unknown-emscripten": _support(std = True, host_tools = False),
      "wasm32-unknown-unknown": _support(std = True, host_tools = False),
      "wasm32-wasip1": _support(std = True, host_tools = False),
-@@ -121,6 +125,7 @@ _CPU_ARCH_TO_BUILTIN_PLAT_SUFFIX = {
+@@ -121,6 +126,7 @@ _CPU_ARCH_TO_BUILTIN_PLAT_SUFFIX = {
      "powerpc64le": "ppc64le",
      "riscv32": "riscv32",
      "riscv32imc": "riscv32",

@@ -64,6 +64,11 @@ EXTRA_TARGETS = [
     },
     {
         "build_std": True,
+        "cpu": "aarch64",
+        "triple": "aarch64-unknown-none",
+    },
+    {
+        "build_std": True,
         "constraints": [
             "@pigweed//pw_build/constraints/riscv/extensions:I",
             "@pigweed//pw_build/constraints/riscv/extensions:M",
