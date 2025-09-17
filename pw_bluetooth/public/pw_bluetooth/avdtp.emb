@@ -350,6 +350,17 @@ struct SetConfigurationReject:
   $next [+1]  ServiceCategory  service_category
   $next [+1]  ErrorCode        error_code
 
+# Cf 8.12 Open Stream
+
+
+struct OpenStreamCommand:
+  -- Cf 8.12.1 AVDTP_OPEN_CMD
+  [requires: signaling_header.header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_OPEN]
+  0     [+2]         SignalingHeader  signaling_header
+  $next [+1]  bits:
+    0     [+2]       UInt             rfa
+    2     [+6]       Seid             acp_seid
+
 # Cf 8.13 Start Stream
 
 
