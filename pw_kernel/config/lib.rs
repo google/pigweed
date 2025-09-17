@@ -52,6 +52,10 @@ pub trait RiscVKernelConfigInterface {
     /// for userspace.
     const PMP_USERSPACE_ENTRIES: core::ops::Range<usize>;
 
+    /// RISC-V PMP Granularity.  This defines the minimum size of PMP protection
+    /// regions, which is 2**(G+2) bytes (That is, when G=0, the minimum size is 4 bytes).
+    const PMP_GRANULARITY: usize;
+
     /// mtvec exception mode. When in direct mode, base address will be set
     /// to the `_start_trap` address.
     /// When in vectored mode, the address of the vector table is passed

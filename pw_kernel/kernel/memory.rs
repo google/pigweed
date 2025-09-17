@@ -78,7 +78,7 @@ pub struct MemoryRegion {
     /// Start address of the memory region (inclusive)
     pub start: usize,
 
-    /// Start address of the memory region (exclusive)
+    /// End address of the memory region (exclusive)
     pub end: usize,
 }
 
@@ -105,7 +105,22 @@ impl MemoryRegion {
             acc | region.has_access(validation_region)
         })
     }
+
+    /// Calculates the size of the region.
+    #[must_use]
+    pub const fn size(&self) -> usize {
+        self.end - self.start
+    }
+
+    /// Returns whether the region is a naturally aligned power of two.  This means the size of
+    /// the region is a power of two, and the start address is aligned with respect to size.
+    #[must_use]
+    pub const fn is_napot(&self) -> bool {
+        let size = self.size();
+        size.is_power_of_two() && self.start & (size - 1) == 0
+    }
 }
+
 /// Architecture agnostic operation on memory configuration
 pub trait MemoryConfig {
     const KERNEL_THREAD_MEMORY_CONFIG: Self;

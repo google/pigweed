@@ -73,7 +73,7 @@ impl kernel::memory::MemoryConfig for MemoryConfig {
     const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[MemoryRegion::new(
         MemoryRegionType::ReadWriteExecutable,
         0x0000_0000,
-        0xffff_ffff,
+        0xffff_fffc,
     )]);
     #[cfg(feature = "epmp")]
     const KERNEL_THREAD_MEMORY_CONFIG: Self = Self::const_new(&[]);

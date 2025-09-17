@@ -33,6 +33,7 @@ impl RiscVKernelConfigInterface for KernelConfig {
         start: 0usize,
         end: Self::PMP_ENTRIES,
     };
+    const PMP_GRANULARITY: usize = 0;
 
     fn get_exception_mode() -> ExceptionMode {
         ExceptionMode::Direct
