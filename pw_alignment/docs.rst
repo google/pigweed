@@ -118,4 +118,4 @@ Get started
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_alignment`
+Moved: :cc:`pw_alignment`

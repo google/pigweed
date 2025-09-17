@@ -15,17 +15,17 @@ Overview
 
 This module consists of these main classes:
 
-- :doxylink:`McuxpressoDigitalIn <pw::digital_io::McuxpressoDigitalIn>`:
+- :cc:`McuxpressoDigitalIn <pw::digital_io::McuxpressoDigitalIn>`:
   Provides only input support.
-- :doxylink:`McuxpressoDigitalOut <pw::digital_io::McuxpressoDigitalOut>`:
+- :cc:`McuxpressoDigitalOut <pw::digital_io::McuxpressoDigitalOut>`:
   Provides only output support.
-- :doxylink:`McuxpressoDigitalInOutInterrupt
+- :cc:`McuxpressoDigitalInOutInterrupt
   <pw::digital_io::McuxpressoDigitalInOutInterrupt>`:
   Provides support for input, output, and GPIO interrupts.
-- :doxylink:`McuxpressoPintController
+- :cc:`McuxpressoPintController
   <pw::digital_io::McuxpressoPintController>`: Controller class for use with
   ``McuxpressoPintInterrupt``.
-- :doxylink:`McuxpressoPintInterrupt
+- :cc:`McuxpressoPintInterrupt
   <pw::digital_io::McuxpressoPintInterrupt>`: Provides only interrupt support
   for a PINT interrupt.
 
@@ -42,7 +42,7 @@ Examples
 
 Digital input
 =============
-Use :doxylink:`McuxpressoDigitalIn <pw::digital_io::McuxpressoDigitalIn>` to
+Use :cc:`McuxpressoDigitalIn <pw::digital_io::McuxpressoDigitalIn>` to
 read the state of an input.
 
 Example code to use GPIO pins from an NXP SDK board definition:
@@ -65,7 +65,7 @@ Example code to use GPIO pins from an NXP SDK board definition:
 
 Digital output
 ==============
-Use :doxylink:`McuxpressoDigitalOut <pw::digital_io::McuxpressoDigitalOut>` to
+Use :cc:`McuxpressoDigitalOut <pw::digital_io::McuxpressoDigitalOut>` to
 set the state of an output.
 
 Example code to use GPIO pins from an NXP SDK board definition:
@@ -89,7 +89,7 @@ Example code to use GPIO pins from an NXP SDK board definition:
 
 GPIO interrupt
 ==============
-Use :doxylink:`McuxpressoDigitalInOutInterrupt
+Use :cc:`McuxpressoDigitalInOutInterrupt
 <pw::digital_io::McuxpressoDigitalInOutInterrupt>` to handle interrupts via
 the GPIO module.
 
@@ -126,7 +126,7 @@ interrupts, via the PINT module, which supports other features:
 * Pattern matching support (currently unsupported here)
 * Triggering interrupts on pins configured for a non-GPIO function
 
-It must be used with an instance of :doxylink:`McuxpressoPintController
+It must be used with an instance of :cc:`McuxpressoPintController
 <pw::digital_io::McuxpressoPintController>`.
 
 .. code-block:: cpp
@@ -159,4 +159,4 @@ It must be used with an instance of :doxylink:`McuxpressoPintController
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_digital_io_mcuxpresso`
+Moved: :cc:`pw_digital_io_mcuxpresso`

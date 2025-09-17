@@ -22,7 +22,7 @@ for a Bluetooth Host API. Currently, only Low Energy APIs exist.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_bluetooth`
+Moved: :cc:`pw_bluetooth`
 
 Module Configuration Options
 ============================
@@ -157,8 +157,8 @@ The snoop log is easy to integrate into your H4 Uart driver.
 HCI Utils
 ---------
 ``pw_bluetooth`` contains a header with HCI utility functions.
-See :doxylink:`pw::bluetooth::GetHciHeaderSize` and
-:doxylink:`pw::bluetooth::GetHciPayloadSize`.
+See :cc:`pw::bluetooth::GetHciHeaderSize` and
+:cc:`pw::bluetooth::GetHciPayloadSize`.
 
 -----------
 Size Report

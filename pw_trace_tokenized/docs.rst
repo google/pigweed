@@ -300,4 +300,4 @@ interpretation of serialized snapshots with a populated ``trace_data`` field.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_trace_tokenized`
+Moved: :cc:`pw_trace_tokenized`

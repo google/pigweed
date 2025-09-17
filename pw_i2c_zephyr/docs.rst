@@ -15,7 +15,7 @@ underlying support by the Zephyr driver.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_i2c_zephyr`
+Moved: :cc:`pw_i2c_zephyr`
 
 -----------------
 Initiator example

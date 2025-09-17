@@ -76,4 +76,4 @@ Example usage with enums:
 -------------
 API reference
 -------------
-Moved: :doxylink:`Tokenized args <pw_log_tokenized_args>`
+Moved: :cc:`Tokenized args <pw_log_tokenized_args>`

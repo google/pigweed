@@ -65,4 +65,4 @@ Example
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_work_queue`
+Moved: :cc:`pw_work_queue`

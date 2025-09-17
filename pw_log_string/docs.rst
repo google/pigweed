@@ -180,4 +180,4 @@ at link time.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_log_string`
+Moved: :cc:`pw_log_string`

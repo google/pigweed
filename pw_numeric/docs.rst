@@ -29,4 +29,4 @@ substantially, some features may be moved to other modules (e.g.
 -----------------
 C++ API reference
 -----------------
-Moved: :doxylink:`pw_numeric`
+Moved: :cc:`pw_numeric`

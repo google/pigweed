@@ -53,7 +53,7 @@ introduce you to the two most fundamental components of ``pw_async2``: the
 
 What's a Task?
 ==============
-A :doxylink:`Task <pw::async2::Task>` is the basic unit of execution in this
+A :cc:`Task <pw::async2::Task>` is the basic unit of execution in this
 framework. It's an object that represents a job to be done, like blinking an
 LED, processing sensor data, or, in our case, running a vending machine.
 
@@ -84,7 +84,7 @@ Here you'll find the incomplete implementation of ``DoPend``:
   :linenos:
   :lines: 14-
 
-The ``DoPend`` method returns a :doxylink:`Poll\<\> <pw::async2::Poll>`. A
+The ``DoPend`` method returns a :cc:`Poll\<\> <pw::async2::Poll>`. A
 ``Poll`` can be in one of two states:
 
 *   ``Ready()``: The task has finished its work.
@@ -95,7 +95,7 @@ immediately without doing any work.
 
 What's a Dispatcher?
 ====================
-A :doxylink:`Dispatcher <pw::async2::Dispatcher>` is the engine that runs the
+A :cc:`Dispatcher <pw::async2::Dispatcher>` is the engine that runs the
 tasks. It's a simple, cooperative scheduler. You give it tasks by calling
 ``Post()``, and then you tell it to run them by calling ``RunUntilStalled()``
 or ``RunToCompletion()``.
@@ -178,7 +178,7 @@ In ``pw_async2``, operations that can wait are called **pendable functions**.
 What's a Pendable function?
 ===========================
 A pendable function is a function that, like a ``Task`` implementation's
-``DoPend`` method, takes an async :doxylink:`Context <pw::async2::Context>` and
+``DoPend`` method, takes an async :cc:`Context <pw::async2::Context>` and
 returns a ``Poll`` of some value. When a task calls a pendable function, it
 checks the return value to determine how to proceed.
 
@@ -244,7 +244,7 @@ that a coin was detected and that an item is being dispensed. Finally, return
 
    The pattern of polling a pendable function and returning ``Pending()`` if
    it's not ready is common in ``pw_async2``. To reduce this boilerplate,
-   ``pw_async2`` provides the :doxylink:`PW_TRY_READY_ASSIGN` macro.
+   ``pw_async2`` provides the :cc:`PW_TRY_READY_ASSIGN` macro.
 
    This macro simplifies writing clean asynchronous code. It polls a pendable
    function and handles the two possible outcomes:
@@ -451,7 +451,7 @@ Update the coin received message to remove the "item is being dispensed"
 message. Instead we will wait for the keypad event.
 
 Waiting for a keypad event is going to be very much like waiting for a coin.
-Use the :doxylink:`PW_TRY_READY_ASSIGN` macro to poll ``keypad_.Pend(cx)``. If
+Use the :cc:`PW_TRY_READY_ASSIGN` macro to poll ``keypad_.Pend(cx)``. If
 it is ready, log the keypad key that was received, and that an item is
 dispensing before returning ``pw::async2::Ready()`` to finish the task.
 
@@ -494,7 +494,7 @@ The next step is harder, implementing the ``Keypad::Press`` member function
 correctly.
 
 Since the keypad ISR is asynchronous, you will need to synchronize access to
-the stored event data. For this codelab, we use :doxylink:`InterruptSpinLock
+the stored event data. For this codelab, we use :cc:`InterruptSpinLock
 <pw::sync::InterruptSpinLock>` which is safe to acquire from an ISR in
 production use. Alternatively you can use atomic operations.
 
@@ -596,7 +596,7 @@ It's so simple… what could go wrong?
 6. Fix the crash: Registering a waker
 =====================================
 We intentionally had you implement ``Keypad::Pend()`` so it returned
-:doxylink:`Pending() <pw::async2::Pending>`, without storing a waker, as that
+:cc:`Pending() <pw::async2::Pending>`, without storing a waker, as that
 triggers an assertion. It is a clear signal that the code has no way of waking
 up the task, so we crash on detecting it.
 
@@ -604,21 +604,21 @@ The crash message is there to help you, and be explicit about what went wrong,
 and may run into it yourself creating your own pendable types.
 
 Generally if you are writing the leaf logic that decides that
-:doxylink:`Pending() <pw::async2::Pending>` should be returned, then you should
-also store a :doxylink:`Waker <pw::async2::Waker>` before returning that value.
+:cc:`Pending() <pw::async2::Pending>` should be returned, then you should
+also store a :cc:`Waker <pw::async2::Waker>` before returning that value.
 
 .. topic:: What is a ``Waker``?
 
-   A :doxylink:`Waker <pw::async2::Waker>` is the other half of the
+   A :cc:`Waker <pw::async2::Waker>` is the other half of the
    :ref:`informed poll model <module-pw_async2-informed-poll>`.
 
    A ``Waker`` is a lightweight object that allows you to tell the
-   :doxylink:`Dispatcher <pw::async2::Dispatcher>` to wake a task. When a
-   ``Task::DoPend()`` call returns :doxylink:`Pending() <pw::async2::Pending>`,
+   :cc:`Dispatcher <pw::async2::Dispatcher>` to wake a task. When a
+   ``Task::DoPend()`` call returns :cc:`Pending() <pw::async2::Pending>`,
    the task is put to sleep so that the dispatcher doesn't have to repeatedly
    poll the task.
 
-   To wake a task, you invoke the :doxylink:`Wake() <pw::async2::Waker::Wake>`
+   To wake a task, you invoke the :cc:`Wake() <pw::async2::Waker::Wake>`
    method on the ``Waker``. Note however by design the ``Wake()`` call consumes
    the ``Waker``, so to invoke it you must actually write
    ``std::move(waker_).Wake();``. This is to make it clear that the task can be
@@ -630,7 +630,7 @@ also store a :doxylink:`Waker <pw::async2::Waker>` before returning that value.
 
    You set up the waker to a non-empty value using one of four macros we provide:
 
-   - :doxylink:`PW_ASYNC_STORE_WAKER` and :doxylink:`PW_ASYNC_CLONE_WAKER`
+   - :cc:`PW_ASYNC_STORE_WAKER` and :cc:`PW_ASYNC_CLONE_WAKER`
 
      The first creates a waker for a given context. The second clones an
      existing waker, allowing the original and/or the clone to wake the task.
@@ -639,14 +639,14 @@ also store a :doxylink:`Waker <pw::async2::Waker>` before returning that value.
      a waker for a different task is created (or cloned) when the destination
      waker already is set up for some task.
 
-   - :doxylink:`PW_ASYNC_TRY_STORE_WAKER` and :doxylink:`PW_ASYNC_TRY_CLONE_WAKER`
+   - :cc:`PW_ASYNC_TRY_STORE_WAKER` and :cc:`PW_ASYNC_TRY_CLONE_WAKER`
 
      This is an alternative to `PW_ASYNC_STORE_WAKER`, and returns ``false``
      instead of crashing, allowing the pendable to signal to the caller that the
      ``Pend()`` operation failed, allowing that to be handled in some other way.
 
    One ``Waker`` wakes up one task. If your code needs to wake up multiple
-   tasks, you should use :doxylink:`WakerQueue <pw::async2::WakerQueue>`
+   tasks, you should use :cc:`WakerQueue <pw::async2::WakerQueue>`
    instead, which allows a fixed capacity list of wakers to be created. Note
    that you use the same macros (``PW_ASYNC_STORE_WAKER``, ...) with
    ``WakerQueue``, at which point they will indicate an error if you run out of
@@ -667,10 +667,10 @@ what is needed to eliminate the crash.
 
       pw::async2::Waker waker_;
 
-3. Setup the waker right before returning :doxylink:`Pending
+3. Setup the waker right before returning :cc:`Pending
    <pw::async2::Pending>`
 
-   To do this correctly, let's use :doxylink:`PW_ASYNC_STORE_WAKER`, giving it
+   To do this correctly, let's use :cc:`PW_ASYNC_STORE_WAKER`, giving it
    the context argument passed in to the ``Pend()``, the waker to store to, and
    a ``wait_reason_string`` to help debug issues.
 
@@ -729,7 +729,7 @@ Try pressing :kbd:`d` then :kbd:`Enter`.
 This shows the state of all the tasks registered with the dispatcher.
 
 Behind the scenes, the ``hardware.cc`` implementation calls
-:doxylink:`LogRegisteredTasks <pw::async2::Dispatcher::LogRegisteredTasks>` on
+:cc:`LogRegisteredTasks <pw::async2::Dispatcher::LogRegisteredTasks>` on
 the dispatcher which was registered via the ``HardwareInit()`` function.
 
 You can make this same call yourself to understand why your tasks aren't doing
@@ -761,7 +761,7 @@ step because we want to make that consumption visible to the caller.
 .. important::
 
    If you don't see the reason messages, you may have configured
-   :doxylink:`PW_ASYNC2_DEBUG_WAIT_REASON` to ``0`` to disable them.
+   :cc:`PW_ASYNC2_DEBUG_WAIT_REASON` to ``0`` to disable them.
    ``LogRegisteredTasks`` will still print out what it can, but for more
    information you may need to consider enabling them temporarily.
 
@@ -923,17 +923,17 @@ state machine pattern?
 How do you make your task better at handling multiple inputs when
 the ``Pend()`` of ``CoinSlot`` and ``Keypad`` can only wait on one thing?
 
-The answer is to use the :doxylink:`Selector <pw::async2::Selector>` class and
-the :doxylink:`Select <pw::async2::Select>` helper function to wait on multiple
+The answer is to use the :cc:`Selector <pw::async2::Selector>` class and
+the :cc:`Select <pw::async2::Select>` helper function to wait on multiple
 pendables, along with the
-:doxylink:`VisitSelectResult <pw::async2::VisitSelectResult>` helper that allows
+:cc:`VisitSelectResult <pw::async2::VisitSelectResult>` helper that allows
 you to unpack the completion result value when one of those pendables returns
 ``Ready()``
 
 Using ``Selector`` and ``Select``
 ---------------------------------
 
-- :doxylink:`Select <pw::async2::Select>` is a simple wrapper function for
+- :cc:`Select <pw::async2::Select>` is a simple wrapper function for
   ``Selector``. It constructs a temporary instance of the class, and then
   returns the result of calling ``Pend()`` on the instance. The temporary
   instance is then destroyed when the function returns the result.
@@ -946,7 +946,7 @@ Using ``Selector`` and ``Select``
   Depending on the design of the pendable type, it may also not be possible to
   wait afresh for a new result after the pendable returned ``Ready()``.
 
-- :doxylink:`Selector <pw::async2::Selector>` is a pendable class that polls an
+- :cc:`Selector <pw::async2::Selector>` is a pendable class that polls an
   ordered set of pendables you provide to determine which (if any) are ready.
 
   If you construct and store a ``Selector`` instance yourself, you can give all
@@ -964,7 +964,7 @@ For the vending machine, we'll use ``Select``, so we can wait on multiple keypad
 buttons and coins, and respond correctly.
 
 Both ``Select`` and ``Selector`` work by using another helper function
-:doxylink:`PendableFor <pw::async2::PendableFor>` to construct a type-erased
+:cc:`PendableFor <pw::async2::PendableFor>` to construct a type-erased
 wrapper that allows the ``Pend()`` function to be called.
 
 To poll both the ``CoinSlot`` and the ``Keypad``, we use:
@@ -1005,7 +1005,7 @@ button that was pressed.
 
 Using ``VisitSelectResult``
 ---------------------------
-:doxylink:`VisitSelectResult <pw::async2::VisitSelectResult>` is a helper for
+:cc:`VisitSelectResult <pw::async2::VisitSelectResult>` is a helper for
 processing the result of the ``Select`` function or the ``Selector::Pend``
 member function call.
 
@@ -1172,16 +1172,16 @@ Then, call it from ``item_drop_sensor_isr()``.
 We'll be adding a new ``DispenserTask`` soon. To get ready for that, let's set
 up communications channels between ``VendingMachineTask`` and the new task.
 
-There are many ways to use a :doxylink:`Waker <pw::async2::Waker>` to
+There are many ways to use a :cc:`Waker <pw::async2::Waker>` to
 communicate between tasks. For this step, we'll use
-:doxylink:`pw::InlineAsyncQueue` to send events between the two tasks.
+:cc:`pw::InlineAsyncQueue` to send events between the two tasks.
 
 .. topic:: ``pw::InlineAsyncQueue`` async member functions
 
-   :doxylink:`pw::InlineAsyncQueue` adds two async member functions to
-   :doxylink:`pw::InlineQueue`.
+   :cc:`pw::InlineAsyncQueue` adds two async member functions to
+   :cc:`pw::InlineQueue`.
 
-   - :doxylink:`PendHasSpace() <pw::BasicInlineAsyncQueue::PendHasSpace>`:
+   - :cc:`PendHasSpace() <pw::BasicInlineAsyncQueue::PendHasSpace>`:
      Producers call this to ensure the queue has room before producing more
      data.
 
@@ -1190,7 +1190,7 @@ communicate between tasks. For this step, we'll use
         PW_TRY_READY(async_queue.PendHasSpace(context));
         async_queue.push_back(item);
 
-   - :doxylink:`PendNotEmpty() <pw::BasicInlineAsyncQueue::PendNotEmpty>`:
+   - :cc:`PendNotEmpty() <pw::BasicInlineAsyncQueue::PendNotEmpty>`:
      Consumers call this to block until data is available to consume.
 
      .. code-block:: c++
@@ -1281,7 +1281,7 @@ Here's what the three states need to do.
 - ``kIdle``
 
   1. Read an item number from the ``dispense_requests_`` queue. This is done by
-     calling :doxylink:`PendNotEmpty()
+     calling :cc:`PendNotEmpty()
      <pw::BasicInlineAsyncQueue::PendNotEmpty>` and accessing the request with
      a call to ``front()``. Keep the item in the queue until you turn off the
      dispensing motor; you'll need to reference the number.
@@ -1301,7 +1301,7 @@ Here's what the three states need to do.
 
 - ``kReportDispenseSuccess``
 
-  1. Wait for the response queue to have space with :doxylink:`PendHasSpace()
+  1. Wait for the response queue to have space with :cc:`PendHasSpace()
      <pw::BasicInlineAsyncQueue::PendHasSpace>`.
   2. Signal that the item was dispensed with ``.push(true)``.
 
@@ -1326,14 +1326,14 @@ We'll need two new states in ``VendingMachineTask`` for this:
 
   1. Transition to this state after ``kAwaitingSelection``.
   2. Wait for a slot in the dispense requests queue by calling
-     :doxylink:`PendHasSpace() <pw::BasicInlineAsyncQueue::PendHasSpace>`.
+     :cc:`PendHasSpace() <pw::BasicInlineAsyncQueue::PendHasSpace>`.
   3. Push the request to it.
   4. Transition to the new ``kAwaitingDispense`` state.
 
 - ``kAwaitingDispense`` state
 
   1. Wait for ``DispenserTask`` to report that it finished dispensing the item
-     with a call to :doxylink:`PendNotEmpty()
+     with a call to :cc:`PendNotEmpty()
      <pw::BasicInlineAsyncQueue::PendNotEmpty>`.
   2. Display a message with the result.
   3. Return to the ``kWelcome`` state if successful or ``kAwaitingSelection`` if
@@ -1373,7 +1373,7 @@ Let's fix this. We can add a timeout to the ``kDispensing`` state. If the
 something has gone wrong. The ``DispenserTask`` should stop the motor and tell
 the ``VendingMachineTask`` what happened.
 
-You can implement a timeout with :doxylink:`pw::async2::TimeFuture`. To use it,
+You can implement a timeout with :cc:`pw::async2::TimeFuture`. To use it,
 ``#include "pw_async2/time_provider.h"`` and declare a ``TimeFuture`` in your
 ``DispenserTask``.
 
@@ -1393,7 +1393,7 @@ sure it's long enough for a human to respond. 5 seconds should do.
    :dedent:
 
 When you start dispensing an item (in your transition from ``kIdle`` to
-``kDispensing``), initialize the :doxylink:`TimeFuture <pw::async2::TimeFuture>`
+``kDispensing``), initialize the :cc:`TimeFuture <pw::async2::TimeFuture>`
 to your timeout.
 
 .. literalinclude:: codelab/solutions/step5/vending_machine.cc
@@ -1402,9 +1402,9 @@ to your timeout.
    :end-at: WaitUntil(expected_completion)
    :dedent:
 
-Then, in the ``kDispensing`` state, use :doxylink:`Select <pw::async2::Select>`
+Then, in the ``kDispensing`` state, use :cc:`Select <pw::async2::Select>`
 to wait for either the timeout or the item drop signal, whichever comes first.
-Use :doxylink:`VisitSelectResult <pw::async2::VisitSelectResult>` to take action
+Use :cc:`VisitSelectResult <pw::async2::VisitSelectResult>` to take action
 based on the result:
 
 .. code-block:: cpp

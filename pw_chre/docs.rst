@@ -87,7 +87,7 @@ Features that would be nice to have:
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_chre`
+Moved: :cc:`pw_chre`
 
 -------------
 Porting Guide

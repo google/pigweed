@@ -158,6 +158,6 @@ have to.
 -------------
 API reference
 -------------
-Moved: :doxylink:`FreeRTOS application functions <third_party_freertos>`
+Moved: :cc:`FreeRTOS application functions <third_party_freertos>`
 
 .. _Customization: https://www.freertos.org/a00110.html

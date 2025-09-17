@@ -168,7 +168,7 @@ Run your test
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_perf_test`
+Moved: :cc:`pw_perf_test`
 
 ------
 Design

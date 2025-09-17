@@ -438,14 +438,14 @@ Example in C++
 VirtualClock
 ============
 Pigweed also includes a virtual base class for timers,
-:doxylink:`pw::chrono::VirtualClock`. This class allows for writing
+:cc:`pw::chrono::VirtualClock`. This class allows for writing
 timing-sensitive code that can be tested using simulated clocks such as
-:doxylink:`pw::chrono::SimulatedSystemClock`.
+:cc:`pw::chrono::SimulatedSystemClock`.
 
 Using simulated clocks in tests allow tests to avoid sleeping or timeouts,
 resulting in faster and more reliable tests.
 
-See also :doxylink:`pw::async2::TimeProvider` for creating testable
+See also :cc:`pw::async2::TimeProvider` for creating testable
 time-sensitive code using asynchronous timers.
 
 Protobuf
@@ -506,23 +506,23 @@ C++
      - Thread
      - Interrupt
      - NMI
-   * - :doxylink:`pw::chrono::SystemTimer::SystemTimer`
+   * - :cc:`pw::chrono::SystemTimer::SystemTimer`
      - ✔
      -
      -
-   * - :doxylink:`pw::chrono::SystemTimer::~SystemTimer`
+   * - :cc:`pw::chrono::SystemTimer::~SystemTimer`
      - ✔
      -
      -
-   * - :doxylink:`pw::chrono::SystemTimer::InvokeAfter`
+   * - :cc:`pw::chrono::SystemTimer::InvokeAfter`
      - ✔
      -
      -
-   * - :doxylink:`pw::chrono::SystemTimer::InvokeAt`
+   * - :cc:`pw::chrono::SystemTimer::InvokeAt`
      - ✔
      -
      -
-   * - :doxylink:`pw::chrono::SystemTimer::Cancel`
+   * - :cc:`pw::chrono::SystemTimer::Cancel`
      - ✔
      -
      -
@@ -590,7 +590,7 @@ being close to actual time, but do care that it increments like a real clock.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_chrono`
+Moved: :cc:`pw_chrono`
 
 .. toctree::
    :hidden:

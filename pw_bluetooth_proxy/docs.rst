@@ -18,7 +18,7 @@ power usage).
 The proxy acts as a proxy of all host controller interface (HCI) packets between
 the host and the controller.
 
-:doxylink:`pw::bluetooth::proxy::ProxyHost` acts as the main coordinator for
+:cc:`pw::bluetooth::proxy::ProxyHost` acts as the main coordinator for
 proxy functionality.
 
 .. literalinclude:: proxy_host_test.cc
@@ -102,7 +102,7 @@ Get started
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_bluetooth_proxy`
+Moved: :cc:`pw_bluetooth_proxy`
 
 .. _module-pw_bluetooth_proxy-size-reports:
 

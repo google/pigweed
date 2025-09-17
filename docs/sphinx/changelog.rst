@@ -1140,9 +1140,9 @@ Nov 27, 2024
 ------------
 Highlights (Nov 15, 2024 to Nov 27, 2024):
 
-* **pw_allocator updates**: The :doxylink:`BucketBase
+* **pw_allocator updates**: The :cc:`BucketBase
   <pw::allocator::internal::BucketBase>` class has been refactored to be more
-  flexible and the :doxylink:`Block <pw_allocator_block>` API has been
+  flexible and the :cc:`Block <pw_allocator_block>` API has been
   refactored to support static polymorphism.
 
 .. _docs-changelog-2024-11-27-Modules:
@@ -1160,7 +1160,7 @@ Changes:
 
 * ``BestFitBlockAllocator`` was renamed to ``BestFitAllocator`` and
   ``WorstFitBlockAllocator`` was renamed to ``WorstFitAllocator``. These
-  classes have been refactored to use :doxylink:`buckets
+  classes have been refactored to use :cc:`buckets
   <pw_allocator_bucket>`. Commit: `Refactor best- and worst-fit
   allocators to use buckets <https://pwrev.dev/234817>`__.
 
@@ -1168,12 +1168,12 @@ Changes:
 
 * ``FirstFitBlockAllocator``, ``LastFitBlockAllocator``, and
   ``DualFirstFitBlockAllocator`` were merged into a single class:
-  :doxylink:`FirstFitAllocator <pw::allocator::FirstFitAllocator>`. Commit:
+  :cc:`FirstFitAllocator <pw::allocator::FirstFitAllocator>`. Commit:
   `Refactor first fit allocators <https://pwrev.dev/234816>`__.
 
 .. 3bfdac7a7826a4e2a1dc7a7174fd8d6276546c26
 
-* The :doxylink:`BucketBase <pw::allocator::internal::BucketBase>` class has
+* The :cc:`BucketBase <pw::allocator::internal::BucketBase>` class has
   been refactored to be more flexible. Commit: `Refactor Bucket
   <https://pwrev.dev/234815>`__.
 
@@ -1191,7 +1191,7 @@ Changes:
 
 .. 6417a523b06e03dce3453e96c3a1bec6ab511768
 
-* The :doxylink:`block API <pw_allocator_block>` has been
+* The :cc:`block API <pw_allocator_block>` has been
   refactored to support static polymorphism. Commit: `Add static
   polymorphism to Block <https://pwrev.dev/232214>`__.
 
@@ -8632,7 +8632,7 @@ Modules
 
 pw_allocator
 ------------
-The new :doxylink:`pw::allocator::Capabilities` API lets derived allocators
+The new :cc:`pw::allocator::Capabilities` API lets derived allocators
 describe what optional features they support. ``pw::Allocator::GetLayout()``
 has begun to be deprecated and replaced by ``pw::Allocator::GetRequestedLayout``,
 ``pw::Allocator::GetUsableLayout()``, and ``pw::Allocator::GetAllocatedLayout()``
@@ -12896,8 +12896,8 @@ There's been a concerted effort to reduce ``pw_transfer`` test flakiness.
 
 pw_unit_test
 ------------
-The :doxylink:`Expectations <pw_unit_test_expectations>` and
-:doxylink:`Assertions <pw_unit_test_assertions>` APIs were documented. Support
+The :cc:`Expectations <pw_unit_test_expectations>` and
+:cc:`Assertions <pw_unit_test_assertions>` APIs were documented. Support
 for GoogleTest's ``ASSERT_OK_AND_ASSIGN``, ``StatusIs``, and ``IsOkAndHolds``
 was added.
 
@@ -14833,9 +14833,9 @@ The ``pw_system.device.Device`` Python class can now be used as a
 pw_tokenizer
 ------------
 ``pw_tokenizer`` now has Rust support. The ``pw_tokenizer`` C++ config API
-is now documented at :doxylink:`pw_tokenizer_config` and
+is now documented at :cc:`pw_tokenizer_config` and
 the C++ token database API is now documented at
-:doxylink:`pw_tokenizer_database`. When creating a token
+:cc:`pw_tokenizer_database`. When creating a token
 database, parent directories are now automatically created if they don't
 already exist. ``PrefixedMessageDecoder`` has been renamed to
 ``NestedMessageDecoder``.

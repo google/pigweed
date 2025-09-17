@@ -83,16 +83,16 @@ The following table summarizes the interfaces and their required functionality:
      - Interrupts Required
    * - Input/Output Not Required
      -
-     - :doxylink:`DigitalInterrupt <pw::digital_io::DigitalInterrupt>`
+     - :cc:`DigitalInterrupt <pw::digital_io::DigitalInterrupt>`
    * - Input Required
-     - :doxylink:`DigitalIn <pw::digital_io::DigitalIn>`
-     - :doxylink:`DigitalInInterrupt <pw::digital_io::DigitalInterrupt>`
+     - :cc:`DigitalIn <pw::digital_io::DigitalIn>`
+     - :cc:`DigitalInInterrupt <pw::digital_io::DigitalInterrupt>`
    * - Output Required
-     - :doxylink:`DigitalOut <pw::digital_io::DigitalOut>`
-     - :doxylink:`DigitalOutInterrupt <pw::digital_io::DigitalOutInterrupt>`
+     - :cc:`DigitalOut <pw::digital_io::DigitalOut>`
+     - :cc:`DigitalOutInterrupt <pw::digital_io::DigitalOutInterrupt>`
    * - Input/Output Required
-     - :doxylink:`DigitalInOut <pw::digital_io::DigitalInOut>`
-     - :doxylink:`DigitalInOutInterrupt <pw::digital_io::DigitalInOutInterrupt>`
+     - :cc:`DigitalInOut <pw::digital_io::DigitalInOut>`
+     - :cc:`DigitalInOutInterrupt <pw::digital_io::DigitalInOutInterrupt>`
 
 Synchronization requirements
 ============================
@@ -308,7 +308,7 @@ might do that using a Pigweed console device object.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_digital_io`
+Moved: :cc:`pw_digital_io`
 
 ------------
 Dependencies

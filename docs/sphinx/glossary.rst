@@ -20,8 +20,8 @@ Informed poll
 -------------
 The informed poll programming model is the core design philosophy behind
 ``pw_async2``.  The central idea is that asynchronous work is encapsulated in
-objects called :doxylink:`Tasks <pw::async2::Task>`. Instead of registering
-callbacks for different events, a central :doxylink:`Dispatcher
+objects called :cc:`Tasks <pw::async2::Task>`. Instead of registering
+callbacks for different events, a central :cc:`Dispatcher
 <pw::async2::Dispatcher>` *polls* these tasks to see if they can make progress.
 The polling is *informed* because the task coordinates with its event source
 regarding when it's ready to make more progress. The event source notifies the

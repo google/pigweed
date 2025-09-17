@@ -3,7 +3,7 @@
 ========
 Backends
 ========
-The :doxylink:`pw_async2 interface <pw_async2>` must be fulfilled
+The :cc:`pw_async2 interface <pw_async2>` must be fulfilled
 by a concrete implementation. You can use one of the Pigweed-provided backends
 listed below or roll your own. If you roll your own, please consider
 :ref:`contributing <docs-contributing>` it to upstream Pigweed!
@@ -11,7 +11,7 @@ listed below or roll your own. If you roll your own, please consider
 .. _epoll: https://man7.org/linux/man-pages/man7/epoll.7.html
 
 * :ref:`module-pw_async2_basic`. A backend that uses a
-  thread-notification-based :doxylink:`Dispatcher <pw::async2::Dispatcher>`.
+  thread-notification-based :cc:`Dispatcher <pw::async2::Dispatcher>`.
 * :ref:`module-pw_async2_epoll`. A backend that uses a ``Dispatcher`` backed by
   Linux's `epoll`_ notification system.
 

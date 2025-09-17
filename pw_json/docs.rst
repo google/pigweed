@@ -6,7 +6,7 @@ pw_json
 .. pigweed-module::
    :name: pw_json
 
-   Use :doxylink:`pw::JsonBuilder` to serialize JSON to a buffer. It's simple,
+   Use :cc:`pw::JsonBuilder` to serialize JSON to a buffer. It's simple,
    safe, and efficient.
 
    .. literalinclude:: builder_test.cc
@@ -29,7 +29,7 @@ pw_json
 -----------
 JsonBuilder
 -----------
-:doxylink:`pw::JsonBuilder` is used to create arbitrary JSON. It contains a
+:cc:`pw::JsonBuilder` is used to create arbitrary JSON. It contains a
 JSON value, which may be an object or array. Arrays and objects may contain
 other values, objects, or arrays.
 
@@ -42,4 +42,4 @@ other values, objects, or arrays.
 
 API Reference
 =============
-Moved: :doxylink:`pw_json`
+Moved: :cc:`pw_json`

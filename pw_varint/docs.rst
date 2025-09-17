@@ -12,7 +12,7 @@ than a fixed-size encoding. For example, a 32-bit (4-byte) integer requires
 1–5 bytes when varint-encoded.
 
 ``pw_varint`` supports custom variable-length encodings with different
-terminator bit values and positions (:doxylink:`pw::varint::Format`).
+terminator bit values and positions (:cc:`pw::varint::Format`).
 The basic encoding for unsigned integers is Little Endian Base 128 (LEB128).
 ZigZag encoding is also supported, which maps negative integers to positive
 integers to improve encoding density for LEB128.
@@ -35,7 +35,7 @@ API Reference
 
 C/C++
 =====
-Moved: :doxylink:`pw_varint`
+Moved: :cc:`pw_varint`
 
 Rust
 ====

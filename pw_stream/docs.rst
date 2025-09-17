@@ -33,8 +33,8 @@ Example:
    }
 
 In this example, ``DumpSensorData()`` only cares that it has access to a
-:doxylink:`Writer <pw::stream::Writer>` that it can use to stream data to using
-``Writer::Write()``.  The :doxylink:`Writer <pw::stream::Writer>` itself can be
+:cc:`Writer <pw::stream::Writer>` that it can use to stream data to using
+``Writer::Write()``.  The :cc:`Writer <pw::stream::Writer>` itself can be
 backed by anything that can act as a data "sink."
 
 ---------------------
@@ -47,7 +47,7 @@ There are three basic capabilities of a stream:
 * Seeking -- The position in the stream can be changed.
 
 ``pw_stream`` provides a family of stream classes with different capabilities.
-The most basic class, :doxylink:`Stream <pw::stream::Stream>` guarantees no
+The most basic class, :cc:`Stream <pw::stream::Stream>` guarantees no
 functionality, while the most capable class, :cpp:class:`SeekableReaderWriter`
 supports reading, writing, and seeking.
 
@@ -86,7 +86,7 @@ Usage overview
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_stream`
+Moved: :cc:`pw_stream`
 
 ------------------
 Why use pw_stream?
@@ -96,18 +96,18 @@ Standard API
 ============
 ``pw_stream`` provides a standard way for classes to express that they have the
 ability to write data. Writing to one sink versus another sink is a matter of
-just passing a reference to the appropriate :doxylink:`Writer
+just passing a reference to the appropriate :cc:`Writer
 <pw::stream::Writer>`.
 
 As an example, imagine dumping sensor data. If written against a random HAL or
 one-off class, there's porting work required to write to a different sink
 (imagine writing over UART vs dumping to flash memory). Building a "dumping"
-implementation against the :doxylink:`Writer <pw::stream::Writer>` interface
+implementation against the :cc:`Writer <pw::stream::Writer>` interface
 prevents a dependency on a bespoke API that would require porting work.
 
-Similarly, after building a :doxylink:`Writer <pw::stream::Writer>`
+Similarly, after building a :cc:`Writer <pw::stream::Writer>`
 implementation for a Sink that data could be dumped to, that same
-:doxylink:`Writer <pw::stream::Writer>` can be reused for other contexts that
+:cc:`Writer <pw::stream::Writer>` can be reused for other contexts that
 already write data to the :cpp:class:`pw::stream::Writer` interface.
 
 Before:
@@ -144,7 +144,7 @@ allocated, even if the data only exists in that buffer for a very short period
 of time before it's written somewhere else.
 
 In situations where data read from somewhere will immediately be written
-somewhere else, a :doxylink:`Writer <pw::stream::Writer>` interface can cut out
+somewhere else, a :cc:`Writer <pw::stream::Writer>` interface can cut out
 the middleman buffer.
 
 Before:
@@ -180,9 +180,9 @@ duplicated throughout a codebase, there's more opportunities for bound-checking
 bugs to sneak in. ``Writers`` manage this logic internally rather than pushing
 the bounds checking to the code that is moving or writing the data.
 
-Similarly, since only the :doxylink:`Writer <pw::stream::Writer>` has access to
+Similarly, since only the :cc:`Writer <pw::stream::Writer>` has access to
 any underlying buffers, it's harder for functions that share a
-:doxylink:`Writer <pw::stream::Writer>` to accidentally clobber data written by
+:cc:`Writer <pw::stream::Writer>` to accidentally clobber data written by
 others using the same buffer.
 
 Before:
@@ -229,21 +229,21 @@ Design notes
 Sync & Flush
 ============
 The :cpp:class:`pw::stream::Stream` API does not include ``Sync()`` or
-``Flush()`` functions. There no mechanism in the :doxylink:`Stream
+``Flush()`` functions. There no mechanism in the :cc:`Stream
 <pw::stream::Stream>` API to synchronize a :cpp:class:`Reader`'s potentially
 buffered input with its underlying data source. This must be handled by the
-implementation if required.  Similarly, the :doxylink:`Writer
+implementation if required.  Similarly, the :cc:`Writer
 <pw::stream::Writer>` implementation is responsible for flushing any buffered
 data to the sink.
 
-``Flush()`` and ``Sync()`` were excluded from :doxylink:`Stream
+``Flush()`` and ``Sync()`` were excluded from :cc:`Stream
 <pw::stream::Stream>` for a few reasons:
 
 * The semantics of when to call ``Flush()``/``Sync()`` on the stream are
   unclear. The presence of these methods complicates using a :cpp:class:`Reader`
-  or :doxylink:`Writer <pw::stream::Writer>`.
+  or :cc:`Writer <pw::stream::Writer>`.
 * Adding one or two additional virtual calls increases the size of all
-  :doxylink:`Stream <pw::stream::Stream>` vtables.
+  :cc:`Stream <pw::stream::Stream>` vtables.
 
 .. _module-pw_stream-class-hierarchy:
 
@@ -283,7 +283,7 @@ We chose to use a single base class for a few reasons:
   there are distinct interfaces for each capability. ``Reader``, ``Writer``,
   and ``Seeker`` interfaces would not be sufficient. To match the flexibility
   of the current structure, there would have to be separate optional versions
-  of each interface, and classes for various combinations. :doxylink:`Stream
+  of each interface, and classes for various combinations. :cc:`Stream
   <pw::stream::Stream>` would be an "OptionalReaderOptionalWriterOptionalSeeker"
   in this model.
 * Code reuse is maximized. For example, a single
@@ -306,13 +306,13 @@ interface may not justify the performance cost.
 
 Asynchronous APIs
 =================
-At present, ``pw_stream`` is synchronous. All :doxylink:`Stream
+At present, ``pw_stream`` is synchronous. All :cc:`Stream
 <pw::stream::Stream>` API calls are expected to block until the operation is
 complete. This might be undesirable for slow operations, like writing to NOR
 flash.
 
 Pigweed has not yet established a pattern for asynchronous C++ APIs. The
-:doxylink:`Stream <pw::stream::Stream>` class may be extended in the future to
+:cc:`Stream <pw::stream::Stream>` class may be extended in the future to
 add asynchronous capabilities, or a separate ``AsyncStream`` could be created.
 
 .. cpp:namespace-pop::

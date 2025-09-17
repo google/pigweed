@@ -13,7 +13,7 @@ data as specified by `RFC 3548 <https://tools.ietf.org/html/rfc3548>`_ and
 -----------------
 C++ API reference
 -----------------
-Moved: :doxylink:`pw_base64`
+Moved: :cc:`pw_base64`
 
 ------------------
 Rust API reference

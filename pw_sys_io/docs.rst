@@ -44,7 +44,7 @@ implementation.
 
 API reference
 =============
-Moved: :doxylink:`pw_sys_io`
+Moved: :cc:`pw_sys_io`
 
 Dependencies
 ============

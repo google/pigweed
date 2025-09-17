@@ -18,8 +18,8 @@ C++ standard macro
 ``pw_polyfill/standard.h`` provides macros for checking if a C++ or C standard
 is supported.
 
-* :doxylink:`PW_CXX_STANDARD_IS_SUPPORTED`
-* :doxylink:`PW_C_STANDARD_IS_SUPPORTED`
+* :cc:`PW_CXX_STANDARD_IS_SUPPORTED`
+* :cc:`PW_C_STANDARD_IS_SUPPORTED`
 
 Language feature macros
 =======================
@@ -52,7 +52,7 @@ systems, add ``pw_polyfill/public`` as an include path.
 
 API reference
 -------------
-Moved: :doxylink:`pw_polyfill`
+Moved: :cc:`pw_polyfill`
 
 ------------------------------------------------
 Backport new C++ features to older C++ standards

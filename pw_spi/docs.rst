@@ -17,18 +17,18 @@ The ``pw_spi`` module provides a series of interfaces that facilitate the
 development of SPI responder drivers that are abstracted from the target's
 SPI hardware implementation. The interface consists of these main classes:
 
-- :doxylink:`Initiator <pw::spi::Initiator>` - Interface for configuring a SPI
+- :cc:`Initiator <pw::spi::Initiator>` - Interface for configuring a SPI
   bus, and using it to transmit and receive data.
-- :doxylink:`ChipSelector <pw::spi::ChipSelector>` - Interface for
+- :cc:`ChipSelector <pw::spi::ChipSelector>` - Interface for
   enabling/disabling a SPI responder attached to the bus.
-- :doxylink:`Device <pw::spi::Device>` - primary HAL interface used to interact
+- :cc:`Device <pw::spi::Device>` - primary HAL interface used to interact
   with a SPI responder.
-- :doxylink:`Responder <pw::spi::Responder>` - Interface for implementing a SPI
+- :cc:`Responder <pw::spi::Responder>` - Interface for implementing a SPI
   responder.
 
-``pw_spi`` relies on a target-specific implementations of :doxylink:`Initiator
-<pw::spi::Initiator>` and :doxylink:`ChipSelector <pw::spi::ChipSelector>` to
-be defined, and injected into :doxylink:`Device <pw::spi::Device>` objects
+``pw_spi`` relies on a target-specific implementations of :cc:`Initiator
+<pw::spi::Initiator>` and :cc:`ChipSelector <pw::spi::ChipSelector>` to
+be defined, and injected into :cc:`Device <pw::spi::Device>` objects
 which are used to communicate with a given responder attached to a target's SPI
 bus.
 
@@ -54,14 +54,14 @@ Constructing a SPI device
    auto device = pw::spi::Device(
        pw::sync::Borrowable<Initiator>(initiator, mutex), kConfig, selector);
 
-This example demonstrates the construction of a :doxylink:`Device
+This example demonstrates the construction of a :cc:`Device
 <pw::spi::Device>` from its object dependencies and configuration data; where
 ``MyDevice`` and ``MyChipSelector`` are concrete implementations of the
-:doxylink:`Initiator <pw::spi::Initiator>` and :doxylink:`ChipSelector
+:cc:`Initiator <pw::spi::Initiator>` and :cc:`ChipSelector
 <pw::spi::ChipSelector>` interfaces, respectively.
 
-The use of :doxylink:`Borrowable <pw::sync::Borrowable>` in the interface
-provides a mutual-exclusion wrapper for the injected :doxylink:`Initiator
+The use of :cc:`Borrowable <pw::sync::Borrowable>` in the interface
+provides a mutual-exclusion wrapper for the injected :cc:`Initiator
 <pw::spi::Initiator>`, ensuring that transactions cannot be interrupted or
 corrupted by other concurrent workloads making use of the same SPI bus.
 
@@ -113,13 +113,13 @@ Performing a multi-part transaction
    }
 
 The code above is similar to the previous example, but makes use of the
-``Transaction`` API in :doxylink:`Device <pw::spi::Device>` to perform separate,
+``Transaction`` API in :cc:`Device <pw::spi::Device>` to perform separate,
 half-duplex ``Write()`` and ``Read()`` transfers, as is required by the sensor
 in this example.
 
 The use of the RAII ``transaction`` object in this example guarantees that
 no other thread can perform transfers on the same SPI bus
-(:doxylink:`Initiator <pw::spi::Initiator>`) until it goes out-of-scope.
+(:cc:`Initiator <pw::spi::Initiator>`) until it goes out-of-scope.
 
 Responding to an initiator
 ==========================
@@ -138,7 +138,7 @@ Responding to an initiator
 
 Mocking transactions
 ====================
-:doxylink:`MockInitiator <pw::spi::MockInitiator>` is a generic mocked backend
+:cc:`MockInitiator <pw::spi::MockInitiator>` is a generic mocked backend
 for ``Initiator`` that is specifically intended for use when developing drivers
 for SPI devices. It's structured around a set of "transactions" where each
 transaction contains a write, a read, and a status. A transaction list can then
@@ -177,7 +177,7 @@ read/write will iterate to the next transaction in the list. Example:
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_spi`
+Moved: :cc:`pw_spi`
 
 .. toctree::
    :hidden:

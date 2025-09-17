@@ -9,7 +9,7 @@ pw_malloc_freertos
 ``pw_malloc_freertos`` implements the ``pw_malloc`` facade using the FreeRTOS
 heap functions.
 
-- It implements an :doxylink:`pw::Allocator` using the
+- It implements an :cc:`pw::Allocator` using the
   ``pvPortMalloc`` and ``vPortFree`` heap functions from
   `FreeRTOS <https://www.freertos.org/a00111.html>`_.
 - It implements a :ref:`module-pw_malloc` backend using its ``Allocator``.

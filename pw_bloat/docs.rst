@@ -715,4 +715,4 @@ the compiler cannot assume which calls will or will not be executed,
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_bloat`
+Moved: :cc:`pw_bloat`

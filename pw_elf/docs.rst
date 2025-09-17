@@ -32,4 +32,4 @@ Read an ELF section into a buffer
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_elf`
+Moved: :cc:`pw_elf`

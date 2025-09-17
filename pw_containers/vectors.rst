@@ -11,7 +11,7 @@ A vector is a one-dimensional array with a variable length.
 ----------
 pw::Vector
 ----------
-:doxylink:`Vector` class is similar to ``std::vector``, except it is backed by a
+:cc:`Vector` class is similar to ``std::vector``, except it is backed by a
 fixed-size buffer.
 
 Vectors must be declared with an explicit maximum size
@@ -51,10 +51,10 @@ The tables below illustrate the following scenarios:
 -----------------
 pw::DynamicVector
 -----------------
-:doxylink:`DynamicVector` is similar to :doxylink:`Vector`, except that
-it uses :doxylink:`Allocator` for memory operations.
+:cc:`DynamicVector` is similar to :cc:`Vector`, except that
+it uses :cc:`Allocator` for memory operations.
 
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_containers_vectors`
+Moved: :cc:`pw_containers_vectors`

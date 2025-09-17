@@ -709,7 +709,7 @@ sender or the receiver (see `Transfer roles`_).
 +-------------------------+-------------------------+-------------------------+
 | ``DATA_LOSS``           | Failed to read the data | Failed to write the     |
 |                         | to send. The            | received data. The      |
-|                         | :doxylink:`Reader       | :doxylink:`Writer       |
+|                         | :cc:`Reader             | :cc:`Writer             |
 |                         | <pw::stream::Reader>`   | <pw::stream::Writer>`   |
 |                         | returned an error.      | returned an error.      |
 +-------------------------+-------------------------+-------------------------+

@@ -10,11 +10,11 @@ MultiBufs are flexible binary data structures. As such, there is no single guide
 on how to use them. Instead, several examples are presented that demonstrate
 various aspects of how they can be used.
 
-In each of the guides below, a :doxylink:`pw::Allocator` instance is needed to
+In each of the guides below, a :cc:`pw::Allocator` instance is needed to
 instantiate a MultiBuf instance. This allocator is used to allocate the memory
 for the MultiBuf instance's deque of :ref:`module-pw_multibuf-concepts-entries`.
 For the purposes of these examples, the simple, low-performance
-:doxylink:`AllocatorForTest <pw::allocator::test::AllocatorForTest>` is used.
+:cc:`AllocatorForTest <pw::allocator::test::AllocatorForTest>` is used.
 
 .. literalinclude:: examples/basic.cc
    :language: cpp
@@ -42,9 +42,9 @@ The following example creates just such a MultiBuf instance:
    :start-after: [pw_multibuf-examples-iterate-create]
    :end-before: [pw_multibuf-examples-iterate-create]
 
-Note the use of :doxylink:`pw::ConstMultiBuf`. This type alias of
-:doxylink:`GenericMultiBuf <pw::multibuf_impl::GenericMultiBuf>` includes the
-:doxylink:`kConst <pw::MultiBufProperty>` as one of its
+Note the use of :cc:`pw::ConstMultiBuf`. This type alias of
+:cc:`GenericMultiBuf <pw::multibuf_impl::GenericMultiBuf>` includes the
+:cc:`kConst <pw::MultiBufProperty>` as one of its
 :ref:`module-pw_multibuf-design-properties`.
 
 Regardless of how the underlying memory is stored, MultiBuf methods can
@@ -130,8 +130,8 @@ producers):
    :start-after: [pw_multibuf-examples-async_queue-observer]
    :end-before: [pw_multibuf-examples-async_queue-observer]
 
-This type extends :doxylink:`pw::MultiBufObserver` and receives an
-:doxylink:`Event <pw::MultiBufObserver::Event>` every time the contents or
+This type extends :cc:`pw::MultiBufObserver` and receives an
+:cc:`Event <pw::MultiBufObserver::Event>` every time the contents or
 structure of the MultiBuf instance changes.
 
 With this, the queue can leverage the observer to add the same methods that
@@ -143,7 +143,7 @@ produces and consumers can wait on:
    :start-after: [pw_multibuf-examples-async_queue]
    :end-before: [pw_multibuf-examples-async_queue]
 
-Note that this queue uses a :doxylink:`pw::TrackedConstMultiBuf`. The "Tracked"
+Note that this queue uses a :cc:`pw::TrackedConstMultiBuf`. The "Tracked"
 prefix indicates the MultiBuf instance supports observers, and the "Const"
 prefix indicates the data cannot be modified.
 
@@ -181,7 +181,7 @@ single source into multiple memory regions (scatter) or written from multiple
 memory regions to a single destination (gather).
 
 As an example, the following container holds
-:doxylink:`Message <pw::i2c::Message>`\s for performing multiple I2C reads and
+:cc:`Message <pw::i2c::Message>`\s for performing multiple I2C reads and
 writes in a single operation:
 
 .. literalinclude:: examples/scatter_gather.cc
@@ -190,8 +190,8 @@ writes in a single operation:
    :start-after: [pw_multibuf-examples-scatter_gather-message_vector]
    :end-before: [pw_multibuf-examples-scatter_gather-message_vector]
 
-This container has a :doxylink:`pw::TrackedMultiBuf` for data to be read, and a
-:doxylink:`pw::TrackedConstMultiBuf` for data to be written. As the "Tracked"
+This container has a :cc:`pw::TrackedMultiBuf` for data to be read, and a
+:cc:`pw::TrackedConstMultiBuf` for data to be written. As the "Tracked"
 prefix indicates, these accept an observer that can be used to signal when an
 I2C transfer is complete:
 
@@ -201,8 +201,8 @@ I2C transfer is complete:
    :start-after: [pw_multibuf-examples-scatter_gather-observer]
    :end-before: [pw_multibuf-examples-scatter_gather-observer]
 
-With a real device, the :doxylink:`Message <pw::i2c::Message>`\s would be passed
-to an :doxylink:`Initiator <pw::i2c::Initiator>`. This example uses a simpler
+With a real device, the :cc:`Message <pw::i2c::Message>`\s would be passed
+to an :cc:`Initiator <pw::i2c::Initiator>`. This example uses a simpler
 ``TestInitiator`` type that simply accepts the messages and then waits for
 another thread to indicate the transfer is complete:
 

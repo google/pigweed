@@ -120,11 +120,11 @@ intended behavior of "latching" to the first error.
       }
       return overall_status;
 
-:doxylink:`pw::Status` has a :doxylink:`pw::Status::Update` helper function
+:cc:`pw::Status` has a :cc:`pw::Status::Update` helper function
 that does exactly this to reduce visual clutter and succinctly highlight the
 intended behavior.
 
-.. admonition:: **Yes**: Track status with :doxylink:`pw::Status::Update`
+.. admonition:: **Yes**: Track status with :cc:`pw::Status::Update`
    :class: checkmark
 
    .. code-block:: cpp
@@ -145,7 +145,7 @@ intended behavior.
 ----------------------------------
 Jointly reporting status with size
 ----------------------------------
-:doxylink:`pw::StatusWithSize` (``pw_status/status_with_size.h``) is a
+:cc:`pw::StatusWithSize` (``pw_status/status_with_size.h``) is a
 convenient, efficient class for reporting a status along with an unsigned
 integer value.  It is similar to the ``pw::Result<T>`` class, but it stores both
 a size and a status, regardless of the status value, and only supports a limited
@@ -176,10 +176,10 @@ Reducing error handling boilerplate
 -----------------------------------
 Manual error handling through return codes is easy to understand and
 straightforward to write, but leads to verbose code. To reduce boilerplate,
-Pigweed has the :doxylink:`PW_TRY` (``pw_status/try.h``) macro, easing
-development of functions checking or returning :doxylink:`pw::Status` and
-:doxylink:`pw::StatusWithSize` objects. The ``PW_TRY`` and
-:doxylink:`PW_TRY_WITH_SIZE` macros call a function and do an early return if
+Pigweed has the :cc:`PW_TRY` (``pw_status/try.h``) macro, easing
+development of functions checking or returning :cc:`pw::Status` and
+:cc:`pw::StatusWithSize` objects. The ``PW_TRY`` and
+:cc:`PW_TRY_WITH_SIZE` macros call a function and do an early return if
 the function's return status is not :c:enumerator:`OK`.
 
 Example:
@@ -200,7 +200,7 @@ Example:
      // Do something, only executed if both functions above return OK.
    }
 
-:doxylink:`PW_TRY_ASSIGN` is for working with ``pw::StatusWithSize`` objects in
+:cc:`PW_TRY_ASSIGN` is for working with ``pw::StatusWithSize`` objects in
 functions that return Status. It is similar to ``PW_TRY`` with the addition of
 assigning the size from the ``pw::StatusWithSize`` on ok.
 

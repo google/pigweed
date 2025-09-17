@@ -69,18 +69,18 @@ When a pendable function can't yet complete:
 
    * Arrange an external wakeup. Use :c:macro:`PW_ASYNC_STORE_WAKER`
      to store the task's waker somewhere, and then call
-     :doxylink:`Wake <pw::async2::Waker::Wake>` from an interrupt or another
+     :cc:`Wake <pw::async2::Waker::Wake>` from an interrupt or another
      thread once the event that the task is waiting for has completed.
 
-   * Re-enqueue the task with :doxylink:`ReEnqueue
+   * Re-enqueue the task with :cc:`ReEnqueue
      <pw::async2::Context::ReEnqueue>`. This is a rare case. Usually, you
      should just create an immediately invoked ``Waker``.
 
-#. Make sure to return :doxylink:`Pending <pw::async2::Pending>` to signal that
+#. Make sure to return :cc:`Pending <pw::async2::Pending>` to signal that
    the task is incomplete.
 
 In other words, whenever your pendable function returns
-:doxylink:`Pending <pw::async2::Pending>`, you must guarantee that ``Wake()``
+:cc:`Pending <pw::async2::Pending>`, you must guarantee that ``Wake()``
 is called once in the future.
 
 For example, one implementation of a delayed task might arrange for a timer to
@@ -104,19 +104,19 @@ There are several strategies for handling wakers from multiple callers:
 
 * **Single Waker (Assert)**: If you are certain that an operation will only
   ever have one task waiting on it at a time (common in application-specific
-  code), you can use a single :doxylink:`Waker <pw::async2::Waker>` and the
-  :doxylink:`PW_ASYNC_STORE_WAKER` macro. This macro will crash if a second
+  code), you can use a single :cc:`Waker <pw::async2::Waker>` and the
+  :cc:`PW_ASYNC_STORE_WAKER` macro. This macro will crash if a second
   task attempts to store its waker before the first one has been woken, which
   can help enforce design assumptions.
 
 * **Single Waker (Try)**: A more robust approach for single-waiter
-  operations is to use :doxylink:`PW_ASYNC_TRY_STORE_WAKER`. This macro
+  operations is to use :cc:`PW_ASYNC_TRY_STORE_WAKER`. This macro
   returns ``false`` if a waker is already stored, allowing the function to
   gracefully signal that it is busy (e.g., by returning
   ``PollResult<T>(Status::Unavailable())``).
 
 * **Multiple Wakers**: For operations that support multiple concurrent waiters,
-  use a :doxylink:`WakerQueue <pw::async2::WakerQueue>`. This is a fixed-size
+  use a :cc:`WakerQueue <pw::async2::WakerQueue>`. This is a fixed-size
   queue that can store multiple wakers. When the operation completes, you can
   choose to wake the first (``WakeOne()``), a specific number (``WakeMany(n)``),
   or all (``WakeAll()``) of the waiting tasks. The same macros work with a
@@ -146,22 +146,22 @@ behavior should be clearly documented.
 ------------------
 Implementing tasks
 ------------------
-:doxylink:`Task <pw::async2::Task>` instances complete one or more asynchronous
+:cc:`Task <pw::async2::Task>` instances complete one or more asynchronous
 operations. They are the top-level "thread" primitives of ``pw_async2``.
 
 You can use one of the concrete subclasses of ``Task`` that Pigweed provides:
 
-* :doxylink:`CoroOrElseTask <pw::async2::CoroOrElseTask>`: Delegates to a
+* :cc:`CoroOrElseTask <pw::async2::CoroOrElseTask>`: Delegates to a
   provided coroutine and executes an ``or_else`` handler function on failure.
-* :doxylink:`PendFuncTask <pw::async2::PendFuncTask>`: Delegates to a provided
+* :cc:`PendFuncTask <pw::async2::PendFuncTask>`: Delegates to a provided
   function.
-* :doxylink:`PendableAsTask <pw::async2::PendableAsTask>`: Delegates to a type
+* :cc:`PendableAsTask <pw::async2::PendableAsTask>`: Delegates to a type
   with a ``Pend`` method.
-* :doxylink:`AllocateTask <pw::async2::AllocateTask>`: Creates a concrete
+* :cc:`AllocateTask <pw::async2::AllocateTask>`: Creates a concrete
   subclass of ``Task``, just like ``PendableAsTask``, but the created task is
   dynamically allocated and frees the associated memory upon completion.
 
-Or you can subclass ``Task`` yourself. See :doxylink:`Task <pw::async2::Task>`
+Or you can subclass ``Task`` yourself. See :cc:`Task <pw::async2::Task>`
 for more guidance on subclassing.
 
 .. _module-pw_async2-guides-tasks:
@@ -169,13 +169,13 @@ for more guidance on subclassing.
 ------------------------------
 How a dispatcher manages tasks
 ------------------------------
-The purpose of a :doxylink:`Dispatcher <pw::async2::Dispatcher>` is to keep
-track of a set of :doxylink:`Task <pw::async2::Task>` objects and run them to
+The purpose of a :cc:`Dispatcher <pw::async2::Dispatcher>` is to keep
+track of a set of :cc:`Task <pw::async2::Task>` objects and run them to
 completion. The dispatcher is essentially a scheduler for cooperatively
 scheduled (non-preemptive) threads (tasks).
 
 While a dispatcher is running, it waits for one or more tasks to waken and then
-advances each task by invoking its :doxylink:`DoPend <pw::async2::Task::DoPend>`
+advances each task by invoking its :cc:`DoPend <pw::async2::Task::DoPend>`
 method. The ``DoPend`` method is typically implemented manually by users, though
 it is automatically provided by coroutines.
 
@@ -249,12 +249,12 @@ set, and also arrange to wake the task via its ``Waker``.
 abstraction and ensure you implement it correctly.
 
 For the first pair of helpers, the receiver helper
-:doxylink:`OnceReceiver <pw::async2::OnceReceiver>` owns the storage for a value
-and is linked on creation to a :doxylink:`OnceSender <pw::async2::OnceSender>`
+:cc:`OnceReceiver <pw::async2::OnceReceiver>` owns the storage for a value
+and is linked on creation to a :cc:`OnceSender <pw::async2::OnceSender>`
 which provides the interface for sending a value.
 
 Construct a linked pair of these helpers by calling
-:doxylink:`MakeOnceSenderAndReceiver<T> <pw::async2::MakeOnceSenderAndReceiver>`,
+:cc:`MakeOnceSenderAndReceiver<T> <pw::async2::MakeOnceSenderAndReceiver>`,
 using value type as the template argument.
 
 You would then typically transfer ownership of the receiver to your Task using
@@ -270,9 +270,9 @@ to point at the new location of the receiver, maintaining the link.
 You can also similarly and safely move the sender to transfer its ownership.
 
 When implementing the task, you should prefer to use
-:doxylink:`PW_TRY_READY_ASSIGN` to automate handling the
-:doxylink:`Pending <pw::async2::Pending>` return value of
-:doxylink:`OnceReceiver::Pend() <pw::async2::OnceReceiver::Pend>`, leaving you
+:cc:`PW_TRY_READY_ASSIGN` to automate handling the
+:cc:`Pending <pw::async2::Pending>` return value of
+:cc:`OnceReceiver::Pend() <pw::async2::OnceReceiver::Pend>`, leaving you
 to decide how to handle the error case if no value being sent (which can happen
 if the sender is destroyed), and more typically what to do with the received
 value.
@@ -284,7 +284,7 @@ value.
    :end-before: [pw_async2-examples-once-send-recv-receiving]
 
 You can send a value to the task via the
-:doxylink:`emplace() <pw::async2::OnceSender::emplace>` member function. Note
+:cc:`emplace() <pw::async2::OnceSender::emplace>` member function. Note
 that this allows you to ``std::move`` the value, or even construct it in-place
 if that makes sense to do.
 
@@ -295,16 +295,16 @@ if that makes sense to do.
    :end-before: [pw_async2-examples-once-send-recv-send-value]
 
 If your type is expensive to copy, ``pw_async2`` also provides another pair of
-helpers, :doxylink:`OnceRefSender <pw::async2::OnceRefSender>` and
-:doxylink:`OnceRefReceiver <pw::async2::OnceRefReceiver>`, where an external
+helpers, :cc:`OnceRefSender <pw::async2::OnceRefSender>` and
+:cc:`OnceRefReceiver <pw::async2::OnceRefReceiver>`, where an external
 component owns the storage for the type ``T``.
 
-For :doxylink:`OnceRefReceiver <pw::async2::OnceRefReceiver>`, the receiving
-task will still use :doxylink:`Pend() <pw::async2::OnceRefReceiver::Pend>` to
+For :cc:`OnceRefReceiver <pw::async2::OnceRefReceiver>`, the receiving
+task will still use :cc:`Pend() <pw::async2::OnceRefReceiver::Pend>` to
 get a ``Poll<Status>`` value indicating if the sender has set the value, but it
 will have to access the value itself through its own pointer or reference.
 
-When the sender uses :doxylink:`OnceRefSender <pw::async2::OnceRefSender>` to
+When the sender uses :cc:`OnceRefSender <pw::async2::OnceRefSender>` to
 set the value, do note that it does require making a copy into the external
 value storage, though this can be a shallow copy through a ``std::move`` if
 supported.
@@ -332,8 +332,8 @@ them upstream to ``pw::async2``!
 Multiple values
 ===============
 If your tasks need to send or receive multiple values, then you can use the
-awaitable interface of :doxylink:`pw::InlineAsyncQueue` or
-:doxylink:`pw::InlineAsyncDeque` from ``pw_containers``.
+awaitable interface of :cc:`pw::InlineAsyncQueue` or
+:cc:`pw::InlineAsyncDeque` from ``pw_containers``.
 
 If your needs are simple, this is a perfectly good way of handling a simple
 byte stream or message queue.
@@ -373,7 +373,7 @@ values before trying to remove them from the queue.
    :end-before: [pw_async2-examples-inline-async-queue-with-tasks-pend-values]
 
 You can find a complete example for using
-:doxylink:`InlineAsyncQueue <pw::InlineAsyncQueue>` this way in
+:cc:`InlineAsyncQueue <pw::InlineAsyncQueue>` this way in
 `//pw_async2/examples/inline_async_queue_with_tasks_test.cc`_, and you can try
 it for yourself with:
 
@@ -389,18 +389,18 @@ it for yourself with:
 Timing
 ------
 When using ``pw_async2``, you should inject timing functionality by accepting
-a :doxylink:`TimeProvider <pw::async2::TimeProvider>` (most commonly
+a :cc:`TimeProvider <pw::async2::TimeProvider>` (most commonly
 ``TimeProvider<SystemClock>`` when using the system's built-in ``time_point``
 and ``duration`` types).
 
-:doxylink:`TimeProvider <pw::async2::TimeProvider>` allows for easily waiting
+:cc:`TimeProvider <pw::async2::TimeProvider>` allows for easily waiting
 for a timeout or deadline using the
-:doxylink:`WaitFor <pw::async2::TimeProvider::WaitFor>` and
-:doxylink:`WaitUntil <pw::async2::TimeProvider::WaitUntil>` methods.
+:cc:`WaitFor <pw::async2::TimeProvider::WaitFor>` and
+:cc:`WaitUntil <pw::async2::TimeProvider::WaitUntil>` methods.
 Additionally, you can test code that uses
-:doxylink:`TimeProvider <pw::async2::TimeProvider>` for timing with simulated
+:cc:`TimeProvider <pw::async2::TimeProvider>` for timing with simulated
 time using
-:doxylink:`SimulatedTimeProvider <pw::async2::SimulatedTimeProvider>`. Doing so
+:cc:`SimulatedTimeProvider <pw::async2::SimulatedTimeProvider>`. Doing so
 helps avoid timing-dependent test flakes and helps ensure that tests are fast
 since they don't need to wait for real-world time to elapse.
 
@@ -414,8 +414,8 @@ cases where non-async2 code needs to run asynchronous operations built with
 ``pw_async2``.
 
 To facilitate this, ``pw_async2`` provides callback tasks:
-:doxylink:`OneshotCallbackTask <pw::async2::OneshotCallbackTask>` and
-:doxylink:`RecurringCallbackTask <pw::async2::RecurringCallbackTask>`.
+:cc:`OneshotCallbackTask <pw::async2::OneshotCallbackTask>` and
+:cc:`RecurringCallbackTask <pw::async2::RecurringCallbackTask>`.
 
 These tasks invoke a :ref:`pendable function
 <module-pw_async2-guides-pendable-function>`, forwarding its result to a provided
@@ -423,13 +423,13 @@ callback on completion.
 
 The two variants of callback tasks are:
 
-* :doxylink:`OneshotCallbackTask\<T\> <pw::async2::OneshotCallbackTask>`: Pends
+* :cc:`OneshotCallbackTask\<T\> <pw::async2::OneshotCallbackTask>`: Pends
   the pendable. When the pendable returns ``Ready(value)``, the task invokes
   the callback once with ``value``. After the callback finishes, the
   ``OneshotCallbackTask`` itself completes. This is useful for single,
   asynchronous requests.
 
-* :doxylink:`RecurringCallbackTask\<T\> <pw::async2::RecurringCallbackTask>`:
+* :cc:`RecurringCallbackTask\<T\> <pw::async2::RecurringCallbackTask>`:
   Similar to the oneshot version, but after the task invokes the callback, the
   ``RecurringCallbackTask`` continues polling the pendable function. This is
   suitable for operations that produce a stream of values over time, where you
@@ -511,17 +511,17 @@ hardware and the high-level, cooperative multitasking model of ``pw_async2``.
 Unit testing
 ------------
 Unit testing ``pw_async2`` code is different from testing non-async code. You
-must run async code from a :doxylink:`Task <pw::async2::Task>` on a
-:doxylink:`Dispatcher <pw::async2::Dispatcher>`.
+must run async code from a :cc:`Task <pw::async2::Task>` on a
+:cc:`Dispatcher <pw::async2::Dispatcher>`.
 
 To test ``pw_async2`` code:
 
 #. Declare a dispatcher.
 #. Create a task to run the async code under test. Either implement
-   :doxylink:`Task <pw::async2::Task>` or use
-   :doxylink:`PendFuncTask <pw::async2::PendFuncTask>` to wrap a lambda.
+   :cc:`Task <pw::async2::Task>` or use
+   :cc:`PendFuncTask <pw::async2::PendFuncTask>` to wrap a lambda.
 #. Post the task to the dispatcher.
-#. Call :doxylink:`RunUntilStalled <pw::async2::Dispatcher::RunUntilStalled>`
+#. Call :cc:`RunUntilStalled <pw::async2::Dispatcher::RunUntilStalled>`
    to execute the task.
 
 The following example shows the basic structure of a ``pw_async2`` unit test.
@@ -538,14 +538,14 @@ stored and woken properly.
 To run the test task multiple times:
 
 #. Post the task to the dispatcher.
-#. Call :doxylink:`RunUntilStalled() <pw::async2::Dispatcher::RunUntilStalled>`,
-   which returns :doxylink:`Pending <pw::async2::Pending>`.
+#. Call :cc:`RunUntilStalled() <pw::async2::Dispatcher::RunUntilStalled>`,
+   which returns :cc:`Pending <pw::async2::Pending>`.
 #. Perform actions to allow the task to advance.
-#. Call :doxylink:`RunUntilStalled() <pw::async2::Dispatcher::RunUntilStalled>`
+#. Call :cc:`RunUntilStalled() <pw::async2::Dispatcher::RunUntilStalled>`
    again.
-#. Repeat until the task runs to completion and :doxylink:`RunUntilStalled()
+#. Repeat until the task runs to completion and :cc:`RunUntilStalled()
    <pw::async2::Dispatcher::RunUntilStalled>` returns
-   :doxylink:`Ready <pw::async2::Ready>`.
+   :cc:`Ready <pw::async2::Ready>`.
 
 The example below runs a task multiple times to test waiting for a
 ``FortuneTeller`` class to produce a fortune.
@@ -561,7 +561,7 @@ The example below runs a task multiple times to test waiting for a
 Debugging
 ---------
 You can inspect tasks registered to a dispatcher by calling
-::doxylink:`Dispatcher::LogRegisteredTasks()
+::cc:`Dispatcher::LogRegisteredTasks()
 <pw::async2::Dispatcher::LogRegisteredTasks>`, which logs information for each
 task in the dispatcher's pending and sleeping queues.
 
@@ -569,7 +569,7 @@ Sleeping tasks will log information about their assigned wakers, with the
 wait reason provided for each.
 
 If space is a concern, you can set the module configuration option
-:doxylink:`PW_ASYNC2_DEBUG_WAIT_REASON` to ``0`` to disable wait reason storage
+:cc:`PW_ASYNC2_DEBUG_WAIT_REASON` to ``0`` to disable wait reason storage
 and logging. Under this configuration, the dispatcher only logs the waker count
 of a sleeping task.
 
@@ -594,12 +594,12 @@ flexibility in how tasks are allocated and stored. Common patterns include:
   statically or as class members. This is the most common and memory-safe
   approach. The user must ensure the ``Task`` object is not destroyed while it
   is still registered with a ``Dispatcher``. Calling
-  :doxylink:`Task::Deregister() <pw::async2::Task::Deregister>` before
+  :cc:`Task::Deregister() <pw::async2::Task::Deregister>` before
   destruction guarantees safety.
 
 * **Dynamic Allocation**: For tasks with a dynamic lifetime, ``pw_async2``
-  provides the :doxylink:`AllocateTask <pw::async2::AllocateTask>` helper. This
-  function allocates a task using a provided :doxylink:`pw::Allocator` and
+  provides the :cc:`AllocateTask <pw::async2::AllocateTask>` helper. This
+  function allocates a task using a provided :cc:`pw::Allocator` and
   wraps it in a concrete ``Task`` implementation that automatically calls the
   allocator's ``Delete`` method upon completion. This simplifies memory
   management for "fire-and-forget" tasks.
@@ -626,12 +626,12 @@ It's common to have a system where some parts use ``pw_async2`` and others use
 callbacks. To bridge this gap, ``pw_async2`` provides helpers to wrap a
 pendable function and invoke a callback with its result.
 
-* :doxylink:`OneShotCallbackTask <pw::async2::OneshotCallbackTask>`: Polls a
+* :cc:`OneShotCallbackTask <pw::async2::OneshotCallbackTask>`: Polls a
   pendable function until it completes. When the function returns
   ``Ready(value)``, invokes a provided callback with the ``value`` and then
   finishes the task. This is ideal for request/response patterns.
 
-* :doxylink:`RecurringCallbackTask <pw::async2::RecurringCallbackTask>`: This
+* :cc:`RecurringCallbackTask <pw::async2::RecurringCallbackTask>`: This
   task is similar but reschedules itself after the callback is invoked. This
   allows it to handle pendable functions that produce a stream of values over
   time.
@@ -693,26 +693,26 @@ Time and timers
 ---------------
 Asynchronous systems often need to interact with time, for example to implement
 timeouts, delays, or periodic tasks. ``pw_async2`` provides a flexible and
-testable mechanism for this through the :doxylink:`TimeProvider
+testable mechanism for this through the :cc:`TimeProvider
 <pw::async2::TimeProvider>` interface.
 
 .. _module-pw_async2-guides-time-and-timers-time-provider:
 
 TimeProvider, timer factory
 ===========================
-The :doxylink:`TimeProvider <pw::async2::TimeProvider>` is an abstract
+The :cc:`TimeProvider <pw::async2::TimeProvider>` is an abstract
 interface that acts as a factory for timers. Its key responsibilities are:
 
 * **Providing the current time**: The ``now()`` method returns the current
   time according to a specific clock.
 * **Creating timers**: The ``WaitUntil(timestamp)`` and ``WaitFor(delay)``
-  methods return a :doxylink:`TimeFuture <pw::async2::TimeFuture>` object.
+  methods return a :cc:`TimeFuture <pw::async2::TimeFuture>` object.
 
 This design is friendly to dependency injection. By providing different
 implementations of ``TimeProvider``, code that uses timers can be tested with a
 simulated clock (like ``pw::chrono::SimulatedClock``), allowing for fast and
 deterministic tests without real-world delays. For production code, the
-:doxylink:`GetSystemTimeProvider() <pw::async2::GetSystemTimeProvider>`
+:cc:`GetSystemTimeProvider() <pw::async2::GetSystemTimeProvider>`
 function returns a global ``TimeProvider`` that uses the configured system
 clock.
 
@@ -720,7 +720,7 @@ clock.
 
 TimeFuture, time-bound pendable objects
 =======================================
-A :doxylink:`TimeFuture <pw::async2::TimeFuture>` is a pendable object that
+A :cc:`TimeFuture <pw::async2::TimeFuture>` is a pendable object that
 completes at a specific time. A task can ``Pend`` on a ``TimeFuture`` to
 suspend itself until the time designated by the future. When the time is
 reached, the ``TimeProvider`` wakes the task, and its next poll of the
@@ -800,8 +800,8 @@ Data Passing with OnceSender and OnceReceiver
 =============================================
 This pair of types provides a simple, single-use channel for passing a value
 from one task to another. The receiving task pends on the
-:doxylink:`OnceReceiver <pw::async2::OnceReceiver>` until the producing task
-sends a value through the :doxylink:`OnceSender <pw::async2::OnceSender>`.
+:cc:`OnceReceiver <pw::async2::OnceReceiver>` until the producing task
+sends a value through the :cc:`OnceSender <pw::async2::OnceSender>`.
 
 .. _module-pw_async2-guides-primitives-combinators:
 
@@ -810,10 +810,10 @@ Combinators (Join and Select)
 These powerful utilities allow for the composition of multiple asynchronous
 operations:
 
-* :doxylink:`Join <pw::async2::Join>`: Waits for *all* of a set of pendable
+* :cc:`Join <pw::async2::Join>`: Waits for *all* of a set of pendable
   operations to complete.
 
-* :doxylink:`Select <pw::async2::Select>`: Waits for the *first* of a set of
+* :cc:`Select <pw::async2::Select>`: Waits for the *first* of a set of
   pendable operations to complete, returning its result.
 
 .. _module-pw_async2-guides-primitives-aliases:
@@ -821,6 +821,6 @@ operations:
 Poll aliases
 ============
 Fallible pendable functions often return ``Poll<pw::Result<T>>`` or
-``Poll<std::optional<T>>``. The :doxylink:`PollResult <pw::async2::PollResult>`
-and :doxylink:`PollOptional <pw::async2::PollOptional>` aliases are provided to
+``Poll<std::optional<T>>``. The :cc:`PollResult <pw::async2::PollResult>`
+and :cc:`PollOptional <pw::async2::PollOptional>` aliases are provided to
 simplify these cases.

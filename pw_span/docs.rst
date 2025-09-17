@@ -6,7 +6,7 @@ pw_span
 .. pigweed-module::
    :name: pw_span
 
-* **Standardized**: :doxylink:`pw::span` matches C++20's `std::span
+* **Standardized**: :cc:`pw::span` matches C++20's `std::span
   <https://en.cppreference.com/w/cpp/container/span>`_ as closely as possible.
 * **Zero-cost**: If ``std::span`` is available, ``pw::span`` is simply an alias
   of it.
@@ -190,7 +190,7 @@ types using ``pw::span_cast<T>``.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_span`
+Moved: :cc:`pw_span`
 
 pw_span/span.h
 ==============
@@ -243,4 +243,4 @@ this module, see the
 :ref:`module documentation <module-structure-compile-time-configuration>` for
 more details.
 
-* :doxylink:`PW_SPAN_ENABLE_ASSERTS`
+* :cc:`PW_SPAN_ENABLE_ASSERTS`

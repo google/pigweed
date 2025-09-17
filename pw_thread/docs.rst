@@ -155,7 +155,7 @@ multiple functions to execute concurrently.
 
 API reference
 =============
-Moved: :doxylink:`pw_thread`
+Moved: :cc:`pw_thread`
 
 Differences from ``std::thread``
 ================================
@@ -434,7 +434,7 @@ new code.
 -------------------------
 Unit testing with threads
 -------------------------
-As an example, the STL :doxylink:`pw::thread::test::TestThreadContext` backend
+As an example, the STL :cc:`pw::thread::test::TestThreadContext` backend
 implementation in ``test_thread_context_native.h`` is shown below.
 
 .. literalinclude:: ../pw_thread_stl/public/pw_thread_stl/test_thread_context_native.h

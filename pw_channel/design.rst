@@ -67,7 +67,7 @@ How pw_channel addresses write-side backpressure
 When writing into a ``Channel`` instance, the ``Channel`` may provide
 backpressure in several locations:
 
-- :doxylink:`PendReadyToWrite <pw::channel::AnyChannel::PendReadyToWrite>` --
+- :cc:`PendReadyToWrite <pw::channel::AnyChannel::PendReadyToWrite>` --
   Before writing to a channel, users must check that it is ready to receive
   writes. If the channel is not ready, the channel will wake up the async task
   when it becomes ready to accept outbound data.
@@ -83,7 +83,7 @@ data into the outgoing buffer and send it into the channel.
 How pw_channel addresses read-side backpressure
 -----------------------------------------------
 When reading from a ``Channel`` instance, the consumer of the ``Channel`` data
-exerts backpressure by *not* invoking :doxylink:`PendRead
+exerts backpressure by *not* invoking :cc:`PendRead
 <pw::channel::AnyChannel::PendRead>`. The buffers returned by ``PendRead`` are
 allocated by the ``Channel`` itself.
 
@@ -116,7 +116,7 @@ of the incoming data.
 This process requires both runtime overhead due to copying and memory overhead
 due to the need for multiple buffers to hold every message.
 
-``Channel`` avoids this problem by using :doxylink:`MultiBuf
+``Channel`` avoids this problem by using :cc:`MultiBuf
 <pw::multibuf::MultiBuf>`. The lower layers of the stack are responsible for
 allocating peripheral-compatible buffers that are then passed up the stack for
 the application code to read from or write into. ``MultiBuf`` allows for
@@ -162,7 +162,7 @@ read. If a zero-length byte read occurs, it is ignored.
 
 To facilitate simple code reuse, datagram-oriented channels may used as
 byte-oriented channels when appropriate. Calling
-:doxylink:`IgnoreDatagramBoundaries
+:cc:`IgnoreDatagramBoundaries
 <pw::channel::Channel::IgnoreDatagramBoundaries>` on
 a datagram channel returns a byte channel reference to it. The byte view of the
 channel is simply the concatenation of the contents of the datagrams.
@@ -178,7 +178,7 @@ This is only valid if, for the datagram channel:
 -----------------------------
 Hourglass inheritance pattern
 -----------------------------
-:doxylink:`pw::channel::Channel` uses an uncommon, hourglass-like inheritance
+:cc:`pw::channel::Channel` uses an uncommon, hourglass-like inheritance
 pattern. This pattern offers the advantages of multiple inheritance without the
 downsides (overhead, potential for the diamond problem).
 

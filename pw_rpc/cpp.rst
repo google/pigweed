@@ -294,7 +294,7 @@ IDs without requiring remapping.
 
 API reference
 -------------
-Moved: :doxylink:`Channel functions <pw_rpc_channel>`
+Moved: :cc:`Channel functions <pw_rpc_channel>`
 
 Example deployment
 ==================
@@ -620,20 +620,20 @@ instantiate as:
 Client synchronous call wrappers
 --------------------------------
 ``pw_rpc`` provides wrappers that convert the asynchronous client API to a
-synchronous API. The :doxylink:`SynchronousCall\<RpcMethod\>
+synchronous API. The :cc:`SynchronousCall\<RpcMethod\>
 <pw::rpc::SynchronousCall>` functions wrap the asynchronous client RPC call
 with a timed thread notification and returns once a result is known or a
 timeout has occurred. Only unary methods are supported.
 
-The Nanopb and pwpb APIs return a :doxylink:`SynchronousCallResult\<Response\>
+The Nanopb and pwpb APIs return a :cc:`SynchronousCallResult\<Response\>
 <pw::rpc::SynchronousCallResult>` object, which can be queried to determine
 whether any error scenarios occurred and, if not, access the response. The raw
-API executes a function when the call completes or returns a :doxylink:`Status
+API executes a function when the call completes or returns a :cc:`Status
 <pw::Status>` if it does not.
 
 ``SynchronousCall<RpcMethod>`` blocks indefinitely, whereas
-:doxylink:`SynchronousCallFor\<RpcMethod\> <pw::rpc::SynchronousCallFor>` and
-:doxylink:`SynchronousCallUntil\<RpcMethod\> <pw::rpc::SynchronousCallUntil>`
+:cc:`SynchronousCallFor\<RpcMethod\> <pw::rpc::SynchronousCallFor>` and
+:cc:`SynchronousCallUntil\<RpcMethod\> <pw::rpc::SynchronousCallUntil>`
 block for a given timeout or until a deadline, respectively. All wrappers work
 with either the standalone static RPC functions or the generated service client
 member methods.
@@ -641,7 +641,7 @@ member methods.
 .. note::
 
    Use of the ``SynchronousCall`` wrappers requires a
-   :doxylink:`TimedThreadNotification <pw::sync::TimedThreadNotification>`
+   :cc:`TimedThreadNotification <pw::sync::TimedThreadNotification>`
    backend.
 
 The following examples use the Nanopb API to make a call that blocks
@@ -695,10 +695,10 @@ of response messages with variable-length fields.
      PW_LOG_INFO("%d", result.response().values[0]);
    }
 
-The raw API works similarly to the Nanopb API, but takes a :doxylink:`Function
-<pw::Function>` and returns a :doxylink:`Status <pw::Status>`. If the RPC
+The raw API works similarly to the Nanopb API, but takes a :cc:`Function
+<pw::Function>` and returns a :cc:`Status <pw::Status>`. If the RPC
 completes, the ``Function`` is called with the response and returned status,
-and the ``SynchronousCall()`` invocation returns :doxylink:`OkStatus()
+and the ``SynchronousCall()`` invocation returns :cc:`OkStatus()
 <pw::OkStatus>`. If the RPC fails, ``SynchronousCall()`` returns an error.
 
 .. code-block:: cpp
@@ -1077,7 +1077,7 @@ defined in ``pw_rpc/integration_testing.h``:
 ---------------------
 Configuration options
 ---------------------
-See :doxylink:`Configuration <pw_rpc_config>`.
+See :cc:`Configuration <pw_rpc_config>`.
 
 ------------------------------
 Sharing server and client code

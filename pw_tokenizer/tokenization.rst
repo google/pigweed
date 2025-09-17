@@ -102,8 +102,8 @@ Tokenize string literals outside of expressions
 arguments:
 
 * `PW_TOKENIZE_STRING`_
-* :doxylink:`PW_TOKENIZE_STRING_DOMAIN`
-* :doxylink:`PW_TOKENIZE_STRING_MASK`
+* :cc:`PW_TOKENIZE_STRING_DOMAIN`
+* :cc:`PW_TOKENIZE_STRING_MASK`
 
 The tokenization macros above cannot be used inside other expressions.
 
@@ -135,8 +135,8 @@ require C++ and cannot be assigned to constexpr variables or be used with
 special function variables like ``__func__``.
 
 * `PW_TOKENIZE_STRING_EXPR`_
-* :doxylink:`PW_TOKENIZE_STRING_DOMAIN_EXPR`
-* :doxylink:`PW_TOKENIZE_STRING_MASK_EXPR`
+* :cc:`PW_TOKENIZE_STRING_DOMAIN_EXPR`
+* :cc:`PW_TOKENIZE_STRING_MASK_EXPR`
 
 .. admonition:: When to use these macros
 
@@ -281,26 +281,26 @@ Logging enums is one common special case where tokenization is particularly
 appropriate: enum values are conceptually already tokens mapping to their
 names, assuming no duplicate values.
 
-:doxylink:`PW_TOKENIZE_ENUM` will take in a fully qualified enum name along with all
+:cc:`PW_TOKENIZE_ENUM` will take in a fully qualified enum name along with all
 of the associated enum values. This macro will create database entries that
 include the domain name (fully qualified enum name), enum value, and a tokenized
 form of the enum value.
 
 The macro also supports returing the string version of the enum value in the
 case that there is a non-tokenizing backend, using
-:doxylink:`EnumToString <pw::tokenizer::EnumToString>`.
+:cc:`EnumToString <pw::tokenizer::EnumToString>`.
 
 All enum values in the enum declaration must be present in the macro, and the
 macro must be in the same namespace as the enum to be able to use the
-:doxylink:`EnumToString <pw::tokenizer::EnumToString>` function and avoid compiler errors.
+:cc:`EnumToString <pw::tokenizer::EnumToString>` function and avoid compiler errors.
 
 .. literalinclude: enum_test.cc
    :language: cpp
    :start-after: [pw_tokenizer-examples-enum]
    :end-before: [pw_tokenizer-examples-enum]
 
-:doxylink:`PW_TOKENIZE_ENUM_CUSTOM` is an alternative version of
-:doxylink:`PW_TOKENIZE_ENUM` to tokenized a custom strings instead of a
+:cc:`PW_TOKENIZE_ENUM_CUSTOM` is an alternative version of
+:cc:`PW_TOKENIZE_ENUM` to tokenized a custom strings instead of a
 stringified form of the enum value name. It will take in a fully qualified enum
 name along with all the associated enum values and custom string for these
 values. This macro will create database entries that include the domain name
@@ -320,7 +320,7 @@ data to a global handler function. A project's custom tokenization macro can
 handle tokenized data in a function of their choosing. The function may accept
 any arguments, but its final arguments must be:
 
-* The 32-bit token (:doxylink:`pw_tokenizer_Token`)
+* The 32-bit token (:cc:`pw_tokenizer_Token`)
 * The argument types (``pw_tokenizer_ArgTypes``)
 * Variadic arguments, if any
 
@@ -339,9 +339,9 @@ Use these macros to invoke an encoding function with the token, argument types,
 and variadic arguments. The function can then encode the tokenized message to a
 buffer using helpers in ``pw_tokenizer/encode_args.h``:
 
-* :doxylink:`EncodeArgs <pw::tokenizer::EncodeArgs>`
-* :doxylink:`EncodedMessage <pw::tokenizer::EncodedMessage>`
-* :doxylink:`pw_tokenizer_EncodeArgs`
+* :cc:`EncodeArgs <pw::tokenizer::EncodeArgs>`
+* :cc:`EncodedMessage <pw::tokenizer::EncodedMessage>`
+* :cc:`pw_tokenizer_EncodeArgs`
 
 Example
 -------
@@ -374,8 +374,8 @@ The following example implements a custom tokenization macro similar to
 
 In this example, the ``EncodeTokenizedMessage`` function would handle encoding
 and processing the message. Encoding is done by the
-:doxylink:`EncodedMessage <pw::tokenizer::EncodedMessage>` class or
-:doxylink:`EncodeArgs <pw::tokenizer::EncodeArgs>` function from
+:cc:`EncodedMessage <pw::tokenizer::EncodedMessage>` class or
+:cc:`EncodeArgs <pw::tokenizer::EncodeArgs>` function from
 ``pw_tokenizer/encode_args.h``. The encoded message can then be transmitted or
 stored as needed.
 
@@ -416,7 +416,7 @@ char*`` string. Unlike ``%s``, the string does not have to be null terminated.
 ``pw_tokenizer`` does not yet support the ``%.*s`` specifier (see `b/408040194
 <http://pwbug.dev/408040194>`_). To tokenize a length-delimited string, make a
 local null-terminated copy first. This can be done with a temporary
-:doxylink:`pw::InlineString` sized to fit the string.
+:cc:`pw::InlineString` sized to fit the string.
 
 .. literalinclude:: tokenize_test.cc
    :language: c++
@@ -445,7 +445,7 @@ concatentated with string literals. For example, ``printf(__func__ ": %d",
 
 Calculate minimum required buffer size
 ======================================
-See :doxylink:`MinEncodingBufferSizeBytes <pw::tokenizer::MinEncodingBufferSizeBytes>`.
+See :cc:`MinEncodingBufferSizeBytes <pw::tokenizer::MinEncodingBufferSizeBytes>`.
 
 .. _module-pw_tokenizer-base64-format:
 
@@ -503,8 +503,8 @@ This makes it trivial to decode tokens that use fewer than 32 bits.
 
 Masking functionality is provided through the ``*_MASK`` versions of the macros:
 
-* :doxylink:`PW_TOKENIZE_STRING_MASK`
-* :doxylink:`PW_TOKENIZE_STRING_MASK_EXPR`
+* :cc:`PW_TOKENIZE_STRING_MASK`
+* :cc:`PW_TOKENIZE_STRING_MASK_EXPR`
 * `PW_TOKENIZE_TO_BUFFER_MASK`_
 
 For example, the following generates 16-bit tokens and packs them into an

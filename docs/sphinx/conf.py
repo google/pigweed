@@ -306,7 +306,7 @@ tagfile_path = os.path.abspath("doxygen/api/cc/index.tag")
 # The relative path that Doxylink should use when creating links.
 doxygen_site_path = "./api/cc"
 doxylink = {
-    "doxylink": (tagfile_path, doxygen_site_path),
+    "cc": (tagfile_path, doxygen_site_path),
 }
 # TODO: b/441605063 - Remove after variadic macro bug is fixed.
 doxylink_parse_error_ignore_regexes = [r"\.\.\."]

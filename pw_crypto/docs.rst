@@ -356,4 +356,4 @@ configurations.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_crypto`
+Moved: :cc:`pw_crypto`

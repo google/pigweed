@@ -61,7 +61,7 @@ If you need to add this item to containers of more than one type, see
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_containers_sets`
+Moved: :cc:`pw_containers_sets`
 
 ------------
 Size reports

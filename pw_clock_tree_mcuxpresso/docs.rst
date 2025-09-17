@@ -30,9 +30,9 @@ that can be directly instantiated:
 .. cpp:namespace-push:: pw::clock_tree::Element
 
 Other clock tree components such as PLLs can be instantiated by deriving custom
-class implementations from the abstract class :doxylink:`DependentElement
-<pw::clock_tree::DependentElement>` and overwriting :doxylink:`DoEnable
-<pw::clock_tree::Element::DoEnable>` and :doxylink:`DoDisable
+class implementations from the abstract class :cc:`DependentElement
+<pw::clock_tree::DependentElement>` and overwriting :cc:`DoEnable
+<pw::clock_tree::Element::DoEnable>` and :cc:`DoDisable
 <pw::clock_tree::Element::DoDisable>` methods.
 
 .. cpp:namespace-pop::
@@ -40,7 +40,7 @@ class implementations from the abstract class :doxylink:`DependentElement
 .. cpp:namespace-push:: pw::clock_tree::Element
 
 When enabling clock tree elements sourced from the audio PLL or the SYS PLL it
-is necessary to use the :doxylink:`AcquireWith
+is necessary to use the :cc:`AcquireWith
 <pw::clock_tree::Element::AcquireWith>` method.
 
 .. cpp:namespace-pop::
@@ -71,7 +71,7 @@ Please note that the clock tree element ``flexcomm_0`` is only required if the
 SDK is compiled with the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set,
 and that the connection between ``flexcomm_selector_0`` and ``flexcomm_0``
 represents only a logical dependency connection between the two clock tree
-elements. The ``flexcomm_0`` :doxylink:`ClockMcuxpressoClockIp
+elements. The ``flexcomm_0`` :cc:`ClockMcuxpressoClockIp
 <pw::clock_tree::ClockMcuxpressoClockIp>` gates the register access to the
 ``Flexcomm 0`` IP block, but it doesn't gate the ``Flexcomm 0`` clock source
 itself.  Nevertheless, to use ``Flexcomm 0`` the ``Flexcomm 0`` IP block and
@@ -104,7 +104,7 @@ Please note that the clock tree element ``i3c0`` is only required if the SDK is
 compiled with the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set, and that
 the connection between ``i3c0_selector`` and ``i3c0`` represents only a logical
 dependency connection between the two clock tree elements. The ``i3c0``
-:doxylink:`ClockMcuxpressoClockIp <pw::clock_tree::ClockMcuxpressoClockIp>` gates
+:cc:`ClockMcuxpressoClockIp <pw::clock_tree::ClockMcuxpressoClockIp>` gates
 the register access to the ``I3C`` IP block, but it doesn't gate the ``I3C``
 clock source itself.  Nevertheless, to use ``I3C`` the ``I3C`` IP block and
 ``I3C`` clock source need to be enabled, hence we established the dependency
@@ -140,7 +140,7 @@ Please note that the clock tree element ``ctimer_0`` is only required if the
 SDK is compiled with the define ``FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL`` set,
 and that the connection between ``ctimer_selector_0`` and ``ctimer_0``
 represents only a logical dependency connection between the two clock tree
-elements. The ``ctimer_0`` :doxylink:`ClockMcuxpressoClockIp
+elements. The ``ctimer_0`` :cc:`ClockMcuxpressoClockIp
 <pw::clock_tree::ClockMcuxpressoClockIp>` gates the register access to the
 ``CTimer 0`` IP block, but it doesn't gate the ``CTimer 0`` clock source
 itself.  Nevertheless, to use ``CTimer 0`` the ``CTimer 0`` IP block and
@@ -188,16 +188,16 @@ Audio PLL examples
 
 .. cpp:namespace-push:: pw::clock_tree::Element
 
-The :doxylink:`ClockMcuxpressoAudioPll
+The :cc:`ClockMcuxpressoAudioPll
 <pw::clock_tree::ClockMcuxpressoAudioPll>` can be configured in two different
 ways, either it can be configured where the audio PLL gets enabled, or it can
 be configured in bypass mode.
 
-The first example shows where :doxylink:`ClockMcuxpressoAudioPll
+The first example shows where :cc:`ClockMcuxpressoAudioPll
 <pw::clock_tree::ClockMcuxpressoAudioPll>` enables the audio PLL and uses the
 ClkIn pin clock source as OSC clock source that feeds into the audio PLL logic.
 Since the audio PLL requires that the ``FRO_DIV8`` clock source is enabled when
-enabling the audio PLL, the :doxylink:`AcquireWith
+enabling the audio PLL, the :cc:`AcquireWith
 <pw::clock_tree::Element::AcquireWith>` needs to be used that ensures that the
 ``FRO_DIV8`` clock is enabled when enabling the audio PLL.
 
@@ -237,7 +237,7 @@ Definition of ``FRO_DIV8`` clock tree element:
    :end-before: [pw_clock_tree_mcuxpresso-examples-ClockTreeElementDefs-fro_div8]
 
 Audio PLL clock tree element gets enabled and disabled. We use
-:doxylink:`AcquireWith <pw::clock_tree::Element::AcquireWith>` to ensure that
+:cc:`AcquireWith <pw::clock_tree::Element::AcquireWith>` to ensure that
 ``FRO_DIV8`` is enabled prior to configuring the audio PLL to a
 non-``FRO_DIV8`` clock source.
 
@@ -247,7 +247,7 @@ non-``FRO_DIV8`` clock source.
    :start-after: [pw_clock_tree_mcuxpresso-examples-Use-AudioPll]
    :end-before: [pw_clock_tree_mcuxpresso-examples-Use-AudioPll]
 
-The second example shows where :doxylink:`ClockMcuxpressoAudioPll
+The second example shows where :cc:`ClockMcuxpressoAudioPll
 <pw::clock_tree::ClockMcuxpressoAudioPll>` bypasses the audio PLL and
 uses ``FRO_DIV8 pin`` clock source.
 
@@ -268,4 +268,4 @@ uses ``FRO_DIV8 pin`` clock source.
 
 API reference
 =============
-Moved: :doxylink:`pw_clock_tree_mcuxpresso`
+Moved: :cc:`pw_clock_tree_mcuxpresso`

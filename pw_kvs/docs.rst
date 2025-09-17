@@ -156,14 +156,14 @@ your hardware. See `pw_kvs/flash_memory.h`_.
 ---------
 Reference
 ---------
-Moved: :doxylink:`pw_kvs`
+Moved: :cc:`pw_kvs`
 
 .. _module-pw_kvs-design:
 
 ------
 Design
 ------
-:doxylink:`pw::kvs::KeyValueStore` ("the KVS") stores key and value data
+:cc:`pw::kvs::KeyValueStore` ("the KVS") stores key and value data
 pairs. The key-value pairs are stored in :ref:`flash partition
 <module-pw_kvs-design-memory>` as a :ref:`key-value entry
 <module-pw_kvs-design-entries>` (KV entry) that consists of a header/metadata,
@@ -336,9 +336,9 @@ collected. The always-free sector is rotated as part of the KVS
 Garbage collection can be performed manually, by invoking the methods below,
 or it can be configured to happen automatically.
 
-* :doxylink:`pw::kvs::KeyValueStore::HeavyMaintenance()`
-* :doxylink:`pw::kvs::KeyValueStore::FullMaintenance()`
-* :doxylink:`pw::kvs::KeyValueStore::PartialMaintenance()`
+* :cc:`pw::kvs::KeyValueStore::HeavyMaintenance()`
+* :cc:`pw::kvs::KeyValueStore::FullMaintenance()`
+* :cc:`pw::kvs::KeyValueStore::PartialMaintenance()`
 
 .. _module-pw_kvs-design-wear:
 

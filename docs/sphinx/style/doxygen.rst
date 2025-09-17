@@ -296,7 +296,7 @@ Example:
    /// * @DEADLINE_EXCEEDED: Timed out waiting for a sample.
    /// * Other statuses left up to the implementer.
 
-See :doxylink:`TryReadFor() <pw::analog::AnalogInput::TryReadFor>` to view how
+See :cc:`TryReadFor() <pw::analog::AnalogInput::TryReadFor>` to view how
 this example gets rendered.
 
 .. _docs-style-doxygen-namespaces:
@@ -389,7 +389,7 @@ always use the fully qualified name:
 
 .. code-block:: rst
 
-   :doxylink:`pw::IntrusiveList``
+   :cc:`pw::IntrusiveList``
 
 For symbols with two or more levels of namespace, display the
 unqualified name. The underlying link to the symbol must still
@@ -397,7 +397,7 @@ be fully qualified:
 
 .. code-block:: rst
 
-   :doxylink:`PendRead <pw::channel::AnyChannel::PendRead>`
+   :cc:`PendRead <pw::channel::AnyChannel::PendRead>`
 
 .. _Doxylink: https://sphinxcontrib-doxylink.readthedocs.io/en/stable/
 
@@ -407,13 +407,13 @@ can be hard to read.
 
 .. code-block:: rst
 
-   :doxylink:`pw::channel::AnyChannel::PendRead`
+   :cc:`pw::channel::AnyChannel::PendRead`
 
 Direct links to unqualified names are never allowed:
 
 .. code-block:: rst
 
-   :doxylink:`PendRead`
+   :cc:`PendRead`
 
 .. _Doxylink: https://sphinxcontrib-doxylink.readthedocs.io/en/stable/
 
@@ -638,22 +638,22 @@ Link from Sphinx site to Doxygen site
 -------------------------------------
 .. _Doxylink: https://sphinxcontrib-doxylink.readthedocs.io/en/stable/
 
-Within your reStructuredText, use the ``:doxylink:`` directive.
+Within your reStructuredText, use the ``:cc:`` directive.
 
 For example, the following link jumps you to the API reference
-for ``pw::persistent_ram::Persistent``: :doxylink:`Persistent`
+for ``pw::persistent_ram::Persistent``: :cc:`Persistent`
 
 Here's the underlying reStructuredText:
 
 .. code-block::
 
-   :doxylink:`Persistent`
+   :cc:`Persistent`
 
 If there is a naming collision, you may need to fully qualify the
-namespace like this: :doxylink:`pw::persistent_ram::Persistent`
+namespace like this: :cc:`pw::persistent_ram::Persistent`
 
 .. code-block::
 
-   :doxylink:`pw::persistent_ram::Persistent`
+   :cc:`pw::persistent_ram::Persistent`
 
 This feature is powered by `Doxylink`_.

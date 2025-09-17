@@ -713,7 +713,7 @@ Find APIs
 ---------
 Sometimes, only a single field from a serialized message needs to be read. In
 these cases, setting up a decoder and iterating through the message is a lot of
-boilerplate. ``pw_protobuf`` provides convenient :doxylink:`Find APIs
+boilerplate. ``pw_protobuf`` provides convenient :cc:`Find APIs
 <pw_protobuf_find>` which handle this for you.
 
 .. note::

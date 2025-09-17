@@ -362,7 +362,7 @@ layer for a :cpp:class:`pw::Function` automatically.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_function`
+Moved: :cc:`pw_function`
 
 .. _module-pw_function-design:
 

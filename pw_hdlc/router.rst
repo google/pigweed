@@ -6,7 +6,7 @@ Router
 .. pigweed-module-subpage::
    :name: pw_hdlc
 
-:doxylink:`pw::hdlc::Router` is an experimental asynchronous HDLC router using
+:cc:`pw::hdlc::Router` is an experimental asynchronous HDLC router using
 ``pw_channel``.
 
 It sends and receives HDLC packets using an external byte-oriented channel
@@ -15,7 +15,7 @@ and routes the decoded packets to local datagram-oriented channels.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw::hdlc::Router`
+Moved: :cc:`pw::hdlc::Router`
 
 -----------------
 More pw_hdlc docs

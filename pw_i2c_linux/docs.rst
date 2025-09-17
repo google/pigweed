@@ -18,7 +18,7 @@ on underlying support by the linux-managed device.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_i2c_linux`
+Moved: :cc:`pw_i2c_linux`
 
 --------
 Examples

@@ -14,7 +14,7 @@ C and C++
 
 API reference
 =============
-Moved: :doxylink:`pw_preprocessor`
+Moved: :cc:`pw_preprocessor`
 
 Headers
 =======
@@ -23,7 +23,7 @@ The preprocessor module provides several headers.
 pw_preprocessor/apply.h
 -----------------------
 Defines general macro to support macro expansion. Includes the
-:doxylink:`PW_APPLY` macro.
+:cc:`PW_APPLY` macro.
 
 pw_preprocessor/arguments.h
 ---------------------------
@@ -84,11 +84,11 @@ Modifying compiler diagnostics
 ``pw_preprocessor/compiler.h`` provides macros for enabling or disabling
 compiler diagnostics (warnings or errors) for sections of code.
 
-:doxylink:`PW_MODIFY_DIAGNOSTICS_PUSH` and :doxylink:`PW_MODIFY_DIAGNOSTICS_POP`
+:cc:`PW_MODIFY_DIAGNOSTICS_PUSH` and :cc:`PW_MODIFY_DIAGNOSTICS_POP`
 are used to turn off or on diagnostics (warnings or errors) for a section of
-code. Use :doxylink:`PW_MODIFY_DIAGNOSTICS_PUSH`, use
-:doxylink:`PW_MODIFY_DIAGNOSTIC` as many times as needed, then use
-:doxylink:`PW_MODIFY_DIAGNOSTICS_POP` to restore the previous settings.
+code. Use :cc:`PW_MODIFY_DIAGNOSTICS_PUSH`, use
+:cc:`PW_MODIFY_DIAGNOSTIC` as many times as needed, then use
+:cc:`PW_MODIFY_DIAGNOSTICS_POP` to restore the previous settings.
 
 .. code-block:: c
 
@@ -101,7 +101,7 @@ code. Use :doxylink:`PW_MODIFY_DIAGNOSTICS_PUSH`, use
 
 .. tip::
 
-  :doxylink:`PW_MODIFY_DIAGNOSTIC` and related macros should rarely be used.
+  :cc:`PW_MODIFY_DIAGNOSTIC` and related macros should rarely be used.
   Whenever possible, fix the underlying issues about which the compiler is
   warning, rather than silencing the diagnostics.
 

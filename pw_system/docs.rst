@@ -263,8 +263,8 @@ dispatcher, which may be used to run async tasks, including with C++20
 coroutines.
 
 To use ``pw_system:async``, add a dependency on ``@pigweed//pw_system:async`` in
-Bazel. Then, from your main function, invoke :doxylink:`pw::SystemStart` with a
-:doxylink:`pw::channel::ByteReaderWriter` to use for IO.
+Bazel. Then, from your main function, invoke :cc:`pw::SystemStart` with a
+:cc:`pw::channel::ByteReaderWriter` to use for IO.
 
 .. literalinclude:: system_async_test.cc
    :language: cpp
@@ -351,4 +351,4 @@ pw_system.benchmark_runner
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_system`
+Moved: :cc:`pw_system`

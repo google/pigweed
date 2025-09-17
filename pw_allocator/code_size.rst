@@ -6,7 +6,7 @@ Code size analysis
 .. pigweed-module-subpage::
    :name: pw_allocator
 
-This module provides the :doxylink:`pw::Allocator` interface, as
+This module provides the :cc:`pw::Allocator` interface, as
 well as several implementations of it. The tables below shows the
 relative code size for the interface and each of these implementations. The
 measurement includes a call to each method.
@@ -15,9 +15,9 @@ measurement includes a call to each method.
 Allocator interface
 -------------------
 The following shows the code size incurred by the
-:doxylink:`pw::Allocator` interface itself. A call to each method
+:cc:`pw::Allocator` interface itself. A call to each method
 of the interface is measured using an empty implementation,
-:doxylink:`pw::allocator::NullAllocator`.
+:cc:`pw::allocator::NullAllocator`.
 
 .. include:: allocator_api_size_report
 
@@ -35,7 +35,7 @@ module.
 
 Impact of different hardening levels
 ====================================
-This module includes :doxylink:`PW_ALLOCATOR_HARDENING` which sets which
+This module includes :cc:`PW_ALLOCATOR_HARDENING` which sets which
 validation checks are included. Additional checks can detect more errors at the
 cost of additional code size, as illustrated in the size report below:
 
@@ -59,7 +59,7 @@ size information on each container type.
 Block allocator implementations
 -------------------------------
 Most of the concrete allocator implementations provided by this module that
-are derived from :doxylink:`BlockAllocator <pw::allocator::BlockAllocator>`.
+are derived from :cc:`BlockAllocator <pw::allocator::BlockAllocator>`.
 The following are code sizes for each of the block allocator implementations,
 and are measured relative to the blocks they use.
 
@@ -70,7 +70,7 @@ Other concrete allocator implementations
 ----------------------------------------
 The following are code sizes for the other allocator implementations that
 directly manage the memory they use to fulfill requests, but that do not derive
-from :doxylink:`BlockAllocator <pw::allocator::BlockAllocator>`. These are
+from :cc:`BlockAllocator <pw::allocator::BlockAllocator>`. These are
 measured relative to the empty implementation measured above.
 
 .. include:: concrete_allocators_size_report
@@ -81,7 +81,7 @@ Forwarding allocators implementations
 The following are code sizes for each of the provided "forwarding" allocators as
 described by :ref:`module-pw_allocator-design-forwarding`. These are measured
 by having the forwarding allocator wrap a
-:doxylink:`FirstFitAllocator <pw::allocator::FirstFitAllocator>`, and are
+:cc:`FirstFitAllocator <pw::allocator::FirstFitAllocator>`, and are
 measured relative to that implementation.
 
 .. include:: forwarding_allocators_size_report

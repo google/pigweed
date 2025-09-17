@@ -16,10 +16,10 @@ linker script using the C preprocessor with the ``pw_linker_script`` rules.
 ---------------------------
 Linker script C/C++ helpers
 ---------------------------
-- :doxylink:`PW_MUST_PLACE`: Ensures inputs are non-zero sized
-- :doxylink:`PW_MUST_PLACE_SIZE`: Ensures inputs are an expected size
-- :doxylink:`PW_MUST_NOT_PLACE`: Ensures inputs are *not* present
-- :doxylink:`pw::LinkerSymbol`: Represents a symbol provided by the linker
+- :cc:`PW_MUST_PLACE`: Ensures inputs are non-zero sized
+- :cc:`PW_MUST_PLACE_SIZE`: Ensures inputs are an expected size
+- :cc:`PW_MUST_NOT_PLACE`: Ensures inputs are *not* present
+- :cc:`pw::LinkerSymbol`: Represents a symbol provided by the linker
 
 .. note::
 

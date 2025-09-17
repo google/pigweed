@@ -21,8 +21,8 @@ worldview before attempting to use ``pw_async2``!
 Summary
 -------
 The central idea is that asynchronous work is encapsulated in objects called
-:doxylink:`Tasks <pw::async2::Task>`. Instead of registering callbacks for
-different events, a central :doxylink:`Dispatcher <pw::async2::Dispatcher>`
+:cc:`Tasks <pw::async2::Task>`. Instead of registering callbacks for
+different events, a central :cc:`Dispatcher <pw::async2::Dispatcher>`
 *polls* these tasks to see if they can make progress. The polling is *informed*
 because the task coordinates with its event source regarding when it's ready
 to make more progress. The event source notifies the dispatcher when the task
@@ -36,15 +36,15 @@ provide a powerful asynchronous runtime.
 
 Tasks, the basic async primitive
 ================================
-A :doxylink:`Task <pw::async2::Task>` is the basic unit of execution, analogous
+A :cc:`Task <pw::async2::Task>` is the basic unit of execution, analogous
 to a cooperatively scheduled thread. It's an object that represents a job to be
 done, like reading from a sensor or processing a network packet. Users
-implement a task's logic in its :doxylink:`DoPend() <pw::async2::Task::DoPend>`
+implement a task's logic in its :cc:`DoPend() <pw::async2::Task::DoPend>`
 method.
 
 Cooperative scheduling with Dispatchers
 =======================================
-The :doxylink:`Dispatcher <pw::async2::Dispatcher>` is the cooperative
+The :cc:`Dispatcher <pw::async2::Dispatcher>` is the cooperative
 scheduler. It maintains a queue of tasks that are ready to be polled.
 
 Running tasks and communicating task state
@@ -54,9 +54,9 @@ wrapper around ``DoPend()``.  The task attempts to make progress and
 communicates to the dispatcher what state it's in by returning one of these
 values:
 
-* :doxylink:`Ready() <pw::async2::Ready>`: The task has finished its work. The
+* :cc:`Ready() <pw::async2::Ready>`: The task has finished its work. The
   ``Dispatcher`` should not poll it again.
-* :doxylink:`Pending() <pw::async2::Pending>`: The task is not yet finished
+* :cc:`Pending() <pw::async2::Pending>`: The task is not yet finished
   because it is waiting for an external event. E.g. it's waiting for a timer to
   finish or for data to arrive. The dispatcher should put the task to sleep and
   then run it again later.
@@ -65,8 +65,8 @@ values:
 
    A user writing a task implements ``DoPend()``, but they too call ``Pend()``
    when calling other tasks. ``Pend()`` is also the interface of "pendable
-   objects" used throughout ``pw_async2`` such as :doxylink:`Select
-   <pw::async2::Select>`, :doxylink:`Join <pw::async2::Join>`, and
+   objects" used throughout ``pw_async2`` such as :cc:`Select
+   <pw::async2::Select>`, :cc:`Join <pw::async2::Join>`, and
    :ref:`coroutines <module-pw_async2-coro>`.
 
 "Informed" polling with wakers
@@ -74,14 +74,14 @@ values:
 When a task's ``DoPend`` method returns ``Pending()``, the task must ensure
 that something will eventually trigger it to be run again. This is the
 "informed" part of the model: the task *informs* the ``Dispatcher`` when it's
-ready to be polled again. This is achieved using a :doxylink:`Waker
+ready to be polled again. This is achieved using a :cc:`Waker
 <pw::async2::Waker>`.
 
 1. Before returning ``Pending()``, the task must obtain its ``Waker`` from the
-   :doxylink:`Context <pw::async2::Context>` and store it somewhere that's
+   :cc:`Context <pw::async2::Context>` and store it somewhere that's
    accessible to the event source. Common event sources include interrupt
    handlers and timer managers.
-2. When the event occurs, the event source calls :doxylink:`Waker::Wake()
+2. When the event occurs, the event source calls :cc:`Waker::Wake()
    <pw::async2::Waker::Wake>` on the stored ``Waker``.
 3. The ``Wake()`` call notifies the ``Dispatcher`` that the task is ready to
    make progress.

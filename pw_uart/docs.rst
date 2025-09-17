@@ -19,16 +19,16 @@ UART peripheral.
 
 The interface consists of these main classes:
 
-- :doxylink:`UartBase <pw::uart::UartBase>` - Base class which provides basic
+- :cc:`UartBase <pw::uart::UartBase>` - Base class which provides basic
   enable/disable and configuration control, but no communication.
-- :doxylink:`Uart` - Extends ``pw::uart::UartBase`` to provide blocking Read
+- :cc:`Uart` - Extends ``pw::uart::UartBase`` to provide blocking Read
   and Write APIs.
-- :doxylink:`UartNonBlocking <pw::uart::UartNonBlocking>` - Extends
+- :cc:`UartNonBlocking <pw::uart::UartNonBlocking>` - Extends
   ``pw::uart::UartBase`` to provide non-blocking (callback-based) Read and
   Write APIs.
-- :doxylink:`UartBlockingAdapter <pw::uart::UartBlockingAdapter>` - Provides
+- :cc:`UartBlockingAdapter <pw::uart::UartBlockingAdapter>` - Provides
   the blocking ``Uart`` interface on top of a ``UartNonBlocking`` device.
-- :doxylink:`UartStream <pw::uart::UartStream>` - Provides the
+- :cc:`UartStream <pw::uart::UartStream>` - Provides the
   ``pw::stream::NonSeekableReaderWriter`` (:ref:`module-pw_stream`)
   interface on top of a ``Uart`` device.
 
@@ -123,7 +123,7 @@ Get started
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_uart`
+Moved: :cc:`pw_uart`
 
 .. toctree::
    :hidden:

@@ -164,9 +164,9 @@ Controlling constant initialization of globals
 ----------------------------------------------
 Pigweed offers two utilities for declaring global variables:
 
-- :doxylink:`pw::NoDestructor` -- Removes the destructor, which is not
+- :cc:`pw::NoDestructor` -- Removes the destructor, which is not
   necessary for globals. Constant initialization is supported, but not required.
-- :doxylink:`pw::RuntimeInitGlobal` -- Removes the destructor. Prevents
+- :cc:`pw::RuntimeInitGlobal` -- Removes the destructor. Prevents
   constant initialization.
 
 It is recommended to specify constant or runtime initialization for all global
@@ -202,7 +202,7 @@ variables.
 
 API reference
 =============
-Moved: :doxylink:`pw_toolchain`
+Moved: :cc:`pw_toolchain`
 
 builtins
 ========

@@ -26,9 +26,9 @@ Benefits
 Example
 -------
 :ref:`module-pw_async2-informed-poll` is the core design philosophy behind
-``pw_async2``. :doxylink:`Task <pw::async2::Task>` is the main async primitive.
+``pw_async2``. :cc:`Task <pw::async2::Task>` is the main async primitive.
 It's a cooperatively scheduled "thread" which yields to the
-:doxylink:`Dispatcher <pw::async2::Dispatcher>` when waiting. When a ``Task``
+:cc:`Dispatcher <pw::async2::Dispatcher>` when waiting. When a ``Task``
 is able to make progress, the ``Dispatcher`` runs it again:
 
 .. literalinclude:: examples/basic.cc
@@ -37,8 +37,8 @@ is able to make progress, the ``Dispatcher`` runs it again:
    :start-after: [pw_async2-examples-basic-manual]
    :end-before: [pw_async2-examples-basic-manual]
 
-Tasks can then be run on a :doxylink:`Dispatcher <pw::async2::Dispatcher>`
-using the :doxylink:`Post() <pw::async2::Dispatcher::Post>` method:
+Tasks can then be run on a :cc:`Dispatcher <pw::async2::Dispatcher>`
+using the :cc:`Post() <pw::async2::Dispatcher::Post>` method:
 
 .. literalinclude:: examples/basic.cc
    :language: cpp

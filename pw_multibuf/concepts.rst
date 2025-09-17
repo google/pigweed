@@ -28,7 +28,7 @@ of scope. Others may be externally owned, and should be left intact. Still
 others may have shared pointer semantics. The collection should correctly handle
 memory ownership in all these cases to preserve correctness and prevent leaks.
 
-:doxylink:`GenericMultiBuf <pw::multibuf_impl::GenericMultiBuf>` and its derived
+:cc:`GenericMultiBuf <pw::multibuf_impl::GenericMultiBuf>` and its derived
 types have been designed to meet these needs. These types are collectively
 referred to as "MultiBuf" in the following sections, except where details of the
 derived types differ.
@@ -97,7 +97,7 @@ conceptually smiliar to a ``ByteSpan`` instance.
 Layers
 ======
 Every MultiBuf instance provides a view of its aggregated memory regions.
-If a MultiBuf type includes :doxylink:`kLayerable <pw::MultiBufProperty>` as one
+If a MultiBuf type includes :cc:`kLayerable <pw::MultiBufProperty>` as one
 of its :ref:`module-pw_multibuf-design-properties`, then it supports adding
 layers that restrict the view of the memory. Each layer represents a subset of
 the layer below, with the bottom-most layer being the memory regions themselves.
@@ -192,11 +192,11 @@ Ownership here refers to what object is responsible for freeing the memory when
 it is no longer needed. A single MultiBuf instance can hold memory from each of
 three categories:
 
-  - **Unique Ownership**: Memory is provided as a :doxylink:`pw::UniquePtr`. A
+  - **Unique Ownership**: Memory is provided as a :cc:`pw::UniquePtr`. A
     flag in the corresponding entry marks the memory as "owned". The
     MultiBuf instance will deallocate the memory when it is no longer
     referenced.
-  - **Shared Ownership**: Memory is provided as a :doxylink:`pw::SharedPtr`. A
+  - **Shared Ownership**: Memory is provided as a :cc:`pw::SharedPtr`. A
     flag in the corresponding entry marks the memory as "shared". The MultiBuf
     instance will deallocate the memory when it is discarded, but only if no
     other existing objects share ownership.

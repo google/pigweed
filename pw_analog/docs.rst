@@ -48,4 +48,4 @@ gMock of MicrovoltInput used for testing and mocking out the MicrovoltInput.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_analog`
+Moved: :cc:`pw_analog`

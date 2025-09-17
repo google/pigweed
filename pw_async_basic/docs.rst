@@ -12,7 +12,7 @@ FakeDispatcher.
 ---
 API
 ---
-Moved: :doxylink:`pw_async_basic`
+Moved: :cc:`pw_async_basic`
 
 -----
 Usage

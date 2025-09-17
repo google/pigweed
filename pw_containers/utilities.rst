@@ -12,12 +12,12 @@ working with containers and the data within them.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_containers_utilities`
+Moved: :cc:`pw_containers_utilities`
 
 -------------------------------
 pw::containers::WrappedIterator
 -------------------------------
-:doxylink:`pw::containers::WrappedIterator` is a class that makes it easy to
+:cc:`pw::containers::WrappedIterator` is a class that makes it easy to
 wrap an existing iterator type. It reduces boilerplate by providing
 ``operator++``, ``operator--``, ``operator==``, ``operator!=``, and the
 standard iterator aliases (``difference_type``, ``value_type``, etc.). It does
@@ -57,7 +57,7 @@ into a new container.
 ------------------------
 pw::containers::to_array
 ------------------------
-:doxylink:`pw::containers::to_array` is a C++14-compatible implementation of
+:cc:`pw::containers::to_array` is a C++14-compatible implementation of
 C++20's `std::to_array
 <https://en.cppreference.com/w/cpp/container/array/to_array>`_.  In C++20, it
 is an alias for ``std::to_array``. It converts a C array to a ``std::array``.
@@ -65,7 +65,7 @@ is an alias for ``std::to_array``. It converts a C array to a ``std::array``.
 ----------
 pw::all_of
 ----------
-:doxylink:`pw::all_of` is a C++17 compatible implementation of C++20's
+:cc:`pw::all_of` is a C++17 compatible implementation of C++20's
 `std::all_of <https://en.cppreference.com/w/cpp/algorithm/all_any_none_of>`_.
 In C++20, it is an alias for ``std::all_of``. This backports the ``constexpr``
 overload of the function.
@@ -73,7 +73,7 @@ overload of the function.
 ----------
 pw::any_of
 ----------
-:doxylink:`pw::any_of` is a C++17 compatible implementation of C++20's
+:cc:`pw::any_of` is a C++17 compatible implementation of C++20's
 `std::any_of <https://en.cppreference.com/w/cpp/algorithm/all_any_none_of>`_.
 In C++20, it is an alias for ``std::any_of``. This backports the ``constexpr``
 overload of the function.
@@ -81,7 +81,7 @@ overload of the function.
 -----------
 pw::find_if
 -----------
-:doxylink:`pw::find_if` is a C++17 compatible implementation of C++20's
+:cc:`pw::find_if` is a C++17 compatible implementation of C++20's
 `std::find_if <https://en.cppreference.com/w/cpp/algorithm/find>`_. In C++20, it
 is an alias for ``std::find_if``. This backports the ``constexpr`` overload of
 the function.

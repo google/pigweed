@@ -48,12 +48,12 @@ Pigweed. In PMR, allocators are expected to throw an exception in the case of
 failure, and equality comparisons require runtime type identification (RTTI).
 
 Even so, ``pw_allocator`` has taken inspiration from the design of PMR,
-incorporating many of its ideas. :doxylink:`pw::Allocator` in
+incorporating many of its ideas. :cc:`pw::Allocator` in
 particular is similar to `std::pmr::memory_resource`_.
 
 This similarity is most evident in the PMR adapter class,
-:doxylink:`PmrAllocator <pw::allocator::PmrAllocator>`. This adapter allows any
-:doxylink:`pw::Allocator` to be used as a
+:cc:`PmrAllocator <pw::allocator::PmrAllocator>`. This adapter allows any
+:cc:`pw::Allocator` to be used as a
 `std::pmr::polymorphic_allocator`_ with any standard library that
 `can use an allocator`_. Refer to the guides on how to
 :ref:`module-pw_allocator-use-standard-library-containers`.
@@ -64,16 +64,16 @@ Forwarding allocator concept
 ============================
 In addition to concrete allocator implementations, the design of
 ``pw_allocator`` also encourages the use of "forwarding" allocators. These are
-implementations of the :doxylink:`pw::Allocator` interface that
+implementations of the :cc:`pw::Allocator` interface that
 don't allocate memory directly and instead rely on other allocators while
 providing some additional behavior.
 
-For example, the :doxylink:`pw::Allocator` records various
+For example, the :cc:`pw::Allocator` records various
 metrics such as the peak number of bytes allocated and the number of failed
 allocation requests. It wraps another allocator which is used to actually
 perform dynamic allocation. It implements the allocator API, and so it can be
 passed into any routines that use dependency injection by taking a generic
-:doxylink:`pw::Allocator` parameter.
+:cc:`pw::Allocator` parameter.
 
 These "forwarding" allocators are not completely free. At a miniumum, they
 represent an extra virtual indirection, and an extra function call, albeit one
@@ -96,31 +96,31 @@ header allows allocations to be variably sized, and converts allocation into a
 matching that of the header type itself.
 
 For ``pw_allocator``, the most common way to store this header is as a
-:doxylink:`Block <pw_allocator_block>`. Specific block implementations are
+:cc:`Block <pw_allocator_block>`. Specific block implementations are
 created by providing a concrete representation and implementing the required
 methods for one or more of the block mix-ins. Each block mix-in provides a
 specific set of features, allowing block implementers to include only what they
 need. Features provided by these block mix-ins include:
 
-- A :doxylink:`BasicBlock <pw::allocator::BasicBlock>` can retrieve the memory
+- A :cc:`BasicBlock <pw::allocator::BasicBlock>` can retrieve the memory
   that makes up its usable space and its size.
-- A :doxylink:`ContiguousBlock <pw::allocator::ContiguousBlock>` knows the
+- A :cc:`ContiguousBlock <pw::allocator::ContiguousBlock>` knows the
   blocks that are adjacent to it in memory. It can merge with neighboring
   blocks and split itself into smaller sub-blocks.
-- An :doxylink:`AllocatableBlock <pw::allocator::AllocatableBlock>` knows when
+- An :cc:`AllocatableBlock <pw::allocator::AllocatableBlock>` knows when
   it is free or in-use. It can allocate new blocks from either the beginning or
   end of its usable space when free. When in-use, it can be freed and merged
   with neighboring blocks that are free. This ensures that free blocks are only
   ever adjacent to blocks in use, and vice versa.
-- An :doxylink:`AlignableBlock <pw::allocator::AlignableBlock>` can
+- An :cc:`AlignableBlock <pw::allocator::AlignableBlock>` can
   additionally allocate blocks from either end at specified alignment
   boundaries.
-- A :doxylink:`BlockWithLayout <pw::allocator::BlockWithLayout>` can retrieve
+- A :cc:`BlockWithLayout <pw::allocator::BlockWithLayout>` can retrieve
   the layout used to allocate it, even if the block itself is larger due to
   alignment or padding.
-- The :doxylink:`IterableBlock <pw::allocator::IterableBlock>` type provides
+- The :cc:`IterableBlock <pw::allocator::IterableBlock>` type provides
   iterators and ranges that can be used to iterate over a sequence of blocks.
-- A :doxylink:`PoisonableBlock <pw::allocator::PoisonableBlock>` can fill its
+- A :cc:`PoisonableBlock <pw::allocator::PoisonableBlock>` can fill its
   usable space with a pattern when freed. This pattern can be checked on a
   subsequent allocation to detect if the memory was illegally modified while
   free.
@@ -134,47 +134,47 @@ some or all of the mix-ins:
 
    * - Mix-in
      - BuddyBlock
-     - :doxylink:`TinyBlock <pw::allocator::TinyBlock>`
-     - :doxylink:`SmallBlock <pw::allocator::SmallBlock>`
-     - :doxylink:`SmallAlignableBlock <pw::allocator::SmallAlignableBlock>`
-     - :doxylink:`DetailedBlock <pw::allocator::DetailedBlockImpl>`
-   * - :doxylink:`BasicBlock <pw::allocator::BasicBlock>`
+     - :cc:`TinyBlock <pw::allocator::TinyBlock>`
+     - :cc:`SmallBlock <pw::allocator::SmallBlock>`
+     - :cc:`SmallAlignableBlock <pw::allocator::SmallAlignableBlock>`
+     - :cc:`DetailedBlock <pw::allocator::DetailedBlockImpl>`
+   * - :cc:`BasicBlock <pw::allocator::BasicBlock>`
      - ✓
      - ✓
      - ✓
      - ✓
      - ✓
-   * - :doxylink:`ContiguousBlock <pw::allocator::ContiguousBlock>`
+   * - :cc:`ContiguousBlock <pw::allocator::ContiguousBlock>`
      -
      - ✓
      - ✓
      - ✓
      - ✓
-   * - :doxylink:`IterableBlock <pw::allocator::IterableBlock>`
+   * - :cc:`IterableBlock <pw::allocator::IterableBlock>`
      -
      - ✓
      - ✓
      - ✓
      - ✓
-   * - :doxylink:`AllocatableBlock <pw::allocator::AllocatableBlock>`
+   * - :cc:`AllocatableBlock <pw::allocator::AllocatableBlock>`
      -
      - ✓
      - ✓
      - ✓
      - ✓
-   * - :doxylink:`AlignableBlock <pw::allocator::AlignableBlock>`
+   * - :cc:`AlignableBlock <pw::allocator::AlignableBlock>`
      -
      -
      -
      - ✓
      - ✓
-   * - :doxylink:`PoisonableBlock <pw::allocator::PoisonableBlock>`
+   * - :cc:`PoisonableBlock <pw::allocator::PoisonableBlock>`
      -
      -
      -
      -
      - ✓
-   * - :doxylink:`BlockWithLayout <pw::allocator::BlockWithLayout>`
+   * - :cc:`BlockWithLayout <pw::allocator::BlockWithLayout>`
      -
      -
      -
@@ -183,8 +183,8 @@ some or all of the mix-ins:
 
 .. note::
    ``BuddyBlock`` is a specialized implementation used by
-   :doxylink:`BuddyAllocator <pw::allocator::BuddyAllocator>`. It is not
-   general enough to be used with a generic :doxylink:`BlockAllocator
+   :cc:`BuddyAllocator <pw::allocator::BuddyAllocator>`. It is not
+   general enough to be used with a generic :cc:`BlockAllocator
    <pw::allocator::BlockAllocator>`.
 
 In addition to poisoning, blocks validate their metadata against their neighbors
@@ -204,7 +204,7 @@ aware of the problem.
 
 Buckets of blocks
 =================
-The most important role of a :doxylink:`BlockAllocator
+The most important role of a :cc:`BlockAllocator
 <pw::allocator::BlockAllocator>` is to choose the right block to satisfy an
 allocation request. Different block allocators use different strategies to
 accomplish this, and thus need different data structures to organize blocks in
@@ -214,10 +214,10 @@ For example, a block allocator that uses a "best-fit" strategy needs to be able
 to efficiently search free blocks by usable size in order to find the smallest
 candidate that could satisfy the request.
 
-The :doxylink:`BasicBlock <pw::allocator::BasicBlock>` mix-in requires blocks
+The :cc:`BasicBlock <pw::allocator::BasicBlock>` mix-in requires blocks
 to specify both a ``MinInnerSize`` and ``DefaultAlignment``. Together these
 ensure that the usable space of free blocks can be treated as intrusive items
-for containers.  The bucket classes that derive from :doxylink:`BucketBase
+for containers.  The bucket classes that derive from :cc:`BucketBase
 <pw::allocator::internal::BucketBase>` provide such containers to store and
 retrieve free blocks with different performance and code size characteristics.
 
@@ -231,7 +231,7 @@ memory overhead, and a per-call performance cost. As a result, ``pw_allocator``
 is design to allow allocator implementers to select just the metrics they're
 interested in.
 
-In particular, the :doxylink:`Metrics <pw::allocator::internal::Metrics>` uses
+In particular, the :cc:`Metrics <pw::allocator::internal::Metrics>` uses
 per-metric type traits generated by ``PW_ALLOCATOR_METRICS_DECLARE`` to
 conditionally include the code to update the metrics that are included in its
 ``MetricsType`` template parameter type. A suitable ``MetricType`` struct can be
@@ -240,12 +240,12 @@ fields for the enabled metrics.
 
 Using these macros prevents unwanted metrics from increasing either the code
 size or object size of the metrics adapter, and by extension,
-:doxylink:`TrackingAllocator <pw::allocator::TrackingAllocator>`.
+:cc:`TrackingAllocator <pw::allocator::TrackingAllocator>`.
 
 -------
 Roadmap
 -------
-While the :doxylink:`pw::Allocator` interface is almost stable,
+While the :cc:`pw::Allocator` interface is almost stable,
 there are some outstanding features the Pigweed team would like to add to
 ``pw_allocator``:
 

@@ -33,7 +33,7 @@ increased shared memory, and reduced large reservations.
 **Want to allocate objects from specific memory like SRAM or PSRAM?**
 
 Use `dependency injection`_! Write your code to take
-:doxylink:`pw::Allocator` parameters, and you can quickly and
+:cc:`pw::Allocator` parameters, and you can quickly and
 easily change where memory comes from or what additional features are provided
 simply by changing what allocator is passed:
 
@@ -65,7 +65,7 @@ Use a smart pointer!
 **Want to know how much memory has been allocated?**
 
 Pick the metrics you're interested in and track them with a
-:doxylink:`TrackingAllocator <pw::allocator::TrackingAllocator>`:
+:cc:`TrackingAllocator <pw::allocator::TrackingAllocator>`:
 
 .. literalinclude:: examples/metrics.cc
    :language: cpp
@@ -81,7 +81,7 @@ Pick the metrics you're interested in and track them with a
 
 **Need to share the allocator with another thread or an interrupt handler?**
 
-Use a :doxylink:`SynchronizedAllocator <pw::allocator::SynchronizedAllocator>`
+Use a :cc:`SynchronizedAllocator <pw::allocator::SynchronizedAllocator>`
 with the lock of your choice:
 
 .. literalinclude:: examples/spin_lock.cc
@@ -123,7 +123,7 @@ capabilities as the platform.
 
 Between these two is a range of complex projects on RTOSes and other platforms.
 These projects may benefit from using the
-:doxylink:`pw::Allocator` interface and its implementations to
+:cc:`pw::Allocator` interface and its implementations to
 manage memory.
 
 .. toctree::

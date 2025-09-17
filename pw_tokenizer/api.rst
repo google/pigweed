@@ -11,7 +11,7 @@ API reference
 -----
 C/C++
 -----
-Moved: :doxylink:`pw_tokenizer`
+Moved: :cc:`pw_tokenizer`
 
 ----
 Rust

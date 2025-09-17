@@ -36,9 +36,9 @@ Informed poll is the core design philosophy behind ``pw_async2``. Please read
 2. Set up build rules
 ---------------------
 All ``pw_async2`` projects must add a dependency on the ``dispatcher`` target.
-This target defines the :doxylink:`Task <pw::async2::Task>` class, an
+This target defines the :cc:`Task <pw::async2::Task>` class, an
 asynchronous unit of work analogous to a thread, as well as the
-:doxylink:`Dispatcher <pw::async2::Dispatcher>` class, an event loop used to
+:cc:`Dispatcher <pw::async2::Dispatcher>` class, an event loop used to
 run ``Task`` instances to completion.
 
 .. tab-set::
@@ -89,7 +89,7 @@ run asynchronous work on the dispatcher's event loop.
 4. Post one-shot work to the dispatcher
 ---------------------------------------
 Simple, one-time work can be queued on the dispatcher via
-:doxylink:`EnqueueHeapFunc <pw::async2::EnqueueHeapFunc>`.
+:cc:`EnqueueHeapFunc <pw::async2::EnqueueHeapFunc>`.
 
 .. _module-pw_async2-quickstart-tasks:
 
@@ -99,8 +99,8 @@ Simple, one-time work can be queued on the dispatcher via
 Async work that involves a series of asynchronous operations should be made
 into a task. This can be done by either implementing a custom task (see
 :ref:`module-pw_async2-guides-implementing-tasks`) or by writing a C++20
-coroutine (see :doxylink:`Coro <pw::async2::Coro>`) and storing it in a
-:doxylink:`CoroOrElseTask <pw::async2::CoroOrElseTask>`.
+coroutine (see :cc:`Coro <pw::async2::Coro>`) and storing it in a
+:cc:`CoroOrElseTask <pw::async2::CoroOrElseTask>`.
 
 .. literalinclude:: examples/count.cc
    :language: cpp
@@ -110,11 +110,11 @@ coroutine (see :doxylink:`Coro <pw::async2::Coro>`) and storing it in a
 
 The resulting task must either be stored somewhere that has a lifetime longer
 than the async operations (such as in a static or as a member of a long-lived
-class) or dynamically allocated using :doxylink:`AllocateTask
+class) or dynamically allocated using :cc:`AllocateTask
 <pw::async2::AllocateTask>`.
 
 Finally, the interface instructs the dispatcher to run the task by invoking
-:doxylink:`Dispatcher::Post() <pw::async2::Dispatcher::Post>`.
+:cc:`Dispatcher::Post() <pw::async2::Dispatcher::Post>`.
 
 See `//pw_async2/examples/count.cc`_ to view the complete example.
 

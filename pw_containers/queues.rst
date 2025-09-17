@@ -16,14 +16,14 @@ Pigweed provides many queue and deque implementations to meet different needs.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_containers_queues`
+Moved: :cc:`pw_containers_queues`
 
 .. _module-pw_containers-inlinevarlenentryqueue:
 
 --------------------------
 pw::InlineVarLenEntryQueue
 --------------------------
-:doxylink:`InlineVarLenEntryQueue` is a queue of inline variable-length binary
+:cc:`InlineVarLenEntryQueue` is a queue of inline variable-length binary
 entries. It is implemented as a ring (circular) buffer and supports operations
 to append entries and overwrite if necessary. Entries may be zero bytes up to
 the maximum size supported by the queue.
@@ -48,7 +48,7 @@ Prefer this sized-entry ring buffer to ``PrefixedEntryRingBuffer`` when:
 
 ``InlineVarLenEntryQueue`` is implemented in C and provides complete C and C++
 APIs. The ``InlineVarLenEntryQueue`` C++ class is structured similarly to
-:doxylink:`pw::InlineQueue` and :doxylink:`pw::Vector`.
+:cc:`pw::InlineQueue` and :cc:`pw::Vector`.
 
 Queue vs. deque
 ===============

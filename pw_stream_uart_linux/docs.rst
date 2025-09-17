@@ -7,7 +7,7 @@ pw_stream_uart_linux
    :name: pw_stream_uart_linux
 
 ``pw_stream_uart_linux`` implements the
-:doxylink:`pw::stream::NonSeekableReaderWriter` interface for reading from and
+:cc:`pw::stream::NonSeekableReaderWriter` interface for reading from and
 writing to a UART using Linux TTY interfaces.
 
 .. note::
@@ -15,7 +15,7 @@ writing to a UART using Linux TTY interfaces.
 
 C++ API
 =======
-Moved: :doxylink:`pw_stream_uart_linux`
+Moved: :cc:`pw_stream_uart_linux`
 
 Examples
 ========

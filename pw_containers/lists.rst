@@ -17,7 +17,7 @@ memory beyond that of the items themselves.
 -----------------
 pw::IntrusiveList
 -----------------
-:doxylink:`pw::IntrusiveList` provides an embedded-friendly, double-linked,
+:cc:`pw::IntrusiveList` provides an embedded-friendly, double-linked,
 intrusive list implementation. An intrusive list is a type of linked list that
 embeds list metadata, such as a "next" pointer, into the list object itself.
 This allows the construction of a linked list without the need to dynamically
@@ -56,7 +56,7 @@ If you need to add this item to containers of more than one type, see
 ------------------------
 pw::IntrusiveForwardList
 ------------------------
-:doxylink:`pw::IntrusiveForwardList` provides an embedded-friendly, singly linked,
+:cc:`pw::IntrusiveForwardList` provides an embedded-friendly, singly linked,
 intrusive list implementation. It is very similar to
 :ref:`module-pw_containers-intrusive_list`, except that it is singly rather than
 doubly linked.
@@ -80,7 +80,7 @@ If you need to add this item to containers of more than one type, see
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_containers_lists`
+Moved: :cc:`pw_containers_lists`
 
 Performance considerations
 ==========================

@@ -12,4 +12,4 @@ universally unique identifier (UUID).
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_uuid`
+Moved: :cc:`pw_uuid`

@@ -41,7 +41,7 @@ not be sufficient for security, but it could help for less strict uses.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_random`
+Moved: :cc:`pw_random`
 
 -----------
 Future Work

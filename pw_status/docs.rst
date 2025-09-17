@@ -7,13 +7,13 @@ pw_status
    :name: pw_status
 
    - **Easy**: Simple to understand, includes convenient macro
-     :doxylink:`PW_TRY`
+     :cc:`PW_TRY`
    - **Efficient**: No memory allocation, no exceptions
    - **Established**: Just like ``absl::Status``, deployed extensively at Google
 
-   :doxylink:`pw::Status` is Pigweed's error propagation primitive, enabling
+   :cc:`pw::Status` is Pigweed's error propagation primitive, enabling
    exception-free error handling. The primary feature of ``pw_status`` is the
-   :doxylink:`pw::Status` class, a simple, zero-overhead status object that
+   :cc:`pw::Status` class, a simple, zero-overhead status object that
    wraps a status code, and the ``PW_TRY`` macro. For example:
 
    .. code-block:: cpp

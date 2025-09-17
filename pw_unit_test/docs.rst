@@ -362,7 +362,7 @@ Predefined event handlers
 Pigweed provides some standard event handlers to simplify the process of
 getting started with ``pw_unit_test:light``. All event handlers provide for
 GoogleTest-style output using the shared
-:doxylink:`GoogleTestStyleEventHandler
+:cc:`GoogleTestStyleEventHandler
 <pw::unit_test::GoogleTestStyleEventHandler>` base. Example output:
 
 .. code-block::
@@ -426,7 +426,7 @@ skipped when :ref:`using upstream GoogleTest <module-pw_unit_test-upstream>`:
 Run tests in static libraries
 =============================
 To run tests in a static library, use the
-:doxylink:`PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST` macro.
+:cc:`PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST` macro.
 
 Linkers usually ignore tests through static libraries (i.e. ``.a`` files)
 because test registration relies on the test instance's static constructor
@@ -594,7 +594,7 @@ In GN and CMake, directly run the
 -----------------
 C++ API reference
 -----------------
-Moved: :doxylink:`pw_unit_test`
+Moved: :cc:`pw_unit_test`
 
 .. _module-pw_unit_test-py:
 

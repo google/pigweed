@@ -11,7 +11,7 @@ API reference
 ---------
 Color API
 ---------
-Moved: :doxylink:`pw_display`
+Moved: :cc:`pw_display`
 
 ---------------
 Color Constants

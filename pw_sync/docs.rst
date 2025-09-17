@@ -87,15 +87,15 @@ C++
      - ✔
      -
      -
-   * - :doxylink:`lock <pw::sync::Mutex::lock>`
+   * - :cc:`lock <pw::sync::Mutex::lock>`
      - ✔
      -
      -
-   * - :doxylink:`try_lock <pw::sync::Mutex::try_lock>`
+   * - :cc:`try_lock <pw::sync::Mutex::try_lock>`
      - ✔
      -
      -
-   * - :doxylink:`unlock <pw::sync::Mutex::unlock>`
+   * - :cc:`unlock <pw::sync::Mutex::unlock>`
      - ✔
      -
      -
@@ -142,15 +142,15 @@ The Mutex must be created in C++, however it can be passed into C using the
      - Thread
      - Interrupt
      - NMI
-   * - :doxylink:`pw_sync_Mutex_Lock`
+   * - :cc:`pw_sync_Mutex_Lock`
      - ✔
      -
      -
-   * - :doxylink:`pw_sync_Mutex_TryLock`
+   * - :cc:`pw_sync_Mutex_TryLock`
      - ✔
      -
      -
-   * - :doxylink:`pw_sync_Mutex_Unlock`
+   * - :cc:`pw_sync_Mutex_Unlock`
      - ✔
      -
      -
@@ -173,20 +173,20 @@ Example in C
 
 TimedMutex
 ==========
-The :doxylink:`TimedMutex <pw::sync::TimedMutex>` is an extension of the Mutex
+The :cc:`TimedMutex <pw::sync::TimedMutex>` is an extension of the Mutex
 which offers timeout and deadline based semantics.
 
-The :doxylink:`TimedMutex <pw::sync::TimedMutex>`'s API is C++11 STL
+The :cc:`TimedMutex <pw::sync::TimedMutex>`'s API is C++11 STL
 `std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_ like,
 meaning it is a
 `BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_,
 `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_, and
 `TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_.
 
-Note that the :doxylink:`TimedMutex <pw::sync::TimedMutex>` is a derived
-:doxylink:`Mutex <pw::sync::Mutex>` class, meaning that a :doxylink:`TimedMutex
+Note that the :cc:`TimedMutex <pw::sync::TimedMutex>` is a derived
+:cc:`Mutex <pw::sync::Mutex>` class, meaning that a :cc:`TimedMutex
 <pw::sync::TimedMutex>` can be used by someone who needs the basic
-:doxylink:`Mutex <pw::sync::Mutex>`. This is in contrast to the C++ STL's
+:cc:`Mutex <pw::sync::Mutex>`. This is in contrast to the C++ STL's
 `std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_.
 
 .. list-table::
@@ -233,11 +233,11 @@ C++
      - ✔
      -
      -
-   * - :doxylink:`try_lock_for <pw::sync::TimedMutex::try_lock_for>`
+   * - :cc:`try_lock_for <pw::sync::TimedMutex::try_lock_for>`
      - ✔
      -
      -
-   * - :doxylink:`try_lock_until <pw::sync::TimedMutex::try_lock_until>`
+   * - :cc:`try_lock_until <pw::sync::TimedMutex::try_lock_until>`
      - ✔
      -
      -
@@ -297,23 +297,23 @@ The TimedMutex must be created in C++, however it can be passed into C using the
      - Thread
      - Interrupt
      - NMI
-   * - :doxylink:`pw_sync_TimedMutex_Lock`
+   * - :cc:`pw_sync_TimedMutex_Lock`
      - ✔
      -
      -
-   * - :doxylink:`pw_sync_TimedMutex_TryLock`
+   * - :cc:`pw_sync_TimedMutex_TryLock`
      - ✔
      -
      -
-   * - :doxylink:`pw_sync_TimedMutex_TryLockFor`
+   * - :cc:`pw_sync_TimedMutex_TryLockFor`
      - ✔
      -
      -
-   * - :doxylink:`pw_sync_TimedMutex_TryLockUntil`
+   * - :cc:`pw_sync_TimedMutex_TryLockUntil`
      - ✔
      -
      -
-   * - :doxylink:`pw_sync_TimedMutex_Unlock`
+   * - :cc:`pw_sync_TimedMutex_Unlock`
      - ✔
      -
      -
@@ -347,7 +347,7 @@ Pigweed.
 
 InterruptSpinLock
 =================
-:doxylink:`InterruptSpinLock <pw::sync::InterruptSpinLock>` is a synchronization
+:cc:`InterruptSpinLock <pw::sync::InterruptSpinLock>` is a synchronization
 primitive that can be used to protect shared data from being simultaneously
 accessed by multiple threads and/or interrupts as a targeted global lock, with
 the exception of Non-Maskable Interrupts (NMIs). It offers exclusive,
@@ -405,15 +405,15 @@ C++
      - ✔
      - ✔
      -
-   * - :doxylink:`lock <pw::sync::InterruptSpinLock::lock>`
+   * - :cc:`lock <pw::sync::InterruptSpinLock::lock>`
      - ✔
      - ✔
      -
-   * - :doxylink:`try_lock <pw::sync::InterruptSpinLock::try_lock>`
+   * - :cc:`try_lock <pw::sync::InterruptSpinLock::try_lock>`
      - ✔
      - ✔
      -
-   * - :doxylink:`unlock <pw::sync::InterruptSpinLock::unlock>`
+   * - :cc:`unlock <pw::sync::InterruptSpinLock::unlock>`
      - ✔
      - ✔
      -
@@ -460,15 +460,15 @@ using the ``pw_sync_InterruptSpinLock`` opaque struct alias.
      - Thread
      - Interrupt
      - NMI
-   * - :doxylink:`pw_sync_InterruptSpinLock_Lock`
+   * - :cc:`pw_sync_InterruptSpinLock_Lock`
      - ✔
      - ✔
      -
-   * - :doxylink:`pw_sync_InterruptSpinLock_TryLock`
+   * - :cc:`pw_sync_InterruptSpinLock_TryLock`
      - ✔
      - ✔
      -
-   * - :doxylink:`pw_sync_InterruptSpinLock_Unlock`
+   * - :cc:`pw_sync_InterruptSpinLock_Unlock`
      - ✔
      - ✔
      -
@@ -493,13 +493,13 @@ Example in C
 
 Optional locking
 ================
-:doxylink:`NoLock <pw::sync::NoLock>` is a no-op lock that can be used to
+:cc:`NoLock <pw::sync::NoLock>` is a no-op lock that can be used to
 satisfy a lock interface without providing any synchronization. This can be
 useful for templated code that is lock-agnostic, but may be used in a context
 that does not require any synchronization. ``NoLock`` is a `BasicLockable
 <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_.
 
-:doxylink:`MaybeLock <pw::sync::MaybeLock>` selects between a real lock type and
+:cc:`MaybeLock <pw::sync::MaybeLock>` selects between a real lock type and
 ``NoLock`` based on a boolean template parameter. This may be helpful when
 locking is conditionally enabled by a config macro.
 
@@ -552,16 +552,16 @@ you want to refer to is not in scope, you may use a member pointer
 
 Annotating Lock Usage
 ^^^^^^^^^^^^^^^^^^^^^
-* :doxylink:`PW_GUARDED_BY`
-* :doxylink:`PW_PT_GUARDED_BY`
+* :cc:`PW_GUARDED_BY`
+* :cc:`PW_PT_GUARDED_BY`
 * `PW_ACQUIRED_AFTER`_
 * `PW_ACQUIRED_BEFORE`_
 * `PW_EXCLUSIVE_LOCKS_REQUIRED`_
 * `PW_SHARED_LOCKS_REQUIRED`_
 * `PW_LOCKS_EXCLUDED`_
-* :doxylink:`PW_LOCK_RETURNED`
-* :doxylink:`PW_LOCKABLE`
-* :doxylink:`PW_SCOPED_LOCKABLE`
+* :cc:`PW_LOCK_RETURNED`
+* :cc:`PW_LOCKABLE`
+* :cc:`PW_SCOPED_LOCKABLE`
 * `PW_EXCLUSIVE_LOCK_FUNCTION`_
 * `PW_SHARED_LOCK_FUNCTION`_
 * `PW_UNLOCK_FUNCTION`_
@@ -569,7 +569,7 @@ Annotating Lock Usage
 * `PW_SHARED_TRYLOCK_FUNCTION`_
 * `PW_ASSERT_EXCLUSIVE_LOCK`_
 * `PW_ASSERT_SHARED_LOCK`_
-* :doxylink:`PW_NO_LOCK_SAFETY_ANALYSIS`
+* :cc:`PW_NO_LOCK_SAFETY_ANALYSIS`
 
 Annotating Lock Objects
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -712,9 +712,9 @@ The ``VirtualBasicLockable`` interface meets the
 named requirement. Our critical section lock primitives offer optional virtual
 versions, including:
 
-* :doxylink:`VirtualMutex <pw::sync::VirtualMutex>`
-* :doxylink:`VirtualTimedMutex <pw::sync::VirtualTimedMutex>`
-* :doxylink:`VirtualInterruptSpinLock <pw::sync::VirtualInterruptSpinLock>`
+* :cc:`VirtualMutex <pw::sync::VirtualMutex>`
+* :cc:`VirtualTimedMutex <pw::sync::VirtualTimedMutex>`
+* :cc:`VirtualInterruptSpinLock <pw::sync::VirtualInterruptSpinLock>`
 
 .. _module-pw_sync-genericbasiclockable:
 
@@ -737,7 +737,7 @@ Borrowable
 which is guarded by a lock, enabling a containerized style of external locking.
 
 Users who need access to the guarded object can ask to acquire a
-:doxylink:`BorrowedPointer <pw::sync::BorrowedPointer>` which permits access
+:cc:`BorrowedPointer <pw::sync::BorrowedPointer>` which permits access
 while the lock is held.
 
 This class is compatible with locks which comply with
@@ -831,7 +831,7 @@ This is why ``Borrowable`` exists.
 
 Why use Borrowable?
 -------------------
-:doxylink:`Borrowable <pw::sync::Borrowable>` offers code-size efficient way to
+:cc:`Borrowable <pw::sync::Borrowable>` offers code-size efficient way to
 enable external locking that is easy and safe to use. It is effectively a
 container which holds references to a protected instance and its lock which
 provides RAII-style access.
@@ -897,16 +897,16 @@ Example in C++
 
 InlineBorrowable
 =================
-:doxylink:`InlineBorrowable <pw::sync::InlineBorrowable>` is a helper to
+:cc:`InlineBorrowable <pw::sync::InlineBorrowable>` is a helper to
 simplify the common use case where an object is wrapped in a
-:doxylink:`Borrowable <pw::sync::Borrowable>` for its entire lifetime. The
+:cc:`Borrowable <pw::sync::Borrowable>` for its entire lifetime. The
 ``InlineBorrowable`` owns the guarded object and the lock object.
 
 ``InlineBorrowable`` has a separate parameter for the concrete lock type that is
 instantiated and a (possibly virtual) lock interface type that is referenced by
-users of the guarded object. The default lock is :doxylink:`VirtualMutex
+users of the guarded object. The default lock is :cc:`VirtualMutex
 <pw::sync::VirtualMutex>` and the default lock interface is
-:doxylink:`VirtualBasicLockable <pw::sync::VirtualBasicLockable>`.
+:cc:`VirtualBasicLockable <pw::sync::VirtualBasicLockable>`.
 
 An ``InlineBorrowable`` is a ``Borrowable`` with the same guarded object and
 lock interface types, and it can be passed directly to APIs that expect a
@@ -923,7 +923,7 @@ Constructing objects in-place
 -----------------------------
 The guarded object and its lock are constructed in-place by the
 InlineBorrowable, and any constructor parameters required by the object or
-its lock must be passed through the :doxylink:`InlineBorrowable
+its lock must be passed through the :cc:`InlineBorrowable
 <pw::sync::InlineBorrowable>` constructor. There are several ways to do this:
 
 * Pass the parameters for the guarded object inline to the constructor. This is
@@ -1012,17 +1012,17 @@ efficiently as possible for the platform that it is used on.
 This simpler but highly portable class of signaling primitives is intended to
 ensure that a portability efficiency tradeoff does not have to be made up front.
 Today this is class of simpler signaling primitives is limited to the
-:doxylink:`ThreadNotification <pw::sync::ThreadNotification>` and
-:doxylink:`TimedThreadNotification <pw::sync::TimedThreadNotification>`.
+:cc:`ThreadNotification <pw::sync::ThreadNotification>` and
+:cc:`TimedThreadNotification <pw::sync::TimedThreadNotification>`.
 
 ThreadNotification
 ==================
-The :doxylink:`ThreadNotification <pw::sync::ThreadNotification>` is a
+The :cc:`ThreadNotification <pw::sync::ThreadNotification>` is a
 synchronization primitive that can be used to permit a SINGLE thread to block
 and consume a latching, saturating notification from multiple notifiers.
 
 .. Note::
-   Although only a single thread can block on a :doxylink:`ThreadNotification
+   Although only a single thread can block on a :cc:`ThreadNotification
    <pw::sync::ThreadNotification>` at a time, many instances may be used by a
    single thread just like binary semaphores.  This is in contrast to some
    native RTOS APIs, such as direct task notifications, which re-use the same
@@ -1034,7 +1034,7 @@ and consume a latching, saturating notification from multiple notifiers.
    result, having multiple threads receiving notifications via the acquire API
    is unsupported.
 
-This is effectively a subset of the :doxylink:`BinarySemaphore
+This is effectively a subset of the :cc:`BinarySemaphore
 <pw::sync::BinarySemaphore>` API, except that only a single thread can be
 notified and block at a time.
 
@@ -1044,15 +1044,15 @@ backed by the most efficient native primitive for a target, regardless of
 whether that is a semaphore, event flag group, condition variable, or something
 else.
 
-The :doxylink:`ThreadNotification <pw::sync::ThreadNotification>` is initialized
+The :cc:`ThreadNotification <pw::sync::ThreadNotification>` is initialized
 to being empty (latch is not set).
 
 Generic BinarySemaphore-based Backend
 -------------------------------------
-This module provides a generic backend for :doxylink:`ThreadNotification
+This module provides a generic backend for :cc:`ThreadNotification
 <pw::sync::ThreadNotification>` via
 ``pw_sync:binary_semaphore_thread_notification`` which uses a
-:doxylink:`BinarySemaphore <pw::sync::BinarySemaphore>` as the backing
+:cc:`BinarySemaphore <pw::sync::BinarySemaphore>` as the backing
 primitive. See :ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for
 backend availability.
 
@@ -1096,15 +1096,15 @@ C++
      - ✔
      -
      -
-   * - :doxylink:`acquire <pw::sync::ThreadNotification::acquire>`
+   * - :cc:`acquire <pw::sync::ThreadNotification::acquire>`
      - ✔
      -
      -
-   * - :doxylink:`try_acquire <pw::sync::ThreadNotification::try_acquire>`
+   * - :cc:`try_acquire <pw::sync::ThreadNotification::try_acquire>`
      - ✔
      -
      -
-   * - :doxylink:`release <pw::sync::ThreadNotification::release>`
+   * - :cc:`release <pw::sync::ThreadNotification::release>`
      - ✔
      - ✔
      -
@@ -1137,12 +1137,12 @@ Examples in C++
 
 TimedThreadNotification
 =======================
-The :doxylink:`TimedThreadNotification <pw::sync::TimedThreadNotification>` is
-an extension of the :doxylink:`ThreadNotification
+The :cc:`TimedThreadNotification <pw::sync::TimedThreadNotification>` is
+an extension of the :cc:`ThreadNotification
 <pw::sync::ThreadNotification>` which offers timeout and deadline based
 semantics.
 
-The :doxylink:`TimedThreadNotification <pw::sync::TimedThreadNotification>` is
+The :cc:`TimedThreadNotification <pw::sync::TimedThreadNotification>` is
 initialized to being empty (latch is not set).
 
 .. Warning::
@@ -1153,10 +1153,10 @@ initialized to being empty (latch is not set).
 
 Generic BinarySemaphore-based Backend
 -------------------------------------
-This module provides a generic backend for :doxylink:`TimedThreadNotification
+This module provides a generic backend for :cc:`TimedThreadNotification
 <pw::sync::TimedThreadNotification>` via
 ``pw_sync:binary_semaphore_timed_thread_notification`` which uses a
-:doxylink:`BinarySemaphore <pw::sync::BinarySemaphore>` as the backing
+:cc:`BinarySemaphore <pw::sync::BinarySemaphore>` as the backing
 primitive. See :ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for
 backend availability.
 
@@ -1206,12 +1206,12 @@ C++
      - ✔
      -
      -
-   * - :doxylink:`try_acquire_for
+   * - :cc:`try_acquire_for
        <pw::sync::TimedThreadNotification::try_acquire_for>`
      - ✔
      -
      -
-   * - :doxylink:`try_acquire_until
+   * - :cc:`try_acquire_until
        <pw::sync::TimedThreadNotification::try_acquire_until>`
      - ✔
      -
@@ -1252,24 +1252,24 @@ Examples in C++
 
 CountingSemaphore
 =================
-The :doxylink:`CountingSemaphore <pw::sync::CountingSemaphore>` is a
+The :cc:`CountingSemaphore <pw::sync::CountingSemaphore>` is a
 synchronization primitive that can be used for counting events and/or resource
 management where receiver(s) can block on acquire until notifier(s) signal by
 invoking release.
 
-Note that unlike :doxylink:`Mutex <pw::sync::Mutex>`, priority inheritance is
+Note that unlike :cc:`Mutex <pw::sync::Mutex>`, priority inheritance is
 not used by semaphores meaning semaphores are subject to unbounded priority
 inversions. Due to this, Pigweed does not recommend semaphores for mutual
 exclusion.
 
-The :doxylink:`CountingSemaphore <pw::sync::CountingSemaphore>` is initialized
+The :cc:`CountingSemaphore <pw::sync::CountingSemaphore>` is initialized
 to being empty or having no tokens.
 
 The entire API is thread safe, but only a subset is interrupt safe.
 
 .. Note::
    If there is only a single consuming thread, use a
-   :doxylink:`ThreadNotification <pw::sync::ThreadNotification>` instead which
+   :cc:`ThreadNotification <pw::sync::ThreadNotification>` instead which
    can be much more efficient on some RTOSes such as FreeRTOS.
 
 .. Warning::
@@ -1313,29 +1313,29 @@ C++
      - ✔
      -
      -
-   * - :doxylink:`acquire <pw::sync::CountingSemaphore::acquire>`
+   * - :cc:`acquire <pw::sync::CountingSemaphore::acquire>`
      - ✔
      -
      -
-   * - :doxylink:`try_acquire <pw::sync::CountingSemaphore::try_acquire>`
+   * - :cc:`try_acquire <pw::sync::CountingSemaphore::try_acquire>`
      - ✔
      - ✔
      -
-   * - :doxylink:`try_acquire_for
+   * - :cc:`try_acquire_for
        <pw::sync::CountingSemaphore::try_acquire_for>`
      - ✔
      -
      -
-   * - :doxylink:`try_acquire_until
+   * - :cc:`try_acquire_until
        <pw::sync::CountingSemaphore::try_acquire_until>`
      - ✔
      -
      -
-   * - :doxylink:`release <pw::sync::CountingSemaphore::release>`
+   * - :cc:`release <pw::sync::CountingSemaphore::release>`
      - ✔
      - ✔
      -
-   * - :doxylink:`max <pw::sync::CountingSemaphore::max>`
+   * - :cc:`max <pw::sync::CountingSemaphore::max>`
      - ✔
      - ✔
      - ✔
@@ -1381,8 +1381,8 @@ you detect whether you ever fall behind.
 
 BinarySemaphore
 ===============
-:doxylink:`BinarySemaphore <pw::sync::BinarySemaphore>` is a specialization of
-:doxylink:`CountingSemaphore <pw::sync::CountingSemaphore>` with an
+:cc:`BinarySemaphore <pw::sync::BinarySemaphore>` is a specialization of
+:cc:`CountingSemaphore <pw::sync::CountingSemaphore>` with an
 arbitrary token limit of 1. Note that that ``max()`` is >= 1, meaning it may be
 released up to ``max()`` times but only acquired once for those N releases.
 
@@ -1396,7 +1396,7 @@ The entire API is thread safe, but only a subset is interrupt safe.
 
 .. Note::
    If there is only a single consuming thread, use a
-   :doxylink:`ThreadNotification <pw::sync::ThreadNotification>` instead which
+   :cc:`ThreadNotification <pw::sync::ThreadNotification>` instead which
    can be much more efficient on some RTOSes such as FreeRTOS.
 
 .. list-table::
@@ -1435,28 +1435,28 @@ C++
      - ✔
      -
      -
-   * - :doxylink:`acquire <pw::sync::BinarySemaphore::acquire>`
+   * - :cc:`acquire <pw::sync::BinarySemaphore::acquire>`
      - ✔
      -
      -
-   * - :doxylink:`try_acquire <pw::sync::BinarySemaphore::try_acquire>`
+   * - :cc:`try_acquire <pw::sync::BinarySemaphore::try_acquire>`
      - ✔
      - ✔
      -
-   * - :doxylink:`try_acquire_for <pw::sync::BinarySemaphore::try_acquire_for>`
+   * - :cc:`try_acquire_for <pw::sync::BinarySemaphore::try_acquire_for>`
      - ✔
      -
      -
-   * - :doxylink:`try_acquire_until
+   * - :cc:`try_acquire_until
        <pw::sync::BinarySemaphore::try_acquire_until>`
      - ✔
      -
      -
-   * - :doxylink:`release <pw::sync::BinarySemaphore::release>`
+   * - :cc:`release <pw::sync::BinarySemaphore::release>`
      - ✔
      - ✔
      -
-   * - :doxylink:`max <pw::sync::BinarySemaphore::max>`
+   * - :cc:`max <pw::sync::BinarySemaphore::max>`
      - ✔
      - ✔
      - ✔
@@ -1536,7 +1536,7 @@ signaling the waiter and the waiter reacquiring its lock.
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_sync`
+Moved: :cc:`pw_sync`
 
 .. toctree::
    :hidden:

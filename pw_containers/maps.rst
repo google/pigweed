@@ -14,7 +14,7 @@ find, and remove key-value pairs in logarithmic time.
 -----------------------
 pw::containers::FlatMap
 -----------------------
-:doxylink:`FlatMap` provides a simple, fixed-size associative array with ``O(log n)``
+:cc:`FlatMap` provides a simple, fixed-size associative array with ``O(log n)``
 lookup by key.
 
 ``pw::containers::FlatMap`` contains the same methods and features for looking
@@ -44,7 +44,7 @@ examples defines a ``FlatMap`` with two items.
 ----------------
 pw::IntrusiveMap
 ----------------
-:doxylink:`pw::IntrusiveMap` provides an embedded-friendly, tree-based, intrusive
+:cc:`pw::IntrusiveMap` provides an embedded-friendly, tree-based, intrusive
 map implementation. The intrusive aspect of the map is very similar to that of
 :ref:`module-pw_containers-intrusive_list`.
 
@@ -67,7 +67,7 @@ If you need to add this item to containers of more than one type, see
 ---------------------
 pw::IntrusiveMultiMap
 ---------------------
-:doxylink:`pw::IntrusiveMultiMap` provides an embedded-friendly, tree-based, intrusive
+:cc:`pw::IntrusiveMultiMap` provides an embedded-friendly, tree-based, intrusive
 multimap implementation. This is very similar to
 :ref:`module-pw_containers-intrusive_map`, except that the tree may contain
 multiple items with equivalent keys.
@@ -91,7 +91,7 @@ If you need to add this item to containers of more than one type, see
 -------------
 API reference
 -------------
-Moved: :doxylink:`pw_containers_maps`
+Moved: :cc:`pw_containers_maps`
 
 ------------
 Size reports
