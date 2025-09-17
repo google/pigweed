@@ -275,4 +275,29 @@ static_assert(
     sizeof(pw::UniquePtr<int>) == 2 * sizeof(void*),
     "size_ parameter must be disabled for non-array UniquePtr instances");
 
+TEST_F(UniquePtrTest, Conversions) {
+  struct Foo {
+    int foo() const { return 1; }
+  };
+  struct Bar : public Foo {
+    int bar() const { return 2; }
+  };
+  struct Baz : public Bar {
+    int baz() const { return 3; }
+  };
+
+  pw::UniquePtr<Bar> bar = allocator_.MakeUnique<Baz>();
+  auto* ptr = bar.get();
+
+  // Upcast.
+  pw::UniquePtr<Foo> foo = std::move(bar);
+  EXPECT_EQ(ptr, foo.get());
+
+  // Downcast.
+  pw::UniquePtr<Baz> baz = static_cast<pw::UniquePtr<Baz>>(std::move(foo));
+  EXPECT_EQ(baz->foo(), 1);
+  EXPECT_EQ(baz->bar(), 2);
+  EXPECT_EQ(baz->baz(), 3);
+}
+
 }  // namespace

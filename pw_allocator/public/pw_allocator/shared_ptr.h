@@ -21,11 +21,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <variant>
 
 #include "pw_allocator/deallocator.h"
 #include "pw_allocator/internal/control_block.h"
 #include "pw_allocator/internal/managed_ptr.h"
 #include "pw_allocator/layout.h"
+#include "pw_allocator/unique_ptr.h"
 
 namespace pw {
 
@@ -50,8 +52,8 @@ class BasicMultiBuf;
 /// - It cannot be constructed from a `T*`. Use
 ///   `Allocator::MakeShared<T>(...)` instead.
 /// - Aliasing constructors are not supported to encourage memory safety.
-/// - Constructing a `SharedPtr` from a `UniquePtr` is not supported, as the
-///   shared pointer control block must be allocated inline.
+/// - Constructing a `SharedPtr` from a `UniquePtr` takes an lvalue-reference,
+///   and is fallible..
 ///
 /// @tparam   T   The type being pointed to. This may be an array type, e.g.
 ///           `pw::SharedPtr<T[]>`.
@@ -89,7 +91,8 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   ///
   /// This allows not only pure move construction where `T == U`, but also
   /// converting construction where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   constexpr SharedPtr(const SharedPtr<U>& other) noexcept : SharedPtr() {
     *this = other;
   }
@@ -99,10 +102,22 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   /// This allows not only pure move construction where `T == U`, but also
   /// converting construction where `T` is a base class of `U`, like
   /// `SharedPtr<Base> base(deallocator.MakeShared<Child>());`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   SharedPtr(SharedPtr<U>&& other) noexcept : SharedPtr() {
     *this = std::move(other);
   }
+
+  /// Constructs a `SharedPtr<T>` from a `UniquePtr<T>`.
+  ///
+  /// NOTE: This constructor differs from `std::shared_ptr(std::unique_ptr&&)`
+  /// in that it takes an l-value reference to the `UniquePtr`. This constructor
+  /// must allocate a shared pointer control block. If that allocation fails,
+  /// the `UniquePtr` is unmodified and still retains ownership of its object,
+  /// and an empty `SharedPtr` is returned. If the allocation succeeds, the
+  /// `UniquePtr` will be reset and a `SharedPtr` to the object will be
+  /// returned.
+  SharedPtr(UniquePtr<T>& owned) noexcept;
 
   /// Copy-assigns a `SharedPtr<T>` from a `SharedPtr<T>`.
   ///
@@ -118,7 +133,8 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   ///
   /// This allows not only pure copy assignment where `T == U`, but also
   /// converting assignment where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   constexpr SharedPtr& operator=(const SharedPtr<U>& other) noexcept;
 
   /// Move-assigns a `SharedPtr<T>` from a `SharedPtr<U>`.
@@ -127,14 +143,59 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   ///
   /// This allows not only pure move assignment where `T == U`, but also
   /// converting assignment where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   SharedPtr& operator=(SharedPtr<U>&& other) noexcept;
 
-  /// Sets this `ManagedPtr` to null, releasing any currently-held value.
+  /// Sets this `SharedPtr` to null, releasing any currently-held value.
   ///
-  /// After this function returns, this `ManagedPtr` will be in an "empty"
+  /// After this function returns, this `SharedPtr` will be in an "empty"
   /// (`nullptr`) state until a new value is assigned.
   SharedPtr& operator=(std::nullptr_t) noexcept;
+
+  /// Explicit conversion operator for downcasting.
+  ///
+  /// If an arbitrary type `A` derives from another type `B`, a shared pointer
+  /// to `A` can be automatically upcast to one of type `B`. This operator
+  /// performs the reverse operation with an explicit cast.
+  ///
+  /// @code{.cpp}
+  /// pw::SharedPtr<A> a1 = allocator.MakeShared<A>();
+  /// pw::SharedPtr<B> b = a1;
+  /// pw::SharedPtr<A> a2 = static_cast<pw::SharedPtr<A>>(b);
+  /// @endcode
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
+  constexpr explicit operator const SharedPtr<U>&() const {
+    return static_cast<const SharedPtr<U>&>(
+        static_cast<const allocator::internal::BaseManagedPtr&>(*this));
+  }
+
+  [[nodiscard]] friend constexpr bool operator==(const SharedPtr& lhs,
+                                                 std::nullptr_t) {
+    return lhs.Equals(nullptr);
+  }
+  [[nodiscard]] friend constexpr bool operator==(std::nullptr_t,
+                                                 const SharedPtr& rhs) {
+    return rhs.Equals(nullptr);
+  }
+  [[nodiscard]] friend constexpr bool operator==(const SharedPtr& lhs,
+                                                 const SharedPtr& rhs) {
+    return lhs.Equals(rhs) && lhs.control_block_ == rhs.control_block_;
+  }
+
+  [[nodiscard]] friend constexpr bool operator!=(const SharedPtr& lhs,
+                                                 std::nullptr_t) {
+    return !lhs.Equals(nullptr);
+  }
+  [[nodiscard]] friend constexpr bool operator!=(std::nullptr_t,
+                                                 const SharedPtr& rhs) {
+    return !rhs.Equals(nullptr);
+  }
+  [[nodiscard]] friend constexpr bool operator!=(const SharedPtr& lhs,
+                                                 const SharedPtr& rhs) {
+    return !(lhs == rhs);
+  }
 
   /// Returns the number of elements allocated.
   ///
@@ -225,7 +286,8 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   ControlBlock* control_block() const { return control_block_; }
 
   /// Copies details from another object without releasing it.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   void CopyFrom(const SharedPtr<U>& other);
 
   /// Disassociates this object from its associated object and control block,
@@ -242,6 +304,20 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
 /// @}
 
 // Template method implementations.
+
+template <typename T>
+SharedPtr<T>::SharedPtr(UniquePtr<T>& owned) noexcept {
+  if constexpr (std::is_array_v<T>) {
+    control_block_ =
+        ControlBlock::Create(owned.deallocator(), owned.get(), owned.size());
+  } else {
+    control_block_ = ControlBlock::Create(owned.deallocator(), owned.get(), 1);
+  }
+  if (control_block_ != nullptr) {
+    Base::CopyFrom(owned);
+    owned.Release();
+  }
+}
 
 template <typename T>
 template <typename... Args>
@@ -270,7 +346,7 @@ SharedPtr<T> SharedPtr<T>::Create(Allocator* allocator,
 }
 
 template <typename T>
-template <typename U>
+template <typename U, typename>
 constexpr SharedPtr<T>& SharedPtr<T>::operator=(
     const SharedPtr<U>& other) noexcept {
   CheckArrayTypes<U>();
@@ -282,7 +358,7 @@ constexpr SharedPtr<T>& SharedPtr<T>::operator=(
 }
 
 template <typename T>
-template <typename U>
+template <typename U, typename>
 SharedPtr<T>& SharedPtr<T>::operator=(SharedPtr<U>&& other) noexcept {
   CheckArrayTypes<U>();
   reset();
@@ -338,7 +414,7 @@ void SharedPtr<T>::swap(SharedPtr<T>& other) noexcept {
 }
 
 template <typename T>
-template <typename U>
+template <typename U, typename>
 void SharedPtr<T>::CopyFrom(const SharedPtr<U>& other) {
   CheckArrayTypes<U>();
   Base::CopyFrom(other);

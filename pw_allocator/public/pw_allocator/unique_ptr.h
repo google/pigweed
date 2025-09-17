@@ -101,7 +101,8 @@ class UniquePtr : public ::pw::allocator::internal::ManagedPtr<T> {
   /// This allows not only pure move construction where `T == U`, but also
   /// converting construction where `T` is a base class of `U`, like
   /// `UniquePtr<Base> base(deallocator.MakeUnique<Child>());`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   UniquePtr(UniquePtr<U>&& other) noexcept {
     *this = std::move(other);
   }
@@ -115,7 +116,8 @@ class UniquePtr : public ::pw::allocator::internal::ManagedPtr<T> {
   ///
   /// This allows not only pure move assignment where `T == U`, but also
   /// converting assignment where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   UniquePtr& operator=(UniquePtr<U>&& other) noexcept;
 
   /// Sets this `UniquePtr` to null, freeing any currently-held value.
@@ -123,6 +125,50 @@ class UniquePtr : public ::pw::allocator::internal::ManagedPtr<T> {
   /// After this function returns, this `UniquePtr` will be in an "empty"
   /// (`nullptr`) state until a new value is assigned.
   UniquePtr& operator=(std::nullptr_t) noexcept;
+
+  /// Explicit conversion operator for downcasting.
+  ///
+  /// If an arbitrary type `A` derives from another type `B`, a unique pointer
+  /// to `A` can be automatically upcast when moving to one of type `B`. This
+  /// operator performs the reverse operation with an explicit cast.
+  ///
+  /// @code{.cpp}
+  /// pw::UniquePtr<A> a1 = allocator.MakeUnique<A>();
+  /// pw::UniquePtr<B> b = std::move(a1);
+  /// pw::UniquePtr<A> a2 = static_cast<pw::UniquePtr<A>>(std::move(b));
+  /// @endcode
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
+  constexpr explicit operator UniquePtr<U>() && {
+    Deallocator& deallocator = *deallocator_;
+    return UniquePtr<U>(static_cast<U*>(Release()), deallocator);
+  }
+
+  [[nodiscard]] friend constexpr bool operator==(const UniquePtr& lhs,
+                                                 std::nullptr_t) {
+    return lhs.Equals(nullptr);
+  }
+  [[nodiscard]] friend constexpr bool operator==(std::nullptr_t,
+                                                 const UniquePtr& rhs) {
+    return rhs.Equals(nullptr);
+  }
+  [[nodiscard]] friend constexpr bool operator==(const UniquePtr& lhs,
+                                                 const UniquePtr& rhs) {
+    return lhs.Equals(rhs) && lhs.control_block_ == rhs.control_block_;
+  }
+
+  [[nodiscard]] friend constexpr bool operator!=(const UniquePtr& lhs,
+                                                 std::nullptr_t) {
+    return !lhs.Equals(nullptr);
+  }
+  [[nodiscard]] friend constexpr bool operator!=(std::nullptr_t,
+                                                 const UniquePtr& rhs) {
+    return !rhs.Equals(nullptr);
+  }
+  [[nodiscard]] friend constexpr bool operator!=(const UniquePtr& lhs,
+                                                 const UniquePtr& rhs) {
+    return !(lhs == rhs);
+  }
 
   /// Returns the number of elements allocated.
   ///
@@ -160,7 +206,8 @@ class UniquePtr : public ::pw::allocator::internal::ManagedPtr<T> {
   friend class UniquePtr;
 
   /// Copies details from another object without releasing it.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   void CopyFrom(const UniquePtr<U>& other);
 
   /// The number of elements allocated. This will not be present in the case
@@ -187,7 +234,7 @@ using UniquePtr = PW_ALLOCATOR_DEPRECATED ::pw::UniquePtr<T>;
 // Template method implementations.
 
 template <typename T>
-template <typename U>
+template <typename U, typename>
 UniquePtr<T>& UniquePtr<T>::operator=(UniquePtr<U>&& other) noexcept {
   Reset();
   CopyFrom(other);
@@ -236,7 +283,7 @@ void UniquePtr<T>::Swap(UniquePtr<T>& other) {
 }
 
 template <typename T>
-template <typename U>
+template <typename U, typename>
 void UniquePtr<T>::CopyFrom(const UniquePtr<U>& other) {
   static_assert(std::is_array_v<T> == std::is_array_v<U>);
   Base::CopyFrom(other);

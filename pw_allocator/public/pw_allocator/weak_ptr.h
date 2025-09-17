@@ -55,7 +55,8 @@ class WeakPtr final : public ::pw::allocator::internal::WeakManagedPtr<T> {
   ///
   /// This allows not only pure move construction where `T == U`, but also
   /// converting construction where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   WeakPtr(const WeakPtr<U>& other) noexcept {
     *this = other;
   }
@@ -64,7 +65,8 @@ class WeakPtr final : public ::pw::allocator::internal::WeakManagedPtr<T> {
   ///
   /// This allows not only pure move construction where `T == U`, but also
   /// converting construction where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   WeakPtr(const SharedPtr<U>& other) noexcept {
     *this = other;
   }
@@ -74,7 +76,8 @@ class WeakPtr final : public ::pw::allocator::internal::WeakManagedPtr<T> {
   /// This allows not only pure move construction where `T == U`, but also
   /// converting construction where `T` is a base class of `U`, like
   /// `SharedPtr<Base> base(deallocator.MakeShared<Child>());`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   WeakPtr(WeakPtr<U>&& other) noexcept {
     *this = other;
   }
@@ -91,22 +94,43 @@ class WeakPtr final : public ::pw::allocator::internal::WeakManagedPtr<T> {
   ///
   /// This allows not only pure copy assignment where `T == U`, but also
   /// converting assignment where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   WeakPtr& operator=(const WeakPtr<U>& other) noexcept;
 
   /// Copy-assigns a `WeakPtr<T>` from a `SharedPtr<U>`.
   ///
   /// This allows not only pure move construction where `T == U`, but also
   /// converting construction where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   WeakPtr& operator=(const SharedPtr<U>& other) noexcept;
 
   /// Move-assigns a `WeakPtr<T>` from a `SharedPtr<U>`.
   ///
   /// This allows not only pure move construction where `T == U`, but also
   /// converting construction where `T` is a base class of `U`.
-  template <typename U>
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
   WeakPtr& operator=(WeakPtr<U>&& other) noexcept;
+
+  /// Explicit conversion operator for downcasting.
+  ///
+  /// If an arbitrary type `A` derives from another type `B`, a shared or weak
+  /// pointer to `A` can be automatically upcast to one of type `B`. This
+  /// operator performs the reverse operation with an explicit cast.
+  ///
+  /// @code{.cpp}
+  /// pw::SharedPtr<A> a1 = allocator.MakeShared<A>();
+  /// pw::WeakPtr<B> b = a1;
+  /// pw::WeakPtr<A> a2 = static_cast<pw::WeakPtr<A>>(b);
+  /// @endcode
+  template <typename U,
+            typename = std::enable_if_t<std::is_assignable_v<T*&, U*>>>
+  constexpr explicit operator const WeakPtr<U>&() const {
+    return static_cast<const WeakPtr<U>&>(
+        static_cast<const allocator::internal::BaseManagedPtr&>(*this));
+  }
 
   /// Resets this object to an empty state.
   ///
@@ -153,7 +177,7 @@ class WeakPtr final : public ::pw::allocator::internal::WeakManagedPtr<T> {
 // Template implementations.
 
 template <typename T>
-template <typename U>
+template <typename U, typename>
 WeakPtr<T>& WeakPtr<T>::operator=(const WeakPtr<U>& other) noexcept {
   Base::template CheckAssignable<U>();
   control_block_ = other.control_block_;
@@ -164,7 +188,7 @@ WeakPtr<T>& WeakPtr<T>::operator=(const WeakPtr<U>& other) noexcept {
 }
 
 template <typename T>
-template <typename U>
+template <typename U, typename>
 WeakPtr<T>& WeakPtr<T>::operator=(const SharedPtr<U>& other) noexcept {
   Base::template CheckAssignable<U>();
   control_block_ = other.control_block_;
@@ -175,7 +199,7 @@ WeakPtr<T>& WeakPtr<T>::operator=(const SharedPtr<U>& other) noexcept {
 }
 
 template <typename T>
-template <typename U>
+template <typename U, typename>
 WeakPtr<T>& WeakPtr<T>::operator=(WeakPtr<U>&& other) noexcept {
   Base::template CheckAssignable<U>();
   control_block_ = other.control_block_;

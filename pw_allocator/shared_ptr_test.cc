@@ -238,7 +238,7 @@ TEST_F(SharedPtrTest, OwnerBeforeProvidesPartialOrder) {
   EXPECT_EQ(ptr1.owner_before(ptr4), ascending);
 }
 
-TEST_F(SharedPtrTest, CanswapWhenNeitherAreEmpty) {
+TEST_F(SharedPtrTest, CanSwapWhenNeitherAreEmpty) {
   auto ptr1 = allocator_.MakeShared<Counter>(111u);
   auto ptr2 = allocator_.MakeShared<Counter>(222u);
   ptr1.swap(ptr2);
@@ -246,7 +246,7 @@ TEST_F(SharedPtrTest, CanswapWhenNeitherAreEmpty) {
   EXPECT_EQ(ptr2->value(), 111u);
 }
 
-TEST_F(SharedPtrTest, CanswapWhenOneIsEmpty) {
+TEST_F(SharedPtrTest, CanSwapWhenOneIsEmpty) {
   auto ptr1 = allocator_.MakeShared<Counter>(111u);
   pw::SharedPtr<Counter> ptr2;
 
@@ -261,12 +261,53 @@ TEST_F(SharedPtrTest, CanswapWhenOneIsEmpty) {
   EXPECT_EQ(ptr2, nullptr);
 }
 
-TEST_F(SharedPtrTest, CanswapWhenBothAreEmpty) {
+TEST_F(SharedPtrTest, CanSwapWhenBothAreEmpty) {
   pw::SharedPtr<Counter> ptr1;
   pw::SharedPtr<Counter> ptr2;
   ptr1.swap(ptr2);
   EXPECT_EQ(ptr1, nullptr);
   EXPECT_EQ(ptr2, nullptr);
+}
+
+TEST_F(SharedPtrTest, Conversions) {
+  struct Foo {
+    int foo() const { return 1; }
+  };
+  struct Bar : public Foo {
+    int bar() const { return 2; }
+  };
+  struct Baz : public Bar {
+    int baz() const { return 3; }
+  };
+
+  pw::SharedPtr<Bar> bar = allocator_.MakeShared<Baz>();
+
+  // Upcast.
+  pw::SharedPtr<Foo> foo = bar;
+  EXPECT_EQ(static_cast<pw::SharedPtr<Bar>>(foo), bar);
+
+  // Downcast.
+  pw::SharedPtr<Baz> baz = static_cast<pw::SharedPtr<Baz>>(foo);
+  EXPECT_EQ(baz->foo(), 1);
+  EXPECT_EQ(baz->bar(), 2);
+  EXPECT_EQ(baz->baz(), 3);
+}
+
+TEST_F(SharedPtrTest, SharedFromUniquePtr) {
+  pw::UniquePtr<Counter> owned = allocator_.MakeUnique<Counter>(5u);
+  pw::SharedPtr<Counter> shared(owned);
+  ASSERT_NE(shared, nullptr);
+  EXPECT_EQ(owned, nullptr);
+  EXPECT_EQ(shared->value(), 5u);
+}
+
+TEST_F(SharedPtrTest, SharedFromUniquePtrFailsOnAllocationFailure) {
+  pw::UniquePtr<Counter> owned = allocator_.MakeUnique<Counter>(5u);
+  allocator_.Exhaust();
+  pw::SharedPtr<Counter> shared(owned);
+  EXPECT_EQ(shared, nullptr);
+  ASSERT_NE(owned, nullptr);
+  EXPECT_EQ(owned->value(), 5u);
 }
 
 }  // namespace

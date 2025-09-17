@@ -321,6 +321,31 @@ TEST_F(WeakPtrTest, CanswapWhenBothAreExpired) {
   EXPECT_TRUE(weak2.expired());
 }
 
+TEST_F(WeakPtrTest, Conversions) {
+  struct Foo {
+    int foo() const { return 1; }
+  };
+  struct Bar : public Foo {
+    int bar() const { return 2; }
+  };
+  struct Baz : public Bar {
+    int baz() const { return 3; }
+  };
+
+  pw::SharedPtr<Bar> shared = allocator_.MakeShared<Baz>();
+  pw::WeakPtr<Bar> bar(shared);
+
+  // Upcast.
+  pw::WeakPtr<Foo> foo = bar;
+  EXPECT_EQ(static_cast<pw::WeakPtr<Bar>>(foo).Lock(), bar.Lock());
+
+  // Downcast.
+  pw::SharedPtr<Baz> baz = static_cast<pw::WeakPtr<Baz>>(foo).Lock();
+  EXPECT_EQ(baz->foo(), 1);
+  EXPECT_EQ(baz->bar(), 2);
+  EXPECT_EQ(baz->baz(), 3);
+}
+
 }  // namespace
 
 // TODO(b/402489948): Remove when portable atomics are provided by `pw_atomic`.

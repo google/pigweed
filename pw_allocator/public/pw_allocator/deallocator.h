@@ -47,7 +47,7 @@ class Deallocator {
   constexpr const Capabilities& capabilities() const { return capabilities_; }
 
   /// Returns whether a given capability is enabled for this object.
-  bool HasCapability(Capability capability) const {
+  constexpr bool HasCapability(Capability capability) const {
     return capabilities_.has(capability);
   }
 

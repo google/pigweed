@@ -21,9 +21,10 @@
 
 namespace pw {
 
-// Forward declaration to prevent including "allocator.h", which includes this
-// file.
+// Forward declarations to prevent including "allocator.h", et al. which include
+// this file.
 class Allocator;
+class Deallocator;
 
 namespace allocator::internal {
 
@@ -50,13 +51,29 @@ class ControlBlock final {
 
   /// Factory method for allocating memory with an attached control block.
   ///
-  /// If allocation, this call will return null.
+  /// If allocation fails, this call will return null.
   ///
   /// @param  allocator   Allocator to use to provide memory.
   /// @param  layout      Layout of an object to allocate and associate with a
   ///                     control block.
   /// @param  size        Number of objects if allocating an array, or 1.
   static ControlBlock* Create(Allocator* allocator, Layout layout, size_t size);
+
+  /// Factory method for allocating a control block for previously allocated
+  /// memory.
+  ///
+  /// The parameters are expected to come from a `UniquePtr`.
+  ///
+  /// If allocation fails, this call will return null.
+  ///
+  /// @param  deallocator Deallocator to use to provide memory. Must have the
+  ///                     `kCanAllocateArbitraryLayout` capability, i.e. be an
+  ///                     upcast allocator.
+  /// @param  data        Previously allocated memory.
+  /// @param  size        Number of objects if data is an array, or 1.
+  static ControlBlock* Create(Deallocator* deallocator,
+                              void* data,
+                              size_t size);
 
   /// Returns the allocator that allocated the control block.
   Allocator* allocator() const { return allocator_; }

@@ -16,6 +16,8 @@
 
 #include "lib/stdcompat/bit.h"
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/capability.h"
+#include "pw_allocator/deallocator.h"
 #include "pw_allocator/hardening.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
@@ -33,6 +35,21 @@ ControlBlock* ControlBlock::Create(Allocator* allocator,
   auto addr = cpp20::bit_cast<uintptr_t>(ptr);
   addr = AlignUp(addr + sizeof(ControlBlock), layout.alignment());
   auto* data = cpp20::bit_cast<std::byte*>(addr);
+  return new (ptr) ControlBlock(allocator, data, size);
+}
+
+ControlBlock* ControlBlock::Create(Deallocator* deallocator,
+                                   void* data,
+                                   size_t size) {
+  if (!deallocator->HasCapability(
+          allocator::Capability::kCanAllocateArbitraryLayout)) {
+    return nullptr;
+  }
+  auto* allocator = static_cast<Allocator*>(deallocator);
+  void* ptr = allocator->Allocate(Layout::Of<ControlBlock>());
+  if (ptr == nullptr) {
+    return nullptr;
+  }
   return new (ptr) ControlBlock(allocator, data, size);
 }
 

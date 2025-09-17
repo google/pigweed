@@ -350,7 +350,7 @@ class Allocator : public Deallocator {
   constexpr Allocator() = default;
 
   explicit constexpr Allocator(const Capabilities& capabilities)
-      : Deallocator(capabilities) {}
+      : Deallocator(Capability::kCanAllocateArbitraryLayout | capabilities) {}
 
  private:
   /// Virtual `Allocate` function implemented by derived classes.

@@ -84,26 +84,14 @@ class ManagedPtr : public WeakManagedPtr<T> {
   using element_type = typename Base::element_type;
 
  public:
-  // Derived classes must explicitly provide any copy- and/or move- constructors
-  // and assignment operators they intend to support.
-  ManagedPtr(const ManagedPtr&) = delete;
-  ManagedPtr& operator=(const ManagedPtr&) = delete;
-
   /// `operator bool` is not provided in order to ensure that there is no
   /// confusion surrounding `if (foo)` vs. `if (*foo)`.
   ///
   /// `nullptr` checking should instead use `if (foo == nullptr)`.
   explicit operator bool() const = delete;
 
-  /// Returns whether this `ManagedPtr` is in an "empty" (`nullptr`) state.
-  bool operator==(std::nullptr_t) const { return value_ == nullptr; }
-
-  /// Returns whether this `ManagedPtr` is not in an "empty" (`nullptr`)
-  /// state.
-  bool operator!=(std::nullptr_t) const { return value_ != nullptr; }
-
   /// Returns the underlying (possibly null) pointer.
-  constexpr element_type* get() const noexcept { return value_; }
+  constexpr element_type* get() const noexcept { return ptr_; }
 
   /// Permits accesses to members of `T` via `ptr->Member`.
   ///
@@ -111,20 +99,20 @@ class ManagedPtr : public WeakManagedPtr<T> {
   /// an "empty" (`nullptr`) state.
   constexpr element_type* operator->() const noexcept {
     if constexpr (Hardening::kIncludesRobustChecks) {
-      PW_ASSERT(value_ != nullptr);
+      PW_ASSERT(ptr_ != nullptr);
     }
-    return value_;
+    return ptr_;
   }
 
-  /// Returns a reference to any underlying value.
+  /// Returns a reference to any underlying object.
   ///
   /// The behavior of this operation is undefined if this `ManagedPtr` is in
   /// an "empty" (`nullptr`) state.
   constexpr element_type& operator*() const {
     if constexpr (Hardening::kIncludesRobustChecks) {
-      PW_ASSERT(value_ != nullptr);
+      PW_ASSERT(ptr_ != nullptr);
     }
-    return *value_;
+    return *ptr_;
   }
 
   /// Returns a reference to the element at the given index.
@@ -135,35 +123,46 @@ class ManagedPtr : public WeakManagedPtr<T> {
     static_assert(std::is_array_v<T>,
                   "operator[] cannot be called with non-array types");
     if constexpr (Hardening::kIncludesRobustChecks) {
-      PW_ASSERT(value_ != nullptr);
+      PW_ASSERT(ptr_ != nullptr);
     }
-    return value_[index];
+    return ptr_[index];
   }
 
  protected:
   constexpr ManagedPtr() = default;
 
-  /// Constructs a `ManagedPtr` from an already-allocated value and size.
-  constexpr explicit ManagedPtr(element_type* value) : value_(value) {}
+  /// Constructs a `ManagedPtr` from an already-allocated object and size.
+  constexpr explicit ManagedPtr(element_type* ptr) : ptr_(ptr) {}
+
+  constexpr ManagedPtr(const ManagedPtr& other) noexcept = default;
+  constexpr ManagedPtr& operator=(const ManagedPtr& other) noexcept = default;
+
+  /// Returns whether this `ManagedPtr` is in an "empty" (`nullptr`) state.
+  [[nodiscard]] bool Equals(std::nullptr_t) const { return ptr_ == nullptr; }
+
+  /// Returns whether this `ManagedPtr` points at the same object.
+  [[nodiscard]] bool Equals(const ManagedPtr& other) const {
+    return ptr_ == other.ptr_;
+  }
 
   /// Copies details from another object without releasing it.
   template <typename U>
   void CopyFrom(const ManagedPtr<U>& other) {
     Base::template CheckAssignable<U>();
-    value_ = other.value_;
+    ptr_ = other.ptr_;
   }
 
-  /// Releases a value from the `ManagedPtr`.
+  /// Releases an object from being managed by the `ManagedPtr`.
   ///
-  /// After this call, the object will have an "empty" (`nullptr`) value.
+  /// After this call, the object will have an "empty" (`nullptr`) pointer.
   element_type* Release() {
-    element_type* value = value_;
-    value_ = nullptr;
-    return value;
+    element_type* ptr = ptr_;
+    ptr_ = nullptr;
+    return ptr;
   }
 
   /// Swaps the managed pointer and deallocator of this and another object.
-  void Swap(ManagedPtr& other) noexcept { std::swap(value_, other.value_); }
+  void Swap(ManagedPtr& other) noexcept { std::swap(ptr_, other.ptr_); }
 
   /// Destroys the objects in this object's memory without deallocating it.
   ///
@@ -171,7 +170,7 @@ class ManagedPtr : public WeakManagedPtr<T> {
   void Destroy() {
     static_assert(!std::is_array_v<T>,
                   "Destroy() cannot be called with array types");
-    std::destroy_at(value_);
+    std::destroy_at(ptr_);
   }
 
   /// Destroys the objects in this object's memory without deallocating it.
@@ -180,7 +179,7 @@ class ManagedPtr : public WeakManagedPtr<T> {
   void Destroy(size_t size) {
     static_assert(std::is_array_v<T>,
                   "Destrot(size_t) cannot be called with non-array types");
-    std::destroy_n(value_, size);
+    std::destroy_n(ptr_, size);
   }
 
  private:
@@ -188,8 +187,8 @@ class ManagedPtr : public WeakManagedPtr<T> {
   template <typename>
   friend class ManagedPtr;
 
-  /// A pointer to the contained value.
-  element_type* value_ = nullptr;
+  /// A pointer to the managed object.
+  element_type* ptr_ = nullptr;
 };
 
 }  // namespace allocator::internal
