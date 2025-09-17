@@ -21,7 +21,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
-#include <variant>
 
 #include "pw_allocator/deallocator.h"
 #include "pw_allocator/internal/control_block.h"
