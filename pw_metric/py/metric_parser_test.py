@@ -341,6 +341,9 @@ class GetAllMetricsTest(TestCase):
         self.work_queue = 0x5D087463
         self.max_queue_used = 0x534A42F4
 
+        # Note: The WalkRequest mock is handled via patch in
+        # test_get_all_metrics_with_pagination, not here in setUp.
+
     def test_get_all_metrics_with_pagination(self) -> None:
         """Tests that the client correctly handles a paginated response."""
         # Create metrics for page 1
@@ -370,12 +373,21 @@ class GetAllMetricsTest(TestCase):
             (Status.OK, response1),
             (Status.OK, response2),
         ]
-        # Also mock the WalkRequest constructor to track calls to it.
-        self.rpcs.pw.metric.proto.WalkRequest = mock.Mock()
 
-        metrics = metric_parser.get_all_metrics(
-            self.rpcs, self.detokenize, self.rpc_timeout_s
-        )
+        # Patch the WalkRequest constructor where it's imported in the
+        # metric_parser module. This is necessary because the code under
+        # test (metric_parser.py) imports and calls
+        # metric_service_pb2.WalkRequest directly.
+        with mock.patch(
+            'pw_metric.metric_parser.metric_service_pb2.WalkRequest'
+        ) as mock_walk_request:
+            # The mock must return a value when constructed, as it's
+            # passed as the request object to the Walk RPC.
+            mock_walk_request.return_value = mock.Mock()
+
+            metrics = metric_parser.get_all_metrics(
+                self.rpcs, self.detokenize, self.rpc_timeout_s
+            )
 
         expected_metrics = {
             'log': {'total_created': 100, 'total_dropped': 5},
@@ -383,9 +395,9 @@ class GetAllMetricsTest(TestCase):
         }
         self.assertEqual(expected_metrics, metrics)
 
-        # Verify RPC calls
-        self.assertEqual(self.rpcs.pw.metric.proto.WalkRequest.call_count, 2)
-        calls = self.rpcs.pw.metric.proto.WalkRequest.call_args_list
+        # Verify RPC calls using the mock_walk_request.
+        self.assertEqual(mock_walk_request.call_count, 2)
+        calls = mock_walk_request.call_args_list
         # First call has a cursor of 0.
         self.assertEqual(calls[0].kwargs['cursor'], 0)
         # Second call uses cursor from the first response
