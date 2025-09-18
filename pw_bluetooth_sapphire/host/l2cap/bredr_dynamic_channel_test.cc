@@ -33,6 +33,8 @@ namespace {
 // BrEdrSignalingChannel using snooped connection data to verify signaling
 // channel traffic.
 
+constexpr size_t kMaxUnknownOptionsPerResponse = 7;
+
 constexpr uint16_t kPsm = 0x0001;
 constexpr uint16_t kInvalidPsm = 0x0002;  // Valid PSMs are odd.
 constexpr ChannelId kLocalCId = 0x0040;
@@ -3471,8 +3473,8 @@ TEST_F(BrEdrDynamicChannelTest,
   EXPECT_TRUE(channel_close_cb_called);
 }
 
-// The unknown options from both configuration requests should be included when
-// responding with the "unknown options" result.
+// Both requests should be rejected separately with the "unknown options"
+// result.
 TEST_F(
     BrEdrDynamicChannelTest,
     Receive2ConfigReqsWithContinuationFlagInFirstReqAndUnknownOptionInBothReqs) {
@@ -3511,7 +3513,22 @@ TEST_F(
       0x01,
       0x00);
 
-  const StaticByteBuffer kOutboundUnknownOptionsConfigRsp(
+  const StaticByteBuffer kOutboundUnknownOptionsConfigRsp0(
+      // Source CID
+      LowerBits(kRemoteCId),
+      UpperBits(kRemoteCId),
+      // Flags (C = 1)
+      0x01,
+      0x00,
+      // Result
+      LowerBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
+      UpperBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
+      // Unknown Options
+      kUnknownOption0Type,
+      0x01,
+      0x00);
+
+  const StaticByteBuffer kOutboundUnknownOptionsConfigRsp1(
       // Source CID
       LowerBits(kRemoteCId),
       UpperBits(kRemoteCId),
@@ -3522,9 +3539,6 @@ TEST_F(
       LowerBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
       UpperBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
       // Unknown Options
-      kUnknownOption0Type,
-      0x01,
-      0x00,
       kUnknownOption1Type,
       0x01,
       0x00);
@@ -3540,13 +3554,13 @@ TEST_F(
 
   sig()->ReceiveExpect(kConfigurationRequest,
                        kInboundConfigReq0,
-                       kOutboundEmptyContinuationConfigRsp);
+                       kOutboundUnknownOptionsConfigRsp0);
   RunUntilIdle();
   EXPECT_EQ(0u, open_cb_count);
 
   sig()->ReceiveExpect(kConfigurationRequest,
                        kInboundConfigReq1,
-                       kOutboundUnknownOptionsConfigRsp);
+                       kOutboundUnknownOptionsConfigRsp1);
   RunUntilIdle();
   EXPECT_EQ(0u, open_cb_count);
 }
@@ -3683,6 +3697,169 @@ TEST_F(BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(open_cb_count, 1);
+}
+
+TEST_F(
+    BrEdrDynamicChannelTest,
+    UnknownConfigReqOptionClearsOptionAccumulatorFollowedBySuccessfulConnection) {
+  EXPECT_OUTBOUND_REQ(*sig(),
+                      kConnectionRequest,
+                      kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(
+      *sig(),
+      kConfigurationRequest,
+      kOutboundConfigReq.view(),
+      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+
+  size_t open_cb_count = 0;
+  auto open_cb = [&](const DynamicChannel* chan) {
+    EXPECT_TRUE(chan);
+    open_cb_count++;
+  };
+  registry()->OpenOutbound(kPsm, kChannelParams, open_cb);
+  RunUntilIdle();
+
+  uint16_t mtu = 699;
+  const StaticByteBuffer kInboundConfigReq0(
+      // Destination CID
+      LowerBits(kLocalCId),
+      UpperBits(kLocalCId),
+      // Flags (C = 1)
+      0x01,
+      0x00,
+      // MTU option (Type, Length, MTU value)
+      0x01,
+      0x02,
+      LowerBits(mtu),
+      UpperBits(mtu));
+  auto kOutboundOkConfigRsp0 = MakeEmptyConfigRsp(
+      kRemoteCId, ConfigurationResult::kSuccess, kConfigurationContinuation);
+  sig()->ReceiveExpect(
+      kConfigurationRequest, kInboundConfigReq0, kOutboundOkConfigRsp0);
+  RunUntilIdle();
+  EXPECT_EQ(0u, open_cb_count);
+
+  constexpr uint8_t kUnknownOption1Type = 0x71;
+  const StaticByteBuffer kInboundConfigReq1(
+      // Destination CID
+      LowerBits(kLocalCId),
+      UpperBits(kLocalCId),
+      // Flags (C = 0)
+      0x00,
+      0x00,
+      // Unknown Option
+      kUnknownOption1Type,
+      0x01,
+      0x00);
+  const StaticByteBuffer kOutboundUnknownOptionsConfigRsp1(
+      // Source CID
+      LowerBits(kRemoteCId),
+      UpperBits(kRemoteCId),
+      // Flags (C = 0)
+      0x00,
+      0x00,
+      // Result
+      LowerBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
+      UpperBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
+      // Unknown Options
+      kUnknownOption1Type,
+      0x01,
+      0x00);
+  sig()->ReceiveExpect(kConfigurationRequest,
+                       kInboundConfigReq1,
+                       kOutboundUnknownOptionsConfigRsp1);
+  RunUntilIdle();
+  EXPECT_EQ(0u, open_cb_count);
+
+  const StaticByteBuffer kInboundConfigReq2(
+      // Destination CID
+      LowerBits(kLocalCId),
+      UpperBits(kLocalCId),
+      // Flags (C = 0)
+      0x00,
+      0x00);
+
+  // The response should not have the custom MTU from the first request because
+  // the option accumulator should have been cleared when the unknown option was
+  // received.
+  sig()->ReceiveExpect(
+      kConfigurationRequest, kInboundConfigReq2, kOutboundOkConfigRsp);
+  RunUntilIdle();
+  EXPECT_EQ(1u, open_cb_count);
+}
+
+TEST_F(
+    BrEdrDynamicChannelTest,
+    InboundConfigRequestFilledWithUnkownOptionsResultsInResponseWith7UnknownOptions) {
+  EXPECT_OUTBOUND_REQ(*sig(),
+                      kConnectionRequest,
+                      kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(
+      *sig(),
+      kConfigurationRequest,
+      kOutboundConfigReq.view(),
+      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+
+  size_t open_cb_count = 0;
+  auto open_cb = [&](const DynamicChannel* chan) {
+    EXPECT_TRUE(chan);
+    open_cb_count++;
+  };
+  registry()->OpenOutbound(kPsm, kChannelParams, open_cb);
+  RunUntilIdle();
+
+  const StaticByteBuffer kInboundConfigReqHeader0(
+      // Destination CID
+      LowerBits(kLocalCId),
+      UpperBits(kLocalCId),
+      // Flags (C = 1)
+      0x01,
+      0x00);
+  uint16_t max_payload_size = std::numeric_limits<uint16_t>().max();
+  DynamicByteBuffer inbound_config_req(max_payload_size);
+  inbound_config_req.Write(kInboundConfigReqHeader0);
+
+  MutableBufferView options_view =
+      inbound_config_req.mutable_view(/*pos=*/kInboundConfigReqHeader0.size());
+  constexpr uint8_t kUnknownOption1Type = 0x71;
+  uint8_t option_header_size = 2;
+  while (options_view.size() >= option_header_size) {
+    uint8_t length =
+        std::min(static_cast<size_t>(std::numeric_limits<uint8_t>::max()),
+                 options_view.size() - option_header_size);
+    StaticByteBuffer<2> option(kUnknownOption1Type, length);
+    options_view.Write(option);
+    uint16_t option_size = option_header_size + length;
+    options_view = options_view.mutable_view(/*pos=*/option_size);
+  }
+
+  const StaticByteBuffer config_rsp_header(
+      // Source CID
+      LowerBits(kRemoteCId),
+      UpperBits(kRemoteCId),
+      // Flags (C = 1)
+      0x01,
+      0x00,
+      // Result
+      LowerBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
+      UpperBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)));
+  size_t first_n_options_size =
+      kMaxUnknownOptionsPerResponse *
+      (sizeof(ConfigurationOption) + std::numeric_limits<uint8_t>::max());
+  DynamicByteBuffer outbound_config_rsp(sizeof(ConfigurationResponsePayload) +
+                                        first_n_options_size);
+  outbound_config_rsp.Write(config_rsp_header);
+  outbound_config_rsp.Write(
+      inbound_config_req.mutable_view(/*pos=*/kInboundConfigReqHeader0.size(),
+                                      first_n_options_size),
+      /*pos=*/config_rsp_header.size());
+
+  sig()->ReceiveExpect(
+      kConfigurationRequest, inbound_config_req, outbound_config_rsp);
+  RunUntilIdle();
+  EXPECT_EQ(0u, open_cb_count);
 }
 
 }  // namespace

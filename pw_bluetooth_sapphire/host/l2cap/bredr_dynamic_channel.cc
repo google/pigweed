@@ -24,6 +24,10 @@
 namespace bt::l2cap::internal {
 namespace {
 
+// This value is arbitrary, but Core Spec v6.1 contains just 7 options so
+// supporting 7 unknown options seems reasonable.
+constexpr size_t kMaxUnknownOptionsPerResponse = 7;
+
 ChannelConfiguration::RetransmissionAndFlowControlOption
 WriteRfcOutboundTimeouts(
     ChannelConfiguration::RetransmissionAndFlowControlOption rfc_option) {
@@ -563,6 +567,40 @@ void BrEdrDynamicChannel::OnRxConfigReq(
     return;
   }
 
+  // Reject request if it contains unknown options.
+  // See Core Spec v5.1, Volume 3, Section 4.5: Configuration Options
+  if (!config.unknown_options().empty()) {
+    // This configuration transaction was a failure, so clear the accumulator.
+    remote_config_accum_.reset();
+
+    std::string unknown_string;
+    ChannelConfiguration::ConfigurationOptions unknown_options;
+    // Return just the first kMaxUnknownOptionsPerResponse unknown options.
+    for (size_t i = 0; i < config.unknown_options().size() &&
+                       i < kMaxUnknownOptionsPerResponse;
+         i++) {
+      const ChannelConfiguration::UnknownOption& option =
+          config.unknown_options()[i];
+      unknown_string += std::string(" ") + option.ToString();
+      unknown_options.push_back(
+          std::make_unique<ChannelConfiguration::UnknownOption>(option));
+    }
+
+    bt_log(DEBUG,
+           "l2cap-bredr",
+           "Channel %#.4x: config request contained unknown options (options: "
+           "%s)\n",
+           local_cid(),
+           unknown_string.c_str());
+
+    uint16_t rsp_flags = continuation ? kConfigurationContinuation : 0;
+    responder->Send(remote_cid(),
+                    rsp_flags,
+                    ConfigurationResult::kUnknownOptions,
+                    std::move(unknown_options));
+    return;
+  }
+
   // Always add options to accumulator, even if C = 0, for later code
   // simplicity.
   if (remote_config_accum_.has_value()) {
@@ -643,31 +681,6 @@ void BrEdrDynamicChannel::OnRxConfigReq(
   }
 
   state_ |= kRemoteConfigReceived;
-
-  // Reject request if it contains unknown options.
-  // See Core Spec v5.1, Volume 3, Section 4.5: Configuration Options
-  if (!req_config.unknown_options().empty()) {
-    ChannelConfiguration::ConfigurationOptions unknown_options;
-    std::string unknown_string;
-    for (auto& option : req_config.unknown_options()) {
-      unknown_options.push_back(
-          std::make_unique<ChannelConfiguration::UnknownOption>(option));
-      unknown_string += std::string(" ") + option.ToString();
-    }
-
-    bt_log(DEBUG,
-           "l2cap-bredr",
-           "Channel %#.4x: config request contained unknown options (options: "
-           "%s)\n",
-           local_cid(),
-           unknown_string.c_str());
-
-    responder->Send(remote_cid(),
-                    /*flags=*/0x0000,
-                    ConfigurationResult::kUnknownOptions,
-                    std::move(unknown_options));
-    return;
-  }
 
   auto unacceptable_config = CheckForUnacceptableConfigReqOptions(req_config);
   auto unacceptable_options = unacceptable_config.Options();
