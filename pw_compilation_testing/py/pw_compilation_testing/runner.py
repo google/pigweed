@@ -21,12 +21,13 @@ import shlex
 import string
 import sys
 import subprocess
+from typing import Sequence
 
 import pw_cli.log
 
 from pw_compilation_testing.generator import Compiler, Expectation, TestCase
 
-_LOG = logging.getLogger(__package__)
+_LOG = logging.getLogger('pw_nc_test')
 
 _RULE_REGEX = re.compile('^rule (?:cxx|.*_cxx)$')
 _NINJA_VARIABLE = re.compile('^([a-zA-Z0-9_]+) = ?')
@@ -121,10 +122,17 @@ def _check_results(
     stderr = process.stderr.decode(errors='replace')
 
     if process.returncode == 0:
+        # Check if the test was commented out or disabled.
+        if _should_skip_test(command):
+            _LOG.debug(
+                "Skipping test %s since it is excluded by the preprocessor",
+                test.name(),
+            )
+            return
+
         _start_failure(test, command)
         _LOG.error('Compilation succeeded, but it should have failed!')
         _LOG.error('Update the test code so that is fails to compile.')
-        _LOG.error('Compilation command:\n%s', command)
         raise _TestFailure
 
     compiler_str = command.split(' ', 1)[0]
@@ -204,7 +212,7 @@ def _should_skip_test(base_command: str) -> bool:
     # Attempt to run the preprocessor while setting the PW_NC_TEST macro to an
     # illegal statement (defined() with no identifier). If the preprocessor
     # passes, the test was skipped.
-    preprocessor_cmd = f'{base_command}{shlex.quote("defined()")} -E'
+    preprocessor_cmd = f'{base_command}={shlex.quote("defined()")} -E'
 
     split_cmd = shlex.split(preprocessor_cmd)
     if "-c" in split_cmd:
@@ -225,34 +233,58 @@ def _should_skip_test(base_command: str) -> bool:
     return process.returncode == 0
 
 
-def _execute_test(
+def _run_test(
     test: TestCase,
     command: str,
     variables: dict[str, str],
-    all_tests: list[str],
+    all_tests: Sequence[str],
 ) -> None:
     variables['in'] = str(test.source)
 
-    base_command = ' '.join(
+    compile_command = ' '.join(
         [
             string.Template(command).substitute(variables),
             '-DPW_NEGATIVE_COMPILATION_TESTS_ENABLED',
             # Define macros to disable all tests except this one.
             *(f'-D{_TEST_MACRO}{t}=0' for t in all_tests if t != test.case),
-            f'-D{_TEST_MACRO}{test.case}=',
+            f'-D{_TEST_MACRO}{test.case}',
         ]
     )
 
-    if _should_skip_test(base_command):
-        _LOG.info(
-            "Skipping test %s since it is excluded by the preprocessor",
-            test.name(),
-        )
-        return
-
-    compile_command = base_command + '1'  # set macro to 1 to enable the test
     process = subprocess.run(compile_command, shell=True, capture_output=True)
+
     _check_results(test, compile_command, process)
+
+
+def run_test(
+    test: TestCase,
+    command: str,
+    variables: dict[str, str],
+    all_tests: Sequence[str],
+) -> bool:
+    """Executes a compiler command and checks for expected compilation failure.
+
+    Args:
+      test: The TestCase object representing the test to run
+      command: The base compiler command template, with $-style arguments;
+          uses 'in' is the source file name
+      variables: dict of variables to substitute into the command template
+      all_tests: list of all test case names in the suite
+
+    Raises:
+        _TestFailure: If the compilation succeeds when it should have failed,
+            or if it fails with output that doesn't match the expectations.
+    """
+    try:
+        _run_test(test, command, variables, all_tests)
+        return True
+    except _TestFailure:
+        print(_FOOTER, file=sys.stderr)
+    except Exception as err:  # pylint: disable=broad-except
+        _LOG.error('Unexpected error running test %s: %s', test.name(), err)
+        raise
+
+    return False
 
 
 def _main(
@@ -274,15 +306,10 @@ def _main(
         target_ninja.parent / f'{target_ninja.stem}.compile_fail_test.out'
     )
 
-    try:
-        _execute_test(
-            test, command, variables, all_tests.read_text().splitlines()
-        )
-    except _TestFailure:
-        print(_FOOTER, file=sys.stderr)
-        return 1
+    if run_test(test, command, variables, all_tests.read_text().splitlines()):
+        return 0
 
-    return 0
+    return 1
 
 
 def _parse_args() -> dict:
