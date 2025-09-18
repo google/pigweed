@@ -163,20 +163,20 @@ modules offered by the newly-started Pigweed project.
 Implementation
 ^^^^^^^^^^^^^^
 The core encoders have undergone several iterations over time. The
-`original implementation <https://cs.opensource.google/pigweed/pigweed/+/bbf164c985576a348f3bcd4c48b3e9fd8a464a66:pw_protobuf/public/pw_protobuf/encoder.h;l=25>`_
+:cs:`original implementation <bbf164c985576a348f3bcd4c48b3e9fd8a464a66:pw_protobuf/public/pw_protobuf/encoder.h;l=25>`
 offered a simple API to directly serialize single protobuf fields to an
 in-memory buffer through a series of typed ``Encode`` functions. Message
 nesting was handled manually by the user, calling a ``Push`` function to begin
 writing fields to a submessage, followed by ``Pop`` on completion.
 
 The decoder was a
-`later addition <https://cs.opensource.google/pigweed/pigweed/+/6d9b9b447b84afb60e714ebd97523ee55b93c9a6:pw_protobuf/public/pw_protobuf/decoder.h;l=23>`_,
+:cs:`later addition <6d9b9b447b84afb60e714ebd97523ee55b93c9a6:pw_protobuf/public/pw_protobuf/decoder.h;l=23>`,
 initially invoking a callback on each field in the serialized message with its
 field number, giving the users the ability to extract the field by calling the
 appropriate typed ``Decode`` function. This was implemented via a
 ``DecodeHandler`` virtual interface, and it persists to this day as
 ``CallbackDecoder``. However, this proved to be too cumbersome to use, so the
-main decoder was `rewritten <https://cs.opensource.google/pigweed/pigweed/+/fe9723cd67796e9236022cde6ef42cda99682d77>`_
+main decoder was :cs:`rewritten <fe9723cd67796e9236022cde6ef42cda99682d77>`
 in the style of an iterator where users manually advanced it through the
 serialized fields, decoding those which they cared about.
 
@@ -195,7 +195,7 @@ top of a buffer, whereas the decoder ended up having two separate, parallel
 
 The reason for this asymmetry has to do with the manner in which the two were
 implemented. The encoder was
-`rewritten first <https://cs.opensource.google/pigweed/pigweed/+/0ed221cbb8b943205dea4ac315fe1d4b1e6b7371>`_,
+:cs:`rewritten first <0ed221cbb8b943205dea4ac315fe1d4b1e6b7371>`,
 and carefully designed to function on top of the limited semantic guarantees
 offered by ``pw_stream``. Following this redesign, it seemed obvious and natural
 to use the existing MemoryStream to provide the previous encoding functionality

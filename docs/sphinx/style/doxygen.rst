@@ -22,11 +22,8 @@ with each tool, using ``pw_i2c`` as an example.
 
 .. inclusive-language: disable
 
-.. _//pw_i2c/public/pw_i2c/device.h: https://cs.opensource.google/pigweed/pigweed/+/4c1a7158b663f114c297d9c0a806f412768e73f8:pw_i2c/public/pw_i2c/device.h
 .. _Breathe directives: https://breathe.readthedocs.io/en/latest/directives.html
 .. _Sphinx: https://www.sphinx-doc.org/en/master/
-.. _//pw_i2c/reference.rst: https://cs.opensource.google/pigweed/pigweed/+/4c1a7158b663f114c297d9c0a806f412768e73f8:pw_i2c/reference.rst;l=44
-.. _//docs/BUILD.gn: https://cs.opensource.google/pigweed/pigweed/+/4c1a7158b663f114c297d9c0a806f412768e73f8:docs/BUILD.gn;l=192
 
 .. inclusive-language: enable
 
@@ -34,20 +31,20 @@ with each tool, using ``pw_i2c`` as an example.
    that start with triple slashes (``///``) are Doxygen comments. Doxygen
    ignores double slash (``//``) comments.
 
-   Example: `//pw_i2c/public/pw_i2c/device.h`_
+   Example: :cs:`pw_i2c/public/pw_i2c/device.h`
 
 #. Include the API reference content into a reStructuredText file using
    `Breathe directives`_. Breathe is the bridge between Doxygen and `Sphinx`_,
    the documentation generator that powers ``pigweed.dev``. See
    :ref:`docs-style-doxygen-breathe-overview` for more explanation.
 
-   Example: `//pw_i2c/reference.rst`_
+   Example: :cs:`pw_i2c/reference.rst`
 
 #. Add your header file's path to the ``_doxygen_input_files`` list in
    ``//docs/BUILD.gn``. The docs build system throws a "symbol not found"
    errors if you forget this step.
 
-   Example: `//docs/BUILD.gn`_
+   Example: :cs:`docs/BUILD.gn`
 
 .. _docs-style-doxygen-writing:
 

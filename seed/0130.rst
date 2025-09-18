@@ -145,10 +145,9 @@ Implementing a search modal from scratch is a lot of work to maintain:
    analytics data shows that ``/search.html`` is our second-most-visited page,
    meaning that people use in-site search a lot.
 
-.. _a5038af: https://cs.opensource.google/pigweed/pigweed/+/a5038affded6feab2522a7dcc781c21c4f16cc1e
-
 A breadcrumbs component is another key UI element missing from the current
-theme. We implemented our own custom breadcrumbs element in `a5038af`_.
+theme. We implemented our own custom breadcrumbs element in :cs:`a5038af
+<a5038affded6feab2522a7dcc781c21c4f16cc1e>`.
 Admittedly, this was not much work to create, but we really shouldn't need
 to implement core navigational elements like this ourselves.
 

@@ -24,8 +24,7 @@ Examples
 --------
 The following programs demonstrate conformance to Pigweed's CLI style guide rules:
 
-* `pw_digital_io_linux_cli
-  <https://cs.opensource.google/pigweed/pigweed/+/main:pw_digital_io_linux/digital_io_cli.cc>`_
+* :cs:`pw_digital_io_linux_cli <main:pw_digital_io_linux/digital_io_cli.cc>`
 
   * Note: This does not yet fully conform. See :bug:`330435501`.
 

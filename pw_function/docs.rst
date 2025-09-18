@@ -373,7 +373,7 @@ Design
 ``pw::Callback`` is an alias of Fuchsia's ``fit::callback_impl``. See the
 following links for more information about Fuchsia's implementations:
 
-* `//third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function.h <https://cs.opensource.google/pigweed/pigweed/+/main:third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function.h>`_
+* :cs:`third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/function.h`
 * `fit::function <https://fuchsia.googlesource.com/fuchsia/+/HEAD/sdk/lib/fit/#fit_function>`_
 
 .. _module-pw_function-non-literal:

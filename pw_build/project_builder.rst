@@ -45,10 +45,9 @@ Example Build Scripts
 =====================
 Examples of Project Builder based ``pw build`` commands:
 
-- `Upstream Pigweed repo main.py <https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/py/pw_build/main.py>`_
+- `Upstream Pigweed repo main.py <main:pw_build/py/pw_build/main.py>`
 - `Examples repo build_project.py <https://cs.opensource.google/pigweed/examples/+/main:tools/sample_project_tools/build_project.py>`_
 - `Kudzu repo build_project.py <https://pigweed.googlesource.com/pigweed/kudzu/+/refs/heads/main/tools/kudzu_tools/build_project.py>`_
-
 
 .. _module-pw_build-project_builder-reference:
 
@@ -125,6 +124,5 @@ Upstream ``pw build`` Command-Line Interface Usage
    :prog: pw build
 
    This is the command line interface provided by the ``pw build`` command
-   (`main.py
-   <https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/py/pigweed_upstream_build/main.py>`_)
+   (:cs:`main.py <main:pw_build/py/pigweed_upstream_build/main.py>`)
    in upstream Pigweed.

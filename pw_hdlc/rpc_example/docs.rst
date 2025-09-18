@@ -8,10 +8,8 @@ RPC over HDLC example
 
 The :ref:`module-pw_hdlc` module includes an example of bringing up a
 :ref:`module-pw_rpc` server that can be used to invoke RPCs. The example code
-is located at `//pw_hdlc/rpc_example/
-<https://cs.opensource.google/pigweed/pigweed/+/main:pw_hdlc/rpc_example/>`_.
-This tutorial walks through invoking RPCs interactively and with a script using
-the RPC over HDLC example.
+is located at :cs:`pw_hdlc/rpc_example/`. This tutorial walks through invoking
+RPCs interactively and with a script using the RPC over HDLC example.
 
 The example implementation of the ``system_server`` facade from ``pw_rpc``
 sends HDLC-encoded RPC packets via ``pw_sys_io``. It has blocking sends and

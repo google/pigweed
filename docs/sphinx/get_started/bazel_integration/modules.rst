@@ -16,8 +16,7 @@ embedded-friendly replacement for ``std::vector``.
 
       #include "pw_containers/vector.h"
 
-#. Look at the module's `build file
-   <https://cs.opensource.google/pigweed/pigweed/+/main:pw_containers/BUILD.bazel>`__
+#. Look at the module's :cs:`build file <main:pw_containers/BUILD.bazel>`
    to figure out which build target you need to provide the header and
    implementation. For ``pw_containers/vector.h``, it's
    ``//pw_containers:vector``.

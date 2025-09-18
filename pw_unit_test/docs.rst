@@ -348,8 +348,6 @@ To do more complex testing, such as on-device testing:
 
 Create event handlers
 =====================
-.. _//pw_unit_test/public/pw_unit_test/event_handler.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/public/pw_unit_test/event_handler.h
-
 The ``pw::unit_test::EventHandler`` class defines the interface through which
 ``pw_unit_test:light`` communicates the results of its test runs. If you're
 using a :ref:`custom main function <module-pw_unit_test-main>` you need to
@@ -391,11 +389,9 @@ GoogleTest-style output using the shared
 
 Run a subset of test suites
 ===========================
-.. _//pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h
-
 To run only a subset of registered test suites, use the
 ``pw::unit_test::SetTestSuitesToRun`` function. See
-`//pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h`_.
+:cs:`pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h`.
 
 This is useful when you've got a lot of test suites bundled up into a
 :ref:`single test binary <module-pw_unit_test-main>` and you only need
@@ -441,16 +437,16 @@ Use upstream GoogleTest
 To use the upstream GoogleTest backend (``pw_unit_test:googletest``) instead
 of the default backend:
 
-.. _GoogleTestHandlerAdapter: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/public/pw_unit_test/googletest_handler_adapter.h
-
 1. Clone the GoogleTest repository into your project. See
    :ref:`module-pw_third_party_googletest`.
 
 2. :ref:`Create a custom main function <module-pw_unit_test-main>`.
 
-3. Combine `GoogleTestHandlerAdapter`_ with a :ref:`predefined event
-   handler <module-pw_unit_test-predefined-event-handlers>` to enable your
-   ``main`` function to work with upstream GoogleTest without modification.
+3. Combine :cs:`GoogleTestHandlerAdapter
+   <main:pw_unit_test/public/pw_unit_test/googletest_handler_adapter.h>`
+   with a :ref:`predefined event handler
+   <module-pw_unit_test-predefined-event-handlers>` to enable your ``main``
+   function to work with upstream GoogleTest without modification.
 
    .. code-block:: c++
 
@@ -480,10 +476,8 @@ produced output.
 
 To set up a serial test runner in Python:
 
-.. _//pw_unit_test/py/pw_unit_test/serial_test_runner.py: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/py/pw_unit_test/serial_test_runner.py
-
 1. Implement a ``SerialTestingDevice`` class for your device. See
-   `//pw_unit_test/py/pw_unit_test/serial_test_runner.py`_.
+   :cs:`pw_unit_test/py/pw_unit_test/serial_test_runner.py`.
 2. Configure your device code to wait to run unit tests until
    ``DEFAULT_TEST_START_CHARACTER`` is sent over the serial connection.
 
@@ -491,11 +485,9 @@ To set up a serial test runner in Python:
 
 Run tests over RPC
 ==================
-.. _//pw_unit_test/pw_unit_test_proto/unit_test.proto: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/pw_unit_test_proto/unit_test.proto
-
 ``pw_unit_test`` provides an RPC service which runs unit tests on demand and
 streams the results back to the client. The service is defined in
-`//pw_unit_test/pw_unit_test_proto/unit_test.proto`_.
+:cs:`pw_unit_test/pw_unit_test_proto/unit_test.proto`.
 
 The RPC service is primarily intended for use with the default
 ``pw_unit_test:light`` backend. It has some support for the upstream GoogleTest

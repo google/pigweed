@@ -65,7 +65,7 @@ When generating actions for a ``Tool``, it includes:
 
 Bazel-specific options
 ======================
-See `//pw_build/proto/pigweed_build_driver.proto <https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/proto/pigweed_build_driver.proto>`__
+See :cs:`pw_build/proto/pigweed_build_driver.proto`
 
 .. literalinclude:: proto/pigweed_build_driver.proto
    :language: protobuf

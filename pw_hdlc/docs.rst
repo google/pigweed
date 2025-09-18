@@ -174,4 +174,3 @@ And decoding looks like this:
    size
    rpc_example/docs
    router
-   Source code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_hdlc/>

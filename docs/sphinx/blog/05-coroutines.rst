@@ -206,8 +206,8 @@ API to:
 * Allow using custom, context-specific
   :cpp:class:`pw::Allocator` implementations on a per-coroutine basis.
 
-If you want to skip ahead, you can `see the Coro implementation here.
-<https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/public/pw_async2/coro.h>`_
+If you want to skip ahead, you can :cs:`see the Coro implementation here.
+<main:pw_async2/public/pw_async2/coro.h>`
 
 --------------------
 Eliminating the heap

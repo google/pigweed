@@ -122,10 +122,8 @@ implementation. Do not use GN's built-in ``source_set`` feature.
 
    ...
 
-.. _//pw_log/BUILD.gn: https://cs.opensource.google/pigweed/pigweed/+/main:pw_log/BUILD.gn
-
 The empty ``pw_log_string_backend.impl`` source set prevents circular
-dependencies. See the comment for ``group("impl")`` in `//pw_log/BUILD.gn`_
+dependencies. See the comment for ``group("impl")`` in :cs:`pw_log/BUILD.gn`
 for more context.
 
 Configure backends

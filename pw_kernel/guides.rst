@@ -106,10 +106,8 @@ For detailed instructions on how to integrate and use this tool, see
 ----------------------
 Intrusive linked lists
 ----------------------
-.. _//pw_kernel/lib/list: https://cs.opensource.google/pigweed/pigweed/+/main:pw_kernel/lib/list/
-
 ``pw_kernel`` provides a highly efficient and safe intrusive linked list
-implementation in `//pw_kernel/lib/list`_. This is a fundamental data structure
+implementation in :cs:`pw_kernel/lib/list`. This is a fundamental data structure
 used throughout the kernel, particularly in the scheduler for managing threads
 in run queues and wait queues.
 
@@ -171,8 +169,6 @@ Example usage
 
 Considerations
 --------------
-.. _//pw_kernel/kernel/scheduler.rs: https://cs.opensource.google/pigweed/pigweed/+/main:pw_kernel/kernel/scheduler.rs
-
 - **ForeignBox**: The ``ForeignBox`` type is a smart pointer that ensures the
   underlying memory is valid for its entire lifetime. It is crucial to call
   ``consume()`` on a ``ForeignBox`` when it is no longer needed to prevent panics
@@ -183,5 +179,5 @@ Considerations
   using a single ``Link`` member.
 
 The intrusive list is a powerful tool for performance-critical data structures
-within the kernel. You'll see it used in `//pw_kernel/kernel/scheduler.rs`_ for
+within the kernel. You'll see it used in :cs:`pw_kernel/kernel/scheduler.rs` for
 managing thread queues.

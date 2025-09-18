@@ -497,3 +497,96 @@ Rendered output:
       :sync: windows
 
       More Windows instructions...
+
+.. _docs-style-rest-cs:
+
+----------------
+CodeSearch links
+----------------
+To link to a file, directory, or commit on
+``cs.opensource.google/pigweed/pigweed``, use our custom ``:cs:`` role.
+
+The ``:cs:`` role is implemented here: :cs:`docs/sphinx/_extensions/cs.py`
+
+Link to a tip-of-tree file or directory
+=======================================
+.. code-block:: rst
+
+   :cs:`{path}`
+
+Where ``{path}`` is the path to the file or directory, relative to the root of
+the upstream Pigweed repository.
+
+For example, the following code:
+
+.. code-block:: rst
+
+   :cs:`pw_allocator/allocator.cc`
+
+Renders like this: :cs:`pw_allocator/allocator.cc`
+
+Link to a file or directory at a specific commit
+================================================
+.. code-block:: rst
+
+   :cs:`{text} <{commit}:{path}>`
+
+Where ``{text}`` is the link text that will be displayed, ``{commit}`` is the
+full commit SHA, and ``{path}`` is the path to the file.
+
+For example, the following code:
+
+.. code-block:: rst
+
+   :cs:`pw_allocator/allocator.cc <a18dd872b2c6fd544f96b38b31aafca6b4a0fa7b:pw_allocator/allocator.cc>`
+
+Renders like this: :cs:`pw_allocator/allocator.cc
+<a18dd872b2c6fd544f96b38b31aafca6b4a0fa7b:pw_allocator/allocator.cc>`
+
+Link to a commit
+================
+.. code-block:: rst
+
+   :cs:`{text} <{commit}>`
+
+Where ``{text}`` is the link text that will be displayed, and ``{commit}`` is
+the full commit SHA.
+
+For example, the following code:
+
+.. code-block:: rst
+
+   :cs:`my commit <a18dd872b2c6fd544f96b38b31aafca6b4a0fa7b>`
+
+Renders like this: :cs:`my commit <a18dd872b2c6fd544f96b38b31aafca6b4a0fa7b>`
+
+Link to a specific line within a file
+=====================================
+.. code-block:: rst
+
+   :cs:`{text} <{commit}:{path};l={number}>`
+
+Where ``{text}`` is the link text that will be displayed, ``{commit}`` is the
+full commit SHA, ``{path}`` is the path to the file, and ``{number}`` is the
+line that you want to link to.
+
+For example, the following code:
+
+.. code-block:: rst
+
+   :cs:`my line <a18dd872b2c6fd544f96b38b31aafca6b4a0fa7b:pw_allocator/allocator.cc;l=22>`
+
+Renders like this: :cs:`my line
+<a18dd872b2c6fd544f96b38b31aafca6b4a0fa7b:pw_allocator/allocator.cc;l=22>`
+
+Line 22 containing the following text should be highlighted:
+
+.. code-block:: cpp
+
+   using ::pw::allocator::Layout;
+
+.. note::
+
+   You can use ``main`` for the ``{commit}`` value if you want to link to the
+   file at tip-of-tree, but as the file changes over time, the link may
+   eventually point to a different line than what you intended.

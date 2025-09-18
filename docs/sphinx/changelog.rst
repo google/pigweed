@@ -6266,8 +6266,6 @@ Pico SDK
 ------------
 Jun 13, 2024
 ------------
-.. _bootstrap.fish: https://cs.opensource.google/pigweed/pigweed/+/main:bootstrap.fish
-
 Highlights (May 30, 2024 to Jun 13, 2024):
 
 * **pw_allocator support in pw_mallc**: ``pw_malloc`` now supports
@@ -6279,7 +6277,7 @@ Highlights (May 30, 2024 to Jun 13, 2024):
   a binary executable and produces a file with all ELF headers removed.
 * **Improved Fish shell support**: The ``pw`` and ``pw build``
   commands now support `Fish <https://fishshell.com/>`__ shell completion.
-  The new `bootstrap.fish`_ script demonstrates how to bootstrap a Pigweed
+  The new :cs:`bootstrap.fish` script demonstrates how to bootstrap a Pigweed
   project from a Fish shell and makes it easier for Fish users to contribute
   to upstream Pigweed.
 * **More informative modules index**: The :ref:`modules index <docs-module-guides>`
@@ -6621,7 +6619,7 @@ pw_docgen
 
 pw_env_setup
 ------------
-The new `bootstrap.fish`_ script demonstrates how to bootstrap a Pigweed
+The new :cs:`bootstrap.fish` script demonstrates how to bootstrap a Pigweed
 project from a Fish shell and makes it easier for Fish users to contribute
 to upstream Pigweed.
 
@@ -9251,11 +9249,9 @@ Modules
 
 pw_allocator
 ------------
-.. _//pw_allocator/examples: https://cs.opensource.google/pigweed/pigweed/+/main:pw_allocator/examples
-
 The :ref:`module-pw_allocator` docs have been revamped. Code examples from
 the docs are now extracted from complete examples that are built and tested
-alongside the rest of the main Pigweed repo; see `//pw_allocator/examples`_.
+alongside the rest of the main Pigweed repo; see :cs:`pw_allocator/examples`.
 
 * `Improve size report accuracy
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/196492>`__
@@ -11627,8 +11623,9 @@ pw_containers
 
 pw_digital_io
 -------------
-`pw::digital_io::Polarity <https://cs.opensource.google/pigweed/pigweed/+/main:pw_digital_io/public/pw_digital_io/polarity.h>`_
-was added to make it easier for backends to map logical levels to physical levels.
+The :cs:`Polarity <main:pw_digital_io/public/pw_digital_io/polarity.h>` class
+was added to make it easier for backends to map logical levels to physical
+levels.
 
 * `Add helper Polarity enum
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185435>`__

@@ -310,14 +310,12 @@ value storage, though this can be a shallow copy through a ``std::move`` if
 supported.
 
 You can find a complete example showing how to use these helpers in
-`//pw_async2/examples/once_send_recv_test.cc`_, and you can try it for
+:cs:`pw_async2/examples/once_send_recv_test.cc`, and you can try it for
 yourself with:
 
 .. code-block:: sh
 
    bazelisk run --config=cxx20 //pw_async2/examples:once_send_recv_test
-
-.. _//pw_async2/examples/once_send_recv_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/once_send_recv_test.cc
 
 .. _module-pw_async2-guides-passing-single-values-other:
 
@@ -374,14 +372,12 @@ values before trying to remove them from the queue.
 
 You can find a complete example for using
 :cc:`InlineAsyncQueue <pw::InlineAsyncQueue>` this way in
-`//pw_async2/examples/inline_async_queue_with_tasks_test.cc`_, and you can try
+:cs:`pw_async2/examples/inline_async_queue_with_tasks_test.cc`, and you can try
 it for yourself with:
 
 .. code-block:: sh
 
    bazelisk run //pw_async2/examples:inline_async_queue_with_tasks_test
-
-.. _//pw_async2/examples/inline_async_queue_with_tasks_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/inline_async_queue_with_tasks_test.cc
 
 .. _module-pw_async2-guides-timing:
 

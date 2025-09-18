@@ -34,16 +34,13 @@ Example: pw_log and pw_log_string
 Here's a step-by-step walkthrough of how a real backend module implements
 another module's facade.
 
-.. _//pw_log/public/pw_log/log.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_log/public/pw_log/log.h
-.. _//pw_log_string/public_overrides/pw_log_backend/log_backend.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_log_string/public_overrides/pw_log_backend/log_backend.h
-
 * :ref:`module-pw_log` is a module that exposes a facade. The macros listed in
   :ref:`module-pw_log-macros` represent the API of the module.
-* The ``#include "pw_log/log_backend.h"`` line in `//pw_log/public/pw_log/log.h`_
-  represents the facade contract of ``pw_log``.
+* The ``#include "pw_log/log_backend.h"`` line in
+  :cs:`pw_log/public/pw_log/log.h` represents the facade contract of ``pw_log``.
 * :ref:`module-pw_log_string` is a backend module, It implements the
   ``pw_log/log_backend.h`` facade contract in
-  `//pw_log_string/public_overrides/pw_log_backend/log_backend.h`_.
+  :cs:`pw_log_string/public_overrides/pw_log_backend/log_backend.h`.
 * In the build system there is a variable of some sort that specifies the
   backend. In Bazel there's a `label
   flag <https://bazel.build/extending/config#label-typed-build-settings>`_

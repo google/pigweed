@@ -28,7 +28,6 @@ Overview
 .. _Bazel platform: http://bazel.build/extending/platforms
 .. _//targets/rp2/BUILD.bazel: https://cs.opensource.google/pigweed/showcase/sense/+/main:targets/rp2/BUILD.bazel
 .. _pico-sdk: https://registry.bazel.build/modules/pico-sdk
-.. _//third_party/stm32cube/BUILD.bazel: https://cs.opensource.google/pigweed/pigweed/+/main:third_party/stm32cube/BUILD.bazel
 
 This overview helps you understand Pigweed and determine if Pigweed is a
 good fit for your project.
@@ -287,7 +286,7 @@ Bazel-based Pigweed project depends on:
   vendor SDK is already available as a `Bazel module`_ in the
   `Bazel Central Registry`_ (BCR). If not, check if :ref:`docs-glossary-upstream`
   has a target that makes it easy to pull the vendor SDK into your project.
-  E.g. `//third_party/stm32cube/BUILD.bazel`_ provides a target to pull
+  E.g. :cs:`third_party/stm32cube/BUILD.bazel` provides a target to pull
   STM32Cube into a project. Otherwise, you'll need to set up a
   new Bazel module yourself or create a solution similar to the
   STM32Cube ``BUILD.bazel`` file.

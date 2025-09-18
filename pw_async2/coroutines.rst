@@ -137,11 +137,9 @@ before trying to remove them from the queue.
    :end-before: [pw_async2-examples-inline-async-queue-with-coro-await-values]
 
 A complete example for using :cc:`pw::InlineAsyncQueue` this way can be
-found in `//pw_async2/examples/inline_async_queue_with_coro_test.cc`_, and you
+found in :cs:`pw_async2/examples/inline_async_queue_with_coro_test.cc`, and you
 can try it yourself with:
 
 .. code-block:: sh
 
    bazelisk run --config=cxx20 //pw_async2/examples:inline_async_queue_with_coro_test
-
-.. _//pw_async2/examples/inline_async_queue_with_coro_test.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/inline_async_queue_with_coro_test.cc

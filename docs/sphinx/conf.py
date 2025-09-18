@@ -86,6 +86,7 @@ else:  # GN build
 
 extensions = [
     "bug",  # Custom extension to normalize Pigweed bug links.
+    "cs",
     "kconfig",
     "module_metadata",
     "modules_index",

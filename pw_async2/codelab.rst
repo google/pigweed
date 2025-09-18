@@ -49,7 +49,7 @@ introduce you to the two most fundamental components of ``pw_async2``: the
 .. admonition:: Solution for this step
    :class: hint
 
-   `//pw_async2/codelab/solutions/step1`_
+   :cs:`pw_async2/codelab/solutions/step1`
 
 What's a Task?
 ==============
@@ -63,7 +63,7 @@ task's logic lives.
 
 Let's look at the code.
 
-1. Open `//pw_async2/codelab/vending_machine.h`_
+1. Open :cs:`pw_async2/codelab/vending_machine.h`
 
 You'll see the definition for our ``VendingMachineTask``:
 
@@ -75,7 +75,7 @@ You'll see the definition for our ``VendingMachineTask``:
 It's a simple class that inherits from ``pw::async2::Task``. The important part
 is the ``DoPend`` method, which is where we'll add our logic.
 
-2. Open `//pw_async2/codelab/vending_machine.cc`_
+2. Open :cs:`pw_async2/codelab/vending_machine.cc`
 
 Here you'll find the incomplete implementation of ``DoPend``:
 
@@ -106,7 +106,7 @@ method. If the task returns ``Pending()``, the task is put to sleep until it
 is woken by the operation that blocked it. If it returns ``Ready()``, the
 dispatcher considers it complete and will not run it again.
 
-3. Open `//pw_async2/codelab/main.cc`_
+3. Open :cs:`pw_async2/codelab/main.cc`
 
 Here you can see we have a dispatcher, but it's not doing anything yet.
 
@@ -119,7 +119,7 @@ Putting it all together
 =======================
 Now, let's modify the code to print a welcome message.
 
-In `//pw_async2/codelab/vending_machine.cc`_, change ``DoPend`` to log the
+In :cs:`pw_async2/codelab/vending_machine.cc`, change ``DoPend`` to log the
 message:
 
 .. code-block::
@@ -131,7 +131,7 @@ it has logged.
 
 5. Post and Run the Task
 
-In `//pw_async2/codelab/main.cc`_, create an instance of your vending machine
+In :cs:`pw_async2/codelab/main.cc`, create an instance of your vending machine
 task and give it to the dispatcher to run.
 
 .. literalinclude:: codelab/solutions/step1/main.cc
@@ -173,7 +173,7 @@ In ``pw_async2``, operations that can wait are called **pendable functions**.
 .. admonition:: Solution for this step
    :class: hint
 
-   `//pw_async2/codelab/solutions/step2`_
+   :cs:`pw_async2/codelab/solutions/step2`
 
 What's a Pendable function?
 ===========================
@@ -199,17 +199,17 @@ read the number of coins inserted:
 
 1. Add a ``CoinSlot`` to the vending machine
 ============================================
-First, open `//pw_async2/codelab/vending_machine.h`_. You'll need to include
+First, open :cs:`pw_async2/codelab/vending_machine.h`. You'll need to include
 ``coin_slot.h``. Add a reference to a ``CoinSlot`` as a member variable of your
 ``VendingMachineTask`` and update its constructor to initialize it.
 
-In your `//pw_async2/codelab/main.cc`_, we have provided a global ``CoinSlot``
+In your :cs:`pw_async2/codelab/main.cc`, we have provided a global ``CoinSlot``
 instance. Pass it into your updated task.
 
 2. Wait for a coin
 ==================
 Now, let's modify the task's ``DoPend`` in
-`//pw_async2/codelab/vending_machine.cc`_. Following your welcome message from
+:cs:`pw_async2/codelab/vending_machine.cc`. Following your welcome message from
 Step 1, prompt the user to insert a coin.
 
 To wait for a coin from the ``CoinSlot``, you'll call its ``Pend`` function.
@@ -318,10 +318,10 @@ Because a task can be suspended and resumed at any ``Pending()`` return, you
 need a way to remember where you left off. For simple cases like this, a boolean
 flag is sufficient.
 
-Open `//pw_async2/codelab/vending_machine.h`_ and add a boolean to track whether
+Open :cs:`pw_async2/codelab/vending_machine.h` and add a boolean to track whether
 the welcome message has been displayed. Initialize it to ``false``.
 
-Now, modify ``DoPend`` in `//pw_async2/codelab/vending_machine.cc`_. Gate the
+Now, modify ``DoPend`` in :cs:`pw_async2/codelab/vending_machine.cc`. Gate the
 two log calls for the welcome message behind your new boolean flag. Once the
 message is printed, make sure to set the flag to ``true`` so it won't be printed
 again.
@@ -366,7 +366,7 @@ function yourself.
 
 The provided hardware simulation will send you a keypad event via an
 asynchronous call to the ``key_press_isr()`` that should already be defined in
-your `//pw_async2/codelab/main.cc`_ file. It will pass you an integer value in
+your :cs:`pw_async2/codelab/main.cc` file. It will pass you an integer value in
 the range (0-9) to indicate which keypad button was pressed. It is going to be
 up to you to process that keypad event safely, and allow your task to wait for
 the keypad number after receiving a coin to dispense an item.
@@ -377,12 +377,12 @@ choose to allow larger numbers to be entered.
 .. admonition:: Solution for this step
    :class: hint
 
-   `//pw_async2/codelab/solutions/step3`_
+   :cs:`pw_async2/codelab/solutions/step3`
 
 1. Define a stub ``Keypad`` class
 =================================
 Lets start with a minimal stub implementation. Add the following declaration to
-your `//pw_async2/codelab/vending_machine.h`_ header file:
+your :cs:`pw_async2/codelab/vending_machine.h` header file:
 
 .. code-block:: cpp
 
@@ -407,7 +407,7 @@ your `//pw_async2/codelab/vending_machine.h`_ header file:
    };
 
 Also add these stub implementations to the top of your
-`//pw_async2/codelab/vending_machine.cc`_ file:
+:cs:`pw_async2/codelab/vending_machine.cc` file:
 
 .. code-block:: cpp
 
@@ -429,7 +429,7 @@ rest of the code first.
 
 2. Add the ``Keypad`` to the vending machine
 ============================================
-In your `//pw_async2/codelab/main.cc`_ file, create a global instance of your
+In your :cs:`pw_async2/codelab/main.cc` file, create a global instance of your
 keypad type next to the coin slot instance, and then update your
 ``VendingMachineTask`` constructor to take a reference to it in the constructor,
 and to save the reference as member data.
@@ -483,7 +483,7 @@ wait for the key press data.
 5. Handle the event in your ``Keypad`` implementation
 =====================================================
 The first step should be trivial. Modify the stub ``key_press_isr`` in your
-`//pw_async2/codelab/main.cc`_ to pass the key number to the ``Keypad::Press``
+:cs:`pw_async2/codelab/main.cc` to pass the key number to the ``Keypad::Press``
 member function.
 
 .. code-block:: cpp
@@ -502,7 +502,7 @@ We'll also use ``PW_GUARDED_BY`` to add a compile-time check that the protected
 members are accessed with the lock held.
 
 Normally you would have to add the correct dependencies to the
-`//pw_async2/codelab/BUILD.bazel`_ file, but we've already included them to save
+:cs:`pw_async2/codelab/BUILD.bazel` file, but we've already included them to save
 you some work. But if something went wrong, they are straightforward:
 
 .. code-block::
@@ -522,7 +522,8 @@ you some work. But if something went wrong, they are straightforward:
    ``key_pressed_``, ``lock_`` should be held first, otherwise it should emit a
    diagnostic.
 
-2. Add two includes at the top of your `//pw_async2/codelab/vending_machine.h`_:
+2. Add two includes at the top of your
+   :cs:`pw_async2/codelab/vending_machine.h`:
 
    .. code-block:: cpp
 
@@ -656,7 +657,7 @@ Let's fix ``Keypad::Pend()`` so we store a waker using the context, which is
 what is needed to eliminate the crash.
 
 1. First include ``pw_async2/waker.h`` at the top of your
-   `//pw_async2/codelab/vending_machine.h`_ header.
+   :cs:`pw_async2/codelab/vending_machine.h` header.
 
 2. Add an instance as member data to your ``Keypad`` class.
 
@@ -776,9 +777,9 @@ Does it work as you expect?
 .. tip::
 
    If you suspect you didn't implement your ``Keypad`` class correctly,
-   comparing your solution against the  `//pw_async2/codelab/coin_slot.cc`_
+   comparing your solution against the  :cs:`pw_async2/codelab/coin_slot.cc`
    implementation might help before looking at the
-   `//pw_async2/codelab/solutions/step3`_ solution.
+   :cs:`pw_async2/codelab/solutions/step3` solution.
 
 Well, depending on how you arranged to wait on both the ``CoinSlot`` and
 ``Keypad`` in your ``DoPend`` implementation, you could have one more problem.
@@ -845,7 +846,7 @@ This step shows you how to do this.
 .. admonition:: Solution for this step
    :class: hint
 
-   `//pw_async2/codelab/solutions/step4`_
+   :cs:`pw_async2/codelab/solutions/step4`
 
 1. Structuring your tasks as state machines
 ===========================================
@@ -1114,7 +1115,7 @@ Now go ahead and try filling in the blanks in those snippets. Can you build
 something reasonable that handles out-of-order input?
 
 Remember, if you get stuck, you can reference our example solution for this
-step: `//pw_async2/codelab/solutions/step4`_
+step: :cs:`pw_async2/codelab/solutions/step4`
 
 -----------------------------------
 Step 5: Communicating between tasks
@@ -1135,7 +1136,7 @@ confirmation back to the ``VendingMachineTask``.
 .. admonition:: Solution for this step
    :class: hint
 
-   `//pw_async2/codelab/solutions/step5`_
+   :cs:`pw_async2/codelab/solutions/step5`
 
 1. Set up the ``item_drop_sensor_isr()``
 ========================================
@@ -1149,11 +1150,11 @@ the ``item_drop_sensor_isr()`` function.
    :end-at: item_drop_sensor_isr
 
 We've provided an ``ItemDropSensor`` class in
-`//pw_async2/codelab/item_drop_sensor.h`_. It is similar to the ``CoinSlot`` and
+:cs:`pw_async2/codelab/item_drop_sensor.h`. It is similar to the ``CoinSlot`` and
 ``Keypad`` classes.
 
 To use it, ``#include "item_drop_sensor.h"`` and declare an ``ItemDropSensor``
-instance in your `//pw_async2/codelab/main.cc`_:
+instance in your :cs:`pw_async2/codelab/main.cc`:
 
 .. literalinclude:: codelab/solutions/step5/main.cc
    :language: cpp
@@ -1207,7 +1208,7 @@ We'll need two queues, one for each of the following:
   to the ``VendingMachineTask``.
 
 For convenience, you can create aliases for these queues in
-`//pw_async2/codelab/vending_machine.h`_. A depth of ``1`` is fine for now.
+:cs:`pw_async2/codelab/vending_machine.h`. A depth of ``1`` is fine for now.
 
 .. literalinclude:: codelab/solutions/step5/vending_machine.h
    :language: cpp
@@ -1218,7 +1219,7 @@ Make sure to add ``#include` "pw_containers/inline_async_queue.h"`` to the top
 of the file.
 
 Declare a ``dispense_requests`` queue and a ``dispense_response`` queue in your
-`//pw_async2/codelab/main.cc`_.
+:cs:`pw_async2/codelab/main.cc`.
 
 3. Create a new ``DispenserTask``
 =================================
@@ -1234,14 +1235,14 @@ need to handle three states:
 - ``kReportDispenseFailure`` -- waiting to report failure; motor is off
 
 The task will control the vending machine's dispenser motor with the
-``SetDispenserMotorState`` function in `//pw_async2/codelab/hardware.h`_.
+``SetDispenserMotorState`` function in :cs:`pw_async2/codelab/hardware.h`.
 
 .. literalinclude:: codelab/hardware.h
    :language: cpp
    :start-at: enum MotorState
    :end-at: SetDispenserMotorState
 
-Declare a ``DispenserTask`` in your `//pw_async2/codelab/vending_machine.h`_
+Declare a ``DispenserTask`` in your :cs:`pw_async2/codelab/vending_machine.h`
 file. It should take references to ``ItemDropSensor`` and the two queues in its
 constructor.
 
@@ -1252,7 +1253,7 @@ constructor.
    :append: };
 
 The implementation should be structured as a state machine. You can copy this
-stub to your `//pw_async2/codelab/vending_machine.cc`_:
+stub to your :cs:`pw_async2/codelab/vending_machine.cc`:
 
 .. code-block:: cpp
 
@@ -1459,19 +1460,3 @@ selection.
 
 Try again, but this time press :kbd:`i` :kbd:`Enter` quickly so dispensing the
 item succeeds.
-
-.. The following references shorten the markup above.
-
-.. _`//pw_async2/codelab/BUILD.bazel`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/BUILD.bazel
-.. _`//pw_async2/codelab/coin_slot.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/coin_slot.cc
-.. _`//pw_async2/codelab/main.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/main.cc
-.. _`//pw_async2/codelab/hardware.h`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/hardware.h
-.. _`//pw_async2/codelab/item_drop_sensor.h`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/item_drop_sensor.h
-.. _`//pw_async2/codelab/vending_machine.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.cc
-.. _`//pw_async2/codelab/vending_machine.h`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/vending_machine.h
-
-.. _`//pw_async2/codelab/solutions/step1`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step1
-.. _`//pw_async2/codelab/solutions/step2`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step2
-.. _`//pw_async2/codelab/solutions/step3`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step3
-.. _`//pw_async2/codelab/solutions/step4`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step4
-.. _`//pw_async2/codelab/solutions/step5`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/codelab/solutions/step5

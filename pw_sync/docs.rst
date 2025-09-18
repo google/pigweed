@@ -1494,11 +1494,9 @@ Examples in C++
 
 Condition Variables
 =====================
-.. _ConditionVariable: https://cs.opensource.google/pigweed/pigweed/+/main:pw_sync/public/pw_sync/condition_variable.h
-
-`ConditionVariable`_ provides a condition variable
-implementation that provides semantics and an API very similar to
-`std::condition_variable
+`ConditionVariable <main:pw_sync/public/pw_sync/condition_variable.h>`
+provides a condition variable implementation that provides semantics and an API
+very similar to `std::condition_variable
 <https://en.cppreference.com/w/cpp/thread/condition_variable>`_ in the C++
 Standard Library.
 

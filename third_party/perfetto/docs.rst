@@ -29,9 +29,8 @@ Process
 Code is synchronized between the `perfetto repository
 <https://android.googlesource.com/platform/external/perfetto>`_ and the `Pigweed repository
 <https://pigweed.googlesource.com/pigweed/pigweed>`_ using the
-`third_party/perfetto/copy.bara.sky
-<https://cs.opensource.google/pigweed/pigweed/+/main:third_party/perfetto/copy.bara.sky>`_
-`Copybara <https://github.com/google/copybara>`_ script.
+`Copybara <https://github.com/google/copybara>`_ script located at
+:cs:`third_party/perfetto/copy.bara.sky`.
 
 To synchronize with the pigweed repository, run the ``copybara`` tool with the
 script:

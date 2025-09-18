@@ -84,9 +84,7 @@ Both methods iterate over the exact same data, just with different levels of
 granularity. The choice of which to use depends on the specific requirements of
 the task.
 
-For the complete example, see `//pw_multibuf/examples/iterate.cc`_.
-
-.. _`//pw_multibuf/examples/iterate.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_multibuf/examples/iterate.cc
+For the complete example, see :cs:`pw_multibuf/examples/iterate.cc`.
 
 ---------------------------
 Variable-length entry queue
@@ -106,9 +104,7 @@ This queue does all of its dynamic allocation in the factory method. After that
 method succeeds, all the queue methods are
 :ref:`infallible <module-pw_multibuf-design-infallibe>`.
 
-For the complete example, see `//pw_multibuf/examples/queue.cc`_.
-
-.. _`//pw_multibuf/examples/queue.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_multibuf/examples/queue.cc
+For the complete example, see :cs:`pw_multibuf/examples/queue.cc`.
 
 ------------------
 Asynchronous queue
@@ -168,9 +164,7 @@ Altogether, this approach is efficient for passing data as it avoids unnecessary
 data copies and leverages the :ref:`module-pw_async2` framework for non-blocking
 synchronization.
 
-For the complete example, see `//pw_multibuf/examples/async_queue.cc`_.
-
-.. _`//pw_multibuf/examples/async_queue.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_multibuf/examples/async_queue.cc
+For the complete example, see :cs:`pw_multibuf/examples/async_queue.cc`.
 
 -------------------
 Scatter-gather I/O
@@ -224,9 +218,8 @@ abstracts away the memory management of the individual buffers, and
 automatically notifies the observer when the transfer is complete and the
 messages are dropped.
 
-For the complete example, see `//pw_multibuf/examples/scatter_gather.cc`_.
+For the complete example, see :cs:`pw_multibuf/examples/scatter_gather.cc`.
 
-.. _`//pw_multibuf/examples/scatter_gather.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_multibuf/examples/scatter_gather.cc
 .. _scatter-gather I/O: https://en.wikipedia.org/wiki/Vectored_I/O
 
 ----------------------------------------------
@@ -291,9 +284,8 @@ With these, creating packets becomes straightforward:
    :start-after: [pw_multibuf-examples-transfer-create]
    :end-before: [pw_multibuf-examples-transfer-create]
 
-For the complete example, see `//pw_multibuf/examples/transfer.cc`_.
+For the complete example, see :cs:`pw_multibuf/examples/transfer.cc`.
 
-.. _`//pw_multibuf/examples/transfer.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_multibuf/examples/transfer.cc
 .. _Emboss: https://github.com/google/emboss
 
 ---------------------
@@ -395,6 +387,4 @@ place to send "encrypted" messages from one end to the other:
    :start-after: [pw_multibuf-examples-pseudo_encrypt-e2e]
    :end-before: [pw_multibuf-examples-pseudo_encrypt-e2e]
 
-For the complete example, see `//pw_multibuf/examples/pseudo_encrypt.cc`_.
-
-.. _`//pw_multibuf/examples/pseudo_encrypt.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_multibuf/examples/pseudo_encrypt.cc
+For the complete example, see :cs:`pw_multibuf/examples/pseudo_encrypt.cc`.

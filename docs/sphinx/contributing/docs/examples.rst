@@ -178,8 +178,6 @@ Create build targets for upstream Pigweed's Bazel, GN, and CMake build systems.
 
 Bazel
 ~~~~~
-.. _//pw_string/examples/BUILD.bazel: https://cs.opensource.google/pigweed/pigweed/+/main:pw_string/examples/BUILD.bazel
-
 #. Create a ``BUILD.bazel`` file in your ``examples`` directory.
 
    .. literalinclude:: ../../pw_string/examples/BUILD.bazel

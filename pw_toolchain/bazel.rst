@@ -137,9 +137,8 @@ To integrate Pigweed's toolchain with `bazel_clang_tidy
 <https://github.com/erenon/bazel_clang_tidy>`_:
 
 #. Add a ``.clang-tidy`` file at the root of your repository listing the checks
-   you wish to enable. `Pigweed's own .clang-tidy file
-   <https://cs.opensource.google/pigweed/pigweed/+/main:.clang-tidy>`__ shows
-   some checks we recommend.
+   you wish to enable. :cs:`Pigweed's own .clang-tidy file <main:.clang-tidy>`
+   shows some checks we recommend.
 
 #. Create a ``filegroup`` target containing that file in ``BUILD.bazel`` at
    the root of your repo.

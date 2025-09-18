@@ -253,7 +253,7 @@ like this:
 
 After this, you just need to pass your custom log source object
 to `createLogViewer()`. See implementation of
-`PigweedRPCLogSource <https://cs.opensource.google/pigweed/pigweed/+/main:ts/logging_source_rpc.ts>`_
+:cs:`PigweedRPCLogSource <main:ts/logging_source_rpc.ts>`
 for reference.
 
 Column Order

@@ -81,9 +81,9 @@ is used by default.
 
 .. note::
 
-   Pigweed uses `this venv target
-   <https://cs.opensource.google/pigweed/pigweed/+/main:pw_env_setup/BUILD.gn?q=pigweed_build_venv>`_
-   if a project does not specify it's own build venv. See
+   Pigweed uses the
+   :cs:`pigweed_build_venv <main:pw_env_setup/BUILD.gn?q=pigweed_build_venv>`
+   target if a project does not specify its own build venv. See
    :bdg-ref-primary-line:`docs-python-build-python-gn-venv` on how to define
    your own default venv.
 

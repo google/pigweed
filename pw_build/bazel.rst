@@ -17,8 +17,6 @@ Rules
 
 Wrapper rules
 =============
-.. _pigweed.bzl: https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/pigweed.bzl
-
 The built-in Bazel rules ``cc_binary``, ``cc_test``, ``py_binary``, and
 ``py_test`` are wrapped with :ref:`module-pw_build-bazel-pw_cc_binary`,
 ``pw_cc_test``, ``pw_py_binary``, and ``pw_py_test``, respectively.
@@ -268,10 +266,9 @@ Example
 pw_cc_binary
 ============
 .. _cc_binary: https://bazel.build/reference/be/c-cpp#cc_binary
-.. _//pw_build/pw_cc_binary.bzl: https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/pw_cc_binary.bzl
 
 ``pw_cc_binary`` is a wrapper of `cc_binary`_. It's implemented at
-`//pw_build/pw_cc_binary.bzl`_. Usage of this wrapper is optional;
+:cs:`pw_build/pw_cc_binary.bzl`. Usage of this wrapper is optional;
 downstream Pigweed projects can instead use ``cc_binary`` if preferred.
 
 Basic usage:

@@ -62,10 +62,8 @@ Build for a specific hardware platform
 
    $ bazelisk build --config=rp2040 //...
 
-.. _//targets: https://cs.opensource.google/pigweed/pigweed/+/main:targets/
-
 The value for ``--config`` should be one of the directory names listed in
-`//targets`_.
+:cs:`targets`.
 
 .. _docs-contributing-build-bazel-watch:
 

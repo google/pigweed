@@ -255,7 +255,7 @@ If you’d like to give these rules a spin, check out the following resources an
 * `rules_cc toolchain API <https://github.com/bazelbuild/rules_cc/blob/main/docs/toolchain_api.md>`__
 * `rules_cc living rule-based toolchain example <https://github.com/bazelbuild/rules_cc/tree/main/examples/rule_based_toolchain>`__
 * `Raspberry Pi Pico SDK Bazel toolchain <https://github.com/raspberrypi/pico-sdk/blob/6587f5cc9a91ca7fef7ccf56420d465b88d8d398/bazel/toolchain/BUILD.bazel>`__
-* `Pigweed’s host clang toolchain <https://cs.opensource.google/pigweed/pigweed/+/main:pw_toolchain/host_clang/BUILD.bazel>`__
+* :cs:`Pigweed’s host clang toolchain <main:pw_toolchain/host_clang/BUILD.bazel>`
 
 --------------
 Special thanks

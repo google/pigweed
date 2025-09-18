@@ -14,11 +14,9 @@ information about how Pigweed approaches changelogs.
 --------
 Timeline
 --------
-.. _//pw_docgen/py/pw_docgen/sphinx/pigweed_live.py: https://cs.opensource.google/pigweed/pigweed/+/main:pw_docgen/py/pw_docgen/sphinx/pigweed_live.py
-
 #. You should start working on the update on the Thursday before Pigweed Live.
    The Pigweed Live schedule is listed in
-   `//pw_docgen/py/pw_docgen/sphinx/pigweed_live.py`_.
+   :cs:`pw_docgen/py/pw_docgen/sphinx/pigweed_live.py`.
    Follow the :ref:`docs-contrib-docs-changelog-instructions`.
 
 #. You should have a rough draft pushed up to Gerrit and ready for review by

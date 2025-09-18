@@ -25,6 +25,7 @@ sphinx_docs_library(
     name = "extensions",
     srcs = [
         "_extensions/bug.py",
+        "_extensions/cs.py",
         "_extensions/kconfig.py",
         "_extensions/module_metadata.py",
         "_extensions/modules_index.py",

@@ -6,16 +6,12 @@ Quickstart
 .. pigweed-module-subpage::
    :name: pw_async2
 
-.. _//pw_async2/examples/count.cc: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/count.cc
-.. _//pw_async2/examples/BUILD.bazel: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/BUILD.bazel
-.. _//pw_async2/examples/BUILD.gn: https://cs.opensource.google/pigweed/pigweed/+/main:pw_async2/examples/BUILD.gn
-
 This quickstart outlines the general workflow for integrating ``pw_async2``
 into a project. It's based on the following files in upstream Pigweed:
 
-* `//pw_async2/examples/count.cc`_
-* `//pw_async2/examples/BUILD.bazel`_
-* `//pw_async2/examples/BUILD.gn`_
+* :cs:`pw_async2/examples/count.cc`
+* :cs:`pw_async2/examples/BUILD.bazel`
+* :cs:`pw_async2/examples/BUILD.gn`
 
 The example app can be built and run in upstream Pigweed with the
 following command:
@@ -116,7 +112,7 @@ class) or dynamically allocated using :cc:`AllocateTask
 Finally, the interface instructs the dispatcher to run the task by invoking
 :cc:`Dispatcher::Post() <pw::async2::Dispatcher::Post>`.
 
-See `//pw_async2/examples/count.cc`_ to view the complete example.
+See :cs:`pw_async2/examples/count.cc` to view the complete example.
 
 .. _module-pw_async2-quickstart-toolchain:
 

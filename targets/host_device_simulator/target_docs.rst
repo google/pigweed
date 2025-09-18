@@ -71,15 +71,15 @@ Setup
 Building and running the demo
 -----------------------------
 .. _examples repo device_sim.py: https://pigweed.googlesource.com/pigweed/examples/+/refs/heads/main/tools/sample_project_tools/device_sim.py
-.. _Pigweed upstream device_sim.py: https://cs.opensource.google/pigweed/pigweed/+/main:pw_system/py/pw_system/device_sim.py
 
 .. seealso::
 
    See the `examples repo device_sim.py`_ for a downstream project example of
-   launching a device simulator with project specific RPC protos. That script
-   uses `Pigweed upstream device_sim.py`_ which runs the simulated device as a
-   subprocess and then connects to it via the default socket so you just have to
-   pass the binary.
+   launching a device simulator with project-specific RPC protos. That script
+   uses upstream Pigweed's :cs:`device_sim.py
+   <main:pw_system/py/pw_system/device_sim.py>` which runs the simulated device
+   as a subprocess and then connects to it via the default socket so you just
+   have to pass the binary.
 
 .. tab-set::
 

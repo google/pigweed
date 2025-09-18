@@ -28,8 +28,8 @@ fragments via ``target_files``.
 
 Example configuration fragments:
 
-* `//pw_emu/qemu-lm3s6965evb.json <https://cs.opensource.google/pigweed/pigweed/+/main:pw_emu/qemu-lm3s6965evb.json>`_
-* `//pw_emu/renode-stm32f4_discovery.json <https://cs.opensource.google/pigweed/pigweed/+/main:pw_emu/renode-stm32f4_discovery.json>`_
+* :cs:`pw_emu/qemu-lm3s6965evb.json`
+* :cs:`pw_emu/renode-stm32f4_discovery.json`
 
 .. _module-pw_emu-config-options:
 

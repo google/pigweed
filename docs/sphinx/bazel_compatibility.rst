@@ -355,8 +355,8 @@ This ensures that:
   by default.
 
 Following this pattern implies that we don't need a Bazel equivalent of GN's
-``enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""`` (`example
-<https://cs.opensource.google/pigweed/pigweed/+/main:pw_i2c/BUILD.gn;l=136-145;drc=afef6c3c7de6f5a84465aad469a89556d0b34fbb>`__).
+``enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""`` (:cs:`example
+<afef6c3c7de6f5a84465aad469a89556d0b34fbb:pw_i2c/BUILD.gn;l=136-145>`).
 In Bazel, every build target is "enabled" if and only if all facades it
 transitively depends on have a backend set.
 
@@ -672,8 +672,8 @@ When to use it anyway
 We may resort to defining private ``config_settings`` following this pattern to
 solve special problems like `b/336843458 <https://pwbug.dev/336843458>`_ |
 "Bazel tests using pw_unit_test_light can still rely on GoogleTest" or
-`pw_malloc tests
-<https://cs.opensource.google/pigweed/pigweed/+/main:pw_malloc/BUILD.gn;l=190-191;drc=96313b7cc138b0c49742e151927e0d3a013f8b47>`_.
+:cs:`pw_malloc tests
+<96313b7cc138b0c49742e151927e0d3a013f8b47:pw_malloc/BUILD.gn;l=190-191>`.
 
 In addition, some tests are backend-specific (directly include backend
 headers). The most common example are tests that depend on
@@ -685,10 +685,10 @@ pattern.
 
 Board and chipset constraint settings (not recommended)
 =======================================================
-Pigweed has historically defined a `"board" constraint_setting
-<https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/constraints/board/BUILD.bazel>`_,
-and this setting was used to indicate that some modules are compatible with
-particular boards.
+Pigweed has historically defined a :cs:`board
+<main:pw_build/constraints/board/BUILD.bazel>` ``constraint_setting``, and this
+setting was used to indicate that some modules are compatible with particular
+boards.
 
 Why is this not recommended
 ---------------------------
@@ -699,14 +699,14 @@ generally compatible with many other RT595 boards, and even with other NXP
 chips. We've already run into cases in practice where users want to use a
 particular backend for a different board.
 
-The `"chipset" constraint_setting
-<https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/constraints/chipset/BUILD.bazel>`_
-has the same problem: the build targets it was applied to don't contain
-assembly code, and so are not generally compatible with only a particular
-chipset. It's also unclear how to define chipset values in a vendor-agnostic
-manner.
+The :cs:`chipset <main:pw_build/constraints/chipset/BUILD.bazel>`
+``constraint_setting`` has the same problem: the build targets it was applied to
+don't contain assembly code, and so are not generally compatible with only a
+particular chipset. It's also unclear how to define chipset values in a
+vendor-agnostic manner.
 
-These constraints will be removed (see :ref:`docs-bazel-compatibility-implementation-plan`).
+These constraints will be removed (see
+:ref:`docs-bazel-compatibility-implementation-plan`).
 
 .. _docs-bazel-compatibility-rtos:
 

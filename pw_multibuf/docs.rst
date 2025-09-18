@@ -27,7 +27,7 @@ that is:
    :start-after: [pw_multibuf-examples-basic]
    :end-before: [pw_multibuf-examples-basic]
 
-For the complete example, see `//pw_multibuf/examples/basic.cc`_.
+For the complete example, see :cs:`pw_multibuf/examples/basic.cc`.
 
 -------------------------------
 What kinds of data is this for?
@@ -102,5 +102,3 @@ data which are one or more of the following:
       :class-item: sales-pitch-cta-secondary
 
       Understand pw_multibuf's code and memory footprint
-
-.. _`//pw_multibuf/examples/basic.cc`: https://cs.opensource.google/pigweed/pigweed/+/main:pw_multibuf/examples/basic.cc

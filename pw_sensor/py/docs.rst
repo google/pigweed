@@ -23,7 +23,7 @@ for Pigweed sensor drivers.
 Using the package
 -----------------
 Typical users of ``pw_sensor`` begin by writing a YAML description of their
-sensor using the `metadata_schema.json`_ format, e.g.:
+sensor using the :cs:`pw_sensor/py/pw_sensor/metadata_schema.json` format, e.g.:
 
 .. code-block:: yaml
 
@@ -43,7 +43,7 @@ sensor using the `metadata_schema.json`_ format, e.g.:
 
 ``pw_sensor`` provides a validator which will resolve any 'default' properties
 and make the final YAML easier for code generators to consume. The returned
-dictionary uses the `resolved_schema.json`_ format.
+dictionary uses the :cs:`pw_sensor/py/pw_sensor/resolved_schema.json` format.
 
 Every platform/language may implement their own generator.
 Generators consume the validated (schema-compliant) YAML and may produce
@@ -333,5 +333,3 @@ Example run (prints to stdout):
      pw_sensor/sensor.yaml
 
 .. _Understanding the compatible Property: https://elinux.org/Device_Tree_Usage#Understanding_the_compatible_Property
-.. _metadata_schema.json: https://cs.opensource.google/pigweed/pigweed/+/main:pw_sensor/py/pw_sensor/metadata_schema.json
-.. _resolved_schema.json: https://cs.opensource.google/pigweed/pigweed/+/main:pw_sensor/py/pw_sensor/resolved_schema.json

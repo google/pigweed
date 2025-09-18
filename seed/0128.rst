@@ -151,10 +151,10 @@ it has significant downsides.
 =========================
 Currently, running :ref:`module-pw_system` requires writing custom low-level
 code that is aware of both ``pw_system`` and the RTOS it is running on
-(see e.g. `boot.cc
-<https://cs.opensource.google/pigweed/pigweed/+/4d23123c37a33638b2f1ce611423e74d385623ff:targets/stm32f429i_disc1_stm32cube/boot.cc;l=133>`_
-and `target_hooks.cc
-<https://cs.opensource.google/pigweed/pigweed/+/4d23123c37a33638b2f1ce611423e74d385623ff:pw_system/zephyr_target_hooks.cc>`_).
+(see e.g. :cs:`boot.cc
+<4d23123c37a33638b2f1ce611423e74d385623ff:targets/stm32f429i_disc1_stm32cube/boot.cc;l=133>`
+and :cs:`target_hooks.cc
+<4d23123c37a33638b2f1ce611423e74d385623ff:pw_system/zephyr_target_hooks.cc>`).
 Enabling cross-platform thread creation would make it easier to use
 ``pw_system``. The code for running ``pw_system`` on any target would be the
 same: a single function call in ``main``. The user would no longer have to

@@ -145,11 +145,9 @@ Use ``pw_kvs`` in your C++ code:
 
    // ...
 
-.. _pw_kvs/flash_memory.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_kvs/public/pw_kvs/flash_memory.h
-
 Implement the :ref:`flash memory <module-pw_kvs-design-memory>` and
 :ref:`flash partition <module-pw_kvs-design-partitions>` interfaces for
-your hardware. See `pw_kvs/flash_memory.h`_.
+your hardware. See :cs:`pw_kvs/flash_memory.h`.
 
 .. _module-pw_kvs-reference:
 
