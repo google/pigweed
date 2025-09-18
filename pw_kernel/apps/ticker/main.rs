@@ -14,17 +14,16 @@
 #![no_main]
 #![no_std]
 
+use app_ticker::handle;
 use pw_status::Error;
 use userspace::entry;
 use userspace::syscall::{self, Signals};
 use userspace::time::Instant;
 
-const TICKER_OBJECT: u32 = 0x0;
-
 #[entry]
 fn entry() -> ! {
     for c in '0'..'4' {
-        let _ = syscall::object_wait(TICKER_OBJECT, Signals::READABLE, Instant::MAX);
+        let _ = syscall::object_wait(handle::TICKER, Signals::READABLE, Instant::MAX);
         let _ = syscall::debug_putc(c);
         // On the third successful wait on tick, exit successfully.
         if c == '2' {
@@ -40,6 +39,5 @@ fn entry() -> ! {
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
-    let _ = syscall::debug_shutdown(Err(Error::Unknown));
     loop {}
 }

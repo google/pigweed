@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 load("@rules_rust//rust:defs.bzl", "rust_binary")
-load("//pw_kernel/tooling:app_linker_script.bzl", "app_linker_script")
+load("//pw_kernel/tooling:app_package.bzl", "app_package")
 
 rust_binary(
     name = "ticker",
@@ -22,15 +22,15 @@ rust_binary(
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [
-        ":linker_script",
+        ":app_ticker",
         "//pw_kernel/lib/pw_status",
         "//pw_kernel/syscall:syscall_user",
         "//pw_kernel/userspace",
     ],
 )
 
-app_linker_script(
-    name = "linker_script",
+app_package(
+    name = "app_ticker",
     app_name = "ticker",
     system_config = "//pw_kernel/target:system_config_file",
     tags = ["kernel"],

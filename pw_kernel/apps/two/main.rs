@@ -14,21 +14,20 @@
 #![no_main]
 #![no_std]
 
+use app_two::handle;
 use pw_status::{Error, Result};
 use userspace::entry;
 use userspace::syscall::{self, Signals};
 use userspace::time::Instant;
 
-const IPC_HANDLE: u32 = 0;
-
 fn handle_uppercase_ipcs() -> Result<()> {
     loop {
         // Wait for an IPC to come in.
-        syscall::object_wait(IPC_HANDLE, Signals::READABLE, Instant::MAX)?;
+        syscall::object_wait(handle::IPC, Signals::READABLE, Instant::MAX)?;
 
         // Read the payload.
         let mut buffer = [0u8; size_of::<char>()];
-        let len = syscall::channel_read(IPC_HANDLE, 0, &mut buffer)?;
+        let len = syscall::channel_read(handle::IPC, 0, &mut buffer)?;
         if len != size_of::<char>() {
             return Err(Error::OutOfRange);
         };
@@ -42,7 +41,7 @@ fn handle_uppercase_ipcs() -> Result<()> {
         // Respond to the IPC with the uppercase character.
         let mut response_buffer = [0u8; size_of::<char>()];
         c.encode_utf8(&mut response_buffer);
-        syscall::channel_respond(IPC_HANDLE, &response_buffer)?;
+        syscall::channel_respond(handle::IPC, &response_buffer)?;
     }
 }
 

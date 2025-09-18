@@ -14,13 +14,11 @@
 #![no_main]
 #![no_std]
 
+use app_one::handle;
 use pw_status::{Error, Result};
 use userspace::entry;
 use userspace::syscall::{self, Signals};
 use userspace::time::Instant;
-
-const TICKER_HANDLE: u32 = 0;
-const IPC_HANDLE: u32 = 1;
 
 fn test_uppercase_ipcs() -> Result<()> {
     for c in 'a'..='z' {
@@ -30,7 +28,7 @@ fn test_uppercase_ipcs() -> Result<()> {
         // Encode the character into `send_buf` and send it over to the handler.
         c.encode_utf8(&mut send_buf);
         let len: usize =
-            syscall::channel_transact(IPC_HANDLE, &send_buf, &mut recv_buf, Instant::MAX)?;
+            syscall::channel_transact(handle::IPC, &send_buf, &mut recv_buf, Instant::MAX)?;
 
         // The handler side always sends 4 bytes to make up a full Rust `char`
         if len != size_of::<char>() {
@@ -62,7 +60,7 @@ fn entry() -> ! {
     }
 
     // Wait for as ticker event before shutting down the system.
-    let _ = syscall::object_wait(TICKER_HANDLE, Signals::READABLE, Instant::MAX);
+    let _ = syscall::object_wait(handle::TICKER, Signals::READABLE, Instant::MAX);
 
     // Since this is written as a test, shut down with the return status from `main()`.
     let _ = syscall::debug_shutdown(ret);

@@ -35,6 +35,7 @@ label_flag(
 filegroup(
     name = "no_system_config_file",
     tags = ["kernel"],
+    target_compatible_with = ["@platforms//:incompatible"],
 )
 
 config_setting(

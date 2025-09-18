@@ -17,6 +17,7 @@ configuration file.
 
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 def _app_linker_script_impl(ctx):
     output = ctx.actions.declare_file(ctx.attr.name + ".ld")
@@ -54,7 +55,7 @@ def _app_linker_script_impl(ctx):
         CcInfo(linking_context = linking_context),
     ]
 
-_app_linker_script = rule(
+_app_linker_script_rule = rule(
     implementation = _app_linker_script_impl,
     attrs = {
         "app_name": attr.string(
@@ -80,7 +81,7 @@ _app_linker_script = rule(
     doc = "Generate the linker script for an app based on the system config.",
 )
 
-def app_linker_script(name, system_config, app_name, **kwargs):
+def _app_linker_script(name, system_config, app_name, **kwargs):
     # buildifier: disable=function-docstring-args
     """
     Wrapper function to set default platform specific arguments.
@@ -99,9 +100,86 @@ def app_linker_script(name, system_config, app_name, **kwargs):
         })
         kwargs["template"] = template
 
-    _app_linker_script(
+    _app_linker_script_rule(
         name = name,
         system_config = system_config,
         app_name = app_name,
+        **kwargs
+    )
+
+def _app_package_src_impl(ctx):
+    output = ctx.actions.declare_file(ctx.attr.name + ".rs")
+
+    args = [
+        "--template",
+        "app=" + ctx.file.template.path,
+        "--config",
+        ctx.file.system_config.path,
+        "--output",
+        output.path,
+        "render-app-template",
+        "--app-name",
+        ctx.attr.app_name,
+    ]
+
+    ctx.actions.run(
+        inputs = ctx.files.system_config + [ctx.file.template],
+        outputs = [output],
+        executable = ctx.executable.system_generator,
+        mnemonic = "AppPackage",
+        arguments = args,
+    )
+
+    return [
+        DefaultInfo(files = depset([output])),
+    ]
+
+_app_package_src = rule(
+    implementation = _app_package_src_impl,
+    attrs = {
+        "app_name": attr.string(
+            doc = "Name of the application in the configuration file.",
+            mandatory = True,
+        ),
+        "system_config": attr.label(
+            doc = "System config file which defines the system.",
+            allow_single_file = True,
+            mandatory = True,
+        ),
+        "system_generator": attr.label(
+            executable = True,
+            cfg = "exec",
+            default = "//pw_kernel/tooling/system_generator:system_generator_bin",
+        ),
+        "template": attr.label(
+            doc = "Application code generation template file.",
+            allow_single_file = True,
+            default = "//pw_kernel/tooling/system_generator/templates:app.rs.tmpl",
+        ),
+    },
+    doc = "Generate the linker script for an app based on the system config.",
+)
+
+def app_package(name, system_config, app_name, **kwargs):
+    tags = kwargs["tags"]
+
+    _app_package_src(
+        name = name + ".rustsrc",
+        system_config = system_config,
+        app_name = app_name,
+        tags = tags,
+    )
+
+    _app_linker_script(
+        name = name + ".linker_script",
+        system_config = system_config,
+        app_name = app_name,
+        tags = tags,
+    )
+
+    rust_library(
+        name = name,
+        srcs = [":{}.rustsrc".format(name)],
+        deps = [":{}.linker_script".format(name)],
         **kwargs
     )
