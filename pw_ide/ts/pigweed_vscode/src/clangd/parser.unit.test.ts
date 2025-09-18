@@ -15,7 +15,43 @@
 import * as assert from 'assert';
 import * as path from 'path';
 
-import { inferTarget, inferTargetPositions } from './parser';
+import {
+  CompilationDatabase,
+  inferTarget,
+  inferTargetPositions,
+} from './parser';
+
+test('handles invalid compile commands gracefully', () => {
+  const db = new CompilationDatabase();
+  const contents = JSON.stringify([
+    {
+      directory: '/project',
+      file: 'test.cpp',
+      // Invalid: missing both command and arguments
+    },
+    {
+      directory: '/project',
+      file: 'another.cpp',
+      command: 'g++ -c another.cpp -o another.o',
+      output: 'another.o',
+    },
+  ]);
+
+  db.loadFromString(contents);
+
+  const invalidCommand = db.db.find((cmd) => cmd.data.file === 'test.cpp');
+  const validCommand = db.db.find((cmd) => cmd.data.file === 'another.cpp');
+
+  assert.ok(invalidCommand);
+  assert.ok(invalidCommand.error);
+  assert.strictEqual(
+    invalidCommand.error.message,
+    'Compile command must have a command or arguments',
+  );
+
+  assert.ok(validCommand);
+  assert.strictEqual(validCommand.error, undefined);
+});
 
 test('inferTargetPositions', () => {
   const testCases: [string, number[]][] = [

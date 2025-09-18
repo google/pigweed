@@ -201,38 +201,34 @@ const UNSUPPORTED_EXECUTABLES = ['_pw_invalid', 'python'];
  */
 export class CompileCommand {
   readonly data: CompileCommandData;
-  private readonly commandParts: CommandParts;
+  private readonly commandParts?: CommandParts;
+  readonly error?: Error;
 
   constructor(data: CompileCommandData) {
     this.data = data;
 
     // The spec requires one of these two to be present.
     if (this.data.arguments === undefined && this.data.command === undefined) {
-      throw new Error('Compile command must have a command or arguments');
+      this.error = new Error(
+        'Compile command must have a command or arguments',
+      );
+      return;
     }
 
-    // The spec says that `arguments` should be preferred over `command`.
-    // In practice, you shouldn't encounter cases where both are present.
-    this.commandParts = this.data.arguments
-      ? parseCommandParts([...this.data.arguments])
-      : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        parseCommandParts(this.data.command!.split(/\s+/));
-  }
-
-  /**
-   * The compiler invocation should include a path to the compiler in most
-   * cases, since regardless of the build system, Pigweed sets up some kind of
-   * hermetic toolchain environment. This will return the path to that toolchain
-   * directory.
-   *
-   * But if the compilation database came from some other source (i.e., it
-   * wasn't generated from Pigweed functionality), the compiler invocation could
-   * just be a bare call to the compiler without a path. In that case, this
-   * will return undefined.
-   */
-  get toolchainPath() {
-    const toolchainDir = path.dirname(this.commandParts.command);
-    return toolchainDir === '.' ? undefined : toolchainDir;
+    try {
+      // The spec says that `arguments` should be preferred over `command`.
+      // In practice, you shouldn't encounter cases where both are present.
+      this.commandParts = this.data.arguments
+        ? parseCommandParts([...this.data.arguments])
+        : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          parseCommandParts(this.data.command!.split(/\s+/));
+    } catch (e) {
+      if (e instanceof Error) {
+        this.error = e;
+      } else {
+        this.error = new Error(String(e));
+      }
+    }
   }
 
   get sourceFilePath() {
@@ -241,10 +237,16 @@ export class CompileCommand {
 
   /** The directory path of the output file. */
   get outputPath() {
+    if (!this.commandParts) {
+      return '';
+    }
     return path.dirname(this.commandParts.output);
   }
 
   process() {
+    if (this.error || !this.commandParts) {
+      return null;
+    }
     const executable = path.resolve(this.commandParts.command);
 
     for (const unsupportedExecutable of UNSUPPORTED_EXECUTABLES) {

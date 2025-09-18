@@ -64,6 +64,11 @@ const makeDecoration = (
       target ? `"${target}"` : 'current'
     } target. Code intelligence will not work.`,
   },
+  INVALID: {
+    badge: '⚠️',
+    color: new ThemeColor('list.warningForeground'),
+    tooltip: 'This file has an invalid compile command.',
+  },
 });
 
 // Define the banner decoration type
@@ -249,7 +254,7 @@ export class InactiveFileDecorationProvider
       return;
     }
 
-    const { status, targets } = await this.activeFilesCache.fileStatus(
+    const { status, targets, error } = await this.activeFilesCache.fileStatus(
       projectRoot,
       uri,
       target,
@@ -257,8 +262,26 @@ export class InactiveFileDecorationProvider
 
     const decorationsArray: DecorationOptions[] = [];
 
-    // Use the enum members directly for comparison
-    if (
+    if (status === 'INVALID' && error) {
+      const message = `⚠️ Invalid compile command: ${error.message}`;
+      const hoverMessage = `This file has an invalid entry in the compile_commands.json file for the active target "${target}". Please check the file for errors.`;
+      const range = new Range(0, 0, 0, 0); // Position at the very top
+      decorationsArray.push({
+        range,
+        hoverMessage,
+        renderOptions: {
+          before: {
+            contentText: message,
+            color: new ThemeColor('editorError.foreground'),
+            backgroundColor: new ThemeColor('editorPane.background'),
+            border: `1px solid`,
+            borderColor: new ThemeColor('editorError.foreground'),
+            textDecoration:
+              ';padding: 2px 5px; margin: 2px 0; display: block;position: absolute;',
+          },
+        },
+      });
+    } else if (
       (status === 'INACTIVE' || status === 'ORPHANED') &&
       editor.selection.active.line >= 5
     ) {
