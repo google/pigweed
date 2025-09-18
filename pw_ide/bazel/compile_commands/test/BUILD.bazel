@@ -52,12 +52,22 @@ cc_library(
     tags = ["manual"],
 )
 
+# Coverage of a library with assembly files.
+cc_library(
+    name = "asm_library",
+    srcs = ["asm_src_test.S"],
+    hdrs = ["public/asm_hdr.S"],
+    strip_include_prefix = "public",
+    tags = ["manual"],
+)
+
 # Coverage of a binary's transitive dependencies.
 cc_binary(
     name = "basic_binary",
     srcs = ["basic_binary_test.cc"],
     tags = ["manual"],
     deps = [
+        ":asm_library",
         ":basic_library_direct_includes",
         # We should still get compile commands for the transitive dependencies.
         ":shim_library",

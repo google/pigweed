@@ -257,6 +257,20 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
             'Test headers should not end up in the database.',
         )
 
+    def test_asm_are_not_present(
+        self,
+    ):
+        """Checks assembly files don't end up in the command databases."""
+        matches = self._find_commands_for_file(
+            '(' + _TEST_PACKAGE + '|' + _EXTERNAL_PACKAGE + ')' + r'.*\.(s|S)',
+            platform_pattern=_HOST_OR_DEVICE,
+        )
+        self.assertEqual(
+            len(matches),
+            0,
+            'Assembly files should not end up in the database.',
+        )
+
     def test_external_include_path_is_present(
         self,
     ):
