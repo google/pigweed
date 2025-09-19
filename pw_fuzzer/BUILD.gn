@@ -230,12 +230,6 @@ config("oss_fuzz_instrumentation") {
   cflags_c = string_split(getenv("CFLAGS"))
   cflags_cc = string_split(getenv("CXXFLAGS"))
 
-  # OSS-Fuzz sets "-stdlib=libc++", which conflicts with the "-nostdinc++" set
-  # by `pw_minimal_cpp_stdlib`.
-  if (cflags_cc + [ "-stdlib=libc++" ] - [ "-stdlib=libc++" ] != cflags_cc) {
-    cflags_cc += [ "-Wno-unused-command-line-argument" ]
-  }
-
   # Disable UBSan vptr when the target is built with -fno-rtti.
   if (cflags_cc + [ "-fno-rtti" ] - [ "-fno-rtti" ] != cflags_cc) {
     cflags_cc += [ " -fno-sanitize=vptr" ]

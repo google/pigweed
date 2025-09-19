@@ -37,7 +37,7 @@ cc_library(
         "standard_library_public/pw_polyfill/standard_library/namespace.h",
     ],
     includes = ["standard_library_public"],
-    visibility = ["//pw_minimal_cpp_stdlib:__pkg__"],
+    visibility = ["//visibility:private"],
 )
 
 pw_cc_test(

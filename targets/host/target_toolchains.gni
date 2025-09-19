@@ -434,19 +434,6 @@ pw_internal_host_toolchains = [
     }
   },
   {
-    name = "pw_strict_host_clang_size_optimized_minimal_cpp_stdlib"
-    _toolchain_base = pw_toolchain_host_clang.size_optimized
-    forward_variables_from(_toolchain_base, "*", _excluded_members)
-    defaults = {
-      forward_variables_from(_toolchain_base.defaults, "*")
-      forward_variables_from(_host_common, "*")
-      forward_variables_from(_pigweed_internal, "*")
-      forward_variables_from(_os_specific_config, "*")
-      default_configs += _internal_clang_default_configs
-      default_public_deps = [ "$dir_pw_minimal_cpp_stdlib" ]
-    }
-  },
-  {
     name = "pw_strict_host_clang_debug_dynamic_allocation"
     _toolchain_base = pw_toolchain_host_clang.debug
     forward_variables_from(_toolchain_base, "*", _excluded_members)

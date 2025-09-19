@@ -270,7 +270,6 @@ sphinx_docs_library(
         "//pw_malloc_freelist:docs",
         "//pw_malloc_freertos:docs",
         "//pw_metric:docs",
-        "//pw_minimal_cpp_stdlib:docs",
         "//pw_module:docs",
         "//pw_multibuf:docs",
         "//pw_multisink:docs",

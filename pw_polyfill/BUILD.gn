@@ -42,10 +42,7 @@ pw_source_set("standard_library") {
   remove_public_deps = [ "*" ]
   public =
       [ "standard_library_public/pw_polyfill/standard_library/namespace.h" ]
-  visibility = [
-    ":*",
-    "$dir_pw_minimal_cpp_stdlib:*",
-  ]
+  visibility = [ ":*" ]
 }
 
 pw_test_group("tests") {

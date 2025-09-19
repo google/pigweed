@@ -79,7 +79,6 @@ Modules
    pw_log/docs
    pw_malloc/docs
    pw_metric/docs
-   pw_minimal_cpp_stdlib/docs
    pw_module/docs
    pw_multibuf/docs
    pw_multisink/docs

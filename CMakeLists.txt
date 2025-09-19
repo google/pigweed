@@ -140,7 +140,6 @@ add_subdirectory(pw_log_string EXCLUDE_FROM_ALL)
 add_subdirectory(pw_log_tokenized EXCLUDE_FROM_ALL)
 add_subdirectory(pw_log_rpc EXCLUDE_FROM_ALL)
 add_subdirectory(pw_log_zephyr EXCLUDE_FROM_ALL)
-add_subdirectory(pw_minimal_cpp_stdlib EXCLUDE_FROM_ALL)
 add_subdirectory(pw_metric EXCLUDE_FROM_ALL)
 add_subdirectory(pw_multibuf EXCLUDE_FROM_ALL)
 add_subdirectory(pw_multisink EXCLUDE_FROM_ALL)
@@ -209,10 +208,6 @@ add_dependencies(pw_apps pw_system.system_async_host_example)
 
 if(CONFIG_ZEPHYR_PIGWEED_MODULE)
   add_subdirectory(zephyr)
-  if(CONFIG_PIGWEED_MINIMAL_CPP_STDLIB)
-    # Add include path to pw_minimal_cpp_stdlib to compiler
-    zephyr_compile_options(-isystem ${ZEPHYR_PIGWEED_MODULE_DIR}/pw_minimal_cpp_stdlib/public)
-  endif()
 else()
   add_subdirectory(targets/host EXCLUDE_FROM_ALL)
 

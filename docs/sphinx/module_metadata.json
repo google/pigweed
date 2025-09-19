@@ -612,9 +612,6 @@
   "pw_metric": {
     "status": "stable"
   },
-  "pw_minimal_cpp_stdlib": {
-    "status": "stable"
-  },
   "pw_module": {
     "status": "stable"
   },
