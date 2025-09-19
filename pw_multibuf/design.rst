@@ -77,7 +77,7 @@ memory. Only if the range spans multiple, non-contiguous chunks will the data be
 copied into a user-provided buffer. This allows for efficient, zero-copy access
 in the common case while still correctly handling fragmented data.
 
-.. _module-pw_multibuf-design-infallibe:
+.. _module-pw_multibuf-design-infallible:
 
 --------------------
 Infallible operation

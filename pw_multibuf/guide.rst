@@ -102,7 +102,7 @@ variable-length queue of binary data entries, very similar to
 
 This queue does all of its dynamic allocation in the factory method. After that
 method succeeds, all the queue methods are
-:ref:`infallible <module-pw_multibuf-design-infallibe>`.
+:ref:`infallible <module-pw_multibuf-design-infallible>`.
 
 For the complete example, see :cs:`pw_multibuf/examples/queue.cc`.
 
