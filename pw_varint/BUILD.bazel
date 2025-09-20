@@ -26,18 +26,12 @@ licenses(["notice"])
 
 cc_library(
     name = "pw_varint",
-    srcs = [
-        "varint.cc",
-        "varint_c.c",
-    ],
-    hdrs = [
-        "public/pw_varint/varint.h",
-    ],
+    srcs = ["varint.cc"],
+    hdrs = ["public/pw_varint/varint.h"],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     deps = [
+        "//pw_bytes",
         "//pw_preprocessor",
-        "//pw_span",
         "//third_party/fuchsia:stdcompat",
     ],
 )
@@ -69,6 +63,7 @@ pw_cc_test(
     deps = [
         ":pw_varint",
         "//pw_fuzzer:fuzztest",
+        "//pw_unit_test:constexpr",
     ],
 )
 

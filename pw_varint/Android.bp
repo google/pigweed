@@ -46,6 +46,5 @@ cc_library_static {
     srcs: [
         "stream.cc",
         "varint.cc",
-        "varint_c.c",
     ],
 }

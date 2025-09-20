@@ -21,12 +21,11 @@ pw_add_library(pw_varint STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_bytes
     pw_preprocessor
-    pw_span
     pw_third_party.fuchsia.stdcompat
   SOURCES
     varint.cc
-    varint_c.c
 )
 
 pw_add_library(pw_varint.stream STATIC
@@ -48,8 +47,9 @@ pw_add_test(pw_varint.varint_test
     varint_test.cc
     varint_test_c.c
   PRIVATE_DEPS
-    pw_varint
     pw_fuzzer.fuzztest
+    pw_unit_test.constexpr
+    pw_varint
   GROUPS
     modules
     pw_varint

@@ -50,8 +50,7 @@ Status Decoder::SkipField() {
 
 uint32_t Decoder::FieldNumber() const {
   uint64_t key;
-  varint::Decode(proto_, &key);
-  if (!FieldKey::IsValidKey(key)) {
+  if (varint::Decode(proto_, &key) == 0 || !FieldKey::IsValidKey(key)) {
     return 0;
   }
   PW_DCHECK(key <= std::numeric_limits<uint32_t>::max());
