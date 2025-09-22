@@ -21,7 +21,7 @@
 #include "pw_assert/check.h"
 #include "pw_containers/vector.h"
 #include "pw_metric/metric.h"
-#include "pw_metric_private/metric_walker.h"
+#include "pw_metric/metric_walker.h"
 #include "pw_span/span.h"
 
 namespace pw::metric {

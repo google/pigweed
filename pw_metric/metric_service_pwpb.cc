@@ -23,7 +23,7 @@
 #include "pw_containers/vector.h"
 #include "pw_log/log.h"
 #include "pw_metric/metric.h"
-#include "pw_metric_private/metric_walker.h"
+#include "pw_metric/metric_walker.h"
 #include "pw_metric_proto/metric_service.pwpb.h"
 #include "pw_preprocessor/util.h"
 #include "pw_protobuf/decoder.h"

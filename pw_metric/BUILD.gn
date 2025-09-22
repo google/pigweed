@@ -73,7 +73,7 @@ pw_proto_library("metric_service_proto") {
 # Common MetricWalker/MetricWriter used by RPC service.
 pw_source_set("metric_walker") {
   visibility = [ ":*" ]
-  public = [ "pw_metric_private/metric_walker.h" ]
+  public = [ "public/pw_metric/metric_walker.h" ]
   sources = [ "metric_walker.cc" ]
   deps = [
     ":pw_metric",

@@ -54,9 +54,11 @@ pw_proto_library(pw_metric.metric_service_proto
 
 pw_add_library(pw_metric.metric_walker STATIC
   HEADERS
-    pw_metric_private/metric_walker.h
+    public/pw_metric/metric_walker.h
   SOURCES
     metric_walker.cc
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_metric
     pw_assert

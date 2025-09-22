@@ -165,7 +165,7 @@ def get_all_metrics(
             cursor = response.cursor
         else:
             # Handle cases where the call was successful but the response is
-            #  empty
+            # empty
             if status.ok():
                 break
 

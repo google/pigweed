@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_metric_private/metric_walker.h"
+#include "pw_metric/metric_walker.h"
 
 #include <cinttypes>
 #include <optional>
