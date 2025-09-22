@@ -64,6 +64,7 @@ pw_facade(
         "public/pw_async2/context.h",
         "public/pw_async2/dispatcher.h",
         "public/pw_async2/dispatcher_base.h",
+        "public/pw_async2/future.h",
         "public/pw_async2/internal/config.h",
         "public/pw_async2/lock.h",
         "public/pw_async2/task.h",
@@ -173,6 +174,16 @@ pw_cc_test(
     deps = [
         ":dispatcher",
         ":pendable",
+        ":poll",
+    ],
+)
+
+pw_cc_test(
+    name = "future_test",
+    srcs = ["future_test.cc"],
+    deps = [
+        ":dispatcher",
+        ":pend_func_task",
         ":poll",
     ],
 )
@@ -608,6 +619,7 @@ filegroup(
         "public/pw_async2/dispatcher.h",
         "public/pw_async2/dispatcher_base.h",
         "public/pw_async2/enqueue_heap_func.h",
+        "public/pw_async2/future.h",
         "public/pw_async2/internal/config.h",
         "public/pw_async2/join.h",
         "public/pw_async2/lock.h",

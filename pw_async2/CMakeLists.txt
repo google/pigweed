@@ -52,6 +52,7 @@ pw_add_facade(pw_async2.dispatcher STATIC
     public/pw_async2/context.h
     public/pw_async2/dispatcher.h
     public/pw_async2/dispatcher_base.h
+    public/pw_async2/future.h
     public/pw_async2/lock.h
     public/pw_async2/task.h
     public/pw_async2/waker.h
@@ -112,6 +113,15 @@ pw_add_test(pw_async2.pendable_test
     pendable_test.cc
   PRIVATE_DEPS
     pw_async2.pendable
+)
+
+pw_add_test(pw_async2.future_test
+  SOURCES
+    future_test.cc
+  PRIVATE_DEPS
+    pw_async2.dispatcher
+    pw_async2.pend_func_task
+    pw_async2.poll
 )
 
 pw_add_library(pw_async2.pend_func_task INTERFACE

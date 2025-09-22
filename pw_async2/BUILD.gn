@@ -64,6 +64,7 @@ pw_facade("dispatcher") {
     "public/pw_async2/context.h",
     "public/pw_async2/dispatcher.h",
     "public/pw_async2/dispatcher_base.h",
+    "public/pw_async2/future.h",
     "public/pw_async2/lock.h",
     "public/pw_async2/task.h",
     "public/pw_async2/waker.h",
@@ -146,6 +147,16 @@ pw_test("pendable_test") {
     ":poll",
   ]
   sources = [ "pendable_test.cc" ]
+}
+
+pw_test("future_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    ":dispatcher",
+    ":pend_func_task",
+    ":poll",
+  ]
+  sources = [ "future_test.cc" ]
 }
 
 pw_source_set("pend_func_task") {
