@@ -41,6 +41,13 @@ from pw_ide.bazel.compile_commands import clangd_binary
 from pw_ide.bazel.compile_commands import update_compile_commands_binary
 
 
+_INCLUDE_PREFIXES = (
+    '-I',
+    '-isystem',
+    '-iquote',
+)
+
+
 def _get_host_platform() -> str:
     """Searches the CWD to determine the current execution platform name.
 
@@ -71,6 +78,9 @@ _TEST_PACKAGE = r'.*pw_ide/bazel/compile_commands/test/'
 
 # All tested rules hosted in an external repo live in this package.
 _EXTERNAL_PACKAGE = r'.*pw_cc_compile_commands_test_external/'
+
+# Anything in the external or local test packages.
+_ANY_TEST_PACKAGE = '(' + _TEST_PACKAGE + '|' + _EXTERNAL_PACKAGE + ')'
 
 
 def _format_clangd_error(
@@ -195,9 +205,7 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
             f'"{platform_pattern}"',
         )
 
-    def test_files_are_valid(
-        self,
-    ):
+    def test_files_are_valid(self):
         """Checks various file's compile command with clangd."""
         matches = self._find_commands_for_file(
             _TEST_PACKAGE + r'.*\.cc?',
@@ -220,9 +228,7 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
                     _format_clangd_error(clangd_result, db_path, command),
                 )
 
-    def test_external_file_is_valid(
-        self,
-    ):
+    def test_external_file_is_valid(self):
         """Checks an external file's compile command with clangd."""
         matches = self._find_commands_for_file(
             _EXTERNAL_PACKAGE + r'.*\.cc?',
@@ -243,12 +249,10 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
                     _format_clangd_error(clangd_result, db_path, command),
                 )
 
-    def test_headers_are_not_present(
-        self,
-    ):
+    def test_headers_are_not_present(self):
         """Checks header files don't end up in the command databases."""
         matches = self._find_commands_for_file(
-            '(' + _TEST_PACKAGE + '|' + _EXTERNAL_PACKAGE + ')' + r'.*\.h',
+            _ANY_TEST_PACKAGE + r'.*\.h',
             platform_pattern=_HOST_OR_DEVICE,
         )
         self.assertEqual(
@@ -257,9 +261,7 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
             'Test headers should not end up in the database.',
         )
 
-    def test_asm_are_not_present(
-        self,
-    ):
+    def test_asm_are_not_present(self):
         """Checks assembly files don't end up in the command databases."""
         matches = self._find_commands_for_file(
             '(' + _TEST_PACKAGE + '|' + _EXTERNAL_PACKAGE + ')' + r'.*\.(s|S)',
@@ -271,9 +273,7 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
             'Assembly files should not end up in the database.',
         )
 
-    def test_external_include_path_is_present(
-        self,
-    ):
+    def test_external_include_path_is_present(self):
         """Checks for an external repo's include path."""
         matches = self._find_commands_for_file(
             _EXTERNAL_PACKAGE + r'.*\.cc?',
@@ -296,9 +296,165 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
                     'External repo include path not found in compile commands.',
                 )
 
-    def test_files_present_in_host_config(
-        self,
-    ):
+    def test_no_virtual_includes(self):
+        """Ensures no _virtual_includes paths are in the compile commands.
+
+        Note: This assumes all test targets do not depend on any libraries
+        where someone has elected to generate their own _virtual_includes
+        library. While the aspect should respond correctly to those cases,
+        it's harder to test them here without additional build graph metadata.
+        """
+        matches = self._find_commands_for_file(
+            _ANY_TEST_PACKAGE + r'.*',
+            platform_pattern=_HOST_OR_DEVICE,
+        )
+        for db_path, command in matches:
+            with self.subTest(
+                f'Checking {command["file"]} from {db_path.parent}'
+            ):
+                args = command['arguments']
+                i = 0
+                while i < len(args):
+                    arg = args[i]
+                    path_str = None
+                    if arg in _INCLUDE_PREFIXES:
+                        if i + 1 < len(args):
+                            path_str = args[i + 1]
+                            i += 1
+                    elif arg.startswith('-I'):
+                        path_str = arg[2:]
+
+                    if path_str:
+                        self.assertNotIn(
+                            '_virtual_includes',
+                            path_str,
+                            f'Found _virtual_includes in {path_str}',
+                        )
+                    i += 1
+
+    def test_include_paths_exist(self):
+        """Ensures all include paths point to real dirs.
+
+        This is quite complex due to bazel's behavior of generating a real
+        and a bazel-out include for each `includes` or `quote_includes` entry.
+        """
+        matches = self._find_commands_for_file(
+            _ANY_TEST_PACKAGE + r'.*',
+            platform_pattern=_HOST_OR_DEVICE,
+        )
+        for db_path, command in matches:
+            with self.subTest(
+                f'Checking {command["file"]} from {db_path.parent}'
+            ):
+                # 1. Collect all include paths from the compile command.
+                all_include_paths: list[Path] = []
+                args = command['arguments']
+                i = 0
+                while i < len(args):
+                    arg = args[i]
+                    path_str = None
+
+                    # Handles '-I foo' and '-isystem foo'
+                    if arg in _INCLUDE_PREFIXES:
+                        if i + 1 < len(args):
+                            path_str = args[i + 1]
+                            i += 1
+                    # Handles '-Ifoo' and '-isystemfoo'
+                    else:
+                        for prefix in _INCLUDE_PREFIXES:
+                            if arg.startswith(prefix):
+                                path_str = arg[len(prefix) :]
+                                break
+
+                    if path_str:
+                        include_path = Path(path_str)
+                        all_include_paths.append(include_path)
+                    i += 1
+
+                # 2. Separate paths into "real" and "bazel-out" paths.
+                real_paths: list[Path] = []
+                bazel_bin_paths: list[dict] = []
+                bin_dir_re = re.compile(
+                    r'(?:^|(?:.*/))bazel-out/[^/]+/bin/(?P<suffix>.+)'
+                )
+
+                for path in all_include_paths:
+                    match = bin_dir_re.match(str(path))
+                    if match:
+                        bazel_bin_paths.append(
+                            {'path': path, 'suffix': match.group('suffix')}
+                        )
+                    else:
+                        real_paths.append(path)
+
+                    self.assertFalse(
+                        str(path).startswith('bazel-out/'),
+                        f'Relative, generated include path {path} was not '
+                        'remapped to its absolute path by the merger',
+                    )
+                    self.assertFalse(
+                        str(path).startswith('external/'),
+                        f'Relative, external include path {path} was not '
+                        'remapped to its absolute path by the merger',
+                    )
+
+                # For every `includes` and `quote_includes` path, Bazel
+                # generates a second include in `bazel-bin` that contains any
+                # files that were generated in the package. We don't necessarily
+                # know which of these two include paths exist, but at least
+                # *one* should.
+
+                # 3. Check generated paths first, since it's easier to find the
+                # real version from the parallel bazel-out path.
+                for bin_path_info in bazel_bin_paths:
+                    bin_path = bin_path_info['path']
+                    suffix = bin_path_info['suffix']
+
+                    self.assertTrue(
+                        bin_path.is_absolute(),
+                        f'bazel-bin path `{bin_path}` is generated, but was '
+                        'not resolved to an absolute path by the merger',
+                    )
+
+                    # If path doesn't exist. Find a real path that has a
+                    # matching suffix and check that.
+                    if not bin_path.is_dir():
+                        maybe_path: Path | None = None
+                        execroot = str(bin_path).split('/execroot/', 1)[0]
+                        for real_path in real_paths:
+                            # Only match against project-relative paths, or
+                            # external/ paths just below the execroot.
+                            if re.match(
+                                r'(?:^)|(?:' + execroot + r'/)' + suffix,
+                                str(real_path),
+                            ):
+                                maybe_path = real_path
+                        check_path = maybe_path
+                        if not check_path.is_absolute():
+                            check_path = Path(command['directory']) / check_path
+                        self.assertIsNotNone(
+                            check_path,
+                            f'bazel-bin path `{bin_path}` does not exist and '
+                            'no real in-tree alternative include path could be '
+                            'found',
+                        )
+                        # To remove, need to use the not-resolved path.
+                        real_paths.remove(maybe_path)
+
+                # 4. For every remaining "real" path that we didn't find a
+                # valid generated include directory, unconditionally require
+                # the real path to exist.
+                for path in real_paths:
+                    realpath = path
+                    if not path.is_absolute():
+                        realpath = Path(command['directory']) / path
+                    self.assertTrue(
+                        realpath.is_dir(),
+                        f'Real include path `{path}` does not exist or is not '
+                        f'a directory. File: {command["file"]}',
+                    )
+
+    def test_files_present_in_host_config(self):
         """Checks that expected files are present for the host config."""
         self._assert_file_is_in_db_for_config(
             file_pattern=_TEST_PACKAGE + r'basic_source_test\.cc',
@@ -309,9 +465,7 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
             platform_pattern=_HOST_PLATFORM,
         )
 
-    def test_files_present_in_device_config(
-        self,
-    ):
+    def test_files_present_in_device_config(self):
         """Checks that expected files are present for the device config."""
         self._assert_file_is_in_db_for_config(
             file_pattern=_TEST_PACKAGE + r'basic_source_test\.cc',
@@ -326,9 +480,7 @@ class CompileCommandsIntegrationTest(unittest.TestCase):
             platform_pattern=_DEVICE_PLATFORM,
         )
 
-    def test_external_file_present_in_host_config(
-        self,
-    ):
+    def test_external_file_present_in_host_config(self):
         """Checks that an external file is present for the host config."""
         self._assert_file_is_in_db_for_config(
             file_pattern=_EXTERNAL_PACKAGE + r'external_source_test\.cc',
