@@ -204,8 +204,8 @@ pw_cc_test(
     name = "service_nc_test",
     srcs = ["service_nc_test.cc"],
     features = ["-conversion_warnings"],
+    has_nc_test = True,
     deps = [
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_rpc:pw_rpc_test_raw_rpc",
     ],
 )

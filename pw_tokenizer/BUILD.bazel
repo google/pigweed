@@ -329,11 +329,11 @@ pw_cc_test(
         "tokenize_test.cc",
         "tokenize_test_c.c",
     ],
+    has_nc_test = True,
     # TODO: b/344050496 - get working on rp2040 and stm32f429i
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":pw_tokenizer",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
         "//pw_string:string",
         "//pw_varint",
@@ -351,8 +351,8 @@ pw_cc_test(
     srcs = [
         "enum_test.cc",
     ],
+    has_nc_test = True,
     deps = [
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_tokenizer",
     ],
 )

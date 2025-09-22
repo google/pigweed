@@ -42,10 +42,10 @@ pw_cc_test(
     name = "builder_test",
     srcs = ["builder_test.cc"],
     features = ["-conversion_warnings"],
+    has_nc_test = True,
     deps = [
         ":builder",
         "//pw_assert:check",
-        "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
 

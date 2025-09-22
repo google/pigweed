@@ -387,9 +387,9 @@ pw_cc_test(
 pw_cc_test(
     name = "options_test",
     srcs = ["options_test.cc"],
+    has_nc_test = True,
     deps = [
         ":options",
-        "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
 
@@ -445,9 +445,9 @@ pw_cc_test(
 pw_cc_test(
     name = "priority_test",
     srcs = ["priority_test.cc"],
+    has_nc_test = True,
     deps = [
         ":generic_priority",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test:constexpr",
     ],
 )
@@ -455,9 +455,9 @@ pw_cc_test(
 pw_cc_test(
     name = "thread_creation_test",
     srcs = ["thread_creation_test.cc"],
+    has_nc_test = True,
     deps = [
         ":thread",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_sync:binary_semaphore",
     ],
 )
@@ -465,9 +465,9 @@ pw_cc_test(
 pw_cc_test(
     name = "attrs_test",
     srcs = ["attrs_test.cc"],
+    has_nc_test = True,
     deps = [
         ":thread",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test:constexpr",
     ],
 )

@@ -53,6 +53,22 @@ PW_NC_EXPECT("abcdef" /* illegal comment */);
 
 UNTERMINATED_EXPECTATION = '#if PW_NC_TEST(FirstTest)\nPW_NC_EXPECT("abcdef"\n'
 
+DUPLICATE_SOURCE = r"""
+#if PW_NC_TEST(ADuplicateTest)
+PW_NC_EXPECT("abcdef");
+#endif  // PW_NC_TEST
+
+#if PW_NC_TEST(AnotherTest)
+PW_NC_EXPECT("ghijkl");
+#endif  // PW_NC_TEST
+
+#if PW_NC_TEST(ADuplicateTest)
+PW_NC_EXPECT("mnopqr");
+#endif  // PW_NC_TEST
+"""
+
+NO_TESTS_SOURCE = 'int main() { return 0; }'
+
 
 def _write_to_temp_file(contents: str) -> Path:
     file = tempfile.NamedTemporaryFile('w', delete=False)
@@ -94,7 +110,7 @@ class ParserTest(unittest.TestCase):
                         9,
                     ),
                 ],
-                list(enumerate_tests('TestSuite', [path])),
+                enumerate_tests('TestSuite', [path]),
             )
         finally:
             path.unlink()
@@ -103,7 +119,7 @@ class ParserTest(unittest.TestCase):
         try:
             path = _write_to_temp_file(ILLEGAL_COMMENT)
             with self.assertRaises(ParseError):
-                list(enumerate_tests('TestSuite', [path]))
+                enumerate_tests('TestSuite', [path])
         finally:
             path.unlink()
 
@@ -111,11 +127,27 @@ class ParserTest(unittest.TestCase):
         try:
             path = _write_to_temp_file(UNTERMINATED_EXPECTATION)
             with self.assertRaises(ParseError) as err:
-                list(enumerate_tests('TestSuite', [path]))
+                enumerate_tests('TestSuite', [path])
         finally:
             path.unlink()
 
         self.assertIn('Unterminated', str(err.exception))
+
+    def test_no_tests(self) -> None:
+        try:
+            path = _write_to_temp_file(NO_TESTS_SOURCE)
+            with self.assertRaisesRegex(ValueError, 'no negative compilation'):
+                enumerate_tests('MySuite', [path])
+        finally:
+            path.unlink()
+
+    def test_duplicate_tests(self) -> None:
+        try:
+            path = _write_to_temp_file(DUPLICATE_SOURCE)
+            with self.assertRaisesRegex(ValueError, 'duplicate negative'):
+                enumerate_tests('MySuite', [path])
+        finally:
+            path.unlink()
 
 
 if __name__ == '__main__':

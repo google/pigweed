@@ -15,24 +15,45 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 licenses(["notice"])
 
-# Negative compilation testing is not yet supported in Bazel.
+# Do not depend directly on this target. Instead, declare a pw_cc_test and set
+# has_nc_test = True.
 cc_library(
-    name = "negative_compilation_testing",
+    name = "_internal_do_not_use_nc_test_header",
     testonly = True,
     hdrs = ["public/pw_compilation_testing/negative_compilation.h"],
     strip_include_prefix = "public",
-    visibility = ["//:__subpackages__"],  # Restrict to Pigweed
+    visibility = ["//visibility:public"],
 )
 
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        "example_test.cc",
     ],
     prefix = "pw_compilation_testing/",
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:public"],
+)
+
+pw_cc_test(
+    name = "example_test",
+    srcs = ["example_test.cc"],
+    has_nc_test = True,
+    deps = [
+        "//pw_assert:assert",
+        "//pw_polyfill",
+    ],
+)
+
+pw_cc_test(
+    name = "test",
+    srcs = ["test.cc"],
+    copts = ["-DTHIS_SHOULD_BE_42=42"],
+    defines = ["THIS_SHOULD_BE_DEFINED"],
+    has_nc_test = True,
 )

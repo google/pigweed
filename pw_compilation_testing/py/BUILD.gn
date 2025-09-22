@@ -23,6 +23,7 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_compilation_testing/__init__.py",
+    "pw_compilation_testing/generate_and_run.py",
     "pw_compilation_testing/generator.py",
     "pw_compilation_testing/runner.py",
   ]

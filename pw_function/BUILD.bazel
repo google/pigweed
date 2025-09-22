@@ -53,9 +53,9 @@ cc_library(
 pw_cc_test(
     name = "function_test",
     srcs = ["function_test.cc"],
+    has_nc_test = True,
     deps = [
         ":pw_function",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_polyfill",
     ],
 )

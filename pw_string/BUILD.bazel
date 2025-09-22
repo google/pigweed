@@ -160,9 +160,9 @@ pw_cc_test(
 pw_cc_test(
     name = "string_test",
     srcs = ["string_test.cc"],
+    has_nc_test = True,
     deps = [
         ":string",
-        "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
 

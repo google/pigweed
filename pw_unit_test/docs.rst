@@ -655,6 +655,9 @@ See also :ref:`module-pw_unit_test-helpers`.
 a dependency on ``@pigweed//pw_unit_test:main``. It supports and passes through
 all the arguments recognized by ``cc_test``.
 
+``pw_cc_test`` also supports negative compilation (NC) testing. Pass ``has_nc_test = True`` to enable NC
+tests. See :ref:`module-pw_compilation_testing` for details.
+
 .. _module-pw_unit_test-bazel-args:
 
 Label flags

@@ -36,5 +36,25 @@ group("internal_pigweed_use_only") {
   public_deps = [ ":negative_compilation_testing" ]
 }
 
+pw_test("example_test") {
+  sources = [ "example_test.cc" ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_polyfill,
+  ]
+  negative_compilation_tests = true
+}
+
+pw_test("test") {
+  sources = [ "test.cc" ]
+  defines = [ "THIS_SHOULD_BE_DEFINED" ]
+  cflags = [ "-DTHIS_SHOULD_BE_42=42" ]
+  negative_compilation_tests = true
+}
+
 pw_test_group("tests") {
+  tests = [
+    ":example_test",
+    ":test",
+  ]
 }

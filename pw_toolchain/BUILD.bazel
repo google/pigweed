@@ -151,9 +151,9 @@ cc_library(
 pw_cc_test(
     name = "sibling_cast_test",
     srcs = ["sibling_cast_test.cc"],
+    has_nc_test = True,
     deps = [
         ":sibling_cast",
-        "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
 

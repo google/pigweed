@@ -206,12 +206,12 @@ pw_cc_test(
         "pw_assert_test/fake_backend.h",
     ],
     features = ["-conversion_warnings"],
+    has_nc_test = True,
     tags = ["noclangtidy"],
     deps = [
         ":assert",
         ":config",
         ":facade",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
         "//pw_result",
         "//pw_span",

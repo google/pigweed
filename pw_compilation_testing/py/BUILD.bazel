@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
-load("//pw_build:python.bzl", "pw_py_test")
+load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -23,11 +23,22 @@ py_library(
     name = "pw_compilation_testing",
     srcs = [
         "pw_compilation_testing/__init__.py",
+        "pw_compilation_testing/generate_and_run.py",
         "pw_compilation_testing/generator.py",
         "pw_compilation_testing/runner.py",
     ],
     imports = ["."],
     deps = ["//pw_cli/py:pw_cli"],
+)
+
+pw_py_binary(
+    name = "generate_and_run",
+    srcs = ["pw_compilation_testing/generate_and_run.py"],
+    main = "pw_compilation_testing/generate_and_run.py",
+    deps = [
+        ":pw_compilation_testing",
+        "//pw_cli/py:pw_cli",
+    ],
 )
 
 pw_py_test(

@@ -313,9 +313,9 @@ cc_library(
 pw_cc_test(
     name = "constexpr_test",
     srcs = ["constexpr_test.cc"],
+    has_nc_test = True,
     deps = [
         ":constexpr",
-        "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
 

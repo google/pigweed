@@ -418,6 +418,7 @@ pw_cc_test(
     srcs = [
         "multibuf_v2_test.cc",
     ],
+    has_nc_test = True,
     deps = [
         ":chunk",
         ":iterators",
@@ -426,7 +427,6 @@ pw_cc_test(
         "//pw_allocator:testing",
         "//pw_assert:check",
         "//pw_bytes",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_result",
         "//pw_status",
     ],

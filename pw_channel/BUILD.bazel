@@ -53,11 +53,11 @@ pw_cc_test(
         "-conversion_warnings",
         "-ctad_warnings",
     ],
+    has_nc_test = True,
     deps = [
         ":pw_channel",
         "//pw_allocator:testing",
         "//pw_assert:check",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_multibuf:allocator",
         "//pw_multibuf:allocator_async",
         "//pw_multibuf:simple_allocator",
@@ -255,11 +255,11 @@ cc_library(
 pw_cc_test(
     name = "packet_channel_test",
     srcs = ["packet_channel_test.cc"],
+    has_nc_test = True,
     deps = [
         ":packet_channel",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_containers:inline_deque",
         "//pw_containers:vector",
         "//pw_span",

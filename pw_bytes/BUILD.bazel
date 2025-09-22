@@ -123,27 +123,27 @@ pw_cc_test(
     name = "packed_ptr_test",
     srcs = ["packed_ptr_test.cc"],
     features = ["-ctad_warnings"],
+    has_nc_test = True,
     deps = [
         ":packed_ptr",
-        "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
 
 pw_cc_test(
     name = "span_test",
     srcs = ["span_test.cc"],
+    has_nc_test = True,
     deps = [
         ":pw_bytes",
-        "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
 
 pw_cc_test(
     name = "suffix_test",
     srcs = ["suffix_test.cc"],
+    has_nc_test = True,
     deps = [
         ":pw_bytes",
-        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_polyfill",
     ],
 )

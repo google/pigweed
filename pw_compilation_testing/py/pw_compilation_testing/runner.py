@@ -14,14 +14,16 @@
 """Executes a compilation failure test."""
 
 import argparse
+import enum
 import logging
+import os
 from pathlib import Path
 import re
 import shlex
 import string
 import sys
 import subprocess
-from typing import Sequence
+from typing import Callable, Sequence, TextIO
 
 import pw_cli.log
 
@@ -86,54 +88,86 @@ _TEST_MACRO = 'PW_NC_TEST_EXECUTE_CASE_'
 _ANSI_ESCAPE_SEQUENCES = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
 
-class _TestFailure(Exception):
-    pass
-
-
 def _red(message: str) -> str:
-    return f'\033[31m\033[1m{message}\033[0m'
+    return f'\033[31;1m{message}\033[0m'
 
 
 _TITLE_1 = '     NEGATIVE     '
 _TITLE_2 = ' COMPILATION TEST '
 
 _BOX_TOP = f'┏{"━" * len(_TITLE_1)}┓'
-_BOX_MID_1 = f'┃{_red(_TITLE_1)}┃ \033[1m{{test_name}}\033[0m'
-_BOX_MID_2 = f'┃{_red(_TITLE_2)}┃ \033[0m{{source}}:{{line}}\033[0m'
+_BOX_MID_1 = '┃{title}┃ \033[1m{test_name}\033[0m'
+_BOX_MID_2 = '┃{title}┃ \033[0m{source}:{line}\033[0m'
 _BOX_BOT = f'┻{"━" * (len(_TITLE_1))}┻{"━" * (77 - len(_TITLE_1))}┓'
 _FOOTER = '\n' + '━' * 79 + '┛'
 
 
-def _start_failure(test: TestCase, command: str) -> None:
-    print(_BOX_TOP, file=sys.stderr)
-    print(_BOX_MID_1.format(test_name=test.name()), file=sys.stderr)
+def _start_result(
+    color: Callable[[str], str], test: TestCase, command: str, out: TextIO
+) -> None:
+    print(_BOX_TOP, file=out)
     print(
-        _BOX_MID_2.format(source=test.source, line=test.line), file=sys.stderr
+        _BOX_MID_1.format(title=color(_TITLE_1), test_name=test.name()),
+        file=out,
     )
-    print(_BOX_BOT, file=sys.stderr)
-    print(file=sys.stderr)
+    print(
+        _BOX_MID_2.format(
+            title=color(_TITLE_2), source=test.source, line=test.line
+        ),
+        file=out,
+    )
+    print(_BOX_BOT, file=out)
+    print(file=out)
 
     _LOG.debug('Compilation command:\n%s', command)
 
 
+def _start_failure(test: TestCase, command: str, out: TextIO) -> None:
+    _start_result(_red, test, command, out)
+
+
+class TestResult(enum.Enum):
+    PASS = 'PASSED'
+    FAIL = 'FAILED'
+    SKIP = 'SKIPPED'
+
+    def ok(self) -> bool:
+        """True if the test passed or was skipped intentionally."""
+        return self is not self.FAIL
+
+    def colorized(self) -> str:
+        if self is self.FAIL:
+            return '\033[1;31mFAILED\033[0m'  # red FAILED
+
+        if self is self.PASS:
+            return '\033[1;32mPASSED\033[0m'  # green PASSED
+
+        return '\033[1;33mSKIPPED\033[0m'  # yellow SKIPPED
+
+
 def _check_results(
-    test: TestCase, command: str, process: subprocess.CompletedProcess
-) -> None:
+    test: TestCase,
+    command: str,
+    process: subprocess.CompletedProcess,
+    ok_file: TextIO,
+    err_file: TextIO,
+) -> TestResult:
     stderr = process.stderr.decode(errors='replace')
+    err = lambda *a: print(*a, file=err_file)
 
     if process.returncode == 0:
         # Check if the test was commented out or disabled.
         if _should_skip_test(command):
-            _LOG.debug(
-                "Skipping test %s since it is excluded by the preprocessor",
-                test.name(),
+            err(
+                f'Skipped test {test.name()} since it was excluded by the '
+                'preprocessor',
             )
-            return
+            return TestResult.SKIP
 
-        _start_failure(test, command)
-        _LOG.error('Compilation succeeded, but it should have failed!')
-        _LOG.error('Update the test code so that is fails to compile.')
-        raise _TestFailure
+        _start_failure(test, command, err_file)
+        err('Compilation succeeded, but it should have failed!')
+        err('Update the test code so that is fails to compile.')
+        return TestResult.FAIL
 
     compiler_str = command.split(' ', 1)[0]
     compiler = Compiler.from_command(compiler_str)
@@ -155,57 +189,59 @@ def _check_results(
         _LOG.debug('    %s', expectation.pattern.pattern)
 
     if not expectations:
-        _start_failure(test, command)
-        _LOG.error(
-            'Compilation with %s failed, but no PW_NC_EXPECT() patterns '
-            'that apply to %s were provided',
-            compiler_str,
-            compiler_str,
+        _start_failure(test, command, err_file)
+        err(
+            f'Compilation with {compiler_str} failed, but no PW_NC_EXPECT() '
+            f'patterns that apply to {compiler_str} were provided'
         )
 
-        _LOG.error('Compilation output:\n%s', stderr)
-        _LOG.error('')
-        _LOG.error(
-            'Add at least one PW_NC_EXPECT("<regex>") or '
-            'PW_NC_EXPECT_%s("<regex>") expectation to %s',
-            compiler.name,
-            test.case,
+        err(f'Compilation output:\n{stderr}')
+        err(
+            'Add at least one PW_NC_EXPECT("<regex>") or PW_NC_EXPECT_'
+            f'{compiler.name}("<regex>") expectation to {test.case}',
         )
-        raise _TestFailure
+        return TestResult.FAIL
 
     no_color = _ANSI_ESCAPE_SEQUENCES.sub('', stderr)
 
     failed = [e for e in expectations if not e.pattern.search(no_color)]
     if failed:
-        _start_failure(test, command)
-        _LOG.error(
-            'Compilation with %s failed, but the output did not '
-            'match the expected patterns.',
-            compiler_str,
+        _start_failure(test, command, err_file)
+        err(
+            f'Compilation with {compiler_str} failed, but the output did not '
+            'match the expected patterns.'
         )
-        _LOG.error(
-            '%d of %d expected patterns did not match:',
-            len(failed),
-            len(expectations),
+        err(
+            f'{len(failed)} of {len(expectations)} expected patterns did not '
+            'match:',
         )
-        _LOG.error('')
-        for expectation in expectations:
-            _LOG.error(
-                '  %s %s:%d: %s',
-                '❌' if expectation in failed else '✅',
-                test.source.name,
-                expectation.line,
-                expectation.pattern.pattern,
+        err()
+        for exp in expectations:
+            res = '❌' if exp in failed else '✅'
+            err(
+                f'  {res} {test.source.name}:{exp.line} {exp.pattern.pattern}',
             )
-        _LOG.error('')
+        err()
 
-        _LOG.error('Compilation output:\n%s', stderr)
-        _LOG.error('')
-        _LOG.error(
+        err(f'Compilation output:\n{stderr}')
+        err(
             'Update the test so that compilation fails with the '
             'expected output'
         )
-        raise _TestFailure
+        return TestResult.FAIL
+
+    _start_result(lambda a: a, test, command, ok_file)
+    print(
+        'Compilation failed and the output matched the expected patterns:\n',
+        file=ok_file,
+    )
+    for expect in expectations:
+        print(
+            f'  ✅ {test.source.name}:{expect.line} {expect.pattern.pattern}',
+            file=ok_file,
+        )
+
+    return TestResult.PASS
 
 
 def _should_skip_test(base_command: str) -> bool:
@@ -233,58 +269,35 @@ def _should_skip_test(base_command: str) -> bool:
     return process.returncode == 0
 
 
-def _run_test(
+def run_test(
     test: TestCase,
     command: str,
-    variables: dict[str, str],
     all_tests: Sequence[str],
-) -> None:
-    variables['in'] = str(test.source)
+    ok_file: TextIO,
+    err_file: TextIO,
+) -> TestResult:
+    """Executes a compiler command and checks for expected compilation failure.
 
-    compile_command = ' '.join(
+    Args:
+      test: The TestCase object representing the test to run
+      command: The compiler command to run.
+      all_tests: list of all test case names in the suite
+      ok_file: Where to write output for passed tests
+      err_file: Where to write output for failed tests
+    """
+    test_command = ' '.join(
         [
-            string.Template(command).substitute(variables),
+            command,
             '-DPW_NEGATIVE_COMPILATION_TESTS_ENABLED',
             # Define macros to disable all tests except this one.
             *(f'-D{_TEST_MACRO}{t}=0' for t in all_tests if t != test.case),
             f'-D{_TEST_MACRO}{test.case}',
         ]
     )
-
-    process = subprocess.run(compile_command, shell=True, capture_output=True)
-
-    _check_results(test, compile_command, process)
-
-
-def run_test(
-    test: TestCase,
-    command: str,
-    variables: dict[str, str],
-    all_tests: Sequence[str],
-) -> bool:
-    """Executes a compiler command and checks for expected compilation failure.
-
-    Args:
-      test: The TestCase object representing the test to run
-      command: The base compiler command template, with $-style arguments;
-          uses 'in' is the source file name
-      variables: dict of variables to substitute into the command template
-      all_tests: list of all test case names in the suite
-
-    Raises:
-        _TestFailure: If the compilation succeeds when it should have failed,
-            or if it fails with output that doesn't match the expectations.
-    """
-    try:
-        _run_test(test, command, variables, all_tests)
-        return True
-    except _TestFailure:
-        print(_FOOTER, file=sys.stderr)
-    except Exception as err:  # pylint: disable=broad-except
-        _LOG.error('Unexpected error running test %s: %s', test.name(), err)
-        raise
-
-    return False
+    process = subprocess.run(test_command, shell=True, capture_output=True)
+    result = _check_results(test, test_command, process, ok_file, err_file)
+    print(_FOOTER, file=err_file)
+    return result
 
 
 def _main(
@@ -305,9 +318,18 @@ def _main(
     variables['out'] = str(
         target_ninja.parent / f'{target_ninja.stem}.compile_fail_test.out'
     )
+    variables['in'] = str(test.source)
+    command = string.Template(command).substitute(variables)
 
-    if run_test(test, command, variables, all_tests.read_text().splitlines()):
-        return 0
+    with open(os.devnull, 'w') as ignore_passes:
+        if run_test(
+            test,
+            command,
+            all_tests.read_text().splitlines(),
+            ignore_passes,
+            sys.stderr,
+        ).ok():
+            return 0
 
     return 1
 
