@@ -264,7 +264,7 @@ Status Connection::SharedState::DrainResponseQueue(Stream& stream) {
   while (stream.response_queue.size() > 0) {
     multibuf::MultiBufChunks& chunks = stream.response_queue.Chunks();
 
-    size_t message_size = chunks.front().size();
+    size_t message_size = chunks.front().size() + kLengthPrefixedMessageHdrSize;
 
     if (static_cast<int32_t>(message_size) > stream.send_window ||
         static_cast<int32_t>(message_size) > connection_send_window_) {
@@ -514,7 +514,7 @@ Status Connection::SharedState::QueueStreamResponse(
 
 Status Connection::SharedState::SendQueued(Connection::Stream& stream,
                                            multibuf::OwnedChunk&& chunk) {
-  size_t message_size = chunk.size();
+  size_t message_size = chunk.size() + kLengthPrefixedMessageHdrSize;
 
   auto status = OkStatus();
   if (!stream.started_response) {
