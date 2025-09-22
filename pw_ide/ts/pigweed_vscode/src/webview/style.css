@@ -45,6 +45,35 @@
 	font-family: monospace;
 }
 
+.welcome-message {
+	padding: 1em;
+	border: 1px solid var(--vscode-editorWidget-border);
+	border-radius: 4px;
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
+
+.welcome-message h3 {
+	margin-top: 0;
+	font-size: 1.5em;
+}
+
+.welcome-message code{
+	background: #fb71fe;
+    color: #000;
+}
+
+.welcome-message h3 svg {
+	height: 1.5em;
+}
+
+.welcome-sub-message {
+	line-height: 1.4em;
+}
+.pigweed-pink {
+  color: #fb71fe;
+}
+
 @font-face {
 	font-family: "codicon";
 	src: url("@vscode/codicons/dist/codicon.ttf") format("truetype");
@@ -64,6 +93,9 @@
 }
 
 .codicon-chevron-right:before { content: "\eab6" }
+.codicon-book:before { content: "\eaa4" }
+.codicon-bug:before { content: "\eaaf" }
+.codicon-notebook:before { content: "\ebaf" }
 
 /* Add new styles for the toggle button group here or in the separate CSS file */
 .toggle-button-group {
@@ -198,4 +230,192 @@
 	display: flex;
     align-items: center;
     gap: 0.1rem;
+}
+
+.link-row {
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+}
+
+.link-row > span{
+	display: flex;
+    padding: 0.5em 1em;
+}
+
+.link-row:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+.link-row i {
+	margin-right: 10px;
+	padding: 0px;
+}
+
+/* New styles for Code Intelligence Status */
+.code-intelligence-status-card {
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 1em;
+}
+
+.code-intelligence-status-card h3 {
+  margin-top: 0;
+  font-size: 1.2em; /* Slightly smaller than welcome message */
+}
+
+.code-intelligence-status-card .description {
+  font-size: 0.9em;
+  margin-bottom: 1em;
+}
+
+.code-intelligence-status-card a {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+}
+
+.code-intelligence-status-card a:hover {
+  text-decoration: underline;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  margin-bottom: 1em;
+}
+
+.status-line.status-success {
+  color: var(--vscode-testing-iconPassed);
+}
+
+.status-line.status-error {
+  color: var(--vscode-testing-iconFailed);
+}
+
+.status-line.status-info {
+  color: var(--vscode-testing-iconQueued);
+}
+
+.status-steps {
+  list-style-type: decimal;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.status-steps li {
+  margin-bottom: 1em;
+}
+
+.status-steps li:last-child {
+  margin-bottom: 0;
+}
+
+.status-steps .step-detail {
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+  margin-top: 4px;
+}
+
+.status-steps code {
+  background-color: var(--vscode-textBlockQuote-background);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.you-are-here {
+  margin-left: 8px;
+  font-weight: normal;
+}
+
+.status-steps li.step-dimmed {
+  opacity: 0.3;
+}
+
+
+.vscode-select {
+  position: relative;
+  width: 320px;
+}
+
+.vscode-select select {
+  appearance: none;
+  background-color: var(--vscode-settings-dropdownBackground);
+  border-color: var(--vscode-settings-dropdownBorder);
+  border-radius: 2px;
+  border-style: solid;
+  border-width: 1px;
+  color: var(--vscode-settings-dropdownForeground);
+  cursor: pointer;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  font-weight: var(--vscode-font-weight);
+  line-height: 18px;
+  margin: 0;
+  padding: 3px 4px;
+  width: 100%;
+}
+
+.vscode-select select:focus {
+  border-color: var(--vscode-focusBorder);
+  outline: none;
+}
+
+.vscode-select.invalid select,
+.vscode-select select:invalid {
+  background-color: var(--vscode-inputValidation-errorBackground);
+  border-color: var(--vscode-inputValidation-errorBorder, #be1100);
+}
+
+.vscode-select option {
+  cursor: pointer;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  font-weight: var(--vscode-font-weight);
+}
+
+.vscode-select .chevron-icon {
+  color: var(--vscode-foreground);
+  display: block;
+  height: 14px;
+  pointer-events: none;
+  position: absolute;
+  right: 8px;
+  top: 5px;
+  width: 14px;
+}
+
+.vscode-select select[multiple] {
+  padding: 0;
+}
+
+.vscode-select select[multiple] + .chevron-icon {
+  display: none;
+}
+
+.vscode-select select[multiple] option {
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  font-weight: var(--vscode-font-weight);
+  line-height: 18px;
+  padding: 2px 3px;
+}
+
+.vscode-select select[multiple] option:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
+}
+
+.vscode-select select[multiple] option:checked {
+  background-color: var(--vscode-list-hoverBackground) !important;
+  color: var(--vscode-list-hoverForeground) !important;
+}
+
+.vscode-select select[multiple]:focus option:checked {
+  background-color: var(--vscode-list-activeSelectionBackground) !important;
+  color: var(--vscode-list-activeSelectionForeground) !important;
 }

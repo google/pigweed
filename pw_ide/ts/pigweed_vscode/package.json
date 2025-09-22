@@ -303,7 +303,7 @@
   "dependencies": {
     "@bazel/bazelisk": "^1.19.0",
     "@bazel/buildifier": "^7.1.2",
-    "@vscode-elements/elements-lite": "^0.3.0",
+    "@vscode-elements/elements-lite": "^0.4.0",
     "@vscode/codicons": "^0.0.36",
     "glob": "^10.4.5",
     "hjson": "^3.2.2",

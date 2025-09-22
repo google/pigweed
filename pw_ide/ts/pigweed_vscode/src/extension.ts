@@ -358,14 +358,6 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     return;
   }
-  const provider = new WebviewProvider(context.extensionUri);
-
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(
-      WebviewProvider.viewType,
-      provider,
-    ),
-  );
 
   logger.info('Extension loaded');
   logger.info('');
@@ -438,6 +430,18 @@ export async function activate(context: vscode.ExtensionContext) {
     settingsFileWatcher: new SettingsFileWatcher(),
     targetStatusBarItem: new TargetStatusBarItem(),
   });
+
+  const provider = new WebviewProvider(
+    context.extensionUri,
+    clangdActiveFilesCache,
+  );
+
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      WebviewProvider.viewType,
+      provider,
+    ),
+  );
 
   disposer.add(new ClangdFileWatcher(clangdActiveFilesCache));
   disposer.add(new InactiveFileDecorationProvider(clangdActiveFilesCache));

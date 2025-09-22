@@ -14,9 +14,15 @@
 
 import * as vscode from 'vscode';
 import { checkExtensionsAndGetStatus } from './extensionManagement';
+import { setTargetWithClangd } from './clangd';
 import logging, { output } from './logging';
 import { getSettingsData } from './configParsing';
 import getCipdReport from './clangd/report';
+import { availableTargets } from './clangd/paths';
+import {
+  ClangdActiveFilesCache,
+  parseForSourceFiles,
+} from './clangd/activeFilesCache';
 import { existsSync } from 'fs';
 import {
   createBazelInterceptorFile,
@@ -161,7 +167,10 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
   private _view?: vscode.WebviewView;
 
-  constructor(private readonly _extensionUri: vscode.Uri) {}
+  constructor(
+    private readonly _extensionUri: vscode.Uri,
+    private readonly _activeFilesCache: ClangdActiveFilesCache,
+  ) {}
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -270,6 +279,34 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         case 'refreshCompileCommandsManually': {
           const buildCmd = data.data;
           await executeRefreshCompileCommandsManually(buildCmd);
+          break;
+        }
+        case 'openDocs': {
+          vscode.env.openExternal(
+            vscode.Uri.parse('https://pigweed.dev/pw_ide/guide/vscode/'),
+          );
+          break;
+        }
+        case 'fileBug': {
+          vscode.env.openExternal(
+            vscode.Uri.parse('https://issues.pigweed.dev/issues?q=status:open'),
+          );
+          break;
+        }
+        case 'selectTarget': {
+          const targetName = data.data;
+          const targets = await availableTargets();
+          const target = targets.find((t) => t.name === targetName);
+
+          if (target) {
+            await setTargetWithClangd(
+              target,
+              this._activeFilesCache.writeToSettings,
+            );
+          }
+
+          await this.sendCipdReport();
+          break;
         }
       }
     });
@@ -281,10 +318,31 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     if (!pathForBazelBuildInterceptor) return;
     const bazelInterceptorExists = existsSync(pathForBazelBuildInterceptor);
     const experimentalCompileCommands = settings.experimentalCompileCommands();
+
+    const targets = await availableTargets();
+    const lastBuildPlatformCount = targets.length;
+
+    let activeFileCount = 0;
+    if (report.targetSelected) {
+      const selectedTarget = targets.find(
+        (t) => t.name === report.targetSelected,
+      );
+      if (selectedTarget) {
+        const files = await parseForSourceFiles(selectedTarget);
+        activeFileCount = files.size;
+      }
+    }
+
     report = {
       ...report,
       isBazelInterceptorEnabled: bazelInterceptorExists,
       experimentalCompileCommands,
+      lastBuildPlatformCount,
+      activeFileCount,
+      availableTargets: targets.map((t) => ({
+        name: t.name,
+        displayName: t.displayName,
+      })),
     };
     logging.info('getCipdReport reported: ' + JSON.stringify(report));
     this._view?.webview.postMessage({

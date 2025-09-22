@@ -13,10 +13,10 @@
 // the License.
 
 import { html, css, LitElement } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
 
 interface vscode {
-  postMessage(message: any): void;
+  postMessage(message: { type: string; data?: any }): void;
 }
 // declare const vscode: vscode;
 declare function acquireVsCodeApi(): vscode;
@@ -35,6 +35,9 @@ type CipdReport = {
   bazelCompileCommandsManualBuildCommand?: string;
   bazelCompileCommandsLastBuildCommand?: string;
   experimentalCompileCommands?: boolean;
+  lastBuildPlatformCount?: number;
+  activeFileCount?: number;
+  availableTargets?: { name: string; path: string }[];
 };
 
 const vscode = acquireVsCodeApi();
@@ -95,6 +98,11 @@ export class Root extends LitElement {
     });
   }
 
+  private _selectTarget(e: Event) {
+    const select = e.target as HTMLSelectElement;
+    vscode.postMessage({ type: 'selectTarget', data: select.value });
+  }
+
   private get _isCodeIntelligenceHealthy(): boolean {
     return !!(
       this.cipdReport.clangdPath &&
@@ -104,6 +112,232 @@ export class Root extends LitElement {
     );
   }
 
+  private _openDebugDetails(e: MouseEvent) {
+    e.preventDefault();
+    const mainDetails = this.renderRoot.querySelector(
+      '#code-intelligence-details',
+    ) as HTMLDetailsElement;
+    const debugDetails = this.renderRoot.querySelector(
+      '#debug-code-intelligence-details',
+    ) as HTMLDetailsElement;
+
+    if (mainDetails) {
+      mainDetails.open = true;
+    }
+    if (debugDetails) {
+      debugDetails.open = true;
+    }
+  }
+
+  private _renderCodeIntelligenceStatus() {
+    const header = html`<h3>Pigweed C++ Code Intelligence</h3>
+      <p class="description">
+        Provides C++ code intelligence features like 'Go to Definition' and
+        hover help, with accurate results tailored to your selected build
+        platform. Learn how
+        <a
+          href="#"
+          @click=${(e: MouseEvent) => {
+            e.preventDefault();
+            vscode.postMessage({ type: 'openDocs' });
+          }}
+          >Pigweed's C++ code intelligence works</a
+        >.
+      </p>`;
+
+    // Loading state
+    if (Object.keys(this.cipdReport).length === 0) {
+      return html` <div class="code-intelligence-status-card">
+        ${header}
+        <div class="status-line status-info">
+          <span>ℹ️</span>
+          <span>Loading...</span>
+        </div>
+      </div>`;
+    }
+
+    const platformCount = this.cipdReport.lastBuildPlatformCount || 0;
+    const platformText = `(last build had ${platformCount} platform${
+      platformCount === 1 ? '' : 's'
+    })`;
+
+    const activeFileCount = this.cipdReport.activeFileCount || 0;
+    const activeFileText = `${activeFileCount} file${
+      activeFileCount === 1 ? '' : 's'
+    } on the current platform`;
+
+    // Healthy state
+    if (this._isCodeIntelligenceHealthy) {
+      return html` <div class="code-intelligence-status-card">
+        ${header}
+        <div class="status-line status-success">
+          <span>✅</span>
+          <span
+            >Code intelligence is configured and working (<a
+              href="#"
+              @click=${this._openDebugDetails}
+              >see details</a
+            >).</span
+          >
+        </div>
+        <ol class="status-steps">
+          <li>
+            <b>Run a build</b>
+            <div class="step-detail">
+              Last built:
+              <code
+                >bazel build
+                ${this.cipdReport.bazelCompileCommandsLastBuildCommand}</code
+              >
+            </div>
+          </li>
+          <li>
+            <b>Select a platform ${platformText}</b>
+            <div class="step-detail">
+              ${this.cipdReport.availableTargets &&
+              this.cipdReport.availableTargets.length > 0
+                ? html`
+                    <div class="vscode-select">
+                      <select @change=${this._selectTarget}>
+                        ${this.cipdReport.availableTargets.map(
+                          (target: { name: string }) => html`
+                            <option
+                              value=${target.name}
+                              ?selected=${target.name ===
+                              this.cipdReport.targetSelected}
+                            >
+                              ${target.name}
+                            </option>
+                          `,
+                        )}
+                      </select>
+                    </div>
+                  `
+                : `Selected: ${this.cipdReport.targetSelected}`}
+            </div>
+          </li>
+          <li>
+            <b>Enjoy code intelligence</b>
+            <div class="step-detail">${activeFileText}</div>
+          </li>
+        </ol>
+      </div>`;
+    }
+
+    // Broken state
+    if (!this.cipdReport.bazelPath || !this.cipdReport.clangdPath) {
+      return html` <div class="code-intelligence-status-card">
+        ${header}
+        <div class="status-line status-error">
+          <span>❌</span>
+          <span
+            >Code intelligence is not working (<a
+              href="#"
+              @click=${this._openDebugDetails}
+              >see details</a
+            >).</span
+          >
+        </div>
+      </div>`;
+    }
+
+    // First run / In-progress state
+    let currentStepIndex = 0;
+    if (!this.cipdReport.bazelCompileCommandsLastBuildCommand) {
+      currentStepIndex = 0;
+    } else if (!this.cipdReport.targetSelected) {
+      currentStepIndex = 1;
+    } else {
+      currentStepIndex = 2; // All steps before "Enjoy" are done.
+    }
+
+    let platformStepDetail;
+    if (
+      this.cipdReport.availableTargets &&
+      this.cipdReport.availableTargets.length > 0
+    ) {
+      platformStepDetail = html`
+        <div class="vscode-select">
+          <select @change=${this._selectTarget}>
+            ${!this.cipdReport.targetSelected
+              ? html`<option value="" disabled selected>
+                  Select a platform
+                </option>`
+              : ''}
+            ${this.cipdReport.availableTargets.map(
+              (target: { name: string }) => html`
+                <option
+                  value=${target.name}
+                  ?selected=${target.name === this.cipdReport.targetSelected}
+                >
+                  ${target.name}
+                </option>
+              `,
+            )}
+          </select>
+        </div>
+      `;
+    } else {
+      platformStepDetail = this.cipdReport.targetSelected
+        ? `Selected: ${this.cipdReport.targetSelected}`
+        : currentStepIndex === 1
+          ? 'Select a platform from the build'
+          : 'Selected: No platforms detected';
+    }
+
+    const steps = [
+      {
+        title: 'Run a build',
+        detail: this.cipdReport.bazelCompileCommandsLastBuildCommand
+          ? `Last built: <code>bazel build ${this.cipdReport.bazelCompileCommandsLastBuildCommand}</code>`
+          : 'Build a bazel target in your project',
+      },
+      {
+        title: `Select a platform ${platformText}`,
+        detail: platformStepDetail,
+      },
+      {
+        title: 'Enjoy code intelligence',
+        detail: 'Not enabled yet',
+      },
+    ];
+
+    return html` <div class="code-intelligence-status-card">
+      ${header}
+      <div class="status-line status-info">
+        <span>ℹ️</span>
+        <span
+          >${this.cipdReport.isBazelInterceptorEnabled
+            ? html`Run <code>bazel build</code> on a target to configure code
+                intelligence`
+            : 'Refresh manually below to configure code intelligence'}
+          (<a href="#" @click=${this._openDebugDetails}>see details</a>).</span
+        >
+      </div>
+      <ol class="status-steps">
+        ${steps.map((step, index) => {
+          let detailContent;
+          if (typeof step.detail === 'string') {
+            const detailParts = step.detail.split(/<\/?code>/);
+            detailContent =
+              detailParts.length === 3
+                ? html`${detailParts[0]}<code>${detailParts[1]}</code>${detailParts[2]}`
+                : step.detail;
+          } else {
+            detailContent = step.detail;
+          }
+
+          return html`
+            <li class=${index > currentStepIndex ? 'step-dimmed' : ''}>
+              <b>${step.title}</b>
+              <div class="step-detail">${detailContent}</div>
+            </li>
+          `;
+        })}
+      </ol>
+    </div>`;
+  }
+
   render() {
     const currentManualTarget =
       this.manualBazelTarget ??
@@ -111,96 +345,8 @@ export class Root extends LitElement {
 
     return html`
       <div>
-        <details class="vscode-collapsible">
-          <summary>
-            <i class="codicon codicon-chevron-right icon-arrow"></i>
-            <b class="title"> Recommended Extensions</b>
-          </summary>
-          <div>
-            <b>Recommended Extensions</b><br />
-            <div class="container">
-              ${this.extensionData.recommended.length === 0 &&
-              html` <p><i>No recommended extensions found.</i></p> `}
-              ${this.extensionData.recommended.map(
-                (ext) =>
-                  html`<div class="row">
-                    <div>${ext.name || ext.id}</div>
-                    <div>
-                      ${!ext.installed
-                        ? html`
-                            <button
-                              class="vscode-button"
-                              @click="${() => {
-                                vscode.postMessage({
-                                  type: 'openExtension',
-                                  data: ext.id,
-                                });
-                              }}"
-                            >
-                              Install
-                            </button>
-                          `
-                        : html`<i>Installed</i>`}
-                    </div>
-                  </div>`,
-              )}
-            </div>
-            <b>Unwanted Extensions</b><br />
-            <div class="container">
-              ${this.extensionData.unwanted.length === 0 &&
-              html` <p><i>No unwanted extensions found.</i></p> `}
-              ${this.extensionData.unwanted.map(
-                (ext) =>
-                  html`<div class="row">
-                    <div>${ext.name || ext.id}</div>
-                    <div>
-                      ${ext.installed
-                        ? html`
-                            <button
-                              class="vscode-button"
-                              @click="${() => {
-                                vscode.postMessage({
-                                  type: 'openExtension',
-                                  data: ext.id,
-                                });
-                              }}"
-                            >
-                              Remove
-                            </button>
-                          `
-                        : html`<i>Not Installed</i>`}
-                    </div>
-                  </div>`,
-              )}
-            </div>
-          </div>
-        </details>
-        <details class="vscode-collapsible">
-          <summary>
-            <i class="codicon codicon-chevron-right icon-arrow"></i>
-            <b class="title"> Pigweed Extension Logs </b>
-          </summary>
-          <div class="container">
-            <div class="row">
-              <div>
-                <p>
-                  Dump extension logs and your workspace settings to a file.
-                </p>
-              </div>
-              <div>
-                <button
-                  class="vscode-button"
-                  @click="${() => {
-                    vscode.postMessage({ type: 'dumpLogs' });
-                  }}"
-                >
-                  Dump
-                </button>
-              </div>
-            </div>
-          </div>
-        </details>
-        <details class="vscode-collapsible">
+        ${this._renderCodeIntelligenceStatus()}
+        <details id="code-intelligence-details" class="vscode-collapsible">
           <summary>
             <i class="codicon codicon-chevron-right icon-arrow"></i>
             <b class="title"> Code Intelligence </b>
@@ -294,7 +440,7 @@ export class Root extends LitElement {
                   <sub>
                     ${this.cipdReport.bazelCompileCommandsLastBuildCommand
                       ? `bazel ${this.cipdReport.bazelCompileCommandsLastBuildCommand}`
-                      : 'N/A'}
+                      : 'NA'}
                   </sub>
                 </div>
                 <div></div>
@@ -315,6 +461,7 @@ export class Root extends LitElement {
                   </div>`}
 
               <details
+                id="debug-code-intelligence-details"
                 class="vscode-collapsible"
                 ?open=${!this._isCodeIntelligenceHealthy}
               >
@@ -375,6 +522,126 @@ export class Root extends LitElement {
             </div>
           </div>
         </details>
+        <details class="vscode-collapsible">
+          <summary>
+            <i class="codicon codicon-chevron-right icon-arrow"></i>
+            <b class="title"> Recommended Extensions</b>
+          </summary>
+          <div>
+            <div class="container">
+              ${this.extensionData.recommended.length === 0 &&
+              html` <p><i>No recommended extensions found.</i></p> `}
+              ${this.extensionData.recommended.map(
+                (ext) =>
+                  html`<div class="row">
+                    <div>${ext.name || ext.id}</div>
+                    <div>
+                      ${!ext.installed
+                        ? html`
+                            <button
+                              class="vscode-button"
+                              @click="${() => {
+                                vscode.postMessage({
+                                  type: 'openExtension',
+                                  data: ext.id,
+                                });
+                              }}"
+                            >
+                              Install
+                            </button>
+                          `
+                        : html`<i>Installed</i>`}
+                    </div>
+                  </div>`,
+              )}
+            </div>
+            <b>Unwanted Extensions</b><br />
+            <div class="container">
+              ${this.extensionData.unwanted.length === 0 &&
+              html` <p><i>No unwanted extensions found.</i></p> `}
+              ${this.extensionData.unwanted.map(
+                (ext) =>
+                  html`<div class="row">
+                    <div>${ext.name || ext.id}</div>
+                    <div>
+                      ${ext.installed
+                        ? html`
+                            <button
+                              class="vscode-button"
+                              @click="${() => {
+                                vscode.postMessage({
+                                  type: 'openExtension',
+                                  data: ext.id,
+                                });
+                              }}"
+                            >
+                              Remove
+                            </button>
+                          `
+                        : html`<i>Not Installed</i>`}
+                    </div>
+                  </div>`,
+              )}
+            </div>
+          </div>
+        </details>
+        <details class="vscode-collapsible">
+          <summary>
+            <i class="codicon codicon-chevron-right icon-arrow"></i>
+            <b class="title"> Help and Feedback </b>
+          </summary>
+          <div class="container">
+            <div
+              class="row link-row"
+              @click="${() => {
+                vscode.postMessage({ type: 'dumpLogs' });
+              }}"
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                  vscode.postMessage({ type: 'dumpLogs' });
+                }
+              }}
+              tabindex="0"
+            >
+              <span>
+                <i class="codicon codicon-notebook"></i> Dump Extension Logs
+              </span>
+            </div>
+            <div
+              class="row link-row"
+              @click="${() => {
+                vscode.postMessage({ type: 'openDocs' });
+              }}"
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                  vscode.postMessage({ type: 'openDocs' });
+                }
+              }}
+              tabindex="0"
+            >
+              <span
+                ><i class="codicon codicon-book"></i> View Documentation</span
+              >
+            </div>
+            <div
+              class="row link-row"
+              @click="${() => {
+                vscode.postMessage({ type: 'fileBug' });
+              }}"
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                  vscode.postMessage({ type: 'fileBug' });
+                }
+              }}
+              tabindex="0"
+            >
+              <span>
+                <i class="codicon codicon-bug"></i> Report a Bug / Request a
+                Feature
+              </span>
+            </div>
+          </div>
+        </details>
       </div>
     `;
   }
@@ -382,7 +649,7 @@ export class Root extends LitElement {
   async firstUpdated() {
     window.addEventListener(
       'message',
-      (e: any) => {
+      (e: MessageEvent<{ type: string; data: any }>) => {
         const message = e.data;
         const { type } = message;
         if (type === 'extensionData') {
