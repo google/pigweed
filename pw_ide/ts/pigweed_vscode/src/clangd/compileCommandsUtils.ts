@@ -214,7 +214,7 @@ set -u
 
 if contains -- $argv[1] build run test
   echo "Cleaning old compile commands..." >&2
-  $BAZEL_REAL run @pigweed//pw_ide/bazel:clean_compile_commands
+  $BAZEL_REAL run --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:clean_compile_commands
   if [ $status -ne 0 ];
     echo "⚠️  Clean command failed, continuing..." >&2
   end
@@ -225,7 +225,7 @@ if contains -- $argv[1] build run test
 
   if [ $BAZEL_EXIT_CODE -eq 0 ];
     echo "Updating compile commands..." >&2
-    $BAZEL_REAL run @pigweed//pw_ide/bazel:update_compile_commands
+    $BAZEL_REAL run --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands
     if [ $status -eq 0 ];
       mkdir -p ${CDB_FILE_DIR}
       echo $argv > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
@@ -246,7 +246,7 @@ set -uo pipefail
 
 if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
   echo "Cleaning old compile commands..." >&2
-  $BAZEL_REAL run @pigweed//pw_ide/bazel:clean_compile_commands
+  $BAZEL_REAL run --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:clean_compile_commands
   if [ $? -ne 0 ]; then
     echo "⚠️  Clean command failed, continuing..." >&2
   fi
@@ -257,7 +257,7 @@ if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; the
 
   if [ $BAZEL_EXIT_CODE -eq 0 ]; then
     echo "Updating compile commands..." >&2
-    $BAZEL_REAL run @pigweed//pw_ide/bazel:update_compile_commands
+    $BAZEL_REAL run --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands
     if [ $? -eq 0 ]; then
       mkdir -p ${CDB_FILE_DIR}
       echo "$*" > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
