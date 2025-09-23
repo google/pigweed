@@ -55,12 +55,19 @@ class BazelBuildDriver(BuildDriver):
     def generate_action_sequence_for_build(
         self, build: workflows_pb2.Build
     ) -> build_driver_pb2.JobResponse:
+        """Generate a sequence of actions to satisfy a Bazel build."""
         actions = build_driver_pb2.JobResponse()
+
+        common_args = [
+            '--symlink_prefix=${BUILD_ROOT}/bazel-',
+            *build.build_config.args,
+        ]
+
         actions.actions.append(self._canonicalize_args(build.build_config))
         actions.actions.append(
             build_driver_pb2.Action(
                 executable='bazelisk',
-                args=['build', *build.build_config.args, *build.targets],
+                args=['build', *common_args, *build.targets],
                 env=build.build_config.env,
                 run_from=build_driver_pb2.Action.InvocationLocation.INVOKER_CWD,
             )
@@ -74,7 +81,7 @@ class BazelBuildDriver(BuildDriver):
             actions.actions.append(
                 build_driver_pb2.Action(
                     executable='bazelisk',
-                    args=['test', *build.build_config.args, *build.targets],
+                    args=['test', *common_args, *build.targets],
                     env=build.build_config.env,
                     run_from=(
                         build_driver_pb2.Action.InvocationLocation.INVOKER_CWD
@@ -86,6 +93,7 @@ class BazelBuildDriver(BuildDriver):
     def generate_action_sequence_for_tool(
         self, tool: workflows_pb2.Tool
     ) -> build_driver_pb2.JobResponse:
+        """Generate a sequence of actions to run a Bazel-hosted tool."""
         actions = build_driver_pb2.JobResponse()
         actions.actions.append(self._canonicalize_args(tool.build_config))
         bazel_run_action = build_driver_pb2.Action(
@@ -93,6 +101,7 @@ class BazelBuildDriver(BuildDriver):
             args=[
                 'run',
                 '--ui_event_filters=FATAL,ERROR,PROGRESS',
+                '--experimental_convenience_symlinks=ignore',
                 *tool.build_config.args,
                 tool.target,
                 '--',

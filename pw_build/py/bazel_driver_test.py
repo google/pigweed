@@ -106,7 +106,12 @@ class TestBazelBuildDriver(unittest.TestCase):
         self.assertEqual(build_job.actions[1].executable, 'bazelisk')
         self.assertEqual(
             list(build_job.actions[1].args),
-            ['build', '--config=rp2040', '//...'],
+            [
+                'build',
+                '--symlink_prefix=${BUILD_ROOT}/bazel-',
+                '--config=rp2040',
+                '//...',
+            ],
         )
         self.assertEqual(build_job.actions[1].env['FOO'], 'bar')
 
@@ -114,7 +119,12 @@ class TestBazelBuildDriver(unittest.TestCase):
         self.assertEqual(build_job.actions[2].executable, 'bazelisk')
         self.assertEqual(
             list(build_job.actions[2].args),
-            ['test', '--config=rp2040', '//...'],
+            [
+                'test',
+                '--symlink_prefix=${BUILD_ROOT}/bazel-',
+                '--config=rp2040',
+                '//...',
+            ],
         )
         self.assertEqual(build_job.actions[2].env['FOO'], 'bar')
 
@@ -148,7 +158,12 @@ class TestBazelBuildDriver(unittest.TestCase):
         self.assertEqual(build_job.actions[1].executable, 'bazelisk')
         self.assertEqual(
             list(build_job.actions[1].args),
-            ['build', '--config=rp2040', '//...'],
+            [
+                'build',
+                '--symlink_prefix=${BUILD_ROOT}/bazel-',
+                '--config=rp2040',
+                '//...',
+            ],
         )
 
         # Ensure all Bazel commands are run from the invoker's CWD.
@@ -183,6 +198,7 @@ class TestBazelBuildDriver(unittest.TestCase):
             [
                 'run',
                 '--ui_event_filters=FATAL,ERROR,PROGRESS',
+                '--experimental_convenience_symlinks=ignore',
                 '--subcommands',
                 '@pigweed//:format',
                 '--',
