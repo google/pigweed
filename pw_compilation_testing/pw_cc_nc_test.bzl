@@ -18,7 +18,7 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
-def _negative_compile_impl(ctx):
+def _pw_cc_nc_test_impl(ctx):
     # Collect information about the C++ compiler.
     comp_context = ctx.attr.base[CcInfo].compilation_context
 
@@ -35,16 +35,10 @@ def _negative_compile_impl(ctx):
         action_name = ACTION_NAMES.cpp_compile,
     )
 
-    # Locate python to prepare for running generate_and_run.py.
-    script_file = ctx.executable._generate_and_run_py
-    python_toolchain = ctx.toolchains["@rules_python//python:toolchain_type"]
-    python_executable = python_toolchain.py3_runtime.interpreter
-
     # Declare a script that generate_and_run.py creates to display the results.
     result_script = ctx.actions.declare_file(ctx.label.name)
 
     generate_and_run_args = [
-        script_file.path,
         "--name",
         str(ctx.label).replace("@@//", "//"),
         "--results",
@@ -101,11 +95,10 @@ def _negative_compile_impl(ctx):
             # Add the base test executable as a dependency to ensure it builds first.
             ctx.attr.base[DefaultInfo].files,
         ]),
-        tools = [script_file],
         toolchain = "@bazel_tools//tools/cpp:toolchain_type",
         mnemonic = "CppNegativeCompilationTest",
         progress_message = "Running negative compilation test " + ctx.label.name,
-        executable = python_executable,
+        executable = ctx.executable._generate_and_run_py,
         arguments = generate_and_run_args,
         outputs = [result_script],
     )
@@ -115,7 +108,7 @@ def _negative_compile_impl(ctx):
 
 # Internal rule that declares a negative compilation test.
 pw_cc_nc_test = rule(
-    implementation = _negative_compile_impl,
+    implementation = _pw_cc_nc_test_impl,
     test = True,
     attrs = {
         "base": attr.label(
@@ -132,16 +125,13 @@ pw_cc_nc_test = rule(
         "_generate_and_run_py": attr.label(
             executable = True,
             cfg = "exec",
-            allow_files = True,
             default = Label("//pw_compilation_testing/py:generate_and_run"),
         ),
     },
     toolchains = [
         "@bazel_tools//tools/cpp:toolchain_type",
-        "@rules_python//python:toolchain_type",
     ],
-    incompatible_use_toolchain_transition = True,
-    fragments = ["cpp", "python"],
+    fragments = ["cpp"],
 )
 
 _NC_TEST_DEP = Label("//pw_compilation_testing:_internal_do_not_use_nc_test_header")

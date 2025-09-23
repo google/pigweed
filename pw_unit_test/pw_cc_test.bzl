@@ -81,6 +81,7 @@ def pw_cc_test(name, has_nc_test = False, deps = None, **kwargs):
             base = cc_test_name,
             srcs = kwargs["srcs"],
             tags = kwargs.get("tags"),
+            # TODO: https://pwbug.dev/446943440 - Handle more common attributes.
         )
 
     # Add the cc_test with the unit test main label flag dep.
