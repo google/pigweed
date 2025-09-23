@@ -31,6 +31,24 @@ cc_library(
     ],
 )
 
+label_flag(
+    name = "backend",
+    build_setting_default = ":unspecified_backend",
+    deprecation = "This label flag is no longer depended on by anything and will be removed soon.",
+)
+
+host_backend_alias(
+    name = "unspecified_backend",
+    backend = "//pw_assert_basic",
+)
+
+label_flag(
+    name = "backend_impl",
+    build_setting_default = "//pw_assert_basic:impl",
+    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
+    tags = ["keep_dep"],
+)
+
 pw_facade(
     name = "check",
     hdrs = [
@@ -51,7 +69,6 @@ pw_facade(
 label_flag(
     name = "check_backend",
     build_setting_default = ":unspecified_check_backend",
-    visibility = ["//visibility:private"],
 )
 
 host_backend_alias(
@@ -62,11 +79,6 @@ host_backend_alias(
 label_flag(
     name = "check_backend_impl",
     build_setting_default = ":unspecified_check_backend_impl",
-    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
-    tags = ["keep_dep"],
-    # This needs to be public since it's a link-time dependency that projects
-    # may elect to pull in directly.
-    visibility = ["//visibility:public"],
 )
 
 host_backend_alias(
@@ -88,7 +100,6 @@ pw_facade(
 label_flag(
     name = "assert_backend",
     build_setting_default = ":unspecified_assert_backend",
-    visibility = ["//visibility:private"],
 )
 
 alias(
@@ -104,11 +115,6 @@ alias(
 label_flag(
     name = "assert_backend_impl",
     build_setting_default = "//pw_build:empty_cc_library",
-    # For internal tooling: go/build-cleaner/troubleshooting-faq#keep-dep
-    tags = ["keep_dep"],
-    # This needs to be public since it's a link-time dependency that projects
-    # may elect to pull in directly.
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
