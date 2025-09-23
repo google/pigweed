@@ -587,13 +587,15 @@ to directly provide dependencies through include paths only, rather than GN
 Bazel
 -----
 In Bazel, assert backends may break dependency cycles by placing the full
-implementation in an ``impl`` target, like ``//pw_assert_basic:impl`` or
-``//pw_assert_tokenized:impl``. The ``//pw_assert:backend_impl`` label flag
-should be set to the ``impl`` target required by the assert backend used by the
-platform.
+implementation in an ``impl`` target, like ``@pigweed//pw_assert_basic:impl`` or
+``@pigweed//pw_assert_tokenized:impl``. The
+``@pigweed//pw_assert:assert_backend_impl`` and
+``@pigweed//pw_assert:check_backend_impl`` label flags should be set to the
+``impl`` target required by the assert backend used by the platform.
 
-You must add a dependency on the ``@pigweed//pw_assert:backend_impl`` target to
-any binary using ``pw_assert``.
+You must add a dependency on the ``@pigweed//pw_assert:asert_backend_impl`` and
+``@pigweed//pw_assert:check_backend_impl`` targets to any binary using
+``pw_assert``.
 
 See :ref:`docs-build_system-bazel_link-extra-lib` for a general discussion of
 cyclic dependencies in low-level libraries in Bazel.
