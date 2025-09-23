@@ -67,6 +67,10 @@ def _pigweed_formatting_suite() -> FormattingSuite:
     else:
         disabled_formatters = set()
 
+    # If JavaScript is disabled, also disable CSS since they share a tool.
+    if 'JavaScript' in disabled_formatters:
+        disabled_formatters.add('CSS')
+
     runfiles = RunfilesManager()
 
     all_formatters = [
@@ -102,8 +106,8 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             formatter=CssFormatter(
                 tool_runner=runfiles,
             ),
-            binary=None,
-            bazel_import_path=None,
+            binary='prettier',
+            bazel_import_path='pw_presubmit.py.prettier_runfiles',
         ),
         FormatterSetup(
             formatter=GnFormatter(

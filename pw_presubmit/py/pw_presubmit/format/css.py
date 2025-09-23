@@ -14,15 +14,15 @@
 """Formatter for CSS files."""
 
 from pw_cli.file_filter import FileFilter
-from pw_presubmit.format.whitespace import TrailingSpaceFormatter
+from pw_presubmit.format.prettier import PrettierFormatter
 
 DEFAULT_CSS_FILE_PATTERNS = FileFilter(endswith=['.css'])
 
 # TODO: b/308948504 - Add real code formatting support for CSS
 
 
-class CssFormatter(TrailingSpaceFormatter):
-    """A simple CSS formatter that removes trailing whitespace."""
+class CssFormatter(PrettierFormatter):
+    """A CSS formatter that uses prettier."""
 
     def __init__(self, **kwargs):
         kwargs.setdefault('mnemonic', 'CSS')

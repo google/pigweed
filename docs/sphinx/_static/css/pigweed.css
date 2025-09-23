@@ -24,9 +24,9 @@
    * you're currently hovering over. Make this highlight color more muted. */
   --pst-color-table-row-hover-bg: var(--sd-color-primary-bg) !important;
   /* Pigweed variables. */
-  --pw-font-body: "Noto Sans", sans-serif;
-  --pw-font-code: "Roboto Mono", monospace;
-  --pw-font-headings: "Lato", sans-serif;
+  --pw-font-body: 'Noto Sans', sans-serif;
+  --pw-font-code: 'Roboto Mono', monospace;
+  --pw-font-headings: 'Lato', sans-serif;
   /* All nodes should always scroll instantly. */
   scroll-behavior: auto !important;
   --font-stack-monospace: var(--pw-font-code);
@@ -39,13 +39,16 @@ code {
   border: none !important;
 }
 
-code, pre {
+code,
+pre {
   background-color: var(--pw-color-background-code);
   color: var(--pw-color-foreground-primary);
   font-family: var(--pw-font-code);
 }
 
-div, li, p {
+div,
+li,
+p {
   font-family: var(--pw-font-body);
 }
 
@@ -53,7 +56,12 @@ figcaption {
   color: var(--pw-color-foreground-primary) !important;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--pw-font-headings);
   font-weight: bold;
 }
@@ -67,7 +75,7 @@ h1, h2, h3, h4, h5, h6 {
 /********** Dark mode styles ***********/
 /* https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html#color-variables */
 
-html[data-theme="dark"] {
+html[data-theme='dark'] {
   /* PyData Sphinx Theme variables. */
   --pst-color-primary: #fb71fe;
   --pst-color-secondary: #8be9fd;
@@ -90,7 +98,7 @@ html[data-theme="dark"] {
 /********** Light mode styles ***********/
 /* https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html#color-variables */
 
-html[data-theme="light"] {
+html[data-theme='light'] {
   /* PyData Sphinx Theme variables. */
   --pst-color-primary: #b529aa;
   --pst-color-secondary: #016074;
@@ -134,7 +142,7 @@ html[data-theme="light"] {
   font-family: var(--pw-font-headings);
   .logo__title {
     font-size: 1.25em;
-    font-family: "Lato", sans-serif;
+    font-family: 'Lato', sans-serif;
     font-weight: bold;
     font-style: italic;
     color: var(--pst-color-primary);
@@ -332,7 +340,7 @@ html[data-theme="light"] {
 }
 
 .pw-text-center-align {
-    text-align: center
+  text-align: center;
 }
 
 .pw-module-section-nav-group {

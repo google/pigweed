@@ -19,57 +19,61 @@
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&text=%EE%97%9B%EF%97%8F%EE%A1%A8%EE%A2%88%EE%97%8D%EE%85%AC%EF%82%90%EE%97%93%EE%97%94%EE%86%A2%EF%99%B6%EF%99%B4%EE%A3%AC%EF%82%83%EE%89%9B%EE%A2%B6%EE%A9%B6%EE%80%B7%EE%81%87%EF%9D%85%EE%A2%88%EE%A3%BD%EE%A2%8E%EE%97%9F&display=block');
 
 :root {
-    background-color: #fff;
-    font-family: "Roboto Flex", Arial, sans-serif;
-    font-synthesis: none;
-    font-weight: 400;
-    line-height: 1.5;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-    /* Material component properties */
-    --md-icon-font: 'Material Symbols Rounded';
-    --md-icon-font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 200, 'opsz' 58;
-    --md-icon-size: 1.25rem;
-    --md-filled-button-label-text-type: "Roboto Flex", Arial, sans-serif;
-    --md-outlined-button-label-text-type: "Roboto Flex", Arial, sans-serif;
-    --md-icon-button-unselected-icon-color: var(--md-sys-color-on-surface-variant);
-    --md-icon-button-unselected-hover-icon-color: var(--md-sys-color-on-primary-container);
+  background-color: #fff;
+  font-family: 'Roboto Flex', Arial, sans-serif;
+  font-synthesis: none;
+  font-weight: 400;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  /* Material component properties */
+  --md-icon-font: 'Material Symbols Rounded';
+  --md-icon-font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 200, 'opsz' 58;
+  --md-icon-size: 1.25rem;
+  --md-filled-button-label-text-type: 'Roboto Flex', Arial, sans-serif;
+  --md-outlined-button-label-text-type: 'Roboto Flex', Arial, sans-serif;
+  --md-icon-button-unselected-icon-color: var(
+    --md-sys-color-on-surface-variant
+  );
+  --md-icon-button-unselected-hover-icon-color: var(
+    --md-sys-color-on-primary-container
+  );
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
-        background-color: #131314;
-    }
+  :root {
+    background-color: #131314;
+  }
 }
 
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 button {
-    font-family: "Roboto Flex";
+  font-family: 'Roboto Flex';
 }
 
 main {
-    height: 100vh;
-    padding: 0.5rem;
-    width: 100vw;
+  height: 100vh;
+  padding: 0.5rem;
+  width: 100vw;
 }
 
 a {
-    color: var(--md-sys-color-primary);
-    font-weight: 500;
-    text-decoration: inherit;
+  color: var(--md-sys-color-primary);
+  font-weight: 500;
+  text-decoration: inherit;
 }
 
 a:hover {
-    color: var(--md-sys-color-secondary);
+  color: var(--md-sys-color-secondary);
 }
 
 body {
-    display: grid;
-    place-content: start;
-    margin: 0;
+  display: grid;
+  place-content: start;
+  margin: 0;
 }
