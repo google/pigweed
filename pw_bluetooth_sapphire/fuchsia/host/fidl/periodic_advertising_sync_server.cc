@@ -81,6 +81,8 @@ PeriodicAdvertisingSyncServer::Create(
              status.error_value().status_string());
     }
 
+    server->closed_callback_ = nullptr;
+    server->Close(ZX_ERR_NOT_SUPPORTED);
     return nullptr;
   }
 

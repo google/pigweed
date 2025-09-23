@@ -198,10 +198,12 @@ TEST_F(PeriodicAdvertisingSyncServerTest, NotSupportedLocalError) {
   EXPECT_FALSE(server);
 
   RunLoopUntilIdle();
+  EXPECT_EQ(closed_count, 0);
   ASSERT_EQ(event_handler.errors().size(), 1u);
   EXPECT_EQ(event_handler.errors()[0],
             fble::PeriodicAdvertisingSyncError::kNotSupportedLocal);
-  EXPECT_EQ(closed_count, 0);
+  ASSERT_TRUE(event_handler.fidl_error().has_value());
+  EXPECT_EQ(event_handler.fidl_error().value().status(), ZX_ERR_NOT_SUPPORTED);
 }
 
 TEST_F(PeriodicAdvertisingSyncServerTest, EstablishSyncAndUnbindClient) {

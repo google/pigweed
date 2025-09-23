@@ -151,7 +151,8 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
                                      adapter()->AsWeakPtr(),
                                      gatt_->GetWeakPtr(),
                                      lease_provider(),
-                                     sco_offload_index);
+                                     sco_offload_index,
+                                     dispatcher());
     host_.Bind(std::move(host_handle));
   }
 
@@ -1638,7 +1639,8 @@ class HostServerTestFakeAdapter
                                      adapter()->AsWeakPtr(),
                                      gatt_->GetWeakPtr(),
                                      lease_provider_,
-                                     sco_offload_index);
+                                     sco_offload_index,
+                                     dispatcher());
     host_.Bind(std::move(host_handle));
   }
 

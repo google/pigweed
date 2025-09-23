@@ -63,7 +63,8 @@ HostServer::HostServer(
     const bt::gap::Adapter::WeakPtr& adapter,
     bt::gatt::GATT::WeakPtr gatt,
     pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
-    uint8_t sco_offload_index)
+    uint8_t sco_offload_index,
+    async_dispatcher_t* dispatcher)
     : AdapterServerBase(adapter, this, std::move(channel)),
       pairing_delegate_(nullptr),
       gatt_(std::move(gatt)),
@@ -72,6 +73,7 @@ HostServer::HostServer(
       requesting_discoverable_(false),
       io_capability_(IOCapability::kNoInputNoOutput),
       sco_offload_index_(sco_offload_index),
+      dispatcher_(dispatcher),
       weak_self_(this),
       weak_pairing_(this) {
   PW_CHECK(gatt_.is_alive());
@@ -108,7 +110,8 @@ void HostServer::RequestProtocol(fhost::ProtocolRequest request) {
       BindServer<LowEnergyCentralServer>(adapter()->AsWeakPtr(),
                                          std::move(request.central()),
                                          gatt_,
-                                         wake_lease_provider_);
+                                         wake_lease_provider_,
+                                         dispatcher_);
       break;
     case fhost::ProtocolRequest::Tag::kPeripheral:
       BindServer<LowEnergyPeripheralServer>(adapter()->AsWeakPtr(),

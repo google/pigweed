@@ -63,6 +63,8 @@ class FuchsiaDispatcher final : public async::Dispatcher {
 
   bool Cancel(async::Task& task) override;
 
+  async_dispatcher_t* native() const { return dispatcher_; }
+
  private:
   async_dispatcher_t* dispatcher_;
 };

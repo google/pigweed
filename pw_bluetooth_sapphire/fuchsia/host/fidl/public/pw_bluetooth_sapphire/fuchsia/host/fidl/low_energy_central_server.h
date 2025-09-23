@@ -22,6 +22,7 @@
 #include "lib/fidl/cpp/binding.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/gatt_client_server.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_connection_server.h"
+#include "pw_bluetooth_sapphire/fuchsia/host/fidl/periodic_advertising_sync_server.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/server_base.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h"
@@ -45,7 +46,8 @@ class LowEnergyCentralServer
       bt::gap::Adapter::WeakPtr adapter,
       ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request,
       bt::gatt::GATT::WeakPtr gatt,
-      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+      async_dispatcher_t* dispatcher);
   ~LowEnergyCentralServer() override;
 
   // Returns the connection pointer in the connections_deprecated_ map, if it
@@ -155,8 +157,8 @@ class LowEnergyCentralServer
       CreateConnectedIsochronousGroupCallback callback) override {}
 
   void SyncToPeriodicAdvertising(
-      ::fuchsia::bluetooth::le::CentralSyncToPeriodicAdvertisingRequest)
-      override {}
+      ::fuchsia::bluetooth::le::CentralSyncToPeriodicAdvertisingRequest request)
+      override;
 
   // fuchsia::bluetooth::le::ChannelListenerRegistry overrides:
   void ListenL2cap(
@@ -202,6 +204,13 @@ class LowEnergyCentralServer
   std::unordered_map<bt::PeerId,
                      std::unique_ptr<bt::gap::LowEnergyConnectionHandle>>
       connections_deprecated_;
+
+  std::unordered_map<size_t, std::unique_ptr<PeriodicAdvertisingSyncServer>>
+      periodic_advertising_sync_servers_;
+
+  size_t next_server_id_ = 0;
+
+  async_dispatcher_t* dispatcher_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

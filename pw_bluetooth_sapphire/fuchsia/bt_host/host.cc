@@ -172,7 +172,8 @@ void BtHostComponent::BindToHostInterface(
                                               gap_->AsWeakPtr(),
                                               gatt_->GetWeakPtr(),
                                               lease_provider(),
-                                              sco_offload_index);
+                                              sco_offload_index,
+                                              pw_dispatcher_.native());
   host_server_->set_error_handler([this](zx_status_t status) {
     PW_DCHECK(host_server_);
     bt_log(WARN, "bt-host", "Host interface disconnected");
