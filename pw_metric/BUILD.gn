@@ -96,7 +96,10 @@ if (dir_pw_third_party_nanopb != "") {
       "$dir_pw_status",
       dir_pw_span,
     ]
-    public = [ "public/pw_metric/metric_service_nanopb.h" ]
+    public = [
+      "public/pw_metric/metric_service_nanopb.h",
+      "public/pw_metric/nanopb_metric_writer.h",
+    ]
     deps = [
       ":metric_service_proto.nanopb_rpc",
       ":metric_walker",
@@ -110,6 +113,7 @@ if (dir_pw_third_party_nanopb != "") {
     deps = [
       ":global",
       ":metric_service_nanopb",
+      ":metric_walker",
       "$dir_pw_rpc:test_helpers",
       "$dir_pw_rpc/nanopb:test_method_context",
     ]
@@ -130,7 +134,10 @@ pw_source_set("metric_service_pwpb") {
     "$dir_pw_containers",
     "$dir_pw_rpc/raw:server_api",
   ]
-  public = [ "public/pw_metric/metric_service_pwpb.h" ]
+  public = [
+    "public/pw_metric/metric_service_pwpb.h",
+    "public/pw_metric/pwpb_metric_writer.h",
+  ]
   deps = [
     ":metric_service_proto.raw_rpc",
     "$dir_pw_assert",
@@ -148,6 +155,7 @@ pw_test("metric_service_pwpb_test") {
     ":global",
     ":metric_service_proto.pwpb",
     ":metric_service_pwpb",
+    ":metric_walker",
     "$dir_pw_rpc:test_helpers",
     "$dir_pw_rpc/pwpb:test_method_context",
     "$dir_pw_rpc/raw:test_method_context",

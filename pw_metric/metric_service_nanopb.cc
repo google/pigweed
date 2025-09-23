@@ -58,9 +58,9 @@ void WriteMetricToResponse(const Metric& metric,
 
 // A MetricWriter for the legacy, streaming Get RPC. It writes metrics to a
 // nanopb struct and flushes the batch when it's full.
-class NanopbMetricWriter : public virtual internal::MetricWriter {
+class NanopbStreamingMetricWriter : public virtual internal::MetricWriter {
  public:
-  NanopbMetricWriter(
+  NanopbStreamingMetricWriter(
       MetricService::ServerWriter<pw_metric_proto_MetricResponse>&
           response_writer)
       : response_(pw_metric_proto_MetricResponse_init_zero),
@@ -148,7 +148,7 @@ void MetricService::Get(
     const pw_metric_proto_MetricRequest& /* request */,
     ServerWriter<pw_metric_proto_MetricResponse>& response) {
   // For now, ignore the request and just stream all the metrics back.
-  NanopbMetricWriter writer(response);
+  NanopbStreamingMetricWriter writer(response);
   internal::MetricWalker walker(writer);
 
   // This will stream all the metrics in the span of this Get() method call.

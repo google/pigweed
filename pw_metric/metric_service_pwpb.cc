@@ -43,10 +43,10 @@ constexpr size_t kMaxNumPackedEntries = 3;
 
 namespace {
 
-class PwpbMetricWriter : public virtual internal::MetricWriter {
+class PwpbStreamingMetricWriter : public virtual internal::MetricWriter {
  public:
-  PwpbMetricWriter(span<std::byte> response,
-                   rpc::RawServerWriter& response_writer)
+  PwpbStreamingMetricWriter(span<std::byte> response,
+                            rpc::RawServerWriter& response_writer)
       : response_(response),
         response_writer_(response_writer),
         encoder_(response) {}
@@ -205,7 +205,7 @@ void MetricService::Get(ConstByteSpan /*request*/,
 
   std::array<std::byte, kEncodeBufferSize> encode_buffer;
 
-  PwpbMetricWriter writer(encode_buffer, raw_response);
+  PwpbStreamingMetricWriter writer(encode_buffer, raw_response);
   internal::MetricWalker walker(writer);
 
   // This will stream all the metrics in the span of this Get() method call.

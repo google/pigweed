@@ -14,10 +14,15 @@
 
 #include "pw_metric/metric_service_nanopb.h"
 
+#include <limits>
+
 #include "pw_log/log.h"
+#include "pw_metric/metric_walker.h"
+#include "pw_metric/nanopb_metric_writer.h"
 #include "pw_metric_proto/metric_service.rpc.pb.h"
 #include "pw_rpc/nanopb/test_method_context.h"
 #include "pw_rpc/test_helpers.h"
+#include "pw_span/span.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::metric {
@@ -359,6 +364,157 @@ TEST(MetricService, WalkWithMaxDepthExceeded) {
   EXPECT_DEATH_IF_SUPPORTED(static_cast<void>(ctx.call({})), ".*");
 }
 #endif  // GTEST_HAS_DEATH_TEST
+
+//
+// NanopbMetricWriter Tests
+//
+
+TEST(NanopbMetricWriter, BasicWalk) {
+  PW_METRIC_GROUP(root, "/");
+  PW_METRIC(root, a, "a", 123u);
+  PW_METRIC(root, b, "b", 456.0f);
+  PW_METRIC_GROUP(inner, "inner");
+  PW_METRIC(inner, x, "x", 789u);
+  root.Add(inner);
+
+  // Use WalkResponse as a test harness for the parent struct.
+  pw_metric_proto_WalkResponse response =
+      pw_metric_proto_WalkResponse_init_zero;
+  size_t metric_limit = 5;  // More than the total number of metrics.
+
+  NanopbMetricWriter writer(
+      response.metrics, response.metrics_count, metric_limit);
+  internal::MetricWalker walker(writer);
+
+  Status walk_status = walker.Walk(root);
+  ASSERT_EQ(OkStatus(), walk_status);
+
+  // The walk finished, so the status is OK.
+  EXPECT_EQ(metric_limit, 2u);
+  EXPECT_EQ(response.metrics_count, 3u);
+}
+
+TEST(NanopbMetricWriter, StopsAtMetricLimit) {
+  PW_METRIC_GROUP(root, "/");
+  PW_METRIC(root, a, "a", 123u);
+  PW_METRIC(root, b, "b", 456.0f);
+  PW_METRIC(root, x, "x", 789u);
+
+  pw_metric_proto_WalkResponse response =
+      pw_metric_proto_WalkResponse_init_zero;
+  size_t metric_limit = 2;
+
+  NanopbMetricWriter writer(
+      response.metrics, response.metrics_count, metric_limit);
+  internal::MetricWalker walker(writer);
+
+  // The writer will return ResourceExhausted when the limit hits 0.
+  Status walk_status = walker.Walk(root);
+  ASSERT_EQ(Status::ResourceExhausted(), walk_status);
+
+  // Verify the limit was reached and the correct number of metrics were
+  // written.
+  EXPECT_EQ(metric_limit, 0u);
+  EXPECT_EQ(response.metrics_count, 2u);
+}
+
+TEST(NanopbMetricWriter, StopsAtBufferLimit) {
+  PW_METRIC_GROUP(root, "/");
+  // The nanopb WalkResponse struct can hold 10 metrics.
+  // We add 11, so the walk should stop.
+  // Walk order is m10, m9, ... m1, m0.
+  PW_METRIC(root, m0, "m0", 0u);
+  PW_METRIC(root, m1, "m1", 1u);
+  PW_METRIC(root, m2, "m2", 2u);
+  PW_METRIC(root, m3, "m3", 3u);
+  PW_METRIC(root, m4, "m4", 4u);
+  PW_METRIC(root, m5, "m5", 5u);
+  PW_METRIC(root, m6, "m6", 6u);
+  PW_METRIC(root, m7, "m7", 7u);
+  PW_METRIC(root, m8, "m8", 8u);
+  PW_METRIC(root, m9, "m9", 9u);
+  PW_METRIC(root, m10, "m10", 10u);
+
+  pw_metric_proto_WalkResponse response =
+      pw_metric_proto_WalkResponse_init_zero;
+  // Limit is high, buffer is the constraint.
+  size_t metric_limit = 20;
+
+  NanopbMetricWriter writer(
+      response.metrics, response.metrics_count, metric_limit);
+  internal::MetricWalker walker(writer);
+
+  // The writer will return ResourceExhausted when it tries to write the 11th
+  // metric (m0) into the 10-slot array.
+  Status walk_status = walker.Walk(root);
+  ASSERT_EQ(Status::ResourceExhausted(), walk_status);
+
+  // Verify that the metric limit was NOT the cause of the stop.
+  // The walker wrote 10 metrics.
+  EXPECT_EQ(metric_limit, 10u);
+  EXPECT_EQ(response.metrics_count, 10u);
+}
+
+// Tests that the buffer limit is the constraint when the metric limit is
+// set to "no limit" (i.e., SIZE_MAX).
+TEST(NanopbMetricWriter, StopsAtBufferLimitWhenMetricLimitIsMax) {
+  PW_METRIC_GROUP(root, "/");
+  // The nanopb WalkResponse struct can hold 10 metrics.
+  // We add 11, so the walk should stop.
+  // Walk order is m10, m9, ... m1, m0.
+  PW_METRIC(root, m0, "m0", 0u);
+  PW_METRIC(root, m1, "m1", 1u);
+  PW_METRIC(root, m2, "m2", 2u);
+  PW_METRIC(root, m3, "m3", 3u);
+  PW_METRIC(root, m4, "m4", 4u);
+  PW_METRIC(root, m5, "m5", 5u);
+  PW_METRIC(root, m6, "m6", 6u);
+  PW_METRIC(root, m7, "m7", 7u);
+  PW_METRIC(root, m8, "m8", 8u);
+  PW_METRIC(root, m9, "m9", 9u);
+  PW_METRIC(root, m10, "m10", 10u);
+
+  pw_metric_proto_WalkResponse response =
+      pw_metric_proto_WalkResponse_init_zero;
+  // Set a "no limit" metric limit.
+  size_t metric_limit = std::numeric_limits<size_t>::max();
+
+  NanopbMetricWriter writer(
+      response.metrics, response.metrics_count, metric_limit);
+  internal::MetricWalker walker(writer);
+
+  // The writer will return ResourceExhausted when it tries to write the 11th
+  // metric (m0) into the 10-slot array.
+  Status walk_status = walker.Walk(root);
+  ASSERT_EQ(Status::ResourceExhausted(), walk_status);
+
+  // Verify that the metric limit was NOT the cause of the stop.
+  // The walker wrote 10 metrics and decremented the limit.
+  EXPECT_EQ(metric_limit, std::numeric_limits<size_t>::max() - 10);
+  EXPECT_EQ(response.metrics_count, 10u);
+}
+
+// Tests that the walker correctly does nothing (and returns OK) when
+// walking a metric tree that has no metrics.
+TEST(NanopbMetricWriter, WalksEmptyRoot) {
+  PW_METRIC_GROUP(root, "/");
+  PW_METRIC_GROUP(inner, "empty_child");
+  root.Add(inner);
+
+  pw_metric_proto_WalkResponse response =
+      pw_metric_proto_WalkResponse_init_zero;
+  size_t metric_limit = 5;
+
+  NanopbMetricWriter writer(
+      response.metrics, response.metrics_count, metric_limit);
+  internal::MetricWalker walker(writer);
+
+  Status walk_status = walker.Walk(root);
+  ASSERT_EQ(OkStatus(), walk_status);
+
+  EXPECT_EQ(metric_limit, 5u);
+  EXPECT_EQ(response.metrics_count, 0u);
+}
 
 }  // namespace
 }  // namespace pw::metric
