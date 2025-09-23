@@ -18,6 +18,10 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
+# This need to be disabled until the `module_name` variable is properly
+# set by create_compile_variables().
+_UNSUPPORTED_FEATURES = ["module_maps", "use_header_modules"]
+
 def _pw_cc_nc_test_impl(ctx):
     # Collect information about the C++ compiler.
     comp_context = ctx.attr.base[CcInfo].compilation_context
@@ -27,7 +31,7 @@ def _pw_cc_nc_test_impl(ctx):
         ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + _UNSUPPORTED_FEATURES,
     )
 
     cc_compiler_path = cc_common.get_tool_for_action(
