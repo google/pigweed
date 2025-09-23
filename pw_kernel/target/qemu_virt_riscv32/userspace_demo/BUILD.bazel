@@ -60,6 +60,7 @@ rust_binary(
         "//pw_kernel/kernel",
         "//pw_kernel/subsys/console:console_backend",
         "//pw_kernel/target:target_common",
+        "//pw_kernel/target/qemu_virt_riscv32:config",
         "//pw_kernel/target/qemu_virt_riscv32:entry",
         "//pw_kernel/target/qemu_virt_riscv32:linker_script",
         "//pw_kernel/userspace",

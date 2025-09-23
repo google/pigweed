@@ -18,7 +18,7 @@ load("//pw_kernel/tooling:system_image.bzl", "system_image", "system_image_test"
 load("//pw_kernel/tooling/panic_detector:rust_binary_no_panics_test.bzl", "rust_binary_no_panics_test")
 
 system_image(
-    name = "kernelspace_demo",
+    name = "interrupts",
     kernel = ":target",
     platform = "//pw_kernel/target/qemu_virt_riscv32",
     system_config = ":system_config",
@@ -28,13 +28,13 @@ system_image(
 
 rust_binary_no_panics_test(
     name = "no_panics_test",
-    binary = ":kernelspace_demo",
+    binary = ":interrupts",
     tags = ["kernel"],
 )
 
 system_image_test(
-    name = "kernelspace_demo_test",
-    image = ":kernelspace_demo",
+    name = "interrupts_test",
+    image = ":interrupts",
     target_compatible_with = TARGET_COMPATIBLE_WITH,
 )
 
@@ -51,14 +51,16 @@ rust_binary(
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
-        "//pw_kernel/apps/kernelspace_demo:demo",
+        "//pw_kernel/apps/interrupts",
         "//pw_kernel/arch/riscv:arch_riscv",
         "//pw_kernel/kernel",
+        "//pw_kernel/lib/pw_status",
         "//pw_kernel/subsys/console:console_backend",
         "//pw_kernel/target:target_common",
         "//pw_kernel/target/qemu_virt_riscv32:config",
         "//pw_kernel/target/qemu_virt_riscv32:entry",
         "//pw_kernel/target/qemu_virt_riscv32:linker_script",
+        "//pw_kernel/target/qemu_virt_riscv32:uart",
         "//pw_log/rust:pw_log",
         "@rust_crates//:riscv-semihosting",
     ],

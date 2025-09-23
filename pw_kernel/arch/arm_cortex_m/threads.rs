@@ -17,6 +17,7 @@ use core::mem::{self, MaybeUninit};
 use core::ptr::NonNull;
 
 use cortex_m::peripheral::{SCB, *};
+use kernel::interrupt::InterruptController;
 use kernel::memory::{MemoryConfig as _, MemoryRegionType};
 use kernel::scheduler::thread::Stack;
 use kernel::scheduler::{self, SchedulerState, ThreadLocalState};
@@ -31,10 +32,10 @@ use crate::exceptions::{
     ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking, ExcReturnStack,
     ExceptionFrame, KernelExceptionFrame, RetPsrVal, exception,
 };
-use crate::in_interrupt_handler;
 use crate::protection::MemoryConfig;
 use crate::regs::msr::{ControlVal, Spsel};
 use crate::spinlock::BareSpinLock;
+use crate::{in_interrupt_handler, nvic};
 
 const LOG_THREAD_CREATE: bool = false;
 
@@ -109,6 +110,7 @@ impl Arch for crate::Arch {
     type Clock = super::timer::Clock;
     type AtomicUsize = core::sync::atomic::AtomicUsize;
     type SyscallArgs<'a> = crate::syscall::CortexMSyscallArgs<'a>;
+    type InterruptController = nvic::Nvic;
 
     unsafe fn context_switch<'a>(
         self,
@@ -140,7 +142,9 @@ impl Arch for crate::Arch {
 
             // TODO: make sure this always drops interrupts, may need to force a cpsid here.
             drop(sched_state);
-            pw_assert::debug_assert!(crate::Arch.interrupts_enabled());
+            pw_assert::debug_assert!(
+                <crate::Arch as kernel::Arch>::InterruptController::interrupts_enabled()
+            );
 
             // PendSV should fire and a context switch will happen.
 
@@ -167,26 +171,6 @@ impl Arch for crate::Arch {
     fn now(self) -> time::Instant<super::timer::Clock> {
         use time::Clock as _;
         super::timer::Clock::now()
-    }
-
-    fn enable_interrupts(self) {
-        unsafe {
-            cortex_m::interrupt::enable();
-        }
-    }
-
-    fn disable_interrupts(self) {
-        cortex_m::interrupt::disable();
-    }
-
-    fn interrupts_enabled(self) -> bool {
-        // It's a complicated concept in cortex-m:
-        // If PRIMASK is inactive, then interrupts are 100% disabled otherwise
-        // if the current interrupt priority level is not zero (BASEPRI register) interrupts
-        // at that level are not allowed. For now we're treating nonzero as full disabled.
-        let primask = cortex_m::register::primask::read();
-        let basepri = cortex_m::register::basepri::read();
-        primask.is_active() && (basepri == 0)
     }
 
     fn idle(self) {
@@ -392,7 +376,7 @@ extern "C" fn trampoline(
         arg2 as usize,
     );
 
-    pw_assert::assert!(crate::Arch.interrupts_enabled());
+    pw_assert::assert!(<crate::Arch as kernel::Arch>::InterruptController::interrupts_enabled());
 
     // Call the actual initial function of the thread.
     initial_function(arg0, arg1, arg2);
@@ -420,7 +404,7 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     unsafe { asm!("clrex") };
 
     pw_assert::assert!(in_interrupt_handler());
-    pw_assert::assert!(!crate::Arch.interrupts_enabled());
+    pw_assert::assert!(!<crate::Arch as kernel::Arch>::InterruptController::interrupts_enabled());
 
     // Save the incoming frame to the current active thread's arch state, that will function
     // as the context switch frame for when it is returned to later. Clear active thread

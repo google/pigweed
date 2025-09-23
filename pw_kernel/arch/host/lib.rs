@@ -14,6 +14,7 @@
 
 #![no_std]
 
+use kernel::interrupt::InterruptController;
 use kernel::scheduler::SchedulerState;
 use kernel::scheduler::thread::{Stack, ThreadState};
 use kernel::sync::spinlock::SpinLockGuard;
@@ -36,6 +37,7 @@ impl Arch for HostArch {
     type Clock = Clock;
     type AtomicUsize = core::sync::atomic::AtomicUsize;
     type SyscallArgs<'a> = HostSyscallArgs;
+    type InterruptController = HostInterruptController;
 
     unsafe fn context_switch(
         self,
@@ -55,16 +57,6 @@ impl Arch for HostArch {
         Clock::now()
     }
 
-    fn enable_interrupts(self) {
-        todo!("unimplemented");
-    }
-    fn disable_interrupts(self) {
-        todo!("");
-    }
-    fn interrupts_enabled(self) -> bool {
-        todo!("");
-    }
-
     fn early_init(self) {
         info!("HOST arch early init");
     }
@@ -75,7 +67,8 @@ impl Arch for HostArch {
 
 impl Kernel for HostArch {
     fn get_state(self) -> &'static KernelState<HostArch> {
-        static STATE: KernelState<HostArch> = KernelState::new();
+        static STATE: KernelState<HostArch> =
+            KernelState::new(kernel::ArchState::new(HostInterruptController::new()));
         &STATE
     }
 }
@@ -140,5 +133,40 @@ impl<'a> kernel::syscall::SyscallArgs<'a> for HostSyscallArgs {
 
     fn next_u64(&mut self) -> Result<u64> {
         Err(Error::Unimplemented)
+    }
+}
+
+pub struct HostInterruptController {}
+
+impl HostInterruptController {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {}
+    }
+}
+
+impl InterruptController for HostInterruptController {
+    fn early_init(&self) {
+        todo!("unimplemented");
+    }
+
+    fn enable_interrupt(&self, _irq: u32) {
+        todo!("unimplemented");
+    }
+
+    fn disable_interrupt(&self, _irq: u32) {
+        todo!("unimplemented");
+    }
+
+    fn enable_interrupts() {
+        todo!("unimplemented");
+    }
+
+    fn disable_interrupts() {
+        todo!("unimplemented");
+    }
+
+    fn interrupts_enabled() -> bool {
+        todo!("unimplemented");
     }
 }

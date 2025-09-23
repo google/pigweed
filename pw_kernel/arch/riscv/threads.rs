@@ -17,12 +17,14 @@ use core::mem;
 use core::ptr::NonNull;
 
 use kernel::Arch;
+use kernel::interrupt::InterruptController;
 use kernel::scheduler::thread::Stack;
 use kernel::scheduler::{self, SchedulerState, ThreadLocalState};
 use kernel::sync::spinlock::SpinLockGuard;
 use log_if::debug_if;
 use pw_status::Result;
 
+use crate::plic;
 use crate::protection::MemoryConfig;
 use crate::regs::{MStatusVal, PrivilegeLevel};
 use crate::spinlock::BareSpinLock;
@@ -100,6 +102,7 @@ impl Arch for super::Arch {
     #[cfg(feature = "disable_interrupts_atomic")]
     type AtomicUsize = crate::disable_interrupts_atomic::AtomicUsize;
     type SyscallArgs<'a> = crate::exceptions::RiscVSyscallArgs<'a>;
+    type InterruptController = plic::Plic;
 
     #[inline(never)]
     unsafe fn context_switch<'a>(
@@ -157,25 +160,9 @@ impl Arch for super::Arch {
         riscv::asm::wfi();
     }
 
-    fn enable_interrupts(self) {
-        unsafe {
-            riscv::register::mstatus::set_mie();
-        }
-    }
-
-    fn disable_interrupts(self) {
-        unsafe {
-            riscv::register::mstatus::clear_mie();
-        }
-    }
-
-    fn interrupts_enabled(self) -> bool {
-        riscv::register::mstatus::read().mie()
-    }
-
     fn early_init(self) {
         // Make sure interrupts are disabled
-        self.disable_interrupts();
+        <Self as Arch>::InterruptController::disable_interrupts();
 
         crate::exceptions::early_init();
 
@@ -361,7 +348,7 @@ extern "C" fn trampoline(
     );
 
     // Enable interrupts
-    crate::Arch.enable_interrupts();
+    <crate::Arch as Arch>::InterruptController::enable_interrupts();
 
     // TODO: figure out how to drop the scheduler lock here?
 

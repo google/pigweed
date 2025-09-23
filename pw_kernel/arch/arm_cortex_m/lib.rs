@@ -20,6 +20,7 @@ use kernel::{Kernel, KernelState};
 use pw_log::info;
 
 mod exceptions;
+mod nvic;
 mod protection;
 mod regs;
 mod spinlock;
@@ -39,7 +40,8 @@ kernel::impl_thread_arg_for_default_zst!(Arch);
 
 impl Kernel for Arch {
     fn get_state(self) -> &'static KernelState<Arch> {
-        static STATE: KernelState<Arch> = KernelState::new();
+        static STATE: KernelState<Arch> =
+            KernelState::new(kernel::ArchState::new(nvic::Nvic::new()));
         &STATE
     }
 }

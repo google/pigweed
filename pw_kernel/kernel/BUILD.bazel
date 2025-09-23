@@ -28,6 +28,7 @@ RISCV_DEPS = [
 rust_library(
     name = "kernel",
     srcs = [
+        "interrupt.rs",
         "lib.rs",
         "memory.rs",
         "object.rs",

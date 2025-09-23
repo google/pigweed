@@ -19,6 +19,7 @@ use kernel::KernelState;
 #[cfg(feature = "disable_interrupts_atomic")]
 mod disable_interrupts_atomic;
 mod exceptions;
+mod plic;
 mod protection;
 pub mod regs;
 mod spinlock;
@@ -37,7 +38,8 @@ kernel::impl_thread_arg_for_default_zst!(Arch);
 
 impl kernel::Kernel for Arch {
     fn get_state(self) -> &'static KernelState<Arch> {
-        static STATE: KernelState<Arch> = KernelState::new();
+        static STATE: KernelState<Arch> =
+            KernelState::new(kernel::ArchState::new(plic::Plic::new()));
         &STATE
     }
 }

@@ -39,6 +39,7 @@ rust_test(
         "//pw_kernel/lib/unittest:unittest_core",
         "//pw_kernel/subsys/console:console_backend",
         "//pw_kernel/target:target_common",
+        "//pw_kernel/target/qemu_virt_riscv32:config",
         "//pw_kernel/target/qemu_virt_riscv32:entry",
         "//pw_log/rust:pw_log",
         "@rust_crates//:riscv-semihosting",

@@ -23,6 +23,7 @@ rust_library(
         "disable_interrupts_atomic.rs",
         "exceptions.rs",
         "lib.rs",
+        "plic.rs",
         "protection.rs",
         "regs.rs",
         "regs/epmp.rs",

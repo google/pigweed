@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use kernel::Arch;
 use kernel::syscall::{SyscallArgs, raw_handle_syscall};
 use kernel_config::{ExceptionMode, KernelConfig, RiscVKernelConfigInterface};
 use log_if::debug_if;
@@ -173,6 +174,11 @@ unsafe fn interrupt_handler(interrupt: Interrupt, mepc: usize, frame: &TrapFrame
     match interrupt {
         Interrupt::MachineTimer => {
             timer::mtimer_tick();
+        }
+        Interrupt::MachineExternal => {
+            crate::Arch::get_interrupt_controller(crate::Arch)
+                .lock(crate::Arch)
+                .interrupt();
         }
         _ => {
             pw_assert::panic!("unhandled interrupt {}", interrupt as usize);

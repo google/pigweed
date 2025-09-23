@@ -72,6 +72,28 @@ pub enum ExceptionMode {
     Vectored(usize),
 }
 
+pub type InterruptHandler = fn();
+pub type InterruptTableEntry = Option<InterruptHandler>;
+pub type InterruptTable = [InterruptTableEntry];
+
+/// PLIC configuration
+pub trait PlicConfigInterface {
+    /// The PLIC base address.
+    const PLIC_BASE_ADDRESS: usize;
+
+    /// The number of IRQs the interrupt controller handles.
+    const NUM_IRQS: u32;
+
+    /// The size of the table which store the interrupt handlers.
+    /// To save space, the table doesn't need to be the size of
+    /// NUM_IRQS, but can instead be the size of the highest
+    /// IRQ + 1.
+    const INTERRUPT_TABLE_SIZE: usize;
+
+    /// The PLIC interrupt table.
+    fn interrupt_table() -> &'static InterruptTable;
+}
+
 /// CLINT timer config
 pub trait ClintTimerConfigInterface {
     /// Address of mtime register.

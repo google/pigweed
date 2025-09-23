@@ -23,6 +23,7 @@ rust_library(
         "exceptions.rs",
         "features.rs",
         "lib.rs",
+        "nvic.rs",
         "protection.rs",
         "regs.rs",
         "regs/mpu.rs",

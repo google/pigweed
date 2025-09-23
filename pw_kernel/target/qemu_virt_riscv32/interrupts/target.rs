@@ -14,34 +14,49 @@
 #![no_std]
 #![no_main]
 
+use arch_riscv::Arch;
 use kernel_config::{InterruptTableEntry, PlicConfig, PlicConfigInterface};
+use pw_status::Result;
 use riscv_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, exit};
 use target_common::{TargetInterface, declare_target};
 use {console_backend as _, entry as _, kernel as _};
 
-mod codegen;
-
 #[unsafe(no_mangle)]
-pub static INTERRUPT_TABLE: [InterruptTableEntry; PlicConfig::INTERRUPT_TABLE_SIZE] =
-    [None; PlicConfig::INTERRUPT_TABLE_SIZE];
+pub static INTERRUPT_TABLE: [InterruptTableEntry; PlicConfig::INTERRUPT_TABLE_SIZE] = {
+    let mut interrupt_table: [InterruptTableEntry; PlicConfig::INTERRUPT_TABLE_SIZE] =
+        [None; PlicConfig::INTERRUPT_TABLE_SIZE];
+    interrupt_table[uart::IRQ_UART0 as usize] = Some(uart::uart_interrupt_handler);
+    interrupt_table
+};
+
+static UART: uart::Uart = uart::Uart {};
 
 pub struct Target {}
+struct TargetUart {}
 
-impl TargetInterface for Target {
-    const NAME: &'static str = "QEMU-VIRT-RISCV Ticker";
-
-    fn main() -> ! {
-        codegen::start();
-        loop {}
+impl interrupts::TestUart for TargetUart {
+    fn enable_loopback() {
+        UART.enable_loopback()
     }
 
-    fn shutdown(code: u32) -> ! {
-        pw_log::info!("Shutting down with code {}", code as u32);
-        let status = match code {
-            0 => EXIT_SUCCESS,
-            _ => EXIT_FAILURE,
+    fn read() -> Option<u8> {
+        UART.read()
+    }
+
+    fn write(byte: u8) -> Result<()> {
+        UART.write(byte)
+    }
+}
+
+impl TargetInterface for Target {
+    const NAME: &'static str = "QEMU-VIRT-RISCV Interrupts";
+
+    fn main() -> ! {
+        let exit_status = match { interrupts::main::<Arch, TargetUart>(Arch) } {
+            Ok(()) => EXIT_SUCCESS,
+            Err(_e) => EXIT_FAILURE,
         };
-        exit(status);
+        exit(exit_status);
         loop {}
     }
 }

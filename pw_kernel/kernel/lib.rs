@@ -17,6 +17,7 @@ use pw_atomic::AtomicUsize;
 use pw_log::info;
 pub use time::{Duration, Instant};
 
+pub mod interrupt;
 pub mod memory;
 pub mod object;
 #[cfg(not(feature = "std_panic_handler"))]
@@ -26,6 +27,7 @@ pub mod sync;
 pub mod syscall;
 mod target;
 
+use interrupt::InterruptController;
 use kernel_config::{KernelConfig, KernelConfigInterface};
 pub use memory::{MemoryRegion, MemoryRegionType};
 pub use object::NullObjectTable;
@@ -43,6 +45,7 @@ pub trait Arch: 'static + Copy + thread::ThreadArg {
     type Clock: time::Clock;
     type AtomicUsize: AtomicUsize;
     type SyscallArgs<'a>: SyscallArgs<'a>;
+    type InterruptController: InterruptController;
 
     /// Switches to a new thread.
     ///
@@ -66,14 +69,12 @@ pub trait Arch: 'static + Copy + thread::ThreadArg {
 
     fn now(self) -> Instant<Self::Clock>;
 
-    // fill in more arch implementation functions from the kernel here:
-    // arch-specific backtracing
-    #[allow(dead_code)]
-    fn enable_interrupts(self);
-    #[allow(dead_code)]
-    fn disable_interrupts(self);
-    #[allow(dead_code)]
-    fn interrupts_enabled(self) -> bool;
+    fn get_interrupt_controller(self) -> &'static SpinLock<Self, Self::InterruptController>
+    where
+        Self: Kernel,
+    {
+        &self.get_state().arch_state.interrupt_controller
+    }
 
     #[allow(dead_code)]
     fn idle(self) {}
@@ -84,6 +85,19 @@ pub trait Arch: 'static + Copy + thread::ThreadArg {
     fn panic() -> ! {
         #[allow(clippy::empty_loop)]
         loop {}
+    }
+}
+
+pub struct ArchState<K: Kernel> {
+    interrupt_controller: SpinLock<K, K::InterruptController>,
+}
+
+impl<K: Kernel> ArchState<K> {
+    #[must_use]
+    pub const fn new(interrupt_controller: K::InterruptController) -> Self {
+        Self {
+            interrupt_controller: SpinLock::new(interrupt_controller),
+        }
     }
 }
 
@@ -100,14 +114,16 @@ pub trait Kernel: Arch + Sync {
 }
 
 pub struct KernelState<K: Kernel> {
+    arch_state: ArchState<K>,
     scheduler: SpinLock<K, SchedulerState<K>>,
     timer_queue: SpinLock<K, TimerQueue<K>>,
 }
 
 impl<K: Kernel> KernelState<K> {
     #[must_use]
-    pub const fn new() -> Self {
+    pub const fn new(arch_state: ArchState<K>) -> Self {
         Self {
+            arch_state,
             scheduler: SpinLock::new(SchedulerState::new()),
             timer_queue: SpinLock::new(TimerQueue::new()),
         }
@@ -197,6 +213,8 @@ pub mod macro_exports {
 pub fn main<K: Kernel>(kernel: K, init_state: &'static mut InitKernelState<K>) -> ! {
     let preempt_guard = PreemptDisableGuard::new(kernel);
 
+    kernel.get_interrupt_controller().lock(kernel).early_init();
+
     target::console_init();
     info!("Welcome to Maize on {}!", target::name() as &str);
 
@@ -227,7 +245,7 @@ fn bootstrap_thread_entry<K: Kernel>(
     idle_thread_storage: &'static mut ThreadStorage<K>,
 ) {
     info!("Welcome to the first thread, continuing bootstrap");
-    pw_assert::assert!(kernel.interrupts_enabled());
+    pw_assert::assert!(K::InterruptController::interrupts_enabled());
 
     kernel.init();
 
@@ -251,7 +269,7 @@ fn bootstrap_thread_entry<K: Kernel>(
 
 fn idle_thread_entry<K: Kernel>(kernel: K, _arg: usize) {
     // Fake idle thread to keep the runqueue from being empty if all threads are blocked.
-    pw_assert::assert!(kernel.interrupts_enabled());
+    pw_assert::assert!(K::InterruptController::interrupts_enabled());
     loop {
         kernel.idle();
     }

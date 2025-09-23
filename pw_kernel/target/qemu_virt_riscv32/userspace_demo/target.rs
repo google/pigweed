@@ -14,10 +14,15 @@
 #![no_std]
 #![no_main]
 
+use kernel_config::{InterruptTableEntry, PlicConfig, PlicConfigInterface};
 use riscv_semihosting::debug::{EXIT_FAILURE, EXIT_SUCCESS, exit};
 use target_common::{TargetInterface, declare_target};
 use {console_backend as _, entry as _, kernel as _};
 mod codegen;
+
+#[unsafe(no_mangle)]
+pub static INTERRUPT_TABLE: [InterruptTableEntry; PlicConfig::INTERRUPT_TABLE_SIZE] =
+    [None; PlicConfig::INTERRUPT_TABLE_SIZE];
 
 pub struct Target {}
 

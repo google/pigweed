@@ -16,7 +16,8 @@
 use core::ops::Range;
 
 pub use kernel_config::{
-    ClintTimerConfigInterface, ExceptionMode, KernelConfigInterface, RiscVKernelConfigInterface,
+    ClintTimerConfigInterface, ExceptionMode, InterruptHandler, InterruptTable,
+    InterruptTableEntry, KernelConfigInterface, PlicConfigInterface, RiscVKernelConfigInterface,
 };
 
 pub struct KernelConfig;
@@ -37,6 +38,25 @@ impl RiscVKernelConfigInterface for KernelConfig {
 
     fn get_exception_mode() -> ExceptionMode {
         ExceptionMode::Direct
+    }
+}
+
+pub struct PlicConfig;
+
+unsafe extern "Rust" {
+    static INTERRUPT_TABLE: [InterruptTableEntry; PlicConfig::INTERRUPT_TABLE_SIZE];
+}
+
+impl PlicConfigInterface for PlicConfig {
+    const PLIC_BASE_ADDRESS: usize = 0x0c000000;
+
+    const NUM_IRQS: u32 = 128;
+
+    // 11 as the UART IRQ 10 is the highest handled interrupt.
+    const INTERRUPT_TABLE_SIZE: usize = 11;
+
+    fn interrupt_table() -> &'static InterruptTable {
+        unsafe { &INTERRUPT_TABLE }
     }
 }
 
