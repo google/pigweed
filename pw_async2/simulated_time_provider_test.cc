@@ -120,20 +120,6 @@ TEST(SimulatedTimeProvider, TimeUntilNextExpirationAfterDestroyReturnsNullopt) {
   EXPECT_FALSE(tp.TimeUntilNextExpiration().has_value());
 }
 
-TEST(SimulatedTimeProvider, ResetSetsTimerBackToPendingAndFiresAgain) {
-  SimulatedTimeProvider<SystemClock> tp;
-  Dispatcher dispatcher;
-
-  auto timer = tp.WaitFor(1h);
-  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsPending());
-  tp.AdvanceTime(90min);
-  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsReady());
-  timer.Reset(timer.expiration() + 40min);
-  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsPending());
-  tp.AdvanceTime(90min);
-  EXPECT_TRUE(dispatcher.RunPendableUntilStalled(timer).IsReady());
-}
-
 TEST(SimulatedTimeProvider, TimerWithPastExpirationExpiresImmediately) {
   SimulatedTimeProvider<SystemClock> tp;
   auto start = tp.now();

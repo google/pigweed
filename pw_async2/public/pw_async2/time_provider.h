@@ -19,6 +19,7 @@
 #include <mutex>
 
 #include "pw_async2/dispatcher.h"
+#include "pw_async2/future.h"
 #include "pw_chrono/virtual_clock.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_sync/interrupt_spin_lock.h"
@@ -119,7 +120,9 @@ class TimeProvider : public chrono::VirtualClock<Clock> {
 /// used with any `TimeProvider` with a compatible `Clock` type.
 template <typename Clock>
 class [[nodiscard]] TimeFuture
-    : public IntrusiveForwardList<TimeFuture<Clock>>::Item {
+    : public experimental::Future<TimeFuture<Clock>,
+                                  typename Clock::time_point>,
+      public IntrusiveForwardList<TimeFuture<Clock>>::Item {
  public:
   TimeFuture() : provider_(nullptr) {}
   TimeFuture(const TimeFuture&) = delete;
@@ -157,28 +160,6 @@ class [[nodiscard]] TimeFuture
   /// Destruction is thread-safe, but not necessarily interrupt-safe.
   ~TimeFuture() { Unlist(); }
 
-  Poll<typename Clock::time_point> Pend(Context& cx)
-      PW_LOCKS_EXCLUDED(internal::time_lock()) {
-    std::lock_guard lock(internal::time_lock());
-    if (this->unlisted()) {
-      return Ready(expiration_);
-    }
-    // NOTE: this is done under the lock in order to ensure that `provider_` is
-    // not set to unlisted between it being initially read and `waker_` being
-    // set.
-    PW_ASYNC_STORE_WAKER(cx, waker_, "TimeFuture is waiting for a time_point");
-    return Pending();
-  }
-
-  /// Resets ``TimeFuture`` to expire at ``expiration``.
-  void Reset(typename Clock::time_point expiration)
-      PW_LOCKS_EXCLUDED(internal::time_lock()) {
-    std::lock_guard lock(internal::time_lock());
-    UnlistLocked();
-    expiration_ = expiration;
-    EnlistLocked();
-  }
-
   // Returns the provider associated with this timer.
   //
   // NOTE: this method must not be called before initializing the timer.
@@ -200,7 +181,33 @@ class [[nodiscard]] TimeFuture
   }
 
  private:
+  using Base =
+      experimental::Future<TimeFuture<Clock>, typename Clock::time_point>;
+  friend Base;
   friend class TimeProvider<Clock>;
+
+  Poll<typename Clock::time_point> DoPend(Context& cx)
+      PW_LOCKS_EXCLUDED(internal::time_lock()) {
+    std::lock_guard lock(internal::time_lock());
+    if (this->unlisted()) {
+      return Ready(expiration_);
+    }
+    // NOTE: this is done under the lock in order to ensure that `provider_` is
+    // not set to unlisted between it being initially read and `waker_` being
+    // set.
+    PW_ASYNC_STORE_WAKER(cx, waker_, "TimeFuture is waiting for a time_point");
+    return Pending();
+  }
+
+  void DoMarkComplete() {
+    std::lock_guard lock(internal::time_lock());
+    provider_ = nullptr;
+  }
+
+  // SAFETY: It is safe to read `provider_` without holding the lock.
+  bool DoIsComplete() const PW_NO_LOCK_SAFETY_ANALYSIS {
+    return provider_ == nullptr;
+  }
 
   /// Constructs a `Timer` from a `TimeProvider` and a `time_point`.
   TimeFuture(TimeProvider<Clock>& provider,
