@@ -35,8 +35,8 @@ source code, ``pw_watch`` can instantly  compile, flash, and run tests.
 
    ``pw watch`` running in fullscreen mode and displaying errors.
 
-Combined with the GN-based build which expresses the full dependency tree,
-only the exact tests affected by source changes are run.
+Combined with the build which expresses the full dependency tree, only the exact
+tests affected by source changes are run.
 
 The demo below shows ``pw_watch`` building for a STMicroelectronics
 STM32F429I-DISC1 development board, flashing the board with the affected test,
@@ -54,6 +54,30 @@ takes to run tests.
 Get started
 -----------
 
+Bazel
+=====
+To use ``watch`` in Pigweed's Bazel build, run ``./pw watch``. Arguments are
+forwarded directly to ``bazel`` / ``bazelisk``.
+
+.. code-block:: sh
+
+   # Runs bazelisk build //... when files change.
+   ./pw watch build //...
+
+   # Runs an executable when files change.
+   ./pw watch run //important:script -- -a --value 52
+
+   # Builds //..., then runs the //foo:bar test.
+   ./pw watch build //... , test //foo:bar
+
+``./pw watch`` invokes ``bazelisk //:watch``, which is an alias of
+``//pw_watch/py:bazel``. ``//pw_watch/py:bazel`` executes the generic
+``//pw_watch/py:run`` tool with ``bazelisk`` as the prefix.
+
+External projects may run the Bazel ``pw_watch``  tool directly as
+``@pigweed//:watch``. Projects can also create their own workflow or
+``//:watch`` alias.
+
 GN
 ==
 .. code-block:: bash
@@ -69,37 +93,6 @@ To override this behavior, provide the ``-C`` argument to ``pw watch``.
 
 See :ref:`module-pw_watch-guide` for more examples and
 :ref:`module-pw_watch-cli` for detailed CLI usage information.
-
-Bazel
-=====
-The Bazel build provides a ``//:watch`` entrypoint to ``pw_watch``, which
-executes commands with ``bazelisk``. Arguments are forwarded directly to
-``bazel`` / ``bazelisk``, so any ``bazel`` subcommands may be used.
-
-.. code-block:: sh
-
-   # Runs bazelisk build //... when files change.
-   bazelisk run //:watch build //...
-
-   # Runs an executable when files change.
-   bazelisk run //:watch -- run //important:script -a --value 52
-
-   # Builds //..., then runs the //foo:bar test.
-   bazelisk run //:watch build //... , test //foo:bar
-
-.. important::
-
-   ``bazelisk run`` interprets arguments that start with ``-``. Pass ``--``
-   before any other arguments to separate arguments to Bazel from command
-   arguments.
-
-   .. code-block:: sh
-
-      bazelisk run //:watch -- <commands to run>
-
-``//:watch`` is an alias of ``//pw_watch/py:bazel``. External projects may run
-this tool directly as ``@pigweed//:watch``, or create their own ``//:watch``
-alias.
 
 Custom commands
 ===============

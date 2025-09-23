@@ -315,7 +315,18 @@ def _parse_args() -> argparse.Namespace:
     if first_cmd_index is None:
         parser.error(f'{_COMMANDS_ARG} must be specified as the final argument')
     if not raw_commands:
-        parser.error(f'{_COMMANDS_ARG} requires at least one command')
+        print('No commands were specified!', file=sys.stderr)
+        print('\nSpecify a command to run when files change.', file=sys.stderr)
+
+        if prefix:
+            print(
+                f'\nCommands execute with the prefix "{shlex.join(prefix)}", ',
+                file=sys.stderr,
+            )
+            print('so passing "test //foo" will execute:', file=sys.stderr)
+            print(f'\n  {shlex.join(prefix)} test //foo\n', file=sys.stderr)
+
+        sys.exit(1)
 
     # Account for the arguments that were manually parsed.
     parsed.commands = tuple(_parse_commands(prefix, raw_commands))

@@ -483,6 +483,13 @@
       "use_config": "bazel_default",
       "target": "@pigweed//:review",
       "type": "GENERAL"
+    },
+    {
+      "name": "watch",
+      "description": "Run Bazel commands when files change",
+      "use_config": "bazel_default",
+      "target": "@pigweed//:watch",
+      "type": "GENERAL"
     }
   ],
   "groups": [
