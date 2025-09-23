@@ -347,7 +347,7 @@
 
 .vscode-select {
   position: relative;
-  width: 320px;
+  width: 100%;
 }
 
 .vscode-select select {
