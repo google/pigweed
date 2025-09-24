@@ -951,10 +951,6 @@ HostServer::PeerWatcherServer::~PeerWatcherServer() {
 }
 
 void HostServer::PeerWatcherServer::OnPeerUpdated(const bt::gap::Peer& peer) {
-  if (!peer.connectable()) {
-    return;
-  }
-
   updated_.insert(peer.identifier());
   removed_.erase(peer.identifier());
   MaybeCallCallback();
