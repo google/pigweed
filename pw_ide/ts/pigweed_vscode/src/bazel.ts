@@ -36,6 +36,7 @@ import { existsSync } from 'fs';
 /** Should we try to generate compile commands for Bazel targets? */
 export async function shouldSupportBazel(): Promise<boolean> {
   const projectRoot = await getPigweedProjectRoot(settings, workingDir);
+  if (!projectRoot) return false;
   const settingValue = settings.supportBazelTargets();
 
   if (settingValue !== undefined && settingValue !== 'auto') {
