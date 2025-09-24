@@ -20,7 +20,7 @@
 // It redirect assert calls to a PW_LOG_LEVEL_FATAL message with the asserts
 // filename, line info and failed expression.
 
-#include <assert.h>  // __assert_func
+#include <cassert>  // __assert_func
 
 #include "pw_log/levels.h"
 #include "pw_log/options.h"
