@@ -355,7 +355,7 @@ mod tests {
             pmp.cfg[0],
             PmpCfgVal::from_region_type(MemoryRegionType::ReadWriteData, PmpCfgAddressMode::Napot)
         );
-        unittest::assert_eq!(pmp.addr[0], 0x5FFF);
+        unittest::assert_eq!(pmp.addr[0], 0x5fff);
         unittest::assert_eq!(pmp.cfg[1..], [PmpCfgVal::default(); 15]);
         unittest::assert_eq!(pmp.addr[1..], [0usize; 15]);
         Ok(())
@@ -458,12 +458,12 @@ mod tests {
             pmp.cfg[0],
             PmpCfgVal::from_region_type(MemoryRegionType::ReadOnlyData, PmpCfgAddressMode::Napot)
         );
-        unittest::assert_eq!(pmp.addr[0], 0x5FFF);
+        unittest::assert_eq!(pmp.addr[0], 0x5fff);
         unittest::assert_eq!(
             pmp.cfg[1],
             PmpCfgVal::from_region_type(MemoryRegionType::ReadWriteData, PmpCfgAddressMode::Napot)
         );
-        unittest::assert_eq!(pmp.addr[1], 0x9FFF);
+        unittest::assert_eq!(pmp.addr[1], 0x9fff);
         unittest::assert_eq!(
             pmp.cfg[2],
             PmpCfgVal::from_region_type(
@@ -471,7 +471,7 @@ mod tests {
                 PmpCfgAddressMode::Off
             )
         );
-        unittest::assert_eq!(pmp.addr[2], 0xC000);
+        unittest::assert_eq!(pmp.addr[2], 0xc000);
         unittest::assert_eq!(
             pmp.cfg[3],
             PmpCfgVal::from_region_type(
@@ -479,7 +479,7 @@ mod tests {
                 PmpCfgAddressMode::Tor
             )
         );
-        unittest::assert_eq!(pmp.addr[3], 0xCCC0);
+        unittest::assert_eq!(pmp.addr[3], 0xccc0);
         unittest::assert_eq!(pmp.cfg[4..], [PmpCfgVal::default(); 12]);
         unittest::assert_eq!(pmp.addr[4..], [0usize; 12]);
         Ok(())

@@ -121,7 +121,7 @@ pub const fn hash_string(s: &str) -> u32 {
     hash_bytes(s.as_bytes())
 }
 
-pub const TOKENIZER_ENTRY_MAGIC: u32 = 0xBAA98DEE;
+pub const TOKENIZER_ENTRY_MAGIC: u32 = 0xbaa98dee;
 
 #[cfg(test)]
 mod tests {

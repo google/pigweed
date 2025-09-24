@@ -59,7 +59,7 @@ impl TypeVal {
     ro_bool_field!(u32, separate, 0, "separate instruction and data regions");
     ro_int_field!(u32, dregion, 8, 15, u8, "number of data regions");
 }
-ro_reg!(Type, TypeVal, 0xE000ED90, "MPU Type Register");
+ro_reg!(Type, TypeVal, 0xe000ed90, "MPU Type Register");
 
 #[repr(transparent)]
 pub struct CtrlVal(u32);
@@ -68,7 +68,7 @@ impl CtrlVal {
     rw_bool_field!(u32, hfnmiena, 1, "HardFault, NMI enable");
     rw_bool_field!(u32, privdefena, 2, "Privileged default enable");
 }
-rw_reg!(Ctrl, CtrlVal, 0xE000ED94, "MPU Control Register");
+rw_reg!(Ctrl, CtrlVal, 0xe000ed94, "MPU Control Register");
 
 #[derive(Default)]
 #[repr(transparent)]
@@ -76,7 +76,7 @@ pub struct RnrVal(u32);
 impl RnrVal {
     rw_int_field!(u32, region, 0, 7, u8, "region number");
 }
-rw_reg!(Rnr, RnrVal, 0xE000ED98, "MPU Region Number Register");
+rw_reg!(Rnr, RnrVal, 0xe000ed98, "MPU Region Number Register");
 
 #[repr(u8)]
 pub enum RbarAp {
@@ -131,7 +131,7 @@ impl RbarVal {
 rw_reg!(
     Rbar,
     RbarVal,
-    0xE000ED9C,
+    0xe000ed9c,
     "MPU Region Base Address Register"
 );
 
@@ -151,7 +151,7 @@ impl RlarVal {
 rw_reg!(
     Rlar,
     RlarVal,
-    0xE000EDA0,
+    0xe000eda0,
     "MPU Region Limit Address Register"
 );
 
@@ -277,7 +277,7 @@ impl Mair0Val {
 rw_reg!(
     Mair0,
     Mair0Val,
-    0xE000EDC0,
+    0xe000edc0,
     "MPU Memory Attribute Indirection Register 0"
 );
 
@@ -292,6 +292,6 @@ impl Mair1Val {
 rw_reg!(
     Mair1,
     Mair1Val,
-    0xE000EDC4,
+    0xe000edc4,
     "MPU Memory Attribute Indirection Register 1"
 );

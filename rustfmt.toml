@@ -14,12 +14,15 @@
 
 edition = "2024"
 style_edition = "2024"
+unstable_features = true
 
 # Prevent carriage returns
 newline_style = "Unix"
 
 imports_granularity = "Module"
 group_imports = "StdExternalCrate"
+
+hex_literal_case = "Lower"
 
 # Don't try to format generated files.
 skip_children = true

@@ -253,7 +253,7 @@ impl KernelExceptionFrame {
 #[exception(exception = "HardFault")]
 #[unsafe(no_mangle)]
 extern "C" fn pw_kernel_hard_fault(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
-    let hfsr = with_exposed_provenance::<u32>(0xE000ED2C);
+    let hfsr = with_exposed_provenance::<u32>(0xe000ed2c);
     info!("HardFault (HFSR: {:08x})", unsafe { hfsr.read_volatile() }
         as u32);
 
@@ -287,7 +287,7 @@ extern "C" fn pw_kernel_non_maskable_int(
 extern "C" fn pw_kernel_memory_management(
     frame: *mut KernelExceptionFrame,
 ) -> *mut KernelExceptionFrame {
-    let mmfar = with_exposed_provenance::<u32>(0xE000ED34);
+    let mmfar = with_exposed_provenance::<u32>(0xe000ed34);
     info!(
         "MemoryManagement exception at {:08x}",
         unsafe { mmfar.read_volatile() } as u32
@@ -301,7 +301,7 @@ extern "C" fn pw_kernel_memory_management(
 #[exception(exception = "BusFault")]
 #[unsafe(no_mangle)]
 extern "C" fn pw_kernel_bus_fault(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
-    let bfar = with_exposed_provenance::<u32>(0xE000ED38);
+    let bfar = with_exposed_provenance::<u32>(0xe000ed38);
     info!(
         "BusFault exception at {:08x}",
         unsafe { bfar.read_volatile() } as u32
