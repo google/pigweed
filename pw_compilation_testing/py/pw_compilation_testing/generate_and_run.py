@@ -37,6 +37,13 @@ from pw_compilation_testing.runner import run_test, TestResult
 
 _LOG = logging.getLogger('pw_nc_test')
 
+# Since each test case in a single .cc file can be parallelized, it's possible
+# to spin up e.g. 128 parallel compilations which can cause huge amounts of
+# memory consumption in some environments. To ameliorate resource exhaustion,
+# this is capped to a practical (albeit somewhat arbitrary) parallelism limit.
+# For more context, see https://pwbug.dev/446978848.
+_MAX_PARALLELISM = min(os.cpu_count() or 4, 16)
+
 
 class _TestRun(NamedTuple):
     test: TestCase
@@ -63,7 +70,7 @@ def _test_in_parallel(
     """Runs the tests in parallel and yields _TestRuns as they complete."""
     all_tests = [t.case for t in tests]
 
-    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    with ThreadPoolExecutor(max_workers=_MAX_PARALLELISM) as executor:
         for future in as_completed(
             executor.submit(_execute_test_case, test, sources, all_tests)
             for test in tests
