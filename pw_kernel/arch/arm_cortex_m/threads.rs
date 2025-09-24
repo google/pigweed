@@ -33,6 +33,7 @@ use crate::exceptions::{
     ExceptionFrame, KernelExceptionFrame, RetPsrVal, exception,
 };
 use crate::protection::MemoryConfig;
+use crate::regs::Regs;
 use crate::regs::msr::{ControlVal, Spsel};
 use crate::spinlock::BareSpinLock;
 use crate::{in_interrupt_handler, nvic};
@@ -193,9 +194,18 @@ impl Arch for crate::Arch {
         } else {
             pw_assert::panic!("Could not take peripherals.")
         }
+
+        let cpu_id = Regs::get().scb.cpu_id.read();
+        info!(
+            "CPUID revision 0x{:x} part number 0x{:x} architecture 0x{:x} variant 0x{:x} implementor 0x{:x}",
+            cpu_id.revision() as u32,
+            cpu_id.part_no() as u32,
+            cpu_id.architecture() as u32,
+            cpu_id.variant() as u32,
+            cpu_id.implementer() as u32
+        );
+
         let mut r = crate::regs::Regs::get();
-        let cpuid = p.CPUID.base.read();
-        info!("CPUID 0x{:x}", cpuid as u32);
         info!("Num MPU Regions: {}", get_num_mpu_regions(&mut r.mpu) as u8);
 
         unsafe {

@@ -19,15 +19,32 @@ use regs::*;
 ///
 /// Note: non-exhaustive list of registers.
 pub struct Scb {
+    /// CPUID Base Register
+    pub cpu_id: CpuId,
     /// System Handler Control and State Register
     pub shcsr: Shcsr,
 }
 
 impl Scb {
     pub(super) const fn new() -> Self {
-        Self { shcsr: Shcsr }
+        Self {
+            cpu_id: CpuId,
+            shcsr: Shcsr,
+        }
     }
 }
+
+#[repr(transparent)]
+pub struct CpuIdVal(pub u32);
+impl CpuIdVal {
+    ro_int_field!(u32, revision, 0, 3, u32, "revision number");
+    ro_int_field!(u32, part_no, 4, 15, u32, "part number");
+    ro_int_field!(u32, architecture, 16, 19, u32, "architecture version");
+    ro_int_field!(u32, variant, 20, 23, u32, "variant number");
+    ro_int_field!(u32, implementer, 24, 31, u32, "implementer code");
+}
+
+ro_reg!(CpuId, CpuIdVal, 0xe000ed00, "CPUID Base Register");
 
 #[repr(transparent)]
 pub struct ShcsrVal(u32);
