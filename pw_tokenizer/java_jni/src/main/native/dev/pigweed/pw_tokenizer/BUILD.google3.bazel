@@ -27,6 +27,15 @@ android_jni_library(
     deps = [":detokenizer_jni"],
 )
 
+# Robolectric needs the .so file in a cc_library.
+cc_library(
+    name = "native",
+    testonly = True,
+    visibility = ["//visibility:public"],
+    deps = [":libpw_tokenizer_jni.so"],
+    alwayslink = True,
+)
+
 cc_library(
     name = "detokenizer_jni",
     srcs = ["detokenizer.cc"],
@@ -36,5 +45,5 @@ cc_library(
         "//third_party/pigweed/pigweed/pw_span",
         "//third_party/pigweed/pigweed/pw_tokenizer:decoder",
     ],
-    alwayslink = 1,
+    alwayslink = True,
 )
