@@ -29,14 +29,29 @@ After this is done a ``pw_source_set`` for the FreeRTOS library is created at
 
 CMake
 =====
-In order to use this you are expected to set the following variables from
-``third_party/freertos/CMakeLists.txt``:
+In CMake, projects can choose between Pigweed's FreeRTOS CMake library or an
+externally defined library.
+
+Using Pigweed's CMake library
+-----------------------------
+In order to use Pigweed's CMake library for FreeRTOS, set the following
+variables from ``third_party/freertos/backend.cmake``:
 
 #. Set ``dir_pw_third_party_freertos`` to the path of the FreeRTOS installation.
 #. Set ``pw_third_party_freertos_CONFIG`` to a library target which provides
    the FreeRTOS config header.
 #. Set ``pw_third_party_freertos_PORT`` to a library target which provides
    the FreeRTOS port specific includes and sources.
+
+Using an external FreeRTOS CMake library
+----------------------------------------
+If your project already has a CMake library for FreeRTOS, set
+``pw_third_party.freertos_BACKEND`` to that target. This can be done with
+``pw_set_backend``:
+
+.. code-block:: cmake
+
+   pw_set_backend(pw_third_party.freertos <target>)
 
 Bazel
 =====
