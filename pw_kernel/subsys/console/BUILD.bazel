@@ -20,7 +20,6 @@ rust_library(
     srcs = ["console.rs"],
     deps = [
         "//pw_kernel/lib/pw_status",
-        "@rust_crates//:embedded-io",
     ],
 )
 
@@ -51,7 +50,6 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_kernel/lib/pw_status",
-        "@rust_crates//:embedded-io",
     ] + select({
         "@platforms//cpu:armv8-m": ["@rust_crates//:cortex-m-semihosting"],
         "@platforms//cpu:riscv32": ["@rust_crates//:riscv-semihosting"],
@@ -104,7 +102,6 @@ rust_library(
         ":colors",
         ":console",
         "//pw_log/rust:pw_log_backend_api",
-        "@rust_crates//:embedded-io",
     ],
 )
 
@@ -123,6 +120,5 @@ rust_library(
         "//pw_status/rust:pw_status",
         "//pw_stream/rust:pw_stream",
         "//pw_tokenizer/rust:pw_tokenizer",
-        "@rust_crates//:embedded-io",
     ],
 )

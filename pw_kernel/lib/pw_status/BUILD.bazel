@@ -22,9 +22,7 @@ rust_library(
     rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     visibility = ["//visibility:public"],
-    deps = [
-        "@rust_crates//:embedded-io",
-    ] + KERNEL_TEST_DEPS,
+    deps = KERNEL_TEST_DEPS,
 )
 
 rust_doc_test(

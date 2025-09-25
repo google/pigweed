@@ -15,17 +15,12 @@
 
 use core::fmt::{Error, Write};
 
-use embedded_io::ErrorType;
 use pw_status::Result;
 
 pub struct Console {}
 
 unsafe extern "Rust" {
     fn console_backend_write_all(buf: &[u8]) -> Result<()>;
-}
-
-impl ErrorType for Console {
-    type Error = pw_status::Error;
 }
 
 impl Default for Console {

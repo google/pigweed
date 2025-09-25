@@ -87,30 +87,6 @@ impl<T> StatusCode for Result<T> {
     }
 }
 
-impl embedded_io::Error for Error {
-    fn kind(&self) -> embedded_io::ErrorKind {
-        use embedded_io::ErrorKind;
-        match self {
-            Error::Cancelled => ErrorKind::Interrupted,
-            Error::Unknown => ErrorKind::Other,
-            Error::InvalidArgument => ErrorKind::InvalidInput,
-            Error::DeadlineExceeded => ErrorKind::TimedOut,
-            Error::NotFound => ErrorKind::NotFound,
-            Error::AlreadyExists => ErrorKind::AlreadyExists,
-            Error::PermissionDenied => ErrorKind::PermissionDenied,
-            Error::ResourceExhausted => ErrorKind::OutOfMemory,
-            Error::FailedPrecondition => ErrorKind::InvalidInput,
-            Error::Aborted => ErrorKind::Interrupted,
-            Error::OutOfRange => ErrorKind::InvalidInput,
-            Error::Unimplemented => ErrorKind::Unsupported,
-            Error::Internal => ErrorKind::Unsupported,
-            Error::Unavailable => ErrorKind::Other,
-            Error::DataLoss => ErrorKind::Other,
-            Error::Unauthenticated => ErrorKind::Other,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use unittest::test;
