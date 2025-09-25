@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import path from 'path';
+import fs from 'fs';
 import * as vscode from 'vscode';
 import { checkExtensionsAndGetStatus } from './extensionManagement';
 import { setTargetWithClangd } from './clangd';
@@ -34,7 +36,30 @@ import { spawn } from 'child_process';
 
 import { getReliableBazelExecutable } from './bazel';
 import { settings, workingDir } from './settings/vscode';
-import { saveLastBazelCommand } from './clangd/compileCommandsGenerator';
+import { CDB_FILE_DIR, LAST_BAZEL_COMMAND_FILE_NAME } from './clangd/paths';
+
+function saveLastBazelCommand(
+  cwd: string,
+  bazelCmd: string,
+  logger?: LoggerUI,
+) {
+  try {
+    const compileCommandsDir = path.join(cwd, CDB_FILE_DIR);
+    if (!fs.existsSync(compileCommandsDir)) {
+      fs.mkdirSync(compileCommandsDir, { recursive: true });
+    }
+    const filePath = path.join(
+      compileCommandsDir,
+      LAST_BAZEL_COMMAND_FILE_NAME,
+    );
+    fs.writeFileSync(filePath, bazelCmd, 'utf-8');
+    logger?.addStdout(
+      `Saved last bazel command to ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}.`,
+    );
+  } catch (e: any) {
+    logger?.addStderr('Failed to save last bazel command: ' + e.toString());
+  }
+}
 
 function spawnAsync(
   command: string,
