@@ -124,20 +124,28 @@ pw_py_binary(
     srcs = ["substitute_workspace_status_tool.py"],
 )
 
+# TODO: https://pwbug.dev/447173479 - Rename to "git_build_info_hdr" and
+# change visibility to private.
 pw_substitute_workspace_status(
     name = "git_build_info",
     src = "git_build_info.h.in",
     out = "git_build_info.h",
 )
 
+# TODO: https://pwbug.dev/447173479 - Rename to "git_build_info".
+cc_library(
+    name = "git_build_info_lib",
+    hdrs = [":git_build_info"],
+)
+
 pw_cc_test(
     name = "git_build_info_test",
-    srcs = [
-        "git_build_info_test.cc",
-        ":git_build_info",
-    ],
+    srcs = ["git_build_info_test.cc"],
     tags = ["noclangtidy"],
-    deps = ["//pw_log"],
+    deps = [
+        ":git_build_info_lib",
+        "//pw_log",
+    ],
 )
 
 sphinx_docs_library(
