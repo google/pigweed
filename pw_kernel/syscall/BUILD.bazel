@@ -23,7 +23,7 @@ rust_library(
     ],
     tags = ["kernel"],
     deps = [
-        "//pw_kernel/lib/pw_status",
+        "//pw_status/rust:pw_status",
         "@rust_crates//:bitflags",
     ],
 )
@@ -44,6 +44,6 @@ rust_library(
     tags = ["kernel"],
     deps = [
         ":syscall_defs",
-        "//pw_kernel/lib/pw_status",
+        "//pw_status/rust:pw_status",
     ],
 )

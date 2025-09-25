@@ -23,9 +23,9 @@ rust_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":app_two",
-        "//pw_kernel/lib/pw_status",
         "//pw_kernel/syscall:syscall_user",
         "//pw_kernel/userspace",
+        "//pw_status/rust:pw_status",
     ],
 )
 

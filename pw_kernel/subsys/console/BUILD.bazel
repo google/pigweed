@@ -19,7 +19,7 @@ rust_library(
     name = "console",
     srcs = ["console.rs"],
     deps = [
-        "//pw_kernel/lib/pw_status",
+        "//pw_status/rust:pw_status",
     ],
 )
 
@@ -29,7 +29,7 @@ rust_library(
     crate_name = "console_backend",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        "//pw_kernel/lib/pw_status",
+        "//pw_status/rust:pw_status",
     ],
 )
 
@@ -49,7 +49,7 @@ rust_library(
     }),
     visibility = ["//visibility:public"],
     deps = [
-        "//pw_kernel/lib/pw_status",
+        "//pw_status/rust:pw_status",
     ] + select({
         "@platforms//cpu:armv8-m": ["@rust_crates//:cortex-m-semihosting"],
         "@platforms//cpu:riscv32": ["@rust_crates//:riscv-semihosting"],

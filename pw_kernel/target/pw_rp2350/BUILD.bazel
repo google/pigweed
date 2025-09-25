@@ -65,7 +65,7 @@ rust_library(
     deps = [
         "//pw_kernel/arch/arm_cortex_m:arch_arm_cortex_m",
         "//pw_kernel/kernel",
-        "//pw_kernel/lib/pw_status",
+        "//pw_status/rust:pw_status",
         "@rust_crates//:embedded-io",
         "@rust_crates//:rp235x-hal",
     ],

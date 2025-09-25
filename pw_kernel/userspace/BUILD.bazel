@@ -34,10 +34,10 @@ rust_library(
     deps = [
         "//pw_kernel/config:kernel_config",
         "//pw_kernel/lib/pw_cast",
-        "//pw_kernel/lib/pw_status",
         "//pw_kernel/lib/time",
         "//pw_kernel/syscall:syscall_defs",
         "//pw_kernel/syscall:syscall_user",
+        "//pw_status/rust:pw_status",
     ],
 )
 

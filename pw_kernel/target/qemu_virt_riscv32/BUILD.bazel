@@ -79,8 +79,8 @@ rust_library(
         "//pw_kernel/kernel",
         "//pw_kernel/lib/circular_buffer",
         "//pw_kernel/lib/log_if",
-        "//pw_kernel/lib/pw_status",
         "//pw_log/rust:pw_log",
+        "//pw_status/rust:pw_status",
         "@rust_crates//:bitflags",
     ],
 )
