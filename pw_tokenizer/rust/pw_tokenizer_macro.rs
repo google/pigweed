@@ -27,7 +27,7 @@ use pw_format::macros::{
 use pw_tokenizer_core::TOKENIZER_ENTRY_MAGIC;
 use quote::{ToTokens, format_ident, quote};
 use syn::parse::{Parse, ParseStream};
-use syn::{Expr, LitStr, Token, Type, parse_macro_input};
+use syn::{Expr, LitStr, Token, parse_macro_input};
 
 type TokenStream2 = proc_macro2::TokenStream;
 
@@ -249,18 +249,18 @@ pub fn _tokenize_printf_to_buffer(tokens: TokenStream) -> TokenStream {
 //   ($ty:ty, $format_string:literal, $($args:expr),*)
 #[derive(Debug)]
 struct TokenizeToWriterArgs<T: FormatStringParser> {
-    ty: Type,
+    writer: Expr,
     format_and_args: FormatAndArgsFlavor<T>,
 }
 
 impl<T: FormatStringParser> Parse for TokenizeToWriterArgs<T> {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
-        let ty: Type = input.parse()?;
+        let writer: Expr = input.parse()?;
         input.parse::<Token![,]>()?;
         let format_and_args: FormatAndArgsFlavor<_> = input.parse()?;
 
         Ok(Self {
-            ty,
+            writer,
             format_and_args,
         })
     }
@@ -270,15 +270,15 @@ impl<T: FormatStringParser> Parse for TokenizeToWriterArgs<T> {
 // the `tokenize_to_writer!` macro.
 struct TokenizeToWriterGenerator<'a> {
     domain: &'a str,
-    ty: &'a Type,
+    writer: &'a Expr,
     encoding_fragments: Vec<TokenStream2>,
 }
 
 impl<'a> TokenizeToWriterGenerator<'a> {
-    fn new(domain: &'a str, ty: &'a Type) -> Self {
+    fn new(domain: &'a str, writer: &'a Expr) -> Self {
         Self {
             domain,
-            ty,
+            writer,
             encoding_fragments: Vec::new(),
         }
     }
@@ -290,7 +290,7 @@ impl PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'_> {
         format_string_fragments: &[PrintfFormatStringFragment],
     ) -> Result<TokenStream2> {
         // Locally scoped aliases so we can refer to them in `quote!()`
-        let ty = self.ty;
+        let writer = self.writer;
         let encoding_fragments = self.encoding_fragments;
 
         let format_string_pieces: Vec<_> = format_string_fragments
@@ -305,7 +305,7 @@ impl PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'_> {
         if encoding_fragments.is_empty() {
             Ok(quote! {
               {
-                __pw_tokenizer_crate::internal::tokenize_to_writer_no_args::<#ty>(#token)
+                __pw_tokenizer_crate::internal::tokenize_to_writer_no_args(#writer, #token)
               }
             })
         } else {
@@ -318,7 +318,8 @@ impl PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'_> {
                 // it's disabled inside this macro.
                 #![allow(clippy::unnecessary_cast)]
                 use __pw_tokenizer_crate::internal::Argument;
-                __pw_tokenizer_crate::internal::tokenize_to_writer::<#ty>(
+                __pw_tokenizer_crate::internal::tokenize_to_writer(
+                  #writer,
                   #token,
                   &[#(#encoding_fragments),*]
                 )
@@ -370,7 +371,7 @@ pub fn _tokenize_core_fmt_to_writer(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as TokenizeToWriterArgs<CoreFmtFormatStringParser>);
 
     // Hard codes domain to "".
-    let generator = TokenizeToWriterGenerator::new("", &input.ty);
+    let generator = TokenizeToWriterGenerator::new("", &input.writer);
 
     match generate_printf(generator, input.format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),
@@ -386,7 +387,7 @@ pub fn _tokenize_printf_to_writer(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as TokenizeToWriterArgs<PrintfFormatStringParser>);
 
     // Hard codes domain to "".
-    let generator = TokenizeToWriterGenerator::new("", &input.ty);
+    let generator = TokenizeToWriterGenerator::new("", &input.writer);
 
     match generate_printf(generator, input.format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),

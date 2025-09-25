@@ -36,13 +36,22 @@ pub mod __private {
         cursor: Cursor<[u8; ENCODE_BUFFER_SIZE]>,
     }
 
-    impl MessageWriter for LogMessageWriter {
-        fn new() -> Self {
+    impl Default for LogMessageWriter {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl LogMessageWriter {
+        #[allow(unused)]
+        pub fn new() -> Self {
             Self {
                 cursor: Cursor::new([0u8; ENCODE_BUFFER_SIZE]),
             }
         }
+    }
 
+    impl MessageWriter for LogMessageWriter {
         fn write(&mut self, data: &[u8]) -> Result<()> {
             self.cursor.write_all(data)
         }
@@ -90,7 +99,7 @@ pub mod __private {
 macro_rules! pw_log_backend {
   ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
     let _ = $crate::__private::tokenize_core_fmt_to_writer!(
-      $crate::__private::LogMessageWriter,
+      $crate::__private::LogMessageWriter::new(),
       "[{}] " PW_FMT_CONCAT $format_string,
       $crate::__private::log_level_tag($log_level) as &str,
       $($args),*);
@@ -101,7 +110,7 @@ macro_rules! pw_log_backend {
 macro_rules! pw_logf_backend {
   ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
     let _ = $crate::__private::tokenize_printf_to_writer!(
-      $crate::__private::LogMessageWriter,
+      $crate::__private::LogMessageWriter::new(),
       "[%s] " PW_FMT_CONCAT $format_string,
       $crate::__private::log_level_tag($log_level),
       $($args),*);

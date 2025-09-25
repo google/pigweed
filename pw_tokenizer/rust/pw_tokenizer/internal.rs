@@ -85,11 +85,6 @@ struct CursorMessageWriter<'a> {
 }
 
 impl MessageWriter for CursorMessageWriter<'_> {
-    fn new() -> Self {
-        // Ensure `tokenize_to_buffer` never calls `new()`.
-        unimplemented!();
-    }
-
     fn write(&mut self, data: &[u8]) -> Result<()> {
         self.cursor.write_all(data)
     }
@@ -174,11 +169,10 @@ pub fn tokenize_to_buffer_no_args(buffer: &mut [u8], token: u32) -> Result<usize
 
 #[inline(never)]
 pub fn tokenize_to_writer<W: crate::MessageWriter>(
+    mut writer: W,
     token: u32,
     args: &[Argument<'_>],
 ) -> Result<()> {
-    let mut writer = W::new();
-
     match tokenize_engine(&mut writer, token, args) {
         // Still finalize the writer even if the buffer
         // is full so as to avoid loosing the entire
@@ -189,8 +183,10 @@ pub fn tokenize_to_writer<W: crate::MessageWriter>(
 }
 
 #[inline(never)]
-pub fn tokenize_to_writer_no_args<W: crate::MessageWriter>(token: u32) -> Result<()> {
-    let mut writer = W::new();
+pub fn tokenize_to_writer_no_args<W: crate::MessageWriter>(
+    mut writer: W,
+    token: u32,
+) -> Result<()> {
     let result = writer.write(&token.to_le_bytes()[..]);
 
     match result {

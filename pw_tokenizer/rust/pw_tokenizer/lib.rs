@@ -266,13 +266,15 @@ macro_rules! tokenize_to_buffer {
 ///   cursor: Cursor<[u8; BUFFER_LEN]>,
 /// }
 ///
-/// impl MessageWriter for TestMessageWriter {
+/// impl TestMessageWriter {
 ///   fn new() -> Self {
 ///       Self {
 ///           cursor: Cursor::new([0u8; BUFFER_LEN]),
 ///       }
 ///   }
+/// }
 ///
+/// impl MessageWriter for TestMessageWriter {
 ///   fn write(&mut self, data: &[u8]) -> Result<()> {
 ///       self.cursor.write_all(data)
 ///   }
@@ -291,14 +293,14 @@ macro_rules! tokenize_to_buffer {
 ///
 /// // Tokenize a format string and argument into the writer.  Note how we
 /// // pass in the message writer's type, not an instance of it.
-/// let len = tokenize_core_fmt_to_writer!(TestMessageWriter, "The answer is {}", 42 as i32)?;
+/// let len = tokenize_core_fmt_to_writer!(TestMessageWriter::new(), "The answer is {}", 42 as i32)?;
 /// # Ok::<(), pw_status::Error>(())
 /// ```
 #[macro_export]
 macro_rules! tokenize_core_fmt_to_writer {
-    ($ty:ty, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
+    ($writer:expr, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
       use $crate::__private as __pw_tokenizer_crate;
-      __pw_tokenizer_crate::_tokenize_core_fmt_to_writer!($ty, $($format_string)PW_FMT_CONCAT+, $($args),*)
+      __pw_tokenizer_crate::_tokenize_core_fmt_to_writer!($writer, $($format_string)PW_FMT_CONCAT+, $($args),*)
     }};
 }
 
@@ -349,13 +351,16 @@ macro_rules! tokenize_core_fmt_to_writer {
 ///   cursor: Cursor<[u8; BUFFER_LEN]>,
 /// }
 ///
-/// impl MessageWriter for TestMessageWriter {
+/// impl TestMessageWriter {
 ///   fn new() -> Self {
 ///       Self {
 ///           cursor: Cursor::new([0u8; BUFFER_LEN]),
 ///       }
 ///   }
+/// }
 ///
+///
+/// impl MessageWriter for TestMessageWriter {
 ///   fn write(&mut self, data: &[u8]) -> Result<()> {
 ///       self.cursor.write_all(data)
 ///   }
@@ -374,22 +379,22 @@ macro_rules! tokenize_core_fmt_to_writer {
 ///
 /// // Tokenize a format string and argument into the writer.  Note how we
 /// // pass in the message writer's type, not an instance of it.
-/// let len = tokenize_printf_to_writer!(TestMessageWriter, "The answer is %d", 42)?;
+/// let len = tokenize_printf_to_writer!(TestMessageWriter::new(), "The answer is %d", 42)?;
 /// # Ok::<(), pw_status::Error>(())
 /// ```
 #[macro_export]
 macro_rules! tokenize_printf_to_writer {
-    ($ty:ty, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
+    ($writer:expr, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
       use $crate::__private as __pw_tokenizer_crate;
-      __pw_tokenizer_crate::_tokenize_printf_to_writer!($ty, $($format_string)PW_FMT_CONCAT+, $($args),*)
+      __pw_tokenizer_crate::_tokenize_printf_to_writer!($writer, $($format_string)PW_FMT_CONCAT+, $($args),*)
     }};
 }
 
 /// Deprecated alias for [`tokenize_printf_to_writer!`].
 #[macro_export]
 macro_rules! tokenize_to_writer {
-  ($ty:ty, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
-    $crate::tokenize_printf_to_writer!($ty, $($format_string)PW_FMT_CONCAT+, $($args),*)
+  ($writer:expr, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
+    $crate::tokenize_printf_to_writer!($writer, $($format_string)PW_FMT_CONCAT+, $($args),*)
   }};
 }
 
@@ -398,9 +403,6 @@ macro_rules! tokenize_to_writer {
 /// For more details on how this type is used, see the [`tokenize_to_writer!`]
 /// documentation.
 pub trait MessageWriter {
-    /// Returns a new instance of a `MessageWriter`.
-    fn new() -> Self;
-
     /// Append `data` to the message.
     fn write(&mut self, data: &[u8]) -> Result<()>;
 
@@ -471,13 +473,15 @@ mod tests {
             cursor: Cursor<[u8; $buffer_len]>,
         }
 
-        impl MessageWriter for TestMessageWriter {
+        impl TestMessageWriter {
           fn new() -> Self {
               Self {
                   cursor: Cursor::new([0u8; $buffer_len]),
               }
           }
+        }
 
+        impl MessageWriter for TestMessageWriter {
           fn write(&mut self, data: &[u8]) -> Result<()> {
               self.cursor.write_all(data)
           }
@@ -497,7 +501,7 @@ mod tests {
 
         if $printf_fmt != "" {
           TEST_OUTPUT.with(|output| *output.borrow_mut() = None);
-          tokenize_printf_to_writer!(TestMessageWriter, $printf_fmt, $($args),*).unwrap();
+          tokenize_printf_to_writer!(TestMessageWriter::new(), $printf_fmt, $($args),*).unwrap();
           TEST_OUTPUT.with(|output| {
               assert_eq!(
                   *output.borrow(),
@@ -508,7 +512,7 @@ mod tests {
 
         if $core_fmt != "" {
           TEST_OUTPUT.with(|output| *output.borrow_mut() = None);
-          tokenize_core_fmt_to_writer!(TestMessageWriter, $core_fmt, $($args),*).unwrap();
+          tokenize_core_fmt_to_writer!(TestMessageWriter::new(), $core_fmt, $($args),*).unwrap();
           TEST_OUTPUT.with(|output| {
               assert_eq!(
                   *output.borrow(),
