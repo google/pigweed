@@ -13,6 +13,7 @@
 // the License.
 
 import * as vscode from 'vscode';
+import { cpus } from 'os';
 import { ClangdActiveFilesCache } from './activeFilesCache';
 import { clangdPath as bazelClangdPath } from './bazel';
 import {
@@ -91,6 +92,7 @@ export async function setTargetWithClangd(
 
   const { update: updatePath } = stringSettingFor('path', 'clangd');
   const { update: updateArgs } = settingFor<string[]>('arguments', 'clangd');
+  const cores = cpus().length;
 
   // These updates all happen asynchronously, and we want to make sure they're
   // all done before we trigger a clangd restart.
@@ -101,6 +103,7 @@ export async function setTargetWithClangd(
       '--query-driver=**',
       '--header-insertion=never',
       '--background-index',
+      '-j=' + Math.max(1, Math.round(cores / 4)),
     ]),
     settingsFileWriter(target.name),
   ]);
