@@ -136,12 +136,6 @@ cc_library(
     hdrs = [":git_build_info_hdr"],
 )
 
-# TODO: https://pwbug.dev/447173479 - Remove this deprecated alias.
-alias(
-    name = "git_build_info_lib",
-    actual = ":git_build_info",
-)
-
 pw_cc_test(
     name = "git_build_info_test",
     srcs = ["git_build_info_test.cc"],
