@@ -12,94 +12,23 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-//! Log output is base64 encoded
 #![no_std]
 
 #[doc(hidden)]
 pub mod __private {
-    // Re-export for use by the `pw_logf_backend!` macro.
     pub use colors::log_level_tag;
-    use console;
-    use pw_status::{Error, Result};
-    use pw_stream::{Cursor, Write};
-    use pw_tokenizer::MessageWriter;
+    use pw_status::Result;
     pub use pw_tokenizer::{tokenize_core_fmt_to_writer, tokenize_printf_to_writer};
+    pub use tokenized_writer::Base64TokenizedMessageWriter;
 
-    // Use 52 to match the default value PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
-    // on the C++ tokenizer side.
-    const BUFFER_SIZE: usize = 52;
-
-    // A simple implementation of [`pw_tokenizer::MessageWriter`] that writes
-    // data to a buffer.  On message finalization, it base64 encodes the data
-    // and writes it to the console.
-    pub struct LogMessageWriter {
-        cursor: Cursor<[u8; BUFFER_SIZE]>,
+    pub fn write(buffer: &[u8]) -> Result<()> {
+        let mut console = console::Console::new();
+        console.write_all(buffer)
     }
 
-    impl Default for LogMessageWriter {
-        fn default() -> Self {
-            Self::new()
-        }
-    }
-
-    impl LogMessageWriter {
-        #[must_use]
-        pub fn new() -> Self {
-            Self {
-                cursor: Cursor::new([0u8; BUFFER_SIZE]),
-            }
-        }
-    }
-
-    impl MessageWriter for LogMessageWriter {
-        fn write(&mut self, data: &[u8]) -> Result<()> {
-            self.cursor.write_all(data)
-        }
-
-        fn remaining(&self) -> usize {
-            self.cursor.remaining()
-        }
-
-        fn finalize(self) -> Result<()> {
-            let write_len = self.cursor.position();
-            let data = self.cursor.into_inner();
-
-            // Pigweed's detokenization tools recognize base64 encoded data
-            // prefixed with a `$` as tokenized data interspersed with plain text.
-            // To ensure an single call to write_all(), the encode buffer is prefixed
-            // with the $ and postfixed with a newline.
-            // TODO: b/401562650 - implement streaming base64 encoder.
-            const ENCODED_SIZE: usize = pw_base64::encoded_size(BUFFER_SIZE);
-            let mut encode_buffer = [0u8; ENCODED_SIZE + 2];
-            encode_buffer[0] = b'$';
-            // pass a slice of encode_buffer to ensure $ is not encoded.
-            let data_slice = data.get(0..write_len).ok_or(Error::OutOfRange)?;
-            if let Ok(s) =
-                pw_base64::encode_str(data_slice, &mut encode_buffer[1..ENCODED_SIZE + 1])
-            {
-                // postfix the encoded buffer with a newline after the $ and encoded string
-                let encoded_len = s.len();
-                if let Some(bytes_ref) = encode_buffer.get_mut(encoded_len + 1) {
-                    *bytes_ref = b'\n';
-                } else {
-                    return Err(Error::OutOfRange);
-                }
-                let mut console = console::Console::new();
-                let _ = console.write_all(&encode_buffer);
-            } else {
-                unreachable()
-            }
-
-            Ok(())
-        }
-    }
-
-    fn unreachable() -> ! {
-        unsafe extern "C" {
-            fn pw_assert_HandleFailure() -> !;
-        }
-
-        unsafe { pw_assert_HandleFailure() };
+    type TokenizedWriter = Base64TokenizedMessageWriter<fn(&[u8]) -> Result<()>>;
+    pub fn new_writer() -> TokenizedWriter {
+        TokenizedWriter::new(write)
     }
 }
 
@@ -115,7 +44,7 @@ pub mod __private {
 macro_rules! pw_log_backend {
   ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
     let _ = $crate::__private::tokenize_core_fmt_to_writer!(
-      $crate::__private::LogMessageWriter::new(),
+      $crate::__private::new_writer(),
       "[{}] " PW_FMT_CONCAT $format_string,
       $crate::__private::log_level_tag($log_level) as &str,
       $($args),*);
@@ -126,7 +55,7 @@ macro_rules! pw_log_backend {
 macro_rules! pw_logf_backend {
   ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
     let _ = $crate::__private::tokenize_printf_to_writer!(
-      $crate::__private::LogMessageWriter::new(),
+      $crate::__private::new_writer(),
       "[%s] " PW_FMT_CONCAT $format_string,
       $crate::__private::log_level_tag($log_level),
       $($args),*);

@@ -26,7 +26,11 @@ pub mod __private {
 macro_rules! pw_log_backend {
   ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
     use $crate::__private as __pw_log_backend_crate;
-    $crate::__private::_pw_log_backend!($log_level, $format_string, $($args),*);
+    $crate::__private::_pw_log_backend!(
+      &mut __pw_log_backend_crate::console::Console::new(),
+      $log_level,
+      $format_string,
+      $($args),*);
   }};
 }
 
@@ -34,6 +38,10 @@ macro_rules! pw_log_backend {
 macro_rules! pw_logf_backend {
   ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
     use $crate::__private as __pw_log_backend_crate;
-    $crate::__private::_pw_logf_backend!($log_level, $format_string, $($args),*);
+    $crate::__private::_pw_logf_backend!(
+      &mut __pw_log_backend_crate::console::Console::new(),
+      $log_level,
+      $format_string,
+      $($args),*);
   }};
 }
