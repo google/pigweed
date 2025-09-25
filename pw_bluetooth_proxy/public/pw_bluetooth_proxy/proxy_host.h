@@ -162,13 +162,6 @@ class ProxyHost {
       Function<void(multibuf::MultiBuf&& payload)>&& receive_fn,
       ChannelEventCallback&& event_fn);
 
-  /// TODO: https://pwbug.dev/380076024 - Delete after downstream client uses
-  /// this method on `L2capCoc`.
-  /// @deprecated Use L2capCoc::SendAdditionalRxCredits instead.
-  pw::Status SendAdditionalRxCredits(uint16_t connection_handle,
-                                     uint16_t local_cid,
-                                     uint16_t additional_rx_credits);
-
   /// Returns an L2CAP channel operating in basic mode that supports writing to
   /// and reading from a remote peer.
   ///
