@@ -177,16 +177,17 @@ portion with where you have pigweed checked out.
 
 Use ``pw_build_info/git_build_info.h`` Header
 =============================================
-Add generated header directly to the target where you want to use it.
+Add a dependency on ``//pw_build_info:git_build_info``:
 
 .. code-block:: python
 
    cc_binary(
      name = "main",
-     srcs = [
-       "main.cc",
-       "@pigweed//pw_build_info:git_build_info",
-     ]
+     srcs = ["main.cc"],
+     deps = [
+        "@pigweed//pw_build_info:git_build_info",
+        "//pw_log",
+      ],
    )
 
 Include the header. The following constants are available:

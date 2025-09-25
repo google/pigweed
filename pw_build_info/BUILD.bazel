@@ -124,18 +124,22 @@ pw_py_binary(
     srcs = ["substitute_workspace_status_tool.py"],
 )
 
-# TODO: https://pwbug.dev/447173479 - Rename to "git_build_info_hdr" and
-# change visibility to private.
 pw_substitute_workspace_status(
-    name = "git_build_info",
+    name = "git_build_info_hdr",
     src = "git_build_info.h.in",
     out = "git_build_info.h",
+    visibility = ["//visibility:private"],
 )
 
-# TODO: https://pwbug.dev/447173479 - Rename to "git_build_info".
 cc_library(
+    name = "git_build_info",
+    hdrs = [":git_build_info_hdr"],
+)
+
+# TODO: https://pwbug.dev/447173479 - Remove this deprecated alias.
+alias(
     name = "git_build_info_lib",
-    hdrs = [":git_build_info"],
+    actual = ":git_build_info",
 )
 
 pw_cc_test(
@@ -143,7 +147,7 @@ pw_cc_test(
     srcs = ["git_build_info_test.cc"],
     tags = ["noclangtidy"],
     deps = [
-        ":git_build_info_lib",
+        ":git_build_info",
         "//pw_log",
     ],
 )

@@ -14,7 +14,7 @@
 
 """Substitute a template file with variables from bazel workspace status."""
 
-def pw_substitute_workspace_status(name, src, out):
+def pw_substitute_workspace_status(name, src, out, **kwargs):
     native.genrule(
         name = name,
         srcs = [src],
@@ -27,4 +27,5 @@ def pw_substitute_workspace_status(name, src, out):
               " $< $@",
         stamp = True,
         tools = [str(Label("//pw_build_info:substitute_workspace_status_tool"))],
+        **kwargs
     )
