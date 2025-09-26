@@ -16,7 +16,7 @@ import path from 'path';
 import fs from 'fs';
 import * as vscode from 'vscode';
 import { checkExtensionsAndGetStatus } from './extensionManagement';
-import { setTargetWithClangd } from './clangd';
+import { restartClangd, setTargetWithClangd } from './clangd';
 import logging, { output } from './logging';
 import { getSettingsData } from './configParsing';
 import getCipdReport from './clangd/report';
@@ -233,7 +233,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case 'restartClangd': {
-          vscode.commands.executeCommand('clangd.restart');
+          await restartClangd();
           break;
         }
         case 'openExtension': {

@@ -108,7 +108,7 @@ export async function setTargetWithClangd(
     settingsFileWriter(target.name),
   ]);
   // Restart the clangd server so it picks up the new setting.
-  vscode.commands.executeCommand('clangd.restart');
+  await restartClangd();
 }
 
 /** Show a checkmark next to the item if it's the current setting. */
@@ -211,7 +211,7 @@ export async function disableInactiveFileCodeIntelligence(
   await settings.disableInactiveFileCodeIntelligence(true);
   didChangeClangdConfig.fire();
   await activeFilesCache.writeToSettings(settings.codeAnalysisTarget());
-  await vscode.commands.executeCommand('clangd.restart');
+  await restartClangd();
 }
 
 export async function enableInactiveFileCodeIntelligence(
@@ -221,5 +221,10 @@ export async function enableInactiveFileCodeIntelligence(
   await settings.disableInactiveFileCodeIntelligence(false);
   didChangeClangdConfig.fire();
   await activeFilesCache.writeToSettings();
+  await restartClangd();
+}
+
+export async function restartClangd(): Promise<void> {
+  logger.warn(`Restarting clangd.`);
   await vscode.commands.executeCommand('clangd.restart');
 }

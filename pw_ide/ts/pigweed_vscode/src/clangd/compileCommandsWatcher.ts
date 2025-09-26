@@ -20,6 +20,7 @@ import path from 'path';
 import { workingDir } from '../settings/vscode';
 import { ClangdActiveFilesCache } from './activeFilesCache';
 import { RefreshManager } from '../refreshManager';
+import { restartClangd } from './vscCommands';
 
 /** A file watcher that automatically runs a refresh on Bazel file changes. */
 export class CompileCommandsWatcher extends Disposable {
@@ -54,14 +55,22 @@ export class CompileCommandsWatcher extends Disposable {
     this.disposables.push(watcher);
   }
 
+  private debounceTimeout: NodeJS.Timeout | undefined;
+
   /** We want to do a few things when compile_commands directory is touched:
    * - Restart the clangd server so it picks up the new compile commands.
    * - Re-set the target if current one doesn't exist anymore ie.
    * platforms changed in new build etc.
    */
   refresh = () => {
-    vscode.commands.executeCommand('clangd.restart');
-    this.filesCache.refresh();
-    this.refreshManager.refresh();
+    if (this.debounceTimeout) {
+      clearTimeout(this.debounceTimeout);
+    }
+
+    this.debounceTimeout = setTimeout(() => {
+      restartClangd();
+      this.filesCache.refresh();
+      this.refreshManager.refresh();
+    }, 2000);
   };
 }
