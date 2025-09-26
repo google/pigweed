@@ -99,6 +99,10 @@ class McuxpressoDigitalIn : public pw::digital_io::DigitalIn {
 ///     (`IOPCTL`) via the Input Buffer Enable (`IBENA`) bit.
 ///   * The input polarity is affected by the Input Invert Enable (`IIENA`) bit
 ///     on the corresponding IO Pad Controller (`IOPCTL`) register.
+///
+/// In general, only one line should be created per (port, pin) pair.
+/// Attempting to register multiple interrupt handlers on the same line will
+/// result in `SetInterruptHandler` returning `pw::Status::AlreadyExists`.
 class McuxpressoDigitalInOutInterrupt
     : public pw::digital_io::DigitalInOutInterrupt,
       public pw::IntrusiveForwardList<McuxpressoDigitalInOutInterrupt>::Item {

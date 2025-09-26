@@ -263,16 +263,21 @@ pw::Status McuxpressoDigitalInOutInterrupt::DoSetInterruptHandler(
     return pw::Status::FailedPrecondition();
   }
 
-  trigger_ = trigger;
-
   std::lock_guard lock(port_interrupts_lock);
-  interrupt_handler_ = std::move(handler);
+  PW_CHECK(unlisted());  // Checked interrupt_handler_ == nullptr above
 
-  if (unlisted()) {
-    auto& list = port_interrupts[port_];
-    list.push_front(*this);
+  // Check that no other handler is registered for this port and pin
+  auto& list = port_interrupts[port_];
+  for (const auto& line : list) {
+    if (line.pin_ == pin_) {
+      return pw::Status::AlreadyExists();
+    }
   }
 
+  // Add this line to interrupt handlers list
+  list.push_front(*this);
+  interrupt_handler_ = std::move(handler);
+  trigger_ = trigger;
   return pw::OkStatus();
 }
 
@@ -345,6 +350,10 @@ PW_EXTERN_C void GPIO_INTA_DriverIRQHandler() PW_NO_LOCK_SAFETY_ANALYSIS {
     for (const auto& line : list) {
       const uint32_t pin_mask = 1UL << line.pin_;
       if ((port_int_flags & pin_mask) != 0) {
+        // Only process an interrupt pin once
+        PW_ASSERT((processed_pins & pin_mask) == 0);
+
+        // Check trigger condition and call handler if necessary
         const auto trigger = line.trigger_;
         const auto polarity =
             GPIO_PinGetInterruptPolarity(base, port, line.pin_);
