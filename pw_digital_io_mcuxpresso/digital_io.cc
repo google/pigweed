@@ -20,6 +20,7 @@
 #include "fsl_clock.h"
 #include "fsl_gpio.h"
 #include "fsl_reset.h"
+#include "pw_assert/assert.h"
 #include "pw_assert/check.h"
 #include "pw_digital_io_mcuxpresso/digital_io.h"
 #include "pw_status/status.h"
@@ -337,6 +338,9 @@ PW_EXTERN_C void GPIO_INTA_DriverIRQHandler() PW_NO_LOCK_SAFETY_ANALYSIS {
       continue;
     }
 
+    // Keep track of pins that have been processed and cleared
+    uint32_t processed_pins = 0;
+
     // For each line registered on that port's interrupt list
     for (const auto& line : list) {
       const uint32_t pin_mask = 1UL << line.pin_;
@@ -379,8 +383,13 @@ PW_EXTERN_C void GPIO_INTA_DriverIRQHandler() PW_NO_LOCK_SAFETY_ANALYSIS {
         GPIO_PinSetInterruptPolarity(base, port, line.pin_, new_polarity);
         GPIO_PinClearInterruptFlag(
             base, port, line.pin_, kGpioInterruptBankIndex);
+        processed_pins |= pin_mask;
       }
     }
+
+    // Check that all pins have been processed. Otherwise this ISR would
+    // continue to trigger indefinitely. This will crash instead.
+    PW_ASSERT(processed_pins == port_int_flags);
   }
 
   SDK_ISR_EXIT_BARRIER;
