@@ -72,6 +72,14 @@ h6 {
   background-color: var(--color-code-hll-background) !important;
 }
 
+aside.topic div.highlight pre {
+  background-color: var(--pw-color-background-secondary) !important;
+}
+
+details.sd-dropdown {
+  margin-top: 1em;
+}
+
 /********** Dark mode styles ***********/
 /* https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/styling.html#color-variables */
 

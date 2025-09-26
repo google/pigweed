@@ -125,7 +125,7 @@ Learn more
    :maxdepth: 1
 
    Informed poll <informed_poll>
-   codelab
+   codelab/docs
    quickstart
    guides
    backends

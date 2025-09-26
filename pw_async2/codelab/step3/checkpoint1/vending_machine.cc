@@ -19,8 +19,29 @@
 
 namespace codelab {
 
+pw::async2::Poll<int> Keypad::Pend(pw::async2::Context& cx) {
+  return key_pressed_;
+}
+
+void Keypad::Press(int key) {}
+
 pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context& cx) {
-  // Fill in your implementation here.
+  if (!displayed_welcome_message_) {
+    PW_LOG_INFO("Welcome to the Pigweed Vending Machine!");
+    PW_LOG_INFO("Please insert a coin.");
+    displayed_welcome_message_ = true;
+  }
+
+  if (coins_inserted_ == 0) {
+    PW_TRY_READY_ASSIGN(unsigned coins, coin_slot_.Pend(cx));
+    PW_LOG_INFO("Received %u coin%s.", coins, coins > 1 ? "s" : "");
+    PW_LOG_INFO("Please press a keypad key.");
+    coins_inserted_ += coins;
+  }
+
+  PW_TRY_READY_ASSIGN(int key, keypad_.Pend(cx));
+  PW_LOG_INFO("Keypad %d was pressed. Dispensing an item.", key);
+
   return pw::async2::Ready();
 }
 

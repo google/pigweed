@@ -20,7 +20,7 @@
 namespace codelab {
 
 pw::async2::Poll<> VendingMachineTask::DoPend(pw::async2::Context& cx) {
-  // Fill in your implementation here.
+  PW_LOG_INFO("Welcome to the Pigweed Vending Machine!");
   return pw::async2::Ready();
 }
 

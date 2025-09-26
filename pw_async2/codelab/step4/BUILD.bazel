@@ -1,0 +1,71 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+deps = [
+    "//pw_async2:dispatcher",
+    "//pw_async2:pendable",
+    "//pw_async2:poll",
+    "//pw_async2:select",
+    "//pw_async2:system_time_provider",
+    "//pw_async2:time_provider",
+    "//pw_async2/codelab:hardware",
+    "//pw_async2/codelab:sensors",
+    "//pw_chrono:system_clock",
+    "//pw_containers:inline_async_queue",
+    "//pw_log",
+    "//pw_sync:interrupt_spin_lock",
+    "//pw_sync:lock_annotations",
+]
+
+pw_cc_binary(
+    name = "step4",
+    srcs = [
+        "checkpoint2/main.cc",
+        "checkpoint2/vending_machine.cc",
+        "checkpoint2/vending_machine.h",
+    ],
+    deps = deps,
+)
+
+pw_cc_binary(
+    name = "checkpoint1",
+    srcs = [
+        "checkpoint1/main.cc",
+        "checkpoint1/vending_machine.cc",
+        "checkpoint1/vending_machine.h",
+    ],
+    deps = deps,
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "checkpoint1/main.cc",
+        "checkpoint1/vending_machine.cc",
+        "checkpoint1/vending_machine.h",
+        "checkpoint2/main.cc",
+        "checkpoint2/vending_machine.cc",
+        "checkpoint2/vending_machine.h",
+        "docs.rst",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
+)

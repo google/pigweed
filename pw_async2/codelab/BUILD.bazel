@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
@@ -21,15 +22,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-exports_files(
-    [
-        "main.cc",
-        "vending_machine.cc",
-        "vending_machine.h",
-    ],
-    visibility = ["//pw_async2:__subpackages__"],
-)
-
 pw_cc_binary(
     name = "codelab",
     srcs = [
@@ -37,6 +29,7 @@ pw_cc_binary(
         "vending_machine.cc",
         "vending_machine.h",
     ],
+    copts = ["-Wno-unused-parameter"],
     deps = [
         ":hardware",
         ":sensors",
@@ -101,4 +94,22 @@ pw_cc_test(
         "//pw_async2:poll",
         "//pw_unit_test",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "coin_slot.h",
+        "docs.rst",
+        "hardware.h",
+        "main.cc",
+        "vending_machine.cc",
+        "vending_machine.h",
+        "//pw_async2/codelab/step1:docs",
+        "//pw_async2/codelab/step2:docs",
+        "//pw_async2/codelab/step3:docs",
+        "//pw_async2/codelab/step4:docs",
+        "//pw_async2/codelab/step5:docs",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
 )

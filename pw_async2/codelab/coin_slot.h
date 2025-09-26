@@ -31,8 +31,8 @@ class CoinSlot {
   // May only be called by one task.
   pw::async2::Poll<unsigned> Pend(pw::async2::Context& context);
 
-  // Report that a coin was received by the coin slot. Typically called from the
-  // coin slot ISR.
+  // Report that a coin was received by the coin slot.
+  // Typically called from the coin slot ISR.
   void Deposit();
 
  private:

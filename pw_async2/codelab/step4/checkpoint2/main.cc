@@ -20,6 +20,7 @@
 namespace {
 
 codelab::CoinSlot coin_slot;
+codelab::Keypad keypad;
 
 }  // namespace
 
@@ -29,9 +30,7 @@ void coin_inserted_isr() { coin_slot.Deposit(); }
 
 // Interrupt handler function invoked when the user presses a key on the
 // machine's keypad. Receives the value of the pressed key (0-9).
-void key_press_isr(int key) {
-  // In Step 3, implement your keypad handler here.
-}
+void key_press_isr(int key) { keypad.Press(key); }
 
 // Interrupt handler function invoked to simulate the item drop detector
 // detecting confirmation that an item was successfully dispensed from the
@@ -46,7 +45,10 @@ int main() {
   pw::async2::Dispatcher dispatcher;
   codelab::HardwareInit(&dispatcher);
 
-  // Fill in your implementation here.
+  codelab::VendingMachineTask task(coin_slot, keypad);
+  dispatcher.Post(task);
+
+  dispatcher.RunToCompletion();
 
   return 0;
 }

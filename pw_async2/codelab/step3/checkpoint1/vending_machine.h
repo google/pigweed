@@ -13,22 +13,52 @@
 // the License.
 #pragma once
 
+#include "coin_slot.h"
 #include "pw_async2/context.h"
 #include "pw_async2/poll.h"
 #include "pw_async2/task.h"
 
 namespace codelab {
 
+class Keypad {
+ public:
+  constexpr Keypad() : key_pressed_(kNone) {}
+
+  // Pends until a key has been pressed, returning the key number.
+  //
+  // May only be called by one task.
+  pw::async2::Poll<int> Pend(pw::async2::Context& cx);
+
+  // Record a key press. Typically called from the keypad ISR.
+  void Press(int key);
+
+ private:
+  // A special internal value to indicate no keypad button has yet been
+  // pressed.
+  static constexpr int kNone = -1;
+
+  int key_pressed_;
+};
+
 // The main task that drives the vending machine.
 class VendingMachineTask : public pw::async2::Task {
  public:
-  VendingMachineTask()
-      : pw::async2::Task(PW_ASYNC_TASK_NAME("VendingMachineTask")) {}
+  VendingMachineTask(CoinSlot& coin_slot, Keypad& keypad)
+      : pw::async2::Task(PW_ASYNC_TASK_NAME("VendingMachineTask")),
+        coin_slot_(coin_slot),
+        displayed_welcome_message_(false),
+        keypad_(keypad),
+        coins_inserted_(0) {}
 
  private:
   // This is the core of the asynchronous task. The dispatcher calls this method
   // to give the task a chance to do work.
   pw::async2::Poll<> DoPend(pw::async2::Context& cx) override;
+
+  CoinSlot& coin_slot_;
+  bool displayed_welcome_message_;
+  Keypad& keypad_;
+  unsigned coins_inserted_;
 };
 
 }  // namespace codelab

@@ -46,7 +46,10 @@ int main() {
   pw::async2::Dispatcher dispatcher;
   codelab::HardwareInit(&dispatcher);
 
-  // Fill in your implementation here.
+  codelab::VendingMachineTask task(coin_slot);
+  dispatcher.Post(task);
+
+  dispatcher.RunToCompletion();
 
   return 0;
 }

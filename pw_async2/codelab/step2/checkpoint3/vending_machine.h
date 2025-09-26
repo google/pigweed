@@ -13,29 +13,28 @@
 // the License.
 #pragma once
 
-#include <atomic>
-
+#include "coin_slot.h"
 #include "pw_async2/context.h"
-#include "pw_async2/waker.h"
+#include "pw_async2/poll.h"
+#include "pw_async2/task.h"
 
 namespace codelab {
 
-class ItemDropSensor {
+// The main task that drives the vending machine.
+class VendingMachineTask : public pw::async2::Task {
  public:
-  constexpr ItemDropSensor() = default;
-
-  // Pends until the item drop sensor triggers.
-  pw::async2::Poll<> Pend(pw::async2::Context& cx);
-
-  // Records an item drop event. Typically called from the drop sensor ISR.
-  void Drop();
-
-  // Clears any latched drop events.
-  void Clear() { drop_detected_.store(false, std::memory_order_relaxed); }
+  VendingMachineTask(CoinSlot& coin_slot)
+      : pw::async2::Task(PW_ASYNC_TASK_NAME("VendingMachineTask")),
+        coin_slot_(coin_slot),
+        displayed_welcome_message_(false) {}
 
  private:
-  std::atomic<bool> drop_detected_ = false;
-  pw::async2::Waker waker_;
+  // This is the core of the asynchronous task. The dispatcher calls this method
+  // to give the task a chance to do work.
+  pw::async2::Poll<> DoPend(pw::async2::Context& cx) override;
+
+  CoinSlot& coin_slot_;
+  bool displayed_welcome_message_;
 };
 
 }  // namespace codelab

@@ -14,12 +14,15 @@
 
 #include "coin_slot.h"
 #include "hardware.h"
+#include "item_drop_sensor.h"
 #include "pw_async2/dispatcher.h"
 #include "vending_machine.h"
 
 namespace {
 
 codelab::CoinSlot coin_slot;
+codelab::ItemDropSensor item_drop_sensor;
+codelab::Keypad keypad;
 
 }  // namespace
 
@@ -29,24 +32,29 @@ void coin_inserted_isr() { coin_slot.Deposit(); }
 
 // Interrupt handler function invoked when the user presses a key on the
 // machine's keypad. Receives the value of the pressed key (0-9).
-void key_press_isr(int key) {
-  // In Step 3, implement your keypad handler here.
-}
+void key_press_isr(int key) { keypad.Press(key); }
 
 // Interrupt handler function invoked to simulate the item drop detector
 // detecting confirmation that an item was successfully dispensed from the
 // machine.
-void item_drop_sensor_isr() {
-  // In Step 5 you will uses this as part of a new Dispense task that runs
-  // the dispenser motor until an item drops, or you time out on the vend
-  // operation.
-}
+void item_drop_sensor_isr() { item_drop_sensor.Drop(); }
 
 int main() {
   pw::async2::Dispatcher dispatcher;
   codelab::HardwareInit(&dispatcher);
 
-  // Fill in your implementation here.
+  codelab::DispenseRequestQueue dispense_requests;
+  codelab::DispenseResponseQueue dispense_responses;
+
+  codelab::VendingMachineTask task(
+      coin_slot, keypad, dispense_requests, dispense_responses);
+  dispatcher.Post(task);
+
+  codelab::DispenserTask dispenser_task(
+      item_drop_sensor, dispense_requests, dispense_responses);
+  dispatcher.Post(dispenser_task);
+
+  dispatcher.RunToCompletion();
 
   return 0;
 }
