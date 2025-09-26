@@ -181,6 +181,7 @@ pw_cc_test(
 pw_cc_test(
     name = "future_test",
     srcs = ["future_test.cc"],
+    has_nc_test = True,
     deps = [
         ":dispatcher",
         ":pend_func_task",

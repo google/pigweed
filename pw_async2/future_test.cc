@@ -17,6 +17,7 @@
 #include "pw_async2/dispatcher.h"
 #include "pw_async2/pend_func_task.h"
 #include "pw_async2/try.h"
+#include "pw_compilation_testing/negative_compilation.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -56,6 +57,8 @@ class SimpleAsyncInt {
 
 class SimpleIntFuture : public ListableFutureWithWaker<SimpleIntFuture, int> {
  public:
+  static constexpr const char kWaitReason[] = "SimpleIntFuture";
+
   SimpleIntFuture(SimpleIntFuture&& other) noexcept
       : ListableFutureWithWaker(kMovedFrom),
         async_int_(std::exchange(other.async_int_, nullptr)) {
@@ -292,5 +295,21 @@ TEST(SingleFutureProvider, OnlyAllowsOneFutureToExist) {
   std::optional<SimpleIntFuture> new_future = provider.GetSingle();
   ASSERT_TRUE(new_future.has_value());
 }
+
+#if PW_NC_TEST(FutureWaitReasonMustBeCharArray)
+PW_NC_EXPECT("kWaitReason must be a character array");
+class BadFuture : public ListableFutureWithWaker<BadFuture, int> {
+ public:
+  BadFuture() : ListableFutureWithWaker(kMovedFrom) {}
+  static constexpr const char* kWaitReason = "this is a char* not an array";
+  pw::async2::Poll<int> DoPend(pw::async2::Context&) { return 5; }
+};
+
+void ShouldAssert() {
+  BadFuture future;
+  pw::async2::PendFuncTask task(
+      [&](pw::async2::Context& cx) { return future.Pend(cx).Readiness(); });
+}
+#endif  // PW_NC_TEST
 
 }  // namespace

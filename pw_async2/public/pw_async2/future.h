@@ -225,7 +225,9 @@ class SingleFutureProvider {
 ///
 /// A concrete future that derives from `ListableFutureWithWaker` must provide a
 /// `DoPend` method and implement its own move constructor and move assignment
-/// operator.
+/// operator. It must also provide a
+/// `static constexpr const char kWaitReason[]` that is used as the waker's wait
+/// reason.
 ///
 /// The move operations must first move any members of the derived class, then
 /// call the base `MoveFrom` method to transfer the intrusive list pointers and
@@ -234,6 +236,8 @@ class SingleFutureProvider {
 /// @code{.cpp}
 /// class MyFuture : public ListableFutureWithWaker<MyFuture, int> {
 ///  public:
+///   static constexpr const char kWaitReason[] = "MyFuture";
+///
 ///   MyFuture(MyFuture&& other) noexcept
 ///       : ListableFutureWithWaker(kMovedFrom) {
 ///     // First, move any derived members.
@@ -270,9 +274,14 @@ class ListableFutureWithWaker
 
  protected:
   Poll<T> DoPend(Context& cx) {
+    static_assert(
+        std::is_same_v<std::remove_extent_t<decltype(Derived::kWaitReason)>,
+                       const char>,
+        "kWaitReason must be a character array");
+
     Poll<T> poll = derived().DoPend(cx);
     if (poll.IsPending()) {
-      PW_ASYNC_STORE_WAKER(cx, waker_, "get string from impl");
+      PW_ASYNC_STORE_WAKER(cx, waker_, Derived::kWaitReason);
     }
     return poll;
   }
