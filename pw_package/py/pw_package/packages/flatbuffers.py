@@ -27,7 +27,10 @@ class Flatbuffers(pw_package.git_repo.GitRepo):
         super().__init__(
             *args,
             name="flatbuffers",
-            url=("https://github.com/google/flatbuffers.git"),
+            url=(
+                "https://pigweed.googlesource.com/third_party/github/"
+                "google/flatbuffers.git"
+            ),
             tag="v2.0.0",
             **kwargs,
         )
