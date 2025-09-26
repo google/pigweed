@@ -23,16 +23,18 @@ namespace {
 
 using pw::async2::experimental::ListableFutureWithWaker;
 using pw::async2::experimental::ListFutureProvider;
+using pw::async2::experimental::SingleFutureProvider;
 
 class SimpleIntFuture;
 
 class SimpleAsyncInt {
  public:
   SimpleIntFuture Get();
+  std::optional<SimpleIntFuture> GetSingle();
 
   void Set(int value) {
     {
-      std::lock_guard lock(provider_.lock());
+      std::lock_guard lock(list_provider_.lock());
       PW_ASSERT(!value_.has_value());
       value_ = value;
     }
@@ -44,7 +46,11 @@ class SimpleAsyncInt {
 
   void ResolveAllFutures();
 
-  ListFutureProvider<SimpleIntFuture> provider_;
+  // This object stores both a list provider and a single provider for testing
+  // purposes. In actual usage, only one of these would be needed, depending on
+  // how many consumers the operation allows.
+  ListFutureProvider<SimpleIntFuture> list_provider_;
+  SingleFutureProvider<SimpleIntFuture> single_provider_;
   std::optional<int> value_;
 };
 
@@ -52,43 +58,61 @@ class SimpleIntFuture : public ListableFutureWithWaker<SimpleIntFuture, int> {
  public:
   SimpleIntFuture(SimpleIntFuture&& other) noexcept
       : ListableFutureWithWaker(kMovedFrom),
-        provider_(std::exchange(other.provider_, nullptr)) {
+        async_int_(std::exchange(other.async_int_, nullptr)) {
     ListableFutureWithWaker::MoveFrom(other);
   }
 
   SimpleIntFuture& operator=(SimpleIntFuture&& other) noexcept {
-    provider_ = std::exchange(other.provider_, nullptr);
+    async_int_ = std::exchange(other.async_int_, nullptr);
     ListableFutureWithWaker::MoveFrom(other);
     return *this;
   }
 
   pw::async2::Poll<int> DoPend(pw::async2::Context&) {
-    PW_ASSERT(provider_ != nullptr);
+    PW_ASSERT(async_int_ != nullptr);
     std::lock_guard guard(lock());
 
-    if (!provider_->value_.has_value()) {
+    if (!async_int_->value_.has_value()) {
       return pw::async2::Pending();
     }
 
-    return provider_->value_.value();
+    return async_int_->value_.value();
   }
 
  private:
   friend class SimpleAsyncInt;
   friend class ListableFutureWithWaker<SimpleIntFuture, int>;
 
-  SimpleIntFuture(SimpleAsyncInt& provider)
-      : ListableFutureWithWaker(provider.provider_), provider_(&provider) {}
+  SimpleIntFuture(SimpleAsyncInt& async_int,
+                  ListFutureProvider<SimpleIntFuture>& provider)
+      : ListableFutureWithWaker(provider), async_int_(&async_int) {}
 
-  SimpleAsyncInt* provider_;
+  SimpleIntFuture(SimpleAsyncInt& async_int,
+                  SingleFutureProvider<SimpleIntFuture>& provider)
+      : ListableFutureWithWaker(provider), async_int_(&async_int) {}
+
+  SimpleAsyncInt* async_int_;
 };
 
-SimpleIntFuture SimpleAsyncInt::Get() { return SimpleIntFuture(*this); }
+SimpleIntFuture SimpleAsyncInt::Get() {
+  return SimpleIntFuture(*this, list_provider_);
+}
+
+std::optional<SimpleIntFuture> SimpleAsyncInt::GetSingle() {
+  if (!single_provider_.has_future()) {
+    return SimpleIntFuture(*this, single_provider_);
+  }
+  return std::nullopt;
+}
 
 void SimpleAsyncInt::ResolveAllFutures() {
-  while (!provider_.empty()) {
-    SimpleIntFuture& future = provider_.Pop();
+  while (!list_provider_.empty()) {
+    SimpleIntFuture& future = list_provider_.Pop();
     future.Wake();
+  }
+
+  if (single_provider_.has_future()) {
+    single_provider_.Take().Wake();
   }
 }
 
@@ -177,7 +201,7 @@ TEST(Future, DestroyBeforeCompletion) {
   provider.Set(99);
 }
 
-TEST(FutureProvider, MultipleFutures) {
+TEST(ListFutureProvider, MultipleFutures) {
   pw::async2::Dispatcher dispatcher;
   SimpleAsyncInt provider;
 
@@ -208,6 +232,65 @@ TEST(FutureProvider, MultipleFutures) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), pw::async2::Ready());
   EXPECT_EQ(result1, 33);
   EXPECT_EQ(result2, 33);
+}
+
+TEST(SingleFutureProvider, VendsAndResolvesFuture) {
+  pw::async2::Dispatcher dispatcher;
+  SimpleAsyncInt provider;
+
+  std::optional<SimpleIntFuture> future = provider.GetSingle();
+
+  ASSERT_TRUE(future.has_value());
+
+  int result = -1;
+  pw::async2::PendFuncTask task(
+      [&](pw::async2::Context& cx) -> pw::async2::Poll<> {
+        PW_TRY_READY_ASSIGN(int value, future->Pend(cx));
+        result = value;
+        return pw::async2::Ready();
+      });
+
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), pw::async2::Pending());
+
+  provider.Set(96);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), pw::async2::Ready());
+  EXPECT_EQ(result, 96);
+}
+
+TEST(SingleFutureProvider, OnlyAllowsOneFutureToExist) {
+  pw::async2::Dispatcher dispatcher;
+  SimpleAsyncInt provider;
+
+  {
+    std::optional<SimpleIntFuture> future1 = provider.GetSingle();
+    std::optional<SimpleIntFuture> future2 = provider.GetSingle();
+    EXPECT_TRUE(future1.has_value());
+    EXPECT_FALSE(future2.has_value());
+  }
+
+  // `future1` went out of scope, so we should be allowed to get a new one.
+  std::optional<SimpleIntFuture> future = provider.GetSingle();
+  ASSERT_TRUE(future.has_value());
+
+  int result = -1;
+  pw::async2::PendFuncTask task(
+      [&](pw::async2::Context& cx) -> pw::async2::Poll<> {
+        PW_TRY_READY_ASSIGN(int value, future->Pend(cx));
+        result = value;
+        return pw::async2::Ready();
+      });
+
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), pw::async2::Pending());
+
+  provider.Set(93);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), pw::async2::Ready());
+  EXPECT_EQ(result, 93);
+
+  // The operation has resolved, so a new future should be obtainable.
+  std::optional<SimpleIntFuture> new_future = provider.GetSingle();
+  ASSERT_TRUE(new_future.has_value());
 }
 
 }  // namespace

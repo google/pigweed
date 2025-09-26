@@ -14,6 +14,7 @@
 #pragma once
 
 #include <mutex>
+#include <optional>
 #include <type_traits>
 
 #include "pw_assert/assert.h"
@@ -103,9 +104,9 @@ constexpr bool is_future_v =
 
 /// Manages a list of futures for a single asynchronous operation.
 ///
-/// An asynchronous operation that vends futures to multiple callers can use a │
-/// `ListFutureProvider` to track them. This class can be used with any future │
-/// that derives from a listable type like `ListableFutureWithWaker`. The │
+/// An asynchronous operation that vends futures to multiple callers can use a
+/// `ListFutureProvider` to track them. This class can be used with any future
+/// that derives from a listable type like `ListableFutureWithWaker`. The
 /// provider and its futures automatically handle list updates during moves.
 ///
 /// All operations on the list are thread-safe, allowing futures to be modified
@@ -163,6 +164,54 @@ class ListFutureProvider {
 
   IntrusiveList<FutureType> futures_;
   Lock lock_;
+};
+
+/// Manages a single future for an asynchronous operation.
+///
+/// An asynchronous operation which can only have a single caller can use a
+/// `SingleFutureProvider` to manage its reference to the future. This can be
+/// used with any listable future type, and automatically handles updates
+/// during moves.
+///
+/// All operations on the provider are thread-safe.
+///
+/// If the future belonging to the provider is destroyed, it safely removes
+/// itself. The provider is not notified of this event.
+template <typename FutureType>
+class SingleFutureProvider {
+  // TODO: b/401055180 - This publicly inherits from ListFutureProvider because
+  // listable futures store a pointer to their provider and this must be
+  // compatible. Once futures are refactored to not reference their providers,
+  // this could be switched to private inheritance, or separated entirely.
+ public:
+  /// Sets the provider's future. Crashes if a future is already set.
+  void Set(FutureType& future) {
+    PW_ASSERT(!has_future());
+    inner_.Push(future);
+  }
+
+  /// Attempts to set the provider's future, returning `true` if successful.
+  bool TrySet(FutureType& future) {
+    if (has_future()) {
+      return false;
+    }
+    inner_.Push(future);
+    return true;
+  }
+
+  /// Claims the provider's future, leaving it unset.
+  /// Crashes if there is no future set.
+  [[nodiscard]] FutureType& Take() { return inner_.Pop(); }
+
+  /// Returns `true` if the provider has a future.
+  bool has_future() { return !inner_.empty(); }
+
+ private:
+  template <typename, typename>
+  friend class ListableFutureWithWaker;
+  friend FutureType;
+
+  ListFutureProvider<FutureType> inner_;
 };
 
 /// An abstract movable future that is stored in an intrusive linked list
@@ -242,6 +291,8 @@ class ListableFutureWithWaker
   ListableFutureWithWaker(Provider& provider) : provider_(&provider) {
     provider.Push(derived());
   }
+  ListableFutureWithWaker(SingleFutureProvider<Derived>& single)
+      : ListableFutureWithWaker(single.inner_) {}
 
   ~ListableFutureWithWaker() {
     if (provider_ == nullptr) {
