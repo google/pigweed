@@ -13,13 +13,13 @@
 // the License.
 #pragma once
 
-#include <string_view>
+#include "pw_string/string.h"
 
 namespace pw::build_info {
 
 // Populated from bazel workspace status command and substituted using
 // pw_substitute_workspace_status.
-constexpr std::string_view kGitCommit = "${STABLE_GIT_COMMIT}";
+constexpr InlineBasicString kGitCommit = "${STABLE_GIT_COMMIT}";
 constexpr bool kGitTreeDirty = ${STABLE_GIT_TREE_DIRTY};
 
 }  // namespace pw::build_info

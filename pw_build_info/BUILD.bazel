@@ -134,6 +134,7 @@ pw_substitute_workspace_status(
 cc_library(
     name = "git_build_info",
     hdrs = [":git_build_info_hdr"],
+    deps = ["//pw_string:string"],
 )
 
 pw_cc_test(

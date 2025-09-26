@@ -192,8 +192,10 @@ Add a dependency on ``//pw_build_info:git_build_info``:
 
 Include the header. The following constants are available:
 
-* ``pw::build_info::kGitCommit``: The git commit this binary was built from.
-* ``pw::build_info::kGitTreeDirty``: True if there were any uncommitted changes.
+* ``pw::InlineBasicString pw::build_info::kGitCommit``: The git commit this
+  binary was built from.
+* ``bool pw::build_info::kGitTreeDirty``: True if there were any uncommitted
+  changes.
 
 .. code-block:: cpp
 
@@ -202,8 +204,7 @@ Include the header. The following constants are available:
    #include "pw_string/string.h"
 
    int main() {
-     PW_LOG_INFO("kGitCommit %s",
-                 pw::InlineString<40>(pw::build_info::kGitCommit).c_str());
+     PW_LOG_INFO("kGitCommit %s", pw::build_info::kGitCommit.c_str());
      PW_LOG_INFO("kGitTreeDirty %d", pw::build_info::kGitTreeDirty);
      return 0;
    }

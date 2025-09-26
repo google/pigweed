@@ -14,12 +14,17 @@
 
 #include "pw_build_info/git_build_info.h"
 
+#include "pw_log/log.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::build_info {
 namespace {
 
-TEST(GitBuildInfo, NonEmpty) { EXPECT_GT(kGitCommit.size(), 0u); }
+TEST(GitBuildInfo, NonEmpty) {
+  PW_LOG_INFO("Git commit: %s", kGitCommit.c_str());
+  EXPECT_GE(kGitCommit.size(), 40u);
+  EXPECT_GE(std::size(kGitCommit), 40u);
+}
 
 }  // namespace
 }  // namespace pw::build_info
