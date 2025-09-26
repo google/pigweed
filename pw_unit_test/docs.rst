@@ -417,6 +417,82 @@ skipped when :ref:`using upstream GoogleTest <module-pw_unit_test-upstream>`:
        }),
    )
 
+Constexpr unit tests
+====================
+The :cc:`PW_CONSTEXPR_TEST` macro defines a test that is executed both at
+compile time in a ``static_assert`` and as a regular GoogleTest-style
+``TEST()``. This offers the advantages of compile-time testing in a structured,
+familiar API, without sacrificing anything from GoogleTest-style tests. The
+framework uses the standard GoogleTest macros at run time, and is compatible
+with GoogleTest or Pigweed's ``pw_unit_test:light`` framework.
+
+To create a ``constexpr`` test:
+
+#. Include ``"pw_unit_test/constexpr.h"`` alongside the test framework
+   (``"pw_unit_test/framework.h"`` or ``"gtest/gtest.h"``).
+#. Use the macro :cc:`PW_CONSTEXPR_TEST` instead of ``TEST``. Note that the
+   function body is passed as the third argument to the macro.
+#. Use the familiar GoogleTest macros, but with a ``PW_TEST_`` prefix. For
+   example:
+
+   - ``EXPECT_TRUE`` → ``PW_TEST_EXPECT_TRUE``
+   - ``EXPECT_EQ`` → ``PW_TEST_EXPECT_EQ``
+   - ``ASSERT_STREQ`` → ``PW_TEST_ASSERT_STREQ``
+   - etc.
+
+The result is a familiar-looking unit test that executes both at compile-time
+and run-time.
+
+.. literalinclude:: constexpr_test.cc
+   :language: cpp
+   :start-after: [pw_unit_test-constexpr]
+   :end-before: [pw_unit_test-constexpr]
+
+Why run tests at compile time?
+------------------------------
+- Cross-compile and execute tests without having to flash them to a device.
+- Ensure ``constexpr`` functions can actually be evaluated at compile time.
+  For example, function templates may be marked as ``constexpr``, even if they
+  do not support constant evaluation when instantiated.
+- Catch undefined behavior, out-of-bounds access, and other issues during
+  compilation on any platform, without needing to run sanitizers.
+
+Why execute the tests at run time at all?
+-----------------------------------------
+.. block-submission: disable
+
+- Code may run differently at compile time and execution, particularly when
+  ``std::is_constant_evaluated`` or ``if consteval`` are used.
+- Error messages are much better at run time. :cc:`PW_CONSTEXPR_TEST` makes it
+  simple to temporarily disable compile time tests and see the rich
+  GoogleTest-like output (see :ref:`SKIP_CONSTEXPR_TESTS_DONT_SUBMIT
+  <module-pw_unit_test-constexpr-skip>`).
+- Tools like code coverage only work for code that is executed normally.
+
+:cc:`PW_CONSTEXPR_TEST` uses ``cpp20::is_constant_evaluated()`` from
+``stdcompat``. If the compiler does not support ``is_constant_evaluated``, only
+the regular GoogleTest version will run. Note that compiler support is
+independent of the C++ standard in use.
+
+.. _module-pw_unit_test-constexpr-skip:
+
+Temporarily skip ``constexpr`` tests to see GoogleTest output
+-------------------------------------------------------------
+Define the ``SKIP_CONSTEXPR_TESTS_DONT_SUBMIT`` macro to temporarily disable the
+``constexpr`` portion of subsequent :cc:`PW_CONSTEXPR_TEST` tests. Use this to
+view GoogleTest output, which is usually more informative than the compiler's
+``constexpr`` test failure output.
+
+.. block-submission: enable
+
+Defines of this macro should never be submitted. If a test shouldn't run at
+compile time, use a plain ``TEST()``.
+
+.. literalinclude:: constexpr_test.cc
+   :language: cpp
+   :start-after: [pw_unit_test-constexpr-skip]
+   :end-before: [pw_unit_test-constexpr-skip]
+
 .. _module-pw_unit_test-static:
 
 Run tests in static libraries
