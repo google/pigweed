@@ -32,7 +32,13 @@ std::array<pw::digital_io::InterruptHandler,
     interrupt_handlers;
 std::array<PINT_Type*, FSL_FEATURE_PINT_NUMBER_OF_CONNECTED_OUTPUTS> bases;
 
+// PINT_USE_LEGACY_CALLBACK is defined as 0 or 1 when using SDK 25.06.00 and
+// above, and not defined at at in older versions.
+#if defined(PINT_USE_LEGACY_CALLBACK)
+void PintCallback(pint_pin_int_t pin, pint_status_t*) {
+#else
 void PintCallback(pint_pin_int_t pin, uint32_t) {
+#endif  // defined(PINT_USE_LEGACY_CALLBACK)
   PW_CHECK(pin < interrupt_handlers.size());
   State state = PINT_PinInterruptGetStatus(bases[pin], pin) == 1
                     ? State::kActive
@@ -48,6 +54,11 @@ void PintCallback(pint_pin_int_t pin, uint32_t) {
 McuxpressoPintController::McuxpressoPintController(PINT_Type* base)
     : base_(base) {
   PINT_Init(base_);
+
+// Using SDK 25.06.00 without the legacy callback API.
+#if defined(PINT_USE_LEGACY_CALLBACK) && !PINT_USE_LEGACY_CALLBACK
+  PINT_SetCallback(base_, PintCallback);
+#endif  // defined(PINT_USE_LEGACY_CALLBACK) && !PINT_USE_LEGACY_CALLBACK
 }
 
 McuxpressoPintController::~McuxpressoPintController() { PINT_Deinit(base_); }
@@ -61,22 +72,27 @@ pw::Status McuxpressoPintController::Config(
   }
   interrupt_handlers[pin] = std::move(handler);
   bases[pin] = base_;
+  pint_pin_enable_t enable = kPINT_PinIntEnableNone;
   switch (trigger) {
     case InterruptTrigger::kActivatingEdge:
-      PINT_PinInterruptConfig(
-          base_, pin, kPINT_PinIntEnableRiseEdge, PintCallback);
+      enable = kPINT_PinIntEnableRiseEdge;
       break;
     case InterruptTrigger::kDeactivatingEdge:
-      PINT_PinInterruptConfig(
-          base_, pin, kPINT_PinIntEnableFallEdge, PintCallback);
+      enable = kPINT_PinIntEnableFallEdge;
       break;
     case InterruptTrigger::kBothEdges:
-      PINT_PinInterruptConfig(
-          base_, pin, kPINT_PinIntEnableBothEdges, PintCallback);
+      enable = kPINT_PinIntEnableBothEdges;
       break;
     default:
       return pw::Status::InvalidArgument();
   }
+
+#if defined(PINT_USE_LEGACY_CALLBACK) && !PINT_USE_LEGACY_CALLBACK
+  PINT_PinInterruptConfig(base_, pin, enable);
+#else
+  PINT_PinInterruptConfig(base_, pin, enable, PintCallback);
+#endif  // defined(PINT_USE_LEGACY_CALLBACK) && !PINT_USE_LEGACY_CALLBACK
+
   return pw::OkStatus();
 }
 
