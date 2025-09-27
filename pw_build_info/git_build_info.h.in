@@ -13,13 +13,25 @@
 // the License.
 #pragma once
 
+// Populated from bazel workspace status command and substituted using
+// pw_substitute_workspace_status.
+#define PW_BUILD_INFO_GIT_TREE_DIRTY ${STABLE_GIT_TREE_DIRTY}
+
+#if PW_BUILD_INFO_GIT_TREE_DIRTY
+#define PW_BUILD_INFO_GIT_COMMIT "${STABLE_GIT_COMMIT}" "-dirty"
+#else  // PW_BUILD_INFO_GIT_TREE_DIRTY
+#define PW_BUILD_INFO_GIT_COMMIT "${STABLE_GIT_COMMIT}"
+#endif  // PW_BUILD_INFO_GIT_TREE_DIRTY
+
+#ifdef __cplusplus
+
 #include "pw_string/string.h"
 
 namespace pw::build_info {
 
-// Populated from bazel workspace status command and substituted using
-// pw_substitute_workspace_status.
-constexpr InlineBasicString kGitCommit = "${STABLE_GIT_COMMIT}";
-constexpr bool kGitTreeDirty = ${STABLE_GIT_TREE_DIRTY};
+constexpr InlineBasicString kGitCommit = PW_BUILD_INFO_GIT_COMMIT;
+constexpr bool kGitTreeDirty = PW_BUILD_INFO_GIT_TREE_DIRTY;
 
 }  // namespace pw::build_info
+
+#endif  // __cplusplus

@@ -193,7 +193,8 @@ Add a dependency on ``//pw_build_info:git_build_info``:
 Include the header. The following constants are available:
 
 * ``pw::InlineBasicString pw::build_info::kGitCommit``: The git commit this
-  binary was built from.
+  binary was built from. Includes ``-dirty`` suffix if ``kGitTreeDirty`` is
+  true.
 * ``bool pw::build_info::kGitTreeDirty``: True if there were any uncommitted
   changes.
 

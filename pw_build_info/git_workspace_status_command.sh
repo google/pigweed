@@ -38,7 +38,7 @@
 if [[ "$PWD" == /google/cog/* ]];
 then
     echo "STABLE_GIT_COMMIT UNKNOWN_COG_WORKSPACE"
-    echo "STABLE_GIT_TREE_DIRTY true"
+    echo "STABLE_GIT_TREE_DIRTY 1"
     exit 0;
 fi
 
@@ -49,8 +49,8 @@ echo "STABLE_GIT_COMMIT ${git_rev}"
 # Check whether there are any uncommitted changes
 git diff-index --quiet HEAD --; diff_rc=$?
 case $diff_rc in
-    0) dirty=false ;;
-    1) dirty=true ;;
+    0) dirty=0 ;;
+    1) dirty=1 ;;
     *) exit 1 ;;
 esac
 echo "STABLE_GIT_TREE_DIRTY ${dirty}"
