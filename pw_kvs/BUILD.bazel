@@ -889,7 +889,10 @@ pw_size_table(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "code_size.rst",
+        "disk_format.rst",
         "docs.rst",
+        "guides.rst",
         ":kvs_size",
     ],
     prefix = "pw_kvs/",

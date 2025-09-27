@@ -92,15 +92,19 @@ struct Options {
 /// buffers for tracking entries and flash sectors.
 ///
 /// @code{.cpp}
-///   #include "pw_kvs/key_value_store.h"
+///   #include "pw_kvs/crc16_checksum.h"
 ///   #include "pw_kvs/flash_test_partition.h"
+///   #include "pw_kvs/key_value_store.h"
 ///
 ///   constexpr size_t kMaxSectors = 6;
 ///   constexpr size_t kMaxEntries = 64;
-///   static constexpr pw::kvs::EntryFormat kvs_format = {
+///
+///   pw::kvs::ChecksumCrc16 checksum;
+///   const pw::kvs::EntryFormat kvs_format = {
 ///     .magic = 0xd253a8a9,  // Prod apps should use a random number here
-///     .checksum = nullptr
+///     .checksum = &checksum
 ///   };
+///
 ///   pw::kvs::KeyValueStoreBuffer<kMaxEntries, kMaxSectors> kvs(
 ///     &pw::kvs::FlashTestPartition(),
 ///     kvs_format
