@@ -17,6 +17,6 @@
 
 namespace pw::thread::backend {
 
-using NativeId = ::pw::thread::zephyr::NativeId;
+using NativeId = ::pw::thread::zephyr::Id;
 
 }  // namespace pw::thread::backend

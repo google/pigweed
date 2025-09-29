@@ -19,26 +19,26 @@ namespace pw::thread::zephyr {
 
 // Trivial wrapper around Zephyr RTOS-specific k_tid_t type
 // (note that k_tid_t is just a pointer to the k_thread aka TCB).
-class NativeId {
+class Id {
  public:
-  constexpr NativeId(k_tid_t thread_id = nullptr) : thread_id_(thread_id) {}
+  constexpr Id(k_tid_t thread_id = nullptr) : thread_id_(thread_id) {}
 
-  constexpr bool operator==(NativeId other) const {
+  constexpr bool operator==(Id other) const {
     return thread_id_ == other.thread_id_;
   }
-  constexpr bool operator!=(NativeId other) const {
+  constexpr bool operator!=(Id other) const {
     return thread_id_ != other.thread_id_;
   }
-  constexpr bool operator<(NativeId other) const {
+  constexpr bool operator<(Id other) const {
     return thread_id_ < other.thread_id_;
   }
-  constexpr bool operator<=(NativeId other) const {
+  constexpr bool operator<=(Id other) const {
     return thread_id_ <= other.thread_id_;
   }
-  constexpr bool operator>(NativeId other) const {
+  constexpr bool operator>(Id other) const {
     return thread_id_ > other.thread_id_;
   }
-  constexpr bool operator>=(NativeId other) const {
+  constexpr bool operator>=(Id other) const {
     return thread_id_ >= other.thread_id_;
   }
 

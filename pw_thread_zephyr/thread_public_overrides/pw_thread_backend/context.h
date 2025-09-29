@@ -17,10 +17,10 @@
 
 namespace pw::thread::backend {
 
-using NativeContext = ::pw::thread::zephyr::NativeContext;
+using NativeContext = ::pw::thread::zephyr::Context;
 
 template <size_t kStackSizeBytes>
 using NativeContextWithStack =
-    ::pw::thread::zephyr::NativeContextWithStack<kStackSizeBytes>;
+    ::pw::thread::zephyr::ContextWithStack<kStackSizeBytes>;
 
 }  // namespace pw::thread::backend

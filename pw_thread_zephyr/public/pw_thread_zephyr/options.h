@@ -22,7 +22,7 @@
 
 namespace pw::thread::zephyr {
 
-class NativeContext;
+class Context;
 
 /// pw::thread::Options for Zephyr RTOS.
 ///
@@ -36,11 +36,11 @@ class NativeContext;
 ///
 /// TODO(aeremin): Add support for time slice configuration
 ///     (k_thread_time_slice_set when CONFIG_TIMESLICE_PER_THREAD=y).
-class NativeOptions : public thread::Options {
+class Options : public thread::Options {
  public:
-  constexpr NativeOptions(NativeContext& context) : context_(&context) {}
-  constexpr NativeOptions(const NativeOptions&) = default;
-  constexpr NativeOptions(NativeOptions&&) = default;
+  constexpr Options(Context& context) : context_(&context) {}
+  constexpr Options(const Options&) = default;
+  constexpr Options(Options&&) = default;
 
   /// Sets the priority for the Zephyr RTOS thread.
   ///
@@ -48,7 +48,7 @@ class NativeOptions : public thread::Options {
   ///
   /// @arg priority The desired thread priority
   /// @return Reference to this object
-  constexpr NativeOptions& set_priority(int priority) {
+  constexpr Options& set_priority(int priority) {
     PW_DASSERT(priority <= kLowestPriority);
     PW_DASSERT(priority >= kHighestPriority);
     priority_ = priority;
@@ -64,7 +64,7 @@ class NativeOptions : public thread::Options {
   ///
   /// @arg name The name of the thread (null terminated)
   /// @return Reference to this object
-  constexpr NativeOptions& set_name(const char* name) {
+  constexpr Options& set_name(const char* name) {
     name_ = name;
     return *this;
   }
@@ -75,7 +75,7 @@ class NativeOptions : public thread::Options {
   ///
   /// @arg native_options Native option flags
   /// @return Reference to this object
-  constexpr NativeOptions& set_native_options(uint32_t native_options) {
+  constexpr Options& set_native_options(uint32_t native_options) {
     native_options_ = native_options;
     return *this;
   }
@@ -84,7 +84,7 @@ class NativeOptions : public thread::Options {
   ///
   /// @arg stack The stack span to use
   /// @return Reference to this object
-  constexpr NativeOptions& set_stack(span<z_thread_stack_element> stack) {
+  constexpr Options& set_stack(span<z_thread_stack_element> stack) {
     stack_ = stack;
     return *this;
   }
@@ -107,7 +107,7 @@ class NativeOptions : public thread::Options {
   ///
   /// @arg thread_fn The entry point to the thread
   /// @return Pointer to the internal context
-  NativeContext* CreateThread(Function<void()>&& thread_fn);
+  Context* CreateThread(Function<void()>&& thread_fn);
 
  private:
   friend Thread;
@@ -118,23 +118,22 @@ class NativeOptions : public thread::Options {
 
   int priority_ = kDefaultPriority;
   uint32_t native_options_ = 0;
-  NativeContext* context_ = nullptr;
+  Context* context_ = nullptr;
   const char* name_ = kDefaultName;
   span<z_thread_stack_element> stack_ = span<z_thread_stack_element>();
 };
 
-/// Convert a context and attributes to NativeOptions
+/// Convert a context and attributes to Options
 ///
 /// Note that if both the context and attributes provide a stack, the
 /// attributes' stack will be used.
 ///
 /// @arg context The context on which the thread will be created
 /// @arg attributes The desired attributes of the thread
-/// @return NativeOptions representing the desired thread
-constexpr NativeOptions GetNativeOptions(NativeContext& context,
-                                         const ThreadAttrs& attributes) {
-  NativeOptions options =
-      NativeOptions(context).set_priority(attributes.priority().native());
+/// @return Options representing the desired thread
+constexpr Options GetOptions(Context& context, const ThreadAttrs& attributes) {
+  Options options =
+      Options(context).set_priority(attributes.priority().native());
 
   if (attributes.has_external_stack()) {
     options.set_stack(span(attributes.native_stack_pointer(),

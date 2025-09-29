@@ -17,7 +17,7 @@
 
 namespace pw::thread::backend {
 
-using NativeThread = ::pw::thread::zephyr::NativeThread;
-using NativeThreadHandle = ::pw::thread::zephyr::NativeThreadHandle;
+using NativeThread = ::pw::thread::zephyr::Thread;
+using NativeThreadHandle = ::pw::thread::zephyr::ThreadHandle;
 
 }  // namespace pw::thread::backend

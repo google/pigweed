@@ -38,8 +38,8 @@ namespace zephyr {
 inline constexpr size_t kMaximumNameLength =
     CONFIG_PIGWEED_THREAD_MAX_THREAD_NAME_LEN;
 
-// Forward declare NativeOptions since we'll need a reference to them.
-class NativeOptions;
+// Forward declare Options since we'll need a reference to them.
+class Options;
 
 // At the moment, Zephyr RTOS doesn't support dynamic thread stack allocation
 // (due to various alignment and size requirements on different architectures).
@@ -51,16 +51,16 @@ class NativeOptions;
 //   2) StaticContextWithStack which contains the stack.
 //
 // Only StaticContextWithStack can be instantiated directly.
-class NativeContext {
+class Context {
  public:
   /// Create a default native context
   ///
   /// This context will have no name or stack associated with it.
-  constexpr NativeContext() = default;
-  NativeContext(const NativeContext&) = delete;
-  NativeContext& operator=(const NativeContext&) = delete;
+  constexpr Context() = default;
+  Context(const Context&) = delete;
+  Context& operator=(const Context&) = delete;
 
-  ~NativeContext() = default;
+  ~Context() = default;
 
   /// Get the stack associated with the context.
   ///
@@ -73,7 +73,7 @@ class NativeContext {
   ///
   /// @arg thread_fn The entry point of the thread
   /// @arg options The options to configure the thread
-  void CreateThread(Function<void()>&& thread_fn, const NativeOptions& options);
+  void CreateThread(Function<void()>&& thread_fn, const Options& options);
 
  protected:
   constexpr void set_stack(span<z_thread_stack_element> stack) {
@@ -117,9 +117,9 @@ class NativeContext {
 //
 // See docs.rst for an usage example.
 template <size_t kStackSizeBytes>
-class NativeContextWithStack : public NativeContext {
+class ContextWithStack : public Context {
  public:
-  constexpr NativeContextWithStack() : NativeContext() {
+  constexpr ContextWithStack() : Context() {
     set_stack(span<z_thread_stack_element>(stack_.data(), stack_.size()));
   }
 
