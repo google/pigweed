@@ -164,10 +164,10 @@ presses.
 
       .. literalinclude:: ./checkpoint2/vending_machine.cc
          :language: cpp
-         :start-after: namespace codelab {
+         :start-at: #include "vending_machine.h"
          :end-before: pw::async2::Poll<> VendingMachineTask::DoPend
          :linenos:
-         :emphasize-lines: 3-8,11-14
+         :emphasize-lines: 3,11-16,20-21
 
       ``std::exchange`` ensures that the ``key_pressed_`` data is read once by
       clearing it out to ``kNone`` (``-1``) after a read.

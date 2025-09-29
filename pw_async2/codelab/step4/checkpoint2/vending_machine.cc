@@ -14,6 +14,8 @@
 
 #include "vending_machine.h"
 
+#include <mutex>
+
 #include "pw_async2/pendable.h"
 #include "pw_async2/select.h"
 #include "pw_async2/try.h"

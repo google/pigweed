@@ -14,6 +14,8 @@
 
 #include "vending_machine.h"
 
+#include <mutex>
+
 #include "pw_async2/try.h"
 #include "pw_log/log.h"
 
