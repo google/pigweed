@@ -62,7 +62,7 @@ Status EmbossedMultiBuf::Visit(Visitor visitor, size_t offset) {
                 std::is_void_v<VisitorReturnType>);
   std::array<std::byte, kSize> tmp;
   return multibuf_->Visit(
-      [visitor = std::move(visitor)](ConstByteSpan bytes) {
+      [v = std::move(visitor)](ConstByteSpan bytes) {
         if (bytes.size() < kSize) {
           return Status::Unavailable();
         }
@@ -72,10 +72,10 @@ Status EmbossedMultiBuf::Visit(Visitor visitor, size_t offset) {
           return Status::DataLoss();
         }
         if constexpr (std::is_void_v<VisitorReturnType>) {
-          visitor(t);
+          v(t);
           return OkStatus();
         } else {
-          return visitor(t);
+          return v(t);
         }
       },
       tmp,

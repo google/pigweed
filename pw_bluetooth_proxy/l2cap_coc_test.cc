@@ -539,20 +539,18 @@ TEST_F(L2capCocWriteTest, MultithreadedWrite) {
         new ThreadCapture{.channel = &channels[thread_numb],
                           .packet_allocator = &packet_allocator});
 
-    threads.emplace_back(
-        context.options(), [thread_capture = std::move(thread_capture)]() {
-          for (unsigned int packet_numb = 0; packet_numb < kPacketsPerThread;
-               ++packet_numb) {
-            std::array<uint8_t, kPayloadSize> payload = {};
-            std::fill(payload.begin(), payload.end(), packet_numb);
-            Status write_status =
-                thread_capture->channel
-                    ->Write(MultiBufFromSpan(span(payload),
-                                             *thread_capture->packet_allocator))
-                    .status;
-            PW_TEST_EXPECT_OK(write_status);
-          }
-        });
+    threads.emplace_back(context.options(), [tc = std::move(thread_capture)]() {
+      for (unsigned int packet_numb = 0; packet_numb < kPacketsPerThread;
+           ++packet_numb) {
+        std::array<uint8_t, kPayloadSize> payload = {};
+        std::fill(payload.begin(), payload.end(), packet_numb);
+        Status write_status =
+            tc->channel
+                ->Write(MultiBufFromSpan(span(payload), *tc->packet_allocator))
+                .status;
+        PW_TEST_EXPECT_OK(write_status);
+      }
+    });
   }
 
   for (auto& t : threads) {

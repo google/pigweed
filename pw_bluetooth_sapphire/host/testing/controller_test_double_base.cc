@@ -37,11 +37,11 @@ bool ControllerTestDoubleBase::SendCommandChannelPacket(
   DynamicByteBuffer buffer(packet);
   auto self = weak_self_.GetWeakPtr();
   (void)heap_dispatcher().Post(
-      [self, buffer = std::move(buffer)](pw::async::Context /*ctx*/,
-                                         pw::Status status) {
+      [self, buf = std::move(buffer)](pw::async::Context /*ctx*/,
+                                      pw::Status status) {
         if (self.is_alive() && status.ok()) {
-          self->event_cb_({reinterpret_cast<const std::byte*>(buffer.data()),
-                           buffer.size()});
+          self->event_cb_(
+              {reinterpret_cast<const std::byte*>(buf.data()), buf.size()});
         }
       });
   return true;
@@ -57,11 +57,11 @@ bool ControllerTestDoubleBase::SendACLDataChannelPacket(
   DynamicByteBuffer buffer(packet);
   auto self = weak_self_.GetWeakPtr();
   (void)heap_dispatcher().Post(
-      [self, buffer = std::move(buffer)](pw::async::Context /*ctx*/,
-                                         pw::Status status) {
+      [self, buf = std::move(buffer)](pw::async::Context /*ctx*/,
+                                      pw::Status status) {
         if (self.is_alive() && status.ok()) {
-          self->acl_cb_({reinterpret_cast<const std::byte*>(buffer.data()),
-                         buffer.size()});
+          self->acl_cb_(
+              {reinterpret_cast<const std::byte*>(buf.data()), buf.size()});
         }
       });
   return true;
@@ -114,10 +114,10 @@ void ControllerTestDoubleBase::ConfigureSco(
       [dispatcher = &pw_dispatcher_,
        cb = std::move(callback)](pw::Status cb_status) mutable {
         (void)pw::async::HeapDispatcher(*dispatcher)
-            .Post([cb_status, cb = std::move(cb)](pw::async::Context /*ctx*/,
-                                                  pw::Status status) mutable {
+            .Post([cb_status, posted_cb = std::move(cb)](
+                      pw::async::Context /*ctx*/, pw::Status status) mutable {
               if (status.ok()) {
-                cb(cb_status);
+                posted_cb(cb_status);
               }
             });
       };
@@ -136,10 +136,10 @@ void ControllerTestDoubleBase::ResetSco(
       [dispatcher = &pw_dispatcher_,
        cb = std::move(callback)](pw::Status cb_status) mutable {
         (void)pw::async::HeapDispatcher(*dispatcher)
-            .Post([cb_status, cb = std::move(cb)](pw::async::Context /*ctx*/,
-                                                  pw::Status status) mutable {
+            .Post([cb_status, posted_cb = std::move(cb)](
+                      pw::async::Context /*ctx*/, pw::Status status) mutable {
               if (status.ok()) {
-                cb(cb_status);
+                posted_cb(cb_status);
               }
             });
       };
