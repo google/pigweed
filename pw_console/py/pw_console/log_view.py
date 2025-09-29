@@ -158,13 +158,13 @@ class LogView:
     def _websocket_thread_entry(self):
         """Entry point for the user code thread."""
         asyncio.set_event_loop(self.websocket_loop)
-        self.websocket_server = websockets.serve(  # type: ignore # pylint: disable=no-member
+        server_awaitable = websockets.serve(  # type: ignore # pylint: disable=no-member
             self._send_logs_over_websockets, '127.0.0.1'
         )
-        self.websocket_loop.run_until_complete(self.websocket_server)
-        self.websocket_port = self.websocket_server.ws_server.sockets[
-            0
-        ].getsockname()[1]
+        self.websocket_server = self.websocket_loop.run_until_complete(
+            server_awaitable
+        )
+        self.websocket_port = self.websocket_server.sockets[0].getsockname()[1]
         self.websocket_running = True
         self.websocket_loop.run_forever()
 
