@@ -162,9 +162,7 @@ class DetailedBlockImpl
   // `WithLayout` required methods.
   using WithLayout = BlockWithLayout<BlockType>;
   friend WithLayout;
-  constexpr size_t RequestedSize() const {
-    return Basic::InnerSize() - padding_;
-  }
+  constexpr size_t RequestedSize() const;
   constexpr size_t RequestedAlignment() const { return info_.alignment; }
   constexpr void SetRequestedSize(size_t size);
   constexpr void SetRequestedAlignment(size_t alignment);
@@ -281,6 +279,7 @@ constexpr void DetailedBlockImpl<Parameters>::DoMergeNext() {
 template <typename Parameters>
 constexpr void DetailedBlockImpl<Parameters>::SetFree(bool is_free) {
   info_.used = !is_free;
+  padding_ = 0;
   Poisonable::SetFree(is_free);
 }
 
@@ -319,6 +318,14 @@ DetailedBlockImpl<Parameters>::DoFree(DetailedBlockImpl*&& block) {
 }
 
 // `WithLayout` methods.
+
+template <typename Parameters>
+constexpr size_t DetailedBlockImpl<Parameters>::RequestedSize() const {
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_ASSERT(padding_ <= Basic::InnerSize());
+  }
+  return Basic::InnerSize() - padding_;
+}
 
 template <typename Parameters>
 constexpr void DetailedBlockImpl<Parameters>::SetRequestedSize(size_t size) {

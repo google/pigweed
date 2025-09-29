@@ -198,6 +198,9 @@ namespace pw::allocator::test {
   }                                                         \
   TEST_F(BlockTestType, FreeBlocksHaveDefaultAlignment) {   \
     FreeBlocksHaveDefaultAlignment();                       \
+  }                                                         \
+  TEST_F(BlockTestType, ClearRequestedLayoutOnFree) {       \
+    ClearRequestedLayoutOnFree();                           \
   }
 
 /// A collection of block-related unit tests.
@@ -303,6 +306,7 @@ class BlockTest : public ::testing::Test {
   // Requires has_layout_v<BlockType>
   void CanGetAlignmentFromUsedBlock();
   void FreeBlocksHaveDefaultAlignment();
+  void ClearRequestedLayoutOnFree();
 
  private:
   BlockTestUtilities<BlockType> util_;
@@ -1803,6 +1807,64 @@ void BlockTest<BlockType>::FreeBlocksHaveDefaultAlignment() {
   EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
   EXPECT_EQ(result.next(), BlockResultNext::kMerged);
   block1 = result.block();
+}
+
+template <typename BlockType>
+void BlockTest<BlockType>::ClearRequestedLayoutOnFree() {
+  static_assert(has_layout_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
+
+  // Preallocate a first block so that there is `kAlignment` bytes before
+  // where the aligned block would start.
+  size_t leading =
+      util_.GetFirstAlignedOffset(kLayout) + kAlign - BlockType::kBlockOverhead;
+
+  // Leave enough space free for the `kAlignment` bytes and the requested
+  // block.
+  size_t available =
+      BlockType::kBlockOverhead + util_.GetOuterSize(kLayout.size());
+
+  auto* leading_block = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  auto* block = leading_block->Next();
+
+  // Check if we expect this to succeed.
+  auto can_alloc_last = block->CanAlloc(kLayout);
+  ASSERT_EQ(can_alloc_last.status(), OkStatus());
+  EXPECT_EQ(can_alloc_last.size(), BlockType::kBlockOverhead);
+
+  // Allocate from the back of the block.
+  auto result = BlockType::AllocLast(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kResizedLarger);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  EXPECT_EQ(result.size(), BlockType::kBlockOverhead);
+  block = result.block();
+
+  // Free the leading block; which should clear its requested layout
+  Layout layout = leading_block->RequestedLayout();
+  result = BlockType::Free(std::move(leading_block));
+  ASSERT_EQ(result.status(), OkStatus());
+  leading_block = result.block();
+
+  // Allocate the back portion of the leading block, leaving a residual block
+  // smaller than the amount previously shifted to it.
+  leading = BlockType::kBlockOverhead + BlockType::kAlignment;
+  layout = Layout(leading_block->InnerSize() - leading, 1);
+  result = BlockType::AllocLast(std::move(leading_block), layout);
+  ASSERT_EQ(result.status(), OkStatus());
+  leading_block = result.block()->Prev();
+
+  // Regression test for b/446769988: If the requested layout is *NOT* cleared
+  // when a block is freed, this allocation may use incorrectly try to read the
+  // previous requested size when allocationg on the highly aligned path.
+  // This read would be triggered even if the allocation failed.
+  layout = Layout(leading_block->InnerSize(), BlockType::kAlignment * 2);
+  result = BlockType::AllocLast(std::move(leading_block), layout);
+  CheckAllReachableBlocks(result.block());
 }
 
 }  // namespace pw::allocator::test

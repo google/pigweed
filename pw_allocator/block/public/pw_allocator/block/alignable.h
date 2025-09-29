@@ -191,7 +191,8 @@ constexpr BlockResult<Derived> AlignableBlock<Derived>::DoAllocAligned(
   block = alloc_result.block();
 
   // Resize the allocation to the requested size.
-  auto resize_result = block->DoResize(new_inner_size);
+  auto resize_result =
+      block->AllocatableBlock<Derived>::DoResize(new_inner_size);
   if (!resize_result.ok()) {
     return resize_result;
   }
