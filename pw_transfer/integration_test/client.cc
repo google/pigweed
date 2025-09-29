@@ -113,7 +113,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
     }
   }
 
-  Status status = pw::OkStatus();
+  Status final_status = pw::OkStatus();
   for (int i = 0; i < num_actions; i++) {
     const pw::transfer::TransferAction& action = config.transfer_actions()[i];
     TransferResult& result = transfer_results[i];
@@ -176,14 +176,14 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
     } else {
       PW_LOG_ERROR("Unrecognized transfer action type %d",
                    action.transfer_type());
-      status = pw::Status::InvalidArgument();
+      final_status = pw::Status::InvalidArgument();
       break;
     }
 
     if (int(result.status.code()) != int(action.expected_status())) {
       PW_LOG_ERROR("Failed to perform action:\n%s",
                    action.DebugString().c_str());
-      status = result.status.ok() ? Status::Unknown() : result.status;
+      final_status = result.status.ok() ? Status::Unknown() : result.status;
       break;
     }
   }
@@ -195,7 +195,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
   // The RPC thread must join before destroying transfer objects as the transfer
   // service may still reference the transfer thread or transfer client objects.
   pw::rpc::integration_test::TerminateClient();
-  return status;
+  return final_status;
 }
 
 }  // namespace

@@ -77,7 +77,7 @@ class FileTransferHandler final : public ReadWriteHandler {
         destinations_(destinations),
         default_source_path_(std::move(default_source_path)),
         default_destination_path_(std::move(default_destination_path)),
-        offsettable(offsettable) {}
+        offsettable_(offsettable) {}
 
   ~FileTransferHandler() override = default;
 
@@ -101,7 +101,7 @@ class FileTransferHandler final : public ReadWriteHandler {
   }
 
   Status PrepareRead(uint32_t offset) final {
-    if (!offsettable) {
+    if (!offsettable_) {
       return Status::Unimplemented();
     }
 
@@ -141,7 +141,7 @@ class FileTransferHandler final : public ReadWriteHandler {
   }
 
   Status PrepareWrite(uint32_t offset) final {
-    if (!offsettable) {
+    if (!offsettable_) {
       return Status::Unimplemented();
     }
 
@@ -170,7 +170,7 @@ class FileTransferHandler final : public ReadWriteHandler {
   std::string default_destination_path_;
   std::variant<std::monostate, stream::StdFileReader, stream::StdFileWriter>
       stream_;
-  bool offsettable;
+  bool offsettable_;
 };
 
 void RunServer(int socket_port, ServerConfig config) {
