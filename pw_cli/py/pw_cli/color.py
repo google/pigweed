@@ -47,6 +47,7 @@ class _Color:
         self.blue = _make_color(34, 1)
         self.cyan = _make_color(36, 1)
         self.magenta = _make_color(35, 1)
+        self.gray = _make_color(90, 1)
         self.bold_magenta = _make_color(30, 45)
         self.bold_white = _make_color(37, 1)
         self.black_on_white = _make_color(30, 47)  # black fg white bg
