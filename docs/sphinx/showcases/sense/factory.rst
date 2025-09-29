@@ -40,7 +40,7 @@ Flash the factory app to your Pico
             .. tab-item:: Pico 1 (RP2040)
 
                In **Bazel Build Targets** expand **//apps/factory**, then
-               right-click **:flash (native_binary)**, then select **Run
+               right-click **:flash_rp2040 (native_binary)**, then select **Run
                target**.
 
             .. tab-item:: Pico 2 (RP2350)
