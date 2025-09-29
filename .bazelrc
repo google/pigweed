@@ -156,7 +156,7 @@ test:tsan --test_tag_filters=-integration,-notsan,-do_not_build,-do_not_run_test
 common:msan --//pw_toolchain/host_clang:msan
 # TODO: https://github.com/bazelbuild/bazel/issues/7322 - We need to repeat the
 # -integration because the test_tag_filters flag does not accumulate.
-test:msan --test_tag_filters=-integration,-notsan,-do_not_build,-do_not_run_test,-kernel
+test:msan --test_tag_filters=-integration,-nomsan,-do_not_build,-do_not_run_test,-kernel
 
 # Include libFuzzer build configurations.
 import %workspace%/pw_fuzzer/libfuzzer.bazelrc

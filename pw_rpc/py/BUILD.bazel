@@ -162,7 +162,11 @@ pw_py_test(
     },
     # TODO: https://pwbug.dev/390675910 - Restore after protobuf is updated
     # and versions skews are unified.
-    tags = ["noubsan"],
+    tags = [
+        "noasan",
+        "notsan",
+        "noubsan",
+    ],
     deps = [
         ":pw_rpc",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",
@@ -185,7 +189,11 @@ pw_py_test(
     },
     # TODO: https://pwbug.dev/390675910 - Restore after protobuf is updated
     # and versions skews are unified.
-    tags = ["noubsan"],
+    tags = [
+        "noasan",
+        "notsan",
+        "noubsan",
+    ],
     deps = [
         ":pw_rpc",
         "//pw_rpc:internal_packet_proto_pb2",
@@ -207,7 +215,11 @@ pw_py_test(
     },
     # TODO: https://pwbug.dev/390675910 - Restore after protobuf is updated
     # and versions skews are unified.
-    tags = ["noubsan"],
+    tags = [
+        "noasan",
+        "notsan",
+        "noubsan",
+    ],
     deps = [
         ":pw_rpc",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",
@@ -255,7 +267,11 @@ pw_py_test(
     },
     # TODO: https://pwbug.dev/390675910 - Restore after protobuf is updated
     # and versions skews are unified.
-    tags = ["noubsan"],
+    tags = [
+        "noasan",
+        "notsan",
+        "noubsan",
+    ],
     deps = [
         ":pw_rpc",
     ],
