@@ -190,6 +190,29 @@ pw_cc_test(
 )
 
 cc_library(
+    name = "value_future",
+    hdrs = [
+        "public/pw_async2/value_future.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":dispatcher",
+        ":poll",
+    ],
+)
+
+pw_cc_test(
+    name = "value_future_test",
+    srcs = ["value_future_test.cc"],
+    deps = [
+        ":dispatcher",
+        ":pend_func_task",
+        ":poll",
+        ":value_future",
+    ],
+)
+
+cc_library(
     name = "pend_func_awaitable",
     hdrs = [
         "public/pw_async2/pend_func_awaitable.h",

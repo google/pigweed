@@ -159,6 +159,26 @@ pw_test("future_test") {
   sources = [ "future_test.cc" ]
 }
 
+pw_source_set("value_future") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_async2/value_future.h" ]
+  public_deps = [
+    ":dispatcher",
+    ":poll",
+  ]
+}
+
+pw_test("value_future_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    ":dispatcher",
+    ":pend_func_task",
+    ":poll",
+    ":value_future",
+  ]
+  sources = [ "value_future_test.cc" ]
+}
+
 pw_source_set("pend_func_task") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_async2/pend_func_task.h" ]
