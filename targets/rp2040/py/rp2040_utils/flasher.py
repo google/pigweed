@@ -248,6 +248,12 @@ def _load_debugprobe_binary(
     # runner would wait for input but this is not the case.
     time.sleep(0.5)
 
+    _LOG.info(
+        'Successfully flashed Pico on bus %s, port %s, serial number %s',
+        board_info.bus,
+        board_info.port,
+        board_info.serial_number,
+    )
     return True
 
 
