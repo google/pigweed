@@ -20,7 +20,7 @@
 #include "pw_thread_zephyr/context.h"
 #include "pw_thread_zephyr/priority.h"
 
-namespace pw::thread::backend {
+namespace pw::thread::zephyr {
 
 class NativeContext;
 
@@ -149,4 +149,4 @@ constexpr NativeOptions GetNativeOptions(NativeContext& context,
   return options;
 }
 
-}  // namespace pw::thread::backend
+}  // namespace pw::thread::zephyr

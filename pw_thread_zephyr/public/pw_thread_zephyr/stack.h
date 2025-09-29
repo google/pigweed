@@ -15,7 +15,7 @@
 
 #include <zephyr/kernel/thread_stack.h>
 
-namespace pw::thread::backend {
+namespace pw::thread::zephyr {
 
 /// Smallest stack size supported by Zephyr threads.
 inline constexpr size_t kMinimumStackSizeBytes =
@@ -47,4 +47,4 @@ class Stack {
   K_KERNEL_STACK_MEMBER(stack_, kResolvedStackSizeBytes) = {};
 #endif
 };
-}  // namespace pw::thread::backend
+}  // namespace pw::thread::zephyr

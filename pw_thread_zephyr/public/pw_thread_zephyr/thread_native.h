@@ -19,7 +19,7 @@
 // disabling it.
 #define PW_THREAD_JOINING_ENABLED 1
 
-namespace pw::thread::backend {
+namespace pw::thread::zephyr {
 
 // The native thread is a pointer to a thread's context.
 using NativeThread = pw::thread::backend::NativeContext*;
@@ -27,4 +27,4 @@ using NativeThread = pw::thread::backend::NativeContext*;
 // The native thread handle is the same as the NativeThread.
 using NativeThreadHandle = pw::thread::backend::NativeContext*;
 
-}  // namespace pw::thread::backend
+}  // namespace pw::thread::zephyr

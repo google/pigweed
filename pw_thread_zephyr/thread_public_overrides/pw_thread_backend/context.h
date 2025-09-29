@@ -14,3 +14,13 @@
 #pragma once
 
 #include "pw_thread_zephyr/context.h"
+
+namespace pw::thread::backend {
+
+using NativeContext = ::pw::thread::zephyr::NativeContext;
+
+template <size_t kStackSizeBytes>
+using NativeContextWithStack =
+    ::pw::thread::zephyr::NativeContextWithStack<kStackSizeBytes>;
+
+}  // namespace pw::thread::backend

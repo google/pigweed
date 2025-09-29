@@ -14,3 +14,13 @@
 #pragma once
 
 #include "pw_thread_zephyr/stack.h"
+
+namespace pw::thread::backend {
+inline constexpr size_t kMinimumStackSizeBytes =
+    ::pw::thread::zephyr::kMinimumStackSizeBytes;
+inline constexpr size_t kDefaultStackSizeBytes =
+    ::pw::thread::zephyr::kDefaultStackSizeBytes;
+
+template <size_t kStackSizeBytes>
+using Stack = ::pw::thread::zephyr::Stack<kStackSizeBytes>;
+}  // namespace pw::thread::backend

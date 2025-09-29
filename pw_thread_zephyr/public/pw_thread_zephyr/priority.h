@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-namespace pw::thread::backend {
+namespace pw::thread::zephyr {
 
 using PriorityType = int;
 
@@ -21,7 +21,7 @@ using PriorityType = int;
 // CONFIG_PIGWEED_THREAD_NUM_COOP_PRIORITIES when cooperative threads are
 // supported.
 
-/// The lowers priority of a thread
+/// The lowest priority of a thread
 inline constexpr int kLowestPriority =
     CONFIG_PIGWEED_THREAD_NUM_PREEMPT_PRIORITIES - 1;
 
@@ -34,4 +34,4 @@ inline constexpr int kDefaultPriority = CONFIG_PIGWEED_THREAD_DEFAULT_PRIORITY;
 static_assert(kDefaultPriority <= kLowestPriority);
 static_assert(kDefaultPriority >= kHighestPriority);
 
-}  // namespace pw::thread::backend
+}  // namespace pw::thread::zephyr

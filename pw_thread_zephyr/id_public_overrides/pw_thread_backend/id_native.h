@@ -14,3 +14,9 @@
 #pragma once
 
 #include "pw_thread_zephyr/id_native.h"
+
+namespace pw::thread::backend {
+
+using NativeId = ::pw::thread::zephyr::NativeId;
+
+}  // namespace pw::thread::backend

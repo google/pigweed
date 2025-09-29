@@ -15,7 +15,7 @@
 
 #include <zephyr/kernel.h>
 
-namespace pw::thread::backend {
+namespace pw::thread::zephyr {
 
 // Trivial wrapper around Zephyr RTOS-specific k_tid_t type
 // (note that k_tid_t is just a pointer to the k_thread aka TCB).
@@ -48,4 +48,4 @@ class NativeId {
   k_tid_t thread_id_;
 };
 
-}  // namespace pw::thread::backend
+}  // namespace pw::thread::zephyr

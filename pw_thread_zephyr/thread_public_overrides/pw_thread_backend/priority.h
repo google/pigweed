@@ -14,3 +14,17 @@
 #pragma once
 
 #include "pw_thread_zephyr/priority.h"
+
+namespace pw::thread::backend {
+
+using PriorityType = ::pw::thread::zephyr::PriorityType;
+/// The lowest priority of a thread
+inline constexpr int kLowestPriority = ::pw::thread::zephyr::kLowestPriority;
+
+/// The highest priority of a preemptive thread
+inline constexpr int kHighestPriority = ::pw::thread::zephyr::kHighestPriority;
+
+/// The default thread priority
+inline constexpr int kDefaultPriority = ::pw::thread::zephyr::kDefaultPriority;
+
+}  // namespace pw::thread::backend

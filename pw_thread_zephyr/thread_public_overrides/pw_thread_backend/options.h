@@ -14,3 +14,14 @@
 #pragma once
 
 #include "pw_thread_zephyr/options.h"
+
+namespace pw::thread::backend {
+
+using NativeOptions = ::pw::thread::zephyr::NativeOptions;
+
+constexpr NativeOptions GetNativeOptions(NativeContext& context,
+                                         const ThreadAttrs& attributes) {
+  return ::pw::thread::zephyr::GetNativeOptions(context, attributes);
+}
+
+}  // namespace pw::thread::backend

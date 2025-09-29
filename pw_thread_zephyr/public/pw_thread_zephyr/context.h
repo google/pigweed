@@ -30,7 +30,7 @@ namespace pw::thread {
 // Forward declare Thread which depends on Context.
 class Thread;
 
-namespace backend {
+namespace zephyr {
 
 // The maximum length of a thread's name, not including null termination. This
 // results in an array of characters which is this length + 1 bytes in every
@@ -127,5 +127,5 @@ class NativeContextWithStack : public NativeContext {
   Stack<std::max(kStackSizeBytes, kMinimumStackSizeBytes)> stack_;
 };
 
-}  // namespace backend
+}  // namespace zephyr
 }  // namespace pw::thread
