@@ -190,7 +190,7 @@ Set up your development host to be able to push code to our `Gerrit`_ instance:
 
             $ git rev-parse --git-dir > gitrepopath.txt & set /p "g="< gitrepopath.txt & del gitrepopath.txt & call set "f=%g%/hooks" & call mkdir "%f%" & call curl -Lo "%f%/commit-msg" https://gerrit-review.googlesource.com/tools/hooks/commit-msg
 
-.. _mirror: https://github.com/google/pigweed
+.. _mirror: https://github.com/pigweed-project/pigweed
 
 
 .. _docs-contributing-change:
