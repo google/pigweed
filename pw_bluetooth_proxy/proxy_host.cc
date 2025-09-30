@@ -70,12 +70,10 @@ void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
     case emboss::H4PacketType::COMMAND:
       HandleCommandFromHost(std::move(h4_packet));
       return;
-    case emboss::H4PacketType::EVENT:
-      HandleEventFromHost(std::move(h4_packet));
-      return;
     case emboss::H4PacketType::ACL_DATA:
       HandleAclFromHost(std::move(h4_packet));
       return;
+    case emboss::H4PacketType::EVENT:
     case emboss::H4PacketType::UNKNOWN:
     case emboss::H4PacketType::SYNC_DATA:
     case emboss::H4PacketType::ISO_DATA:
@@ -149,35 +147,6 @@ void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
   PW_MODIFY_DIAGNOSTICS_POP();
 
   l2cap_channel_manager_.DeliverPendingEvents();
-}
-
-void ProxyHost::HandleEventFromHost(H4PacketWithH4&& h4_packet) {
-  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
-  Result<emboss::EventHeaderView> event =
-      MakeEmbossView<emboss::EventHeaderView>(hci_buffer);
-  if (!event.ok()) {
-    PW_LOG_ERROR(
-        "Buffer is too small for EventHeader. So will pass on to controller "
-        "without processing.");
-    hci_transport_.SendToController(std::move(h4_packet));
-    return;
-  }
-
-  PW_MODIFY_DIAGNOSTICS_PUSH();
-  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
-  switch (event->event_code().Read()) {
-    case emboss::EventCode::DISCONNECTION_COMPLETE: {
-      acl_data_channel_.ProcessDisconnectionCompleteEvent(
-          h4_packet.GetHciSpan());
-      hci_transport_.SendToController(std::move(h4_packet));
-      break;
-    }
-    default: {
-      hci_transport_.SendToController(std::move(h4_packet));
-      return;
-    }
-  }
-  PW_MODIFY_DIAGNOSTICS_POP();
 }
 
 void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
