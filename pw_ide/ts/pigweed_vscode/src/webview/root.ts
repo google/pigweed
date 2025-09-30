@@ -186,7 +186,7 @@ export class Root extends LitElement {
             <div class="step-detail">
               Last built:
               <code
-                >bazel build
+                >bazel
                 ${this.cipdReport.bazelCompileCommandsLastBuildCommand}</code
               >
             </div>
@@ -289,7 +289,7 @@ export class Root extends LitElement {
       {
         title: 'Run a build',
         detail: this.cipdReport.bazelCompileCommandsLastBuildCommand
-          ? `Last built: <code>bazel build ${this.cipdReport.bazelCompileCommandsLastBuildCommand}</code>`
+          ? `Last built: <code>bazel ${this.cipdReport.bazelCompileCommandsLastBuildCommand}</code>`
           : 'Build a bazel target in your project',
       },
       {
@@ -308,7 +308,7 @@ export class Root extends LitElement {
         <span>ℹ️</span>
         <span
           >${this.cipdReport.isBazelInterceptorEnabled
-            ? html`Run <code>bazel build</code> on a target to configure code
+            ? html`Run <code>bazel </code> on a target to configure code
                 intelligence`
             : 'Refresh manually below to configure code intelligence'}
           (<a href="#" @click=${this._openDebugDetails}>see details</a>).</span

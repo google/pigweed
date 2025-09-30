@@ -436,6 +436,11 @@ export async function activate(context: vscode.ExtensionContext) {
     clangdActiveFilesCache,
   );
 
+  refreshManager.on(async () => {
+    await provider.refresh();
+    return OK;
+  }, 'didRefresh');
+
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       WebviewProvider.viewType,

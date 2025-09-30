@@ -197,6 +197,12 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     private readonly _activeFilesCache: ClangdActiveFilesCache,
   ) {}
 
+  public async refresh() {
+    if (this._view) {
+      await this.sendCipdReport();
+    }
+  }
+
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     _context: vscode.WebviewViewResolveContext,
