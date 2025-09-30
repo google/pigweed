@@ -162,6 +162,7 @@ sphinx_docs_library(
         "style_guide.rst",
         "//:docs",
         "//docker:docs",
+        "//docs/doxygen:docs",
         "//kudzu:docs",
         "//pw_alignment:docs",
         "//pw_allocator:docs",

@@ -191,6 +191,8 @@ parameters erroneously in C code. For consistency with the header file, use
 
    }  // namespace pw
 
+.. _docs-pw-style-cpp-comments:
+
 Comments
 ========
 Prefer C++-style (``//``) comments over C-style comments (``/* */``). C-style

@@ -127,7 +127,7 @@ Auto-generate complete API references
 
 .. inclusive-language: enable
 
-If your module has a C++ API, use :ref:`Doxygen <docs-style-doxygen>` to
+If your module has a C++ API, use :ref:`Doxygen <style-doxygen>` to
 auto-generate your API reference. For a Python API use `autodoc`_.
 
 .. tip::
@@ -257,7 +257,7 @@ API reference
 =============
 The API reference should:
 
-* Be auto-generated from :ref:`docs-style-doxygen` (for C++ / C APIs) or
+* Be auto-generated from :ref:`style-doxygen` (for C++ / C APIs) or
   `autodoc`_ (for Python APIs).
 * Provide a code example demonstrating how to use the class, at minimum.
   Consider whether it's also helpful to provide more granular examples

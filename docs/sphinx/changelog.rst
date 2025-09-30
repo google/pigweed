@@ -8568,7 +8568,7 @@ Docs
 The new :ref:`docs-quickstart-zephyr` shows you how to set up a C++-based
 Zephyr project that's ready to use Pigweed. The API references for all
 functions or methods that return a set of ``pw_status`` codes have been
-refactored for consistency. The :ref:`docs-style-doxygen` has been revamped.
+refactored for consistency. The :ref:`style-doxygen` has been revamped.
 
 * `Add pw_status table for API references
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/202739>`__

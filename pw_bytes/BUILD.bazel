@@ -154,6 +154,7 @@ pw_cc_test(
     deps = [":pw_bytes"],
 )
 
+# DOCSTAG: [doxygen]
 filegroup(
     name = "doxygen",
     srcs = [
@@ -168,6 +169,7 @@ filegroup(
         "public/pw_bytes/units.h",
     ],
 )
+# DOCSTAG: [doxygen]
 
 pw_size_diff(
     name = "with_byte_builder_size_diff",
@@ -186,6 +188,7 @@ pw_size_table(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "BUILD.bazel",
         "Kconfig",
         "code_size.rst",
         "design.rst",

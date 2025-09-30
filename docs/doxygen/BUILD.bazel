@@ -162,3 +162,11 @@ sphinx_docs_library(
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:public"],
 )
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = ["modules.h"],
+    tags = ["manual"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
+)

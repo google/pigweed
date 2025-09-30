@@ -590,3 +590,53 @@ Line 22 containing the following text should be highlighted:
    You can use ``main`` for the ``{commit}`` value if you want to link to the
    file at tip-of-tree, but as the file changes over time, the link may
    eventually point to a different line than what you intended.
+
+.. _docs-style-rest-doxylink:
+
+-----------------------
+Sphinx-to-Doxygen links
+-----------------------
+When you'd like to link to a Doxygen page from within the Sphinx docs,
+use the ``:cc:`` role, which is powered by `Doxylink`_.
+
+Unqualified names
+=================
+Direct links to unqualified names are never allowed:
+
+.. code-block:: rst
+
+   :cc:`PendRead`
+
+If multiple symbols named ``PendRead`` exist in different namespaces,
+`Doxylink`_ must guess at what particular ``PendRead`` it should link to.
+
+Symbols in the pw namespace
+===========================
+For symbols in the ``pw`` namespace (e.g. ``pw::Status``) always use
+the fully qualified name:
+
+.. code-block:: rst
+
+   :cc:`pw::IntrusiveList``
+
+Symbols with two or more levels of namespace
+============================================
+When referring to a symbol within the same namespace, display the unqualified
+name. When referring to a symbol from another namespace, use the minimal
+amount of namespacing that's required to disambiguate the namespace. The
+underlying link to the symbol must always be fully namespaced.
+
+For example, when linking to a ``pw_channel`` symbol from within the
+``pw_channel`` docs, do this:
+
+.. code-block:: rst
+
+   :cc:`PendRead <pw::channel::AnyChannel::PendRead>`
+
+But when referring to that same symbol from another module's docs, do this:
+
+.. code-block:: rst
+
+   :cc:`channel::AnyChannel::PendRead <pw::channel::AnyChannel::PendRead>`
+
+.. _Doxylink: https://sphinxcontrib-doxylink.readthedocs.io/en/stable/
