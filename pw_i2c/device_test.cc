@@ -98,5 +98,120 @@ TEST(Device, ProbeDeviceForOk) {
   EXPECT_EQ(initiator.Finalize(), OkStatus());
 }
 
+TEST(Device, UpdateAddressWriteReadForOk) {
+  constexpr Address kTestDeviceAddress = Address::SevenBit<0x3F>();
+  constexpr Address kTestDeviceAddressNew = Address::SevenBit<0x41>();
+
+  constexpr auto kExpectWrite1 = bytes::Array<1, 2, 3>();
+  constexpr auto kExpectRead1 = bytes::Array<1, 2>();
+  constexpr auto kExpectWrite2 = bytes::Array<4, 5, 6>();
+  constexpr auto kExpectRead2 = bytes::Array<3, 4>();
+
+  auto expected_transactions =
+      MakeExpectedTransactionArray({Transaction(OkStatus(),
+                                                kTestDeviceAddress,
+                                                kExpectWrite1,
+                                                kExpectRead1,
+                                                kI2cTransactionTimeout),
+                                    Transaction(OkStatus(),
+                                                kTestDeviceAddressNew,
+                                                kExpectWrite2,
+                                                kExpectRead2,
+                                                kI2cTransactionTimeout)});
+
+  MockInitiator initiator(expected_transactions);
+
+  Device device = Device(initiator, kTestDeviceAddress);
+
+  std::array<std::byte, kExpectRead1.size()> read1;
+  EXPECT_EQ(device.WriteReadFor(kExpectWrite1, read1, kI2cTransactionTimeout),
+            OkStatus());
+  EXPECT_TRUE(pw::containers::Equal(read1, kExpectRead1));
+
+  device.UpdateAddress(kTestDeviceAddressNew);
+
+  std::array<std::byte, kExpectRead1.size()> read2;
+  EXPECT_EQ(device.WriteReadFor(kExpectWrite2, read2, kI2cTransactionTimeout),
+            OkStatus());
+  EXPECT_TRUE(pw::containers::Equal(read2, kExpectRead2));
+  EXPECT_EQ(initiator.Finalize(), OkStatus());
+}
+
+TEST(Device, UpdateAddressWriteForOk) {
+  constexpr Address kTestDeviceAddress = Address::SevenBit<0x3F>();
+  constexpr Address kTestDeviceAddressNew = Address::SevenBit<0x41>();
+
+  constexpr auto kExpectWrite1 = bytes::Array<1, 2, 3>();
+  constexpr auto kExpectWrite2 = bytes::Array<4, 5, 6>();
+
+  auto expected_transactions =
+      MakeExpectedTransactionArray({WriteTransaction(OkStatus(),
+                                                     kTestDeviceAddress,
+                                                     kExpectWrite1,
+                                                     kI2cTransactionTimeout),
+                                    WriteTransaction(OkStatus(),
+                                                     kTestDeviceAddressNew,
+                                                     kExpectWrite2,
+                                                     kI2cTransactionTimeout)});
+
+  MockInitiator initiator(expected_transactions);
+  Device device = Device(initiator, kTestDeviceAddress);
+
+  EXPECT_EQ(device.WriteFor(kExpectWrite1, kI2cTransactionTimeout), OkStatus());
+  device.UpdateAddress(kTestDeviceAddressNew);
+  EXPECT_EQ(device.WriteFor(kExpectWrite2, kI2cTransactionTimeout), OkStatus());
+  EXPECT_EQ(initiator.Finalize(), OkStatus());
+}
+
+TEST(Device, UpdateAddressReadForOk) {
+  constexpr Address kTestDeviceAddress = Address::SevenBit<0x3F>();
+  constexpr Address kTestDeviceAddressNew = Address::SevenBit<0x41>();
+
+  constexpr auto kExpectRead1 = bytes::Array<1, 2, 3>();
+  constexpr auto kExpectRead2 = bytes::Array<4, 5, 6>();
+
+  auto expected_transactions =
+      MakeExpectedTransactionArray({ReadTransaction(OkStatus(),
+                                                    kTestDeviceAddress,
+                                                    kExpectRead1,
+                                                    kI2cTransactionTimeout),
+                                    ReadTransaction(OkStatus(),
+                                                    kTestDeviceAddressNew,
+                                                    kExpectRead2,
+                                                    kI2cTransactionTimeout)});
+
+  MockInitiator initiator(expected_transactions);
+  Device device = Device(initiator, kTestDeviceAddress);
+
+  std::array<std::byte, kExpectRead1.size()> read1;
+  EXPECT_EQ(device.ReadFor(read1, kI2cTransactionTimeout), OkStatus());
+  device.UpdateAddress(kTestDeviceAddressNew);
+  std::array<std::byte, kExpectRead2.size()> read2;
+  EXPECT_EQ(device.ReadFor(read2, kI2cTransactionTimeout), OkStatus());
+  EXPECT_EQ(initiator.Finalize(), OkStatus());
+}
+
+TEST(Device, UpdateAddressProbeDeviceForOk) {
+  constexpr Address kTestDeviceAddress = Address::SevenBit<0x3F>();
+  constexpr Address kTestDeviceAddressNew = Address::SevenBit<0x41>();
+
+  auto expected_transactions = MakeExpectedTransactionArray(
+      {ProbeTransaction(OkStatus(), kTestDeviceAddress, kI2cTransactionTimeout),
+       ProbeTransaction(
+           OkStatus(), kTestDeviceAddressNew, kI2cTransactionTimeout)});
+
+  MockInitiator initiator(expected_transactions);
+  Device device = Device(initiator, kTestDeviceAddress);
+
+  EXPECT_EQ(
+      initiator.ProbeDeviceFor(kTestDeviceAddress, kI2cTransactionTimeout),
+      OkStatus());
+  device.UpdateAddress(kTestDeviceAddressNew);
+  EXPECT_EQ(
+      initiator.ProbeDeviceFor(kTestDeviceAddressNew, kI2cTransactionTimeout),
+      OkStatus());
+  EXPECT_EQ(initiator.Finalize(), OkStatus());
+}
+
 }  // namespace
 }  // namespace pw::i2c

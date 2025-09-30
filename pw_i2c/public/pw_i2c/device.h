@@ -39,8 +39,7 @@ class Device {
  public:
   /// Creates a `pw::i2c::Device` instance.
   ///
-  /// The address for the I2C device is set in this constructor and can't be
-  /// modified later.
+  /// The address for the I2C device is set in this constructor.
   ///
   /// @param[in] initiator A reference to a `pw::i2c::Initiator` instance.
   ///
@@ -116,9 +115,20 @@ class Device {
     return initiator_.ProbeDeviceFor(device_address_, timeout);
   }
 
+  /// @brief Updates the I2C address associated with this device.
+  ///
+  /// This is not a common operation. Most I2C devices have a fixed address
+  /// or an address set at power-on. This method is useful for rare cases
+  /// where a device might change its address dynamically, for example,
+  /// after a specific command or based on external pin states that can be
+  /// reconfigured at runtime.
+  ///
+  /// @param[in] address The new address for the I2C device.
+  void UpdateAddress(Address address) { device_address_ = address; }
+
  private:
   Initiator& initiator_;
-  const Address device_address_;
+  Address device_address_;
 };
 
 }  // namespace i2c
