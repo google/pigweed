@@ -131,6 +131,11 @@ AndroidVendorCapabilities AndroidVendorCapabilities::New(
     c.a2dp_offload_v2_support_ = AsBool(e.a2dp_offload_v2_support().Read());
   }
 
+  // Version 1.05
+  if (c.SupportsVersion(1, 05)) {
+    c.iso_link_feedback_support_ = AsBool(e.iso_link_feedback_support().Read());
+  }
+
   return c;
 }
 

@@ -979,6 +979,9 @@ void AdapterImpl::ParseLEGetVendorCapabilitiesCommandComplete(
   } else if (major == 1 && minor == 04) {
     expected_size = android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
         version_1_04_size();
+  } else if (major == 1 && minor == 05) {
+    expected_size = android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
+        version_1_05_size();
   }
 
   if (event.size() != expected_size) {

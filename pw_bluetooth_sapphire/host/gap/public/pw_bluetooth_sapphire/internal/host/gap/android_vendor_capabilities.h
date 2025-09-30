@@ -103,6 +103,11 @@ class AndroidVendorCapabilities final {
   // Supports A2DP offloading with version 2 commands
   bool supports_a2dp_offload_v2() const { return a2dp_offload_v2_support_; }
 
+  // Supports the ISO Link Feedback event
+  bool supports_iso_link_feedback_event() const {
+    return iso_link_feedback_support_;
+  }
+
  private:
   AndroidVendorCapabilities() = default;
 
@@ -131,5 +136,6 @@ class AndroidVendorCapabilities final {
   bool supports_bluetooth_quality_report_ = false;
   uint32_t supports_dynamic_audio_buffer_ = 0;
   bool a2dp_offload_v2_support_ = false;
+  bool iso_link_feedback_support_ = false;
 };
 }  // namespace bt::gap

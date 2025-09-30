@@ -74,16 +74,12 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
   # le_get_vendor_capabilities_handler(...)
   # https://cs.android.com/android/platform/superproject/main/+/main:packages/modules/Bluetooth/system/gd/hci/controller.cc
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
-
   0                 [+hdr_size]    hci.CommandCompleteEvent  command_complete
   # Version 0.55
   # NOTE(https://github.com/google/emboss/issues/132): Emboss doesn't currently
   # support using the $next keyword here.
-
   let version_0_55_size = command_complete.$size_in_bytes+9
-
   $next             [+1]           hci.StatusCode            status
-
   $next             [+1]           UInt                      max_advt_instances
     -- Number of advertisement instances supported
     -- Deprecated in Google feature spec v0.98 and higher
@@ -108,9 +104,7 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
     -- Supports reporting of activity and energy information
 
   # Version 0.95
-
   let version_0_95_size = version_0_55_size+6
-
   $next             [+2]           struct                    version_supported:
     -- Specifies the version of the Google feature spec supported
     0     [+1]  UInt  minor_number
@@ -126,9 +120,7 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
     -- Supports logging of binary debug information from controller
 
   # Version 0.96
-
   let version_0_96_size = version_0_95_size+1
-
   if version_supported.major_number != 0 || version_supported.minor_number != 99:
     version_0_95_size [+1]         Capability                le_address_generation_offloading_support
       -- Deprecated in Google feature spec v0.98 and higher
@@ -136,38 +128,30 @@ struct LEGetVendorCapabilitiesCommandCompleteEvent:
   # Version 0.99
   # Seen in some firmwares.
   # Missing le_address_generation_offloading_support and bluetooth_quality_report_support.
-
   let version_0_99_size = version_0_95_size+4
-
   if version_supported.major_number == 0 && version_supported.minor_number == 99:
     version_0_95_size [+4]  bits:
-
       0                 [+5]       AudioCodecSupportMask     v99_a2dp_source_offload_capability_mask
 
   # Version 0.98
-
   let version_0_98_size = version_0_96_size+5
-
   version_0_96_size [+4]  bits:
-
     0                 [+5]         AudioCodecSupportMask     a2dp_source_offload_capability_mask
 
   $next             [+1]           Capability                bluetooth_quality_report_support
     -- Supports reporting of Bluetooth Quality events
 
   # Version 1.03
-
   let version_1_03_size = version_0_98_size+4
-
   $next             [+4]  bits:
-
     0                 [+5]         AudioCodecSupportMask     dynamic_audio_buffer_support
 
   # Version 1.04
-
   let version_1_04_size = version_1_03_size+1
-
   $next             [+1]           Capability                a2dp_offload_v2_support
+  # Version 1.05
+  let version_1_05_size = version_1_04_size+1
+  $next             [+1]           Capability                iso_link_feedback_support
 
 # ----------------------- A2DP Offloading --------------------------------------
 
