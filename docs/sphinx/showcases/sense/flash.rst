@@ -243,9 +243,11 @@ Flash an application binary to your Pico
          #. In **Bazel Targets** expand **//apps/blinky** and find your board's
             target:
 
-            * If your board is a Pico 1 then your board's target is **flash_rp2040**.
+            * If your board is a Pico 1 then your board's target is
+               **flash_rp2040 (native_binary)**.
 
-            * If your board is a Pico 2 then your board's target is **flash_rp2350**.
+            * If your board is a Pico 2 then your board's target is
+              **flash_rp2350 (native_binary)**.
 
               RP2040 is the name of the MCU that powers first-generation
               Picos. The RP2350 powers second-generation Picos.

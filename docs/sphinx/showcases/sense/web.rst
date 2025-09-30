@@ -16,8 +16,9 @@ monitoring and controlling your Pico over the web now.
 
 #. Open a terminal.
 
-#. Install `NVM`_. You'll need to close and re-open your terminal
-   to get ``nvm`` on your command line path.
+#. Install `NVM`_. You'll need to run the setup instructions that NVM provides
+   (or close and re-open your terminal) to get ``nvm`` on your command line
+   path.
 
    .. note::
 
@@ -55,7 +56,7 @@ monitoring and controlling your Pico over the web now.
 
 #. Open the web app in Google Chrome or Microsoft Edge.
 
-   .. warning::
+   .. important::
 
       **This application does not work in other browsers like Apple Safari
       or Mozilla Firefox** because `those browsers don't support`_ the Web
@@ -63,8 +64,7 @@ monitoring and controlling your Pico over the web now.
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_splash.png
 
-#. Click **Connect**. Select **Pico** if you've only got a Pico connected to your development
-   host. If you've got both a Pico and a Debug Probe connected, select **Debug Probe**.
+#. Click **Connect** and then select **Pico**.
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_connect.png
 
