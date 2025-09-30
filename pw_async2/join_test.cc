@@ -15,6 +15,8 @@
 #include "pw_async2/join.h"
 
 #include "pw_async2/dispatcher.h"
+#include "pw_async2/value_future.h"
+#include "pw_compilation_testing/negative_compilation.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -25,6 +27,7 @@ using ::pw::async2::Join;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
 using ::pw::async2::Waker;
+using ::pw::async2::experimental::BroadcastValueProvider;
 
 // Windows GCC emits a bogs uninitialized error for the
 // move constructor below.
@@ -129,5 +132,33 @@ TEST(Join, BindsDirectly) {
   EXPECT_EQ(v1.move_count_, 1);
   EXPECT_EQ(v2.move_count_, 1);
 }
+
+TEST(JoinFuture, ReturnsReadyWhenAllPendablesAreReady) {
+  Dispatcher dispatcher;
+
+  BroadcastValueProvider<int> int_provider;
+  BroadcastValueProvider<char> char_provider;
+
+  auto future =
+      ::pw::async2::experimental::Join(int_provider.Get(), char_provider.Get());
+  EXPECT_EQ(dispatcher.RunPendableUntilStalled(future), Pending());
+  int_provider.Resolve(43);
+  EXPECT_EQ(dispatcher.RunPendableUntilStalled(future), Pending());
+  char_provider.Resolve('d');
+  auto&& result = dispatcher.RunPendableUntilStalled(future);
+  ASSERT_TRUE(result.IsReady());
+  auto&& [i, c] = *result;
+  EXPECT_EQ(i, 43);
+  EXPECT_EQ(c, 'd');
+  EXPECT_TRUE(future.is_complete());
+}
+
+#if PW_NC_TEST(ArgumentsToJoinMustBeFutures)
+PW_NC_EXPECT("All arguments to Join must be Future types");
+void ShouldAssert() {
+  auto not_a_future = []() -> int { return 42; };
+  auto future = ::pw::async2::experimental::Join(not_a_future());
+}
+#endif  // PW_NC_TEST
 
 }  // namespace

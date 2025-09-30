@@ -570,9 +570,11 @@ pw_cc_test(
     srcs = [
         "join_test.cc",
     ],
+    has_nc_test = True,
     deps = [
         ":dispatcher",
         ":join",
+        ":value_future",
     ],
 )
 

@@ -441,7 +441,9 @@ pw_test("join_test") {
   deps = [
     ":dispatcher",
     ":join",
+    ":value_future",
   ]
+  negative_compilation_tests = true
 }
 
 pw_source_set("select") {

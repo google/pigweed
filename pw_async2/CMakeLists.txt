@@ -420,6 +420,8 @@ pw_add_test(pw_async2.join_test
   PRIVATE_DEPS
     pw_async2.dispatcher
     pw_async2.join
+    pw_async2.value_future
+    pw_compilation_testing._pigweed_only_negative_compilation
   GROUPS
     modules
     pw_async2

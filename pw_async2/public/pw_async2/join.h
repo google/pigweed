@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_async2/dispatcher.h"
+#include "pw_async2/future.h"
 
 namespace pw::async2 {
 
@@ -93,5 +94,95 @@ template <typename... Pendables>
 Join(Pendables&&...) -> Join<Pendables...>;
 
 /// @}
+
+namespace experimental {
+
+template <typename... Futures>
+class JoinFuture
+    : public Future<JoinFuture<Futures...>,
+                    std::tuple<typename Futures::value_type&&...>> {
+ private:
+  static constexpr auto kTupleIndexSequence =
+      std::make_index_sequence<sizeof...(Futures)>();
+  using TupleOfOutputRvalues = std::tuple<typename Futures::value_type&&...>;
+
+  using Base = Future<JoinFuture<Futures...>, TupleOfOutputRvalues>;
+  friend Base;
+
+  template <typename... Fs>
+  friend constexpr auto Join(Fs&&...);
+
+  explicit constexpr JoinFuture(Futures&&... futures)
+      : futures_(std::in_place, std::move(futures)...),
+        outputs_(Poll<typename Futures::value_type>(Pending())...) {}
+
+  /// Attempts to complete all of the futures, returning ``Ready``
+  /// with their results if all are complete.
+  Poll<TupleOfOutputRvalues> DoPend(Context& cx) {
+    if (!PendElements(cx, kTupleIndexSequence)) {
+      return Pending();
+    }
+    return TakeOutputs(kTupleIndexSequence);
+  }
+
+  void DoMarkComplete() { futures_.reset(); }
+  bool DoIsComplete() const { return !futures_.has_value(); }
+
+  /// Pends all non-completed futures at indices ``Is...`.
+  ///
+  /// Returns whether or not all futures have completed.
+  template <size_t... Is>
+  bool PendElements(Context& cx, std::index_sequence<Is...>) {
+    (PendElement<Is>(cx), ...);
+    return (std::get<Is>(outputs_).IsReady() && ...);
+  }
+
+  /// For future at `TupleIndex`, if it has not already returned a ``Ready``
+  /// result, attempts to complete it and store the result in ``outputs_``.
+  template <size_t kTupleIndex>
+  void PendElement(Context& cx) {
+    auto& output = std::get<kTupleIndex>(outputs_);
+    if (!output.IsReady()) {
+      output = std::get<kTupleIndex>(*futures_).Pend(cx);
+    }
+  }
+
+  /// Takes the results of all futures at indices ``Is...`.
+  template <size_t... Is>
+  Poll<TupleOfOutputRvalues> TakeOutputs(std::index_sequence<Is...>) {
+    return Poll<TupleOfOutputRvalues>(
+        std::forward_as_tuple<PendOutputOf<Futures>...>(TakeOutput<Is>()...));
+  }
+
+  /// Takes the result of the future at index ``kTupleIndex``.
+  template <size_t kTupleIndex>
+  PendOutputOf<
+      typename std::tuple_element<kTupleIndex, std::tuple<Futures...>>::type>&&
+  TakeOutput() {
+    return std::move(std::get<kTupleIndex>(outputs_).value());
+  }
+
+  static_assert(std::conjunction_v<is_future<Futures>...>,
+                "All types in JoinFuture must be Future types");
+  std::optional<std::tuple<Futures...>> futures_;
+  std::tuple<Poll<PendOutputOf<Futures>>...> outputs_;
+};
+
+template <typename... Futures>
+JoinFuture(Futures&&...) -> JoinFuture<Futures...>;
+
+/// Creates a future which pends the provided futures until all of them have
+/// completed.
+///
+/// When ready, the resulting future returns a tuple containing each future's
+/// output in the order the futures were provided.
+template <typename... Futures>
+constexpr auto Join(Futures&&... futures) {
+  static_assert(std::conjunction_v<is_future<Futures>...>,
+                "All arguments to Join must be Future types");
+  return JoinFuture(std::forward<Futures>(futures)...);
+}
+
+}  // namespace experimental
 
 }  // namespace pw::async2
