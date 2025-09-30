@@ -418,6 +418,29 @@ bits BqrQualityEventMask:
   31 [+1]  Flag  enable_vendor_specific_trace
 
 
+enum QualityReportId:
+  [maximum_bits: 8]
+  QUALITY_REPORTING_ON_THE_MONITORING_MODE   = 0x01
+  APPROACHING_LSTO                           = 0x02
+  A2DP_AUDIO_CHOPPY                          = 0x03
+  ESCO_VOICE_CHOPPY                          = 0x04
+  ROOT_INFLAMMATION                          = 0x05
+  # Reserved                                 = 0x06
+  LE_AUDIO_CHOPPY                            = 0x07
+  CONNECT_FAIL                               = 0x08
+  # Reserved                                 = 0x09 - 0x10
+  LPM_LL_MESSAGE_TRACE                       = 0x11
+  BLUETOOTH_MULTI_LINK_COEX_SCHEDULING_TRACE = 0x12
+  CONTROLLER_DEBUG_INFORMATION_DATA_DUMP     = 0x13
+
+
+struct BluetoothQualityReportSubeventPrefix:
+  [requires: vendor_event.subevent_code == 0x58]
+  let hdr_size = hci.VendorDebugEvent.$size_in_bytes
+  0     [+hdr_size]  hci.VendorDebugEvent  vendor_event
+  $next [+1]         QualityReportId       quality_report_id
+
+
 struct BluetoothQualityReportCommand:
   0     [+hci.CommandHeader.$size_in_bytes]     hci.CommandHeader    header
 
@@ -1118,28 +1141,3 @@ struct LEApcfAdTypeCommand:
     --
     -- NOTE: This field is not applicable when the action above is
     -- ApcfAction::Clear.
-
-# ------------------ HCI event (vendor-specific) -------------------------------
-
-
-enum QualityReportId:
-  [maximum_bits: 8]
-  QUALITY_REPORTING_ON_THE_MONITORING_MODE   = 0x01
-  APPROACHING_LSTO                           = 0x02
-  A2DP_AUDIO_CHOPPY                          = 0x03
-  ESCO_VOICE_CHOPPY                          = 0x04
-  ROOT_INFLAMMATION                          = 0x05
-  # Reserved                                 = 0x06
-  LE_AUDIO_CHOPPY                            = 0x07
-  CONNECT_FAIL                               = 0x08
-  # Reserved                                 = 0x09 - 0x10
-  LPM_LL_MESSAGE_TRACE                       = 0x11
-  BLUETOOTH_MULTI_LINK_COEX_SCHEDULING_TRACE = 0x12
-  CONTROLLER_DEBUG_INFORMATION_DATA_DUMP     = 0x13
-
-
-struct BluetoothQualityReportSubeventPrefix:
-  [requires: vendor_event.subevent_code == 0x58]
-  let hdr_size = hci.VendorDebugEvent.$size_in_bytes
-  0     [+hdr_size]  hci.VendorDebugEvent  vendor_event
-  $next [+1]         QualityReportId       quality_report_id
