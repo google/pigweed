@@ -36,6 +36,8 @@ public final class Detokenizer implements AutoCloseable {
     RulesJni.loadLibrary("pw_tokenizer_jni", Detokenizer.class);
   }
 
+  public static String DEFAULT_DOMAIN = "";
+
   // The handle (pointer) to the C++ detokenizer instance.
   private long handle;
 
@@ -64,14 +66,50 @@ public final class Detokenizer implements AutoCloseable {
   }
 
   /**
-   * Detokenizes the binary tokenized message without recursion.
+   * Detokenizes the binary tokenized message without recursion, using the default domain.
    *
    * @return the detokenized string if there was one successful detokenization, otherwise null
    */
   @Nullable
   public String detokenize(byte[] binaryMessage) {
+    return detokenize(binaryMessage, DEFAULT_DOMAIN);
+  }
+
+  /**
+   * Detokenizes the binary tokenized message without recursion, using the specified domain.
+   *
+   * @return the detokenized string if there was one successful detokenization, otherwise null
+   */
+  @Nullable
+  public String detokenize(byte[] binaryMessage, String domain) {
     checkIfOpen();
-    byte[] bytes = detokenizeNative(handle, binaryMessage);
+    byte[] bytes = detokenizeNative(handle, binaryMessage, domain);
+    return bytes != null ? new String(bytes, UTF_8) : null;
+  }
+
+  /**
+   * Recursively detokenizes the binary tokenized message.
+   *
+   * The first message uses the default domain.
+   *
+   * @return the detokenized string if the main message was successfully detokenized, otherwise null
+   */
+  @Nullable
+  public String recursiveDetokenize(byte[] binaryMessage) {
+    return recursiveDetokenize(binaryMessage, DEFAULT_DOMAIN);
+  }
+
+  /**
+   * Recursively detokenizes the binary tokenized message.
+   *
+   * The first message uses the specified domain.
+   *
+   * @return the detokenized string if the main message was successfully detokenized, otherwise null
+   */
+  @Nullable
+  public String recursiveDetokenize(byte[] binaryMessage, String domain) {
+    checkIfOpen();
+    byte[] bytes = recursiveDetokenizeNative(handle, binaryMessage, domain);
     return bytes != null ? new String(bytes, UTF_8) : null;
   }
 
@@ -116,13 +154,13 @@ public final class Detokenizer implements AutoCloseable {
   /** Deletes the detokenizer object with the provided handle, which MUST be valid. */
   private native void deleteNativeDetokenizer(long handle);
 
-  /**
-   * Returns the detokenized version of the provided data, or null if detokenization failed.
-   */
-  @Nullable private native byte[] detokenizeNative(long handle, byte[] data);
+  /** Returns the detokenized version of the provided data, or null if detokenization failed. */
+  @Nullable private native byte[] detokenizeNative(long handle, byte[] data, String domain);
 
-  /**
-   * Returns the String with nested tokenized messages decoded within it.
-   */
+  /** Recursive form of detokenizeNative. */
+  @Nullable
+  private native byte[] recursiveDetokenizeNative(long handle, byte[] data, String domain);
+
+  /** Returns the String with nested tokenized messages decoded within it. */
   private native byte[] detokenizeTextNative(long handle, String data);
 }

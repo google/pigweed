@@ -48,6 +48,13 @@ public final class DetokenizerTest {
       "00000003,          ,\"\",\"This is message 3: %d, %f\"\n";
   // clang-format on
 
+  private static final String DATABASE_2 = // clang-format off
+      "00000000,          ,\"\",\"Hello ${nested}#%08x\"\n" +
+      "00000001,          ,\"nested\",\"world\"\n";
+  // clang-format on
+
+  private static final byte[] NESTED_HELLO_WORLD = new byte[] {0, 0, 0, 0, 2};
+
   private final Detokenizer detokenizerBinary = Detokenizer.fromBinary(BINARY_DATABASE);
 
   private final Detokenizer detokenizerCsv = Detokenizer.fromCsv(CSV_DATABASE);
@@ -83,6 +90,18 @@ public final class DetokenizerTest {
     byte[] message = new byte[] {2, 0, 0, 0, 5, 'w', 'o', 'r', 'l', 'd'};
     assertThat(detokenizerBinary.detokenize(message)).isEqualTo("This is message 2: world");
     assertThat(detokenizerCsv.detokenize(message)).isEqualTo("This is message 2: world");
+  }
+
+  @Test
+  public void detokenize_ignoresNestedMessage() {
+    Detokenizer detokenizer = Detokenizer.fromCsv(DATABASE_2);
+    assertThat(detokenizer.detokenize(NESTED_HELLO_WORLD)).isEqualTo("Hello ${nested}#00000001");
+  }
+
+  @Test
+  public void recurisveDetokenize_decodesNestedMessage() {
+    Detokenizer detokenizer = Detokenizer.fromCsv(DATABASE_2);
+    assertThat(detokenizer.recursiveDetokenize(NESTED_HELLO_WORLD)).isEqualTo("Hello world");
   }
 
   @Test
