@@ -122,14 +122,18 @@ cc_tool(
         "@platforms//os:windows": "//:bin/clang++.exe",
         "//conditions:default": "//:bin/clang++",
     }),
-    data = glob([
-        "bin/llvm",
-        "bin/lld*",
-        "bin/ld*",
-        "lib/**/*.a",
-        "lib/**/*.so*",
-        "lib/**/*.o",
-    ]),
+    data = glob(
+        [
+            "bin/llvm",
+            "bin/lld*",
+            "bin/ld*",
+            "lib/**/*.a",
+            "lib/**/*.dylib",
+            "lib/**/*.so*",
+            "lib/**/*.o",
+        ],
+        allow_empty=True,
+    ),
 )
 
 cc_tool(
