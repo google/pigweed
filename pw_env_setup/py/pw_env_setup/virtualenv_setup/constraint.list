@@ -60,8 +60,8 @@ proto-plus==1.25.0
 psutil==7.1.0
 ptpython==3.0.25
 ptyprocess==0.7.0
-pyasn1==0.4.8
-pyasn1-modules==0.2.8
+pyasn1==0.6.1
+pyasn1-modules==0.4.2
 pycparser==2.21
 pyelftools==0.31
 pyfakefs==5.7.2

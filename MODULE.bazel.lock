@@ -1809,9 +1809,9 @@
         "bzlTransitiveDigest": "B03ED3L7FcWm0Hin9NKVS02w/MbisH94rmBOAGooMlg=",
         "usagesDigest": "HPMVjBgD/ZCkCjW1pgXG/NzNswa8H9Yu1qolaxElRGg=",
         "recordedFileInputs": {
-          "@@//pw_env_setup/py/pw_env_setup/virtualenv_setup/upstream_requirements_darwin_lock.txt": "a492441efa6a50cc5cbd260ceb15cb14c12c67b07be23ededbc5e3a6cd38534a",
-          "@@//pw_env_setup/py/pw_env_setup/virtualenv_setup/upstream_requirements_linux_lock.txt": "38f7471d864d0700a186676ad63bcda59d4acd988e01b49760939a3919ed0fc5",
-          "@@//pw_env_setup/py/pw_env_setup/virtualenv_setup/upstream_requirements_windows_lock.txt": "260a2cf7aa8dff4ea210b8ada3bfcf96486e1d61642ec3e45b3c1d6748ed0683",
+          "@@//pw_env_setup/py/pw_env_setup/virtualenv_setup/upstream_requirements_darwin_lock.txt": "6b71c8b1edfeb9b677b5f3ec3c26f3d79d030b06019355d5b3b1f9c1ec076476",
+          "@@//pw_env_setup/py/pw_env_setup/virtualenv_setup/upstream_requirements_linux_lock.txt": "ac84e45a2340dce1e932170b369adffc751868acd78c4e129ba5e1a881389085",
+          "@@//pw_env_setup/py/pw_env_setup/virtualenv_setup/upstream_requirements_windows_lock.txt": "e7a8e20f6c55312f2b2dc904c80937387a1ce0a2edba8509edf170a0c7051e2a",
           "@@nanopb+//extra/requirements_lock.txt": "2bcdca24f1a4429b4ab0f0bb80cca292a92e12f7bf3d0f46de7c2b14fd97ac25",
           "@@protobuf+//python/requirements.txt": "983be60d3cec4b319dcab6d48aeb3f5b2f7c3350f26b3a9e97486c37967c73c5",
           "@@rules_fuzzing+//fuzzing/requirements.txt": "ab04664be026b632a0d2a2446c4f65982b7654f5b6851d2f9d399a19b7242a5b",
@@ -2456,7 +2456,7 @@
               "dep_template": "@pigweed_python_packages//{name}:{target}",
               "python_interpreter_target": "@@rules_python++python+python_3_10_host//:python",
               "repo": "pigweed_python_packages_310",
-              "requirement": "pyasn1==0.4.8 --hash=sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d --hash=sha256:aef77c9fb94a3ac588e87841208bdec464471d9871bd5050a287cc9a475cd0ba"
+              "requirement": "pyasn1==0.6.1 --hash=sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629 --hash=sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034"
             }
           },
           "pigweed_python_packages_310_pyasn1_modules": {
@@ -2465,7 +2465,7 @@
               "dep_template": "@pigweed_python_packages//{name}:{target}",
               "python_interpreter_target": "@@rules_python++python+python_3_10_host//:python",
               "repo": "pigweed_python_packages_310",
-              "requirement": "pyasn1-modules==0.2.8 --hash=sha256:905f84c712230b2c592c19470d3ca8d552de726050d1d1716282a1f6146be65e --hash=sha256:a50b808ffeb97cb3601dd25981f6b016cbb3d31fbf57a8b8a87428e6158d0c74"
+              "requirement": "pyasn1-modules==0.4.2 --hash=sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a --hash=sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6"
             }
           },
           "pigweed_python_packages_310_pycparser": {
@@ -3599,7 +3599,7 @@
               "dep_template": "@pigweed_python_packages//{name}:{target}",
               "python_interpreter_target": "@@rules_python++python+python_3_11_host//:python",
               "repo": "pigweed_python_packages_311",
-              "requirement": "pyasn1==0.4.8 --hash=sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d --hash=sha256:aef77c9fb94a3ac588e87841208bdec464471d9871bd5050a287cc9a475cd0ba"
+              "requirement": "pyasn1==0.6.1 --hash=sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629 --hash=sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034"
             }
           },
           "pigweed_python_packages_311_pyasn1_modules": {
@@ -3608,7 +3608,7 @@
               "dep_template": "@pigweed_python_packages//{name}:{target}",
               "python_interpreter_target": "@@rules_python++python+python_3_11_host//:python",
               "repo": "pigweed_python_packages_311",
-              "requirement": "pyasn1-modules==0.2.8 --hash=sha256:905f84c712230b2c592c19470d3ca8d552de726050d1d1716282a1f6146be65e --hash=sha256:a50b808ffeb97cb3601dd25981f6b016cbb3d31fbf57a8b8a87428e6158d0c74"
+              "requirement": "pyasn1-modules==0.4.2 --hash=sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a --hash=sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6"
             }
           },
           "pigweed_python_packages_311_pycparser": {
@@ -4742,7 +4742,7 @@
               "dep_template": "@pigweed_python_packages//{name}:{target}",
               "python_interpreter_target": "@@rules_python++python+python_3_12_host//:python",
               "repo": "pigweed_python_packages_312",
-              "requirement": "pyasn1==0.4.8 --hash=sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d --hash=sha256:aef77c9fb94a3ac588e87841208bdec464471d9871bd5050a287cc9a475cd0ba"
+              "requirement": "pyasn1==0.6.1 --hash=sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629 --hash=sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034"
             }
           },
           "pigweed_python_packages_312_pyasn1_modules": {
@@ -4751,7 +4751,7 @@
               "dep_template": "@pigweed_python_packages//{name}:{target}",
               "python_interpreter_target": "@@rules_python++python+python_3_12_host//:python",
               "repo": "pigweed_python_packages_312",
-              "requirement": "pyasn1-modules==0.2.8 --hash=sha256:905f84c712230b2c592c19470d3ca8d552de726050d1d1716282a1f6146be65e --hash=sha256:a50b808ffeb97cb3601dd25981f6b016cbb3d31fbf57a8b8a87428e6158d0c74"
+              "requirement": "pyasn1-modules==0.4.2 --hash=sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a --hash=sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6"
             }
           },
           "pigweed_python_packages_312_pycparser": {
