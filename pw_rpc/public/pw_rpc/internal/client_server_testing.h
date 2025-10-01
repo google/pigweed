@@ -71,6 +71,9 @@ class ForwardingChannelOutput : public ChannelOutput {
     return true;
   }
 
+  // Clears and resets the FakeChannelOutputImpl.
+  void clear() { output_.clear(); }
+
  protected:
   explicit ForwardingChannelOutput(
       TestPacketProcessor&& server_packet_processor = nullptr,
@@ -121,6 +124,9 @@ class ClientServerTestContext {
     while (channel_output_.ForwardNextPacket(client_server_)) {
     }
   }
+
+  // Clears and resets the ForwardingChannelOutputImpl.
+  void clear() { channel_output_.clear(); }
 
  protected:
   explicit ClientServerTestContext(
