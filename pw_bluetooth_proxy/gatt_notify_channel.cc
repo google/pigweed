@@ -107,9 +107,13 @@ pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
     uint16_t connection_handle,
     uint16_t attribute_handle,
     ChannelEventCallback&& event_fn) {
-  if (!AreValidParameters(/*connection_handle=*/connection_handle,
-                          /*local_cid=*/kAttributeProtocolCID,
-                          /*remote_cid=*/kAttributeProtocolCID)) {
+  if (!AreValidParameters(
+          /*connection_handle=*/connection_handle,
+          /*local_cid=*/
+          static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_ATTRIBUTE_PROTOCOL),
+          /*remote_cid=*/
+          static_cast<uint16_t>(
+              emboss::L2capFixedCid::LE_U_ATTRIBUTE_PROTOCOL))) {
     return pw::Status::InvalidArgument();
   }
   if (attribute_handle == 0) {
@@ -133,8 +137,10 @@ GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
           /*rx_multibuf_allocator*/ nullptr,
           /*connection_handle=*/connection_handle,
           /*transport=*/AclTransportType::kLe,
-          /*local_cid=*/kAttributeProtocolCID,
-          /*remote_cid=*/kAttributeProtocolCID,
+          /*local_cid=*/
+          static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_ATTRIBUTE_PROTOCOL),
+          /*remote_cid=*/
+          static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_ATTRIBUTE_PROTOCOL),
           /*payload_from_controller_fn=*/nullptr,
           /*payload_from_host_fn=*/nullptr,
           /*event_fn=*/std::move(event_fn)),

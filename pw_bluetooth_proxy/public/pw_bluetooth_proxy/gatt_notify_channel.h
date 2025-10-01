@@ -62,9 +62,6 @@ class GattNotifyChannel : public SingleChannelProxy {
   [[nodiscard]] std::optional<H4PacketWithH4> GenerateNextTxPacket()
       PW_EXCLUSIVE_LOCKS_REQUIRED(l2cap_tx_mutex()) override;
 
-  // TODO: https://pwbug.dev/349602172 - Define ATT CID in pw_bluetooth.
-  static constexpr uint16_t kAttributeProtocolCID = 0x0004;
-
   explicit GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                              uint16_t connection_handle,
                              uint16_t attribute_handle,
