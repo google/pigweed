@@ -84,6 +84,8 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
         'PW_DISABLE_CLI_ANALYTICS', type=envparse.strict_bool, default=False
     )
 
+    parser.add_var('PW_IDE_VERBOSE')
+
     return parser
 
 

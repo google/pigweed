@@ -31,12 +31,14 @@ py_library(
     testonly = True,
     srcs = ["merger.py"],
     visibility = ["//visibility:private"],
+    deps = ["//pw_cli/py:pw_cli"],
 )
 
 py_binary(
     name = "update_compile_commands",
     srcs = ["merger.py"],
     main = "merger.py",
+    deps = ["//pw_cli/py:pw_cli"],
 )
 
 py_binary(

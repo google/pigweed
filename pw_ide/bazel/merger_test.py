@@ -61,27 +61,28 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         self.mock_environ = self.enterContext(
             mock.patch.dict(
                 os.environ,
-                {'BUILD_WORKSPACE_DIRECTORY': str(self.workspace_root)},
+                {
+                    'BUILD_WORKSPACE_DIRECTORY': str(self.workspace_root),
+                    'BUILD_WORKING_DIRECTORY': str(self.workspace_root),
+                },
             )
         )
 
-        self.mock_subprocess = self.enterContext(
-            mock.patch('subprocess.check_output')
+        self.mock_run_bazel = self.enterContext(
+            mock.patch('pw_ide.bazel.merger._run_bazel')
         )
 
-        def check_output_side_effect(
+        def run_bazel_side_effect(
             args,
-            # pylint: disable=unused-argument
-            **kwargs,
-            # pylint: enable=unused-argument
+            **kwargs,  # pylint: disable=unused-argument
         ):
-            if args == ['bazel', 'info', 'output_path']:
-                return str(self.output_path)
-            if args == ['bazel', 'info', 'output_base']:
-                return str(self.output_base)
-            raise AssertionError('Unhandled Bazel request')
+            if args == ['info', 'output_path']:
+                return mock.Mock(stdout=f'{self.output_path}\n')
+            if args == ['info', 'output_base']:
+                return mock.Mock(stdout=f'{self.output_base}\n')
+            raise AssertionError(f'Unhandled Bazel request: {args}')
 
-        self.mock_subprocess.side_effect = check_output_side_effect
+        self.mock_run_bazel.side_effect = run_bazel_side_effect
 
     def test_no_fragments_found(self):
         with io.StringIO() as buf, redirect_stderr(buf):
@@ -349,7 +350,15 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             }
         )
 
-        def run_bazel_side_effect(args):
+        def run_bazel_side_effect(
+            args,
+            **kwargs,  # pylint: disable=unused-argument
+        ):
+            if args == ['info', 'output_path']:
+                return mock.Mock(stdout=f'{self.output_path}\n')
+            if args == ['info', 'output_base']:
+                return mock.Mock(stdout=f'{self.output_base}\n')
+
             bep_path_arg = next(
                 arg
                 for arg in args

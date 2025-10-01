@@ -212,23 +212,28 @@ export async function createBazelInterceptorFile() {
       bazelInterceptorScript = `#!/usr/bin/env fish
 set -u
 
-if contains -- $argv[1] build run test
-  $BAZEL_REAL $argv
-  set BAZEL_EXIT_CODE $status
+$BAZEL_REAL $argv
+set BAZEL_EXIT_CODE $status
 
+if test -n "$PW_IDE_VERBOSE"
+  set QUIET_BUILD
+  set VERBOSE_FLAG --verbose
+else
+  set QUIET_BUILD --quiet
+  set VERBOSE_FLAG
+end
+
+if contains -- $argv[1] build run test
   if [ $BAZEL_EXIT_CODE -eq 0 ];
-    echo "Updating compile commands..." >&2
-    $BAZEL_REAL --quiet run --show_result=0 --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands -- -- $argv
+    echo "🔄 Refreshing compile commands..." >&2
+    $BAZEL_REAL $QUIET_BUILD run --show_result=0 --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands -- $VERBOSE_FLAG -- $argv
     if [ $status -eq 0 ];
       mkdir -p ${CDB_FILE_DIR}
       echo $argv > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
     else
-      echo "⚠️  Update command failed, continuing..." >&2
+      echo "⚠️ Compile commands generation failed (exit code $status)" >&2
     end
   end
-else
-  $BAZEL_REAL $argv
-  set BAZEL_EXIT_CODE $status
 end
 
 exit $BAZEL_EXIT_CODE
@@ -237,23 +242,28 @@ exit $BAZEL_EXIT_CODE
       bazelInterceptorScript = `#!${SHELL}
 set -uo pipefail
 
-if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
-  $BAZEL_REAL "$@"
-  BAZEL_EXIT_CODE=$?
+$BAZEL_REAL "$@"
+BAZEL_EXIT_CODE=$?
 
+if [[ -n "\${PW_IDE_VERBOSE-}" ]]; then
+  QUIET_BUILD=
+  VERBOSE_FLAG=--verbose
+else
+  QUIET_BUILD=--quiet
+  VERBOSE_FLAG=
+fi
+
+if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
   if [ $BAZEL_EXIT_CODE -eq 0 ]; then
-    echo "Updating compile commands..." >&2
-    $BAZEL_REAL --quiet run --show_result=0 --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands -- -- "$@"
+    echo "🔄 Refreshing compile commands..." >&2
+    $BAZEL_REAL \${QUIET_BUILD} run --show_result=0 --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands -- \${VERBOSE_FLAG} -- "$@"
     if [ $? -eq 0 ]; then
       mkdir -p ${CDB_FILE_DIR}
       echo "$*" > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
     else
-      echo "⚠️  Update command failed, continuing..." >&2
+      echo "⚠️ Compile commands generation failed (exit code $?)" >&2
     fi
   fi
-else
-  $BAZEL_REAL "$@"
-  BAZEL_EXIT_CODE=$?
 fi
 
 exit $BAZEL_EXIT_CODE
