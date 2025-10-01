@@ -9,17 +9,15 @@ Sets
 A set is an unordered collection of items. Pigweed provides implementations that
 can insert, find, and remove items in logarithmic time.
 
-.. _module_pw_containers_bitset:
-
 ----------
 pw::BitSet
 ----------
-``pw::BitSet`` is a ``constexpr``-friendly fixed-size sequence of bits, similar
-to ``std::bitset``.
+:cs:`pw::BitSet` is a ``constexpr``-friendly fixed-size sequence of bits,
+similar to ``std::bitset``.
 
-This container allows for compile-time manipulation of a fixed number of bits.
-It supports common bitwise operations and is optimized for size by using the
-smallest possible underlying integer type.
+This container supports manipulation of a fixed number of bits, including at
+compile time. It supports common bitwise operations and is optimized for size by
+using the smallest possible underlying integer type.
 
 Example
 =======

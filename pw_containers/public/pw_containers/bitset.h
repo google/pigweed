@@ -20,7 +20,7 @@
 
 namespace pw {
 
-/// @module{pw_containers}
+/// @submodule{pw_containers,sets}
 
 /// A `constexpr`-friendly fixed-size sequence of bits, similar to
 /// `std::bitset`.

@@ -658,6 +658,7 @@ filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_containers/algorithm.h",
+        "public/pw_containers/bitset.h",
         "public/pw_containers/dynamic_deque.h",
         "public/pw_containers/dynamic_queue.h",
         "public/pw_containers/dynamic_vector.h",
