@@ -36,6 +36,25 @@ _target_transition = transition(
     ],
 )
 
+def _app_target_transition_impl(_, attr):
+    flags = {
+        "//command_line_option:platforms": str(attr.platform),
+        str(Label("//pw_kernel/target:system_config_file")): str(attr.system_config),
+        str(Label("//pw_kernel/userspace:userspace_build")): True,
+    }
+
+    return flags
+
+_app_target_transition = transition(
+    implementation = _app_target_transition_impl,
+    inputs = [],
+    outputs = [
+        "//command_line_option:platforms",
+        str(Label("//pw_kernel/target:system_config_file")),
+        str(Label("//pw_kernel/userspace:userspace_build")),
+    ],
+)
+
 SystemImageInfo = provider(
     "Metadata about a system image",
     fields = {
@@ -93,7 +112,7 @@ system_image = rule(
     attrs = {
         "apps": attr.label_list(
             doc = "List of application images.",
-            cfg = _target_transition,
+            cfg = _app_target_transition,
         ),
         "kernel": attr.label(
             doc = "Kernel image.",
