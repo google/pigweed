@@ -47,6 +47,15 @@ pw_add_library(pw_containers.algorithm INTERFACE
     public
 )
 
+pw_add_library(pw_containers.bitset INTERFACE
+  HEADERS
+    public/pw_containers/bitset.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_third_party.fuchsia.stdcompat
+)
+
 pw_add_library(pw_containers.filtered_view INTERFACE
   HEADERS
     public/pw_containers/filtered_view.h
@@ -186,6 +195,18 @@ pw_add_test(pw_containers.ptr_iterator_test
     ptr_iterator_test.cc
   PRIVATE_DEPS
     pw_containers.iterator
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.bitset_test
+  SOURCES
+    bitset_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_containers.bitset
+    pw_unit_test.constexpr
   GROUPS
     modules
     pw_containers

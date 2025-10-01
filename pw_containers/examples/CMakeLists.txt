@@ -16,6 +16,14 @@ include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
 # Examples
 
+pw_add_test(pw_containers.examples.bitset
+  PRIVATE_DEPS
+    pw_assert
+    pw_containers.bitset
+  SOURCES
+    bitset.cc
+)
+
 pw_add_test(pw_containers.examples.flat_map
   PRIVATE_DEPS
     pw_containers.flat_map

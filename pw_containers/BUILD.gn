@@ -64,6 +64,12 @@ pw_source_set("algorithm") {
   ]
 }
 
+pw_source_set("bitset") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/bitset.h" ]
+  public_deps = [ "$dir_pigweed/third_party/fuchsia:stdcompat" ]
+}
+
 pw_source_set("filtered_view") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/filtered_view.h" ]
@@ -347,6 +353,7 @@ pw_source_set("intrusive_multiset") {
 pw_test_group("tests") {
   tests = [
     ":algorithm_test",
+    ":bitset_test",
     ":filtered_view_test",
     ":flat_map_test",
     ":dynamic_deque_test",
@@ -386,6 +393,15 @@ pw_test("algorithm_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("bitset_test") {
+  sources = [ "bitset_test.cc" ]
+  deps = [
+    ":bitset",
+    "$dir_pw_unit_test:constexpr",
+  ]
+  negative_compilation_tests = true
 }
 
 pw_test("filtered_view_test") {

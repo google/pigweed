@@ -18,6 +18,14 @@ import("$dir_pw_unit_test/test.gni")
 
 # Examples
 
+pw_test("bitset") {
+  deps = [
+    "$dir_pw_containers:bitset",
+    dir_pw_assert,
+  ]
+  sources = [ "bitset.cc" ]
+}
+
 pw_test("flat_map") {
   deps = [ "$dir_pw_containers:flat_map" ]
   sources = [ "flat_map.cc" ]
@@ -79,6 +87,7 @@ pw_test("wrapped_iterator") {
 
 pw_test_group("examples") {
   tests = [
+    ":bitset",
     ":flat_map",
     ":intrusive_forward_list",
     ":intrusive_list",

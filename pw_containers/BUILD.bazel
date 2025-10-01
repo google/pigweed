@@ -49,6 +49,23 @@ cc_library(
 )
 
 cc_library(
+    name = "bitset",
+    hdrs = ["public/pw_containers/bitset.h"],
+    strip_include_prefix = "public",
+    deps = ["//third_party/fuchsia:stdcompat"],
+)
+
+pw_cc_test(
+    name = "bitset_test",
+    srcs = ["bitset_test.cc"],
+    has_nc_test = True,
+    deps = [
+        ":bitset",
+        "//pw_unit_test:constexpr",
+    ],
+)
+
+cc_library(
     name = "intrusive_item",
     srcs = ["intrusive_item.cc"],
     hdrs = ["public/pw_containers/internal/intrusive_item.h"],

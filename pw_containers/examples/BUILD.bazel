@@ -23,6 +23,15 @@ licenses(["notice"])
 # Examples
 
 pw_cc_test(
+    name = "bitset",
+    srcs = ["bitset.cc"],
+    deps = [
+        "//pw_assert:assert",
+        "//pw_containers:bitset",
+    ],
+)
+
+pw_cc_test(
     name = "flat_map",
     srcs = ["flat_map.cc"],
     deps = ["//pw_containers:flat_map"],
@@ -99,6 +108,7 @@ pw_cc_test(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "bitset.cc",
         "flat_map.cc",
         "intrusive_forward_list.cc",
         "intrusive_list.cc",
