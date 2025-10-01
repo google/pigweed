@@ -156,6 +156,15 @@ pw_facade("recursive_mutex") {
   ]
 }
 
+pw_source_set("scoped_locker") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/scoped_locker.h" ]
+  public_deps = [
+    ":lock_annotations",
+    ":lock_traits",
+  ]
+}
+
 pw_facade("interrupt_spin_lock") {
   backend = pw_sync_INTERRUPT_SPIN_LOCK_BACKEND
   public_configs = [ ":public_include_path" ]
@@ -243,8 +252,9 @@ pw_test_group("tests") {
     ":binary_semaphore_facade_test",
     ":counting_semaphore_facade_test",
     ":mutex_facade_test",
-    ":timed_mutex_facade_test",
     ":recursive_mutex_facade_test",
+    ":scoped_locker_test",
+    ":timed_mutex_facade_test",
     ":interrupt_spin_lock_facade_test",
     ":thread_notification_facade_test",
     ":timed_thread_notification_facade_test",
@@ -368,6 +378,15 @@ pw_test("mutex_facade_test") {
     ":mutex",
     "$dir_pw_preprocessor",
     pw_sync_MUTEX_BACKEND,
+  ]
+}
+
+pw_test("scoped_locker_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "scoped_locker_test.cc" ]
+  deps = [
+    ":lock_testing",
+    ":scoped_locker",
   ]
 }
 

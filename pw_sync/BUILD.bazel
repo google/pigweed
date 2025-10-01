@@ -271,6 +271,18 @@ host_backend_alias(
     backend = "//pw_sync_stl:interrupt_spin_lock",
 )
 
+cc_library(
+    name = "scoped_locker",
+    hdrs = [
+        "public/pw_sync/scoped_locker.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":lock_annotations",
+        ":lock_traits",
+    ],
+)
+
 pw_facade(
     name = "thread_notification",
     hdrs = [
@@ -577,6 +589,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "scoped_locker_test",
+    srcs = ["scoped_locker_test.cc"],
+    deps = [
+        ":lock_testing",
+        ":scoped_locker",
+    ],
+)
+
+pw_cc_test(
     name = "thread_notification_facade_test",
     srcs = [
         "thread_notification_facade_test.cc",
@@ -620,6 +641,7 @@ filegroup(
         "public/pw_sync/lock_traits.h",
         "public/pw_sync/mutex.h",
         "public/pw_sync/no_lock.h",
+        "public/pw_sync/scoped_locker.h",
         "public/pw_sync/thread_notification.h",
         "public/pw_sync/timed_borrow.h",
         "public/pw_sync/timed_mutex.h",

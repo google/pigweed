@@ -175,6 +175,16 @@ pw_add_facade(pw_sync.interrupt_spin_lock STATIC
     interrupt_spin_lock.cc
 )
 
+pw_add_library(pw_sync.scoped_locker INTERFACE
+  HEADERS
+    public/pw_sync/scoped_locker.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_sync.lock_annotations
+    pw_sync.lock_traits
+)
+
 pw_add_facade(pw_sync.thread_notification INTERFACE
   BACKEND
     pw_sync.thread_notification_BACKEND
@@ -401,6 +411,19 @@ if(NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL "")
       pw_preprocessor
       pw_sync.interrupt_spin_lock
       pw_sync.borrow_testing
+    GROUPS
+      modules
+      pw_sync
+  )
+endif()
+
+if(NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "")
+  pw_add_test(pw_sync.scoped_locker_test
+    SOURCES
+      scoped_locker_test.cc
+    PRIVATE_DEPS
+      pw_sync.lock_testing
+      pw_sync.scoped_locker
     GROUPS
       modules
       pw_sync

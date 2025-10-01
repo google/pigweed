@@ -994,6 +994,28 @@ Example in C++
      return ReadI2cData(i2c, buffer);
    }
 
+ScopedLocker
+============
+:cc:`pw::ScopedLocker` is an RAII helper to use ``BasicLockable``
+locks with thread safety lock annotations with more capabilities than
+``std::lock_guard``.
+
+.. Note::
+   The simpler ``std::lock_guard`` RAII helper is recommended by default.
+   due to additional member overhead. ``pw::ScopedLocker`` should only be used
+   if more complex lock management is required where RAII alone is insufficient.
+
+Unlike a ``std::lock_guard`` and ``std::scoped_lock``, this helper can be
+constructed with the lock deferred. In addition, this does not support the
+``std::lock`` deadlock avoidance algorithm nor lock adoption from
+``std::scoped_lock``.
+
+Lastly this supports explicit ``lock()`` and ``unlock()`` like
+``std::unique_lock``, however unlike ``std::unique_lock``, ``pw::ScopedLocker``
+does not support the use of ``Lockables``'s conditional lock acquisition,
+``try_lock()``. This means that this supports thread safety lock annotations
+unlike ``std::unique_lock``.
+
 --------------------
 Signaling Primitives
 --------------------
