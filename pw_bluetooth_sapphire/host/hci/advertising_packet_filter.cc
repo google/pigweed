@@ -61,6 +61,16 @@ void AdvertisingPacketFilter::SetPacketFilters(
     return;
   }
 
+  // NOTE(b/448475405): We suspect there is a bug with advertising packet
+  // filtering where we don't get scan results on time from the Controller. So
+  // as not to affect others who use Bluetooth scanning, disable advertising
+  // packet filtering for now while we investigate.
+  bt_log(INFO,
+         "hci-le",
+         "pre-emptively disabling advertising packet filtering while we "
+         "investigate a bug within it");
+  return;
+
   // If none of our filters are offloadable and we turn on scan filter
   // offloading, we will get no results.
   bool any_filters_offloadable = false;

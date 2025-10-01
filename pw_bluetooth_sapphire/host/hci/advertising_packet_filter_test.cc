@@ -177,7 +177,8 @@ TEST_F(AdvertisingPacketFilterTest, OffloadingEnabledOnFirstOffloadableFilter) {
 }
 
 // disable offloading if we can't store all filters on chip
-TEST_F(AdvertisingPacketFilterTest, OffloadingDisabledIfMemoryUnavailable) {
+TEST_F(AdvertisingPacketFilterTest,
+       DISABLED_OffloadingDisabledIfMemoryUnavailable) {
   AdvertisingPacketFilter packet_filter({true, 1}, transport()->GetWeakPtr());
 
   DiscoveryFilter filter_a;
@@ -223,7 +224,8 @@ TEST_F(AdvertisingPacketFilterTest, OffloadingReenabledIfMemoryAvailable) {
 }
 
 // replace filters if we send a new set with the same scan id
-TEST_F(AdvertisingPacketFilterTest, OffloadingSetPacketFiltersReplaces) {
+TEST_F(AdvertisingPacketFilterTest,
+       DISABLED_OffloadingSetPacketFiltersReplaces) {
   AdvertisingPacketFilter packet_filter({true, 1}, transport()->GetWeakPtr());
 
   DiscoveryFilter filter_a;
@@ -252,7 +254,7 @@ TEST_F(AdvertisingPacketFilterTest, OffloadingSetPacketFiltersReplaces) {
 }
 
 // service uuid filter is sent to the controller
-TEST_F(AdvertisingPacketFilterTest, OffloadingServiceUUID) {
+TEST_F(AdvertisingPacketFilterTest, DISABLED_OffloadingServiceUUID) {
   UUID uuid(kUuid);
 
   AdvertisingPacketFilter packet_filter({true, 1}, transport()->GetWeakPtr());
@@ -275,7 +277,7 @@ TEST_F(AdvertisingPacketFilterTest, OffloadingServiceUUID) {
 }
 
 // solicitation uuid filter is sent to the controller
-TEST_F(AdvertisingPacketFilterTest, OffloadingSolicitationUUID) {
+TEST_F(AdvertisingPacketFilterTest, DISABLED_OffloadingSolicitationUUID) {
   UUID uuid(kUuid);
 
   AdvertisingPacketFilter packet_filter({true, 1}, transport()->GetWeakPtr());
@@ -298,7 +300,7 @@ TEST_F(AdvertisingPacketFilterTest, OffloadingSolicitationUUID) {
 }
 
 // local name filter is sent to the controller
-TEST_F(AdvertisingPacketFilterTest, OffloadingNameSubstring) {
+TEST_F(AdvertisingPacketFilterTest, DISABLED_OffloadingNameSubstring) {
   AdvertisingPacketFilter packet_filter({true, 1}, transport()->GetWeakPtr());
 
   DiscoveryFilter filter;
@@ -318,7 +320,7 @@ TEST_F(AdvertisingPacketFilterTest, OffloadingNameSubstring) {
 }
 
 // service data uuid filter is sent to the controller
-TEST_F(AdvertisingPacketFilterTest, OffloadingServiceDataUUID) {
+TEST_F(AdvertisingPacketFilterTest, DISABLED_OffloadingServiceDataUUID) {
   UUID uuid(kUuid);
 
   AdvertisingPacketFilter packet_filter({true, 1}, transport()->GetWeakPtr());
@@ -341,7 +343,7 @@ TEST_F(AdvertisingPacketFilterTest, OffloadingServiceDataUUID) {
 }
 
 // manufacturer code filter is sent to the controller
-TEST_F(AdvertisingPacketFilterTest, OffloadingManufacturerCode) {
+TEST_F(AdvertisingPacketFilterTest, DISABLED_OffloadingManufacturerCode) {
   AdvertisingPacketFilter packet_filter({true, 1}, transport()->GetWeakPtr());
 
   DiscoveryFilter filter;

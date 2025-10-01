@@ -1241,7 +1241,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
-TEST_F(LowEnergyDiscoveryManagerTest, StartScanDuringOffloadedFilters) {
+TEST_F(LowEnergyDiscoveryManagerTest,
+       DISABLED_StartScanDuringOffloadedFilters) {
   SetupDiscoveryManager(/*extended=*/false, {true, 8});
 
   auto session_a = StartDiscoverySession(false);
