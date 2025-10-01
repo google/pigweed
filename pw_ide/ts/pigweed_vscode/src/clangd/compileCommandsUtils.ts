@@ -213,19 +213,12 @@ export async function createBazelInterceptorFile() {
 set -u
 
 if contains -- $argv[1] build run test
-  echo "Cleaning old compile commands..." >&2
-  $BAZEL_REAL run --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:clean_compile_commands
-  if [ $status -ne 0 ];
-    echo "⚠️  Clean command failed, continuing..." >&2
-  end
-
-  echo "Building with compile commands aspect..." >&2
-  $BAZEL_REAL $argv[1] ${aspect} ${outputGroups} $argv[2..-1]
+  $BAZEL_REAL $argv
   set BAZEL_EXIT_CODE $status
 
   if [ $BAZEL_EXIT_CODE -eq 0 ];
     echo "Updating compile commands..." >&2
-    $BAZEL_REAL run --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands
+    $BAZEL_REAL --quiet run --show_result=0 --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands -- -- $argv
     if [ $status -eq 0 ];
       mkdir -p ${CDB_FILE_DIR}
       echo $argv > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}
@@ -245,19 +238,12 @@ exit $BAZEL_EXIT_CODE
 set -uo pipefail
 
 if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" || "$1" == "test" ) ]]; then
-  echo "Cleaning old compile commands..." >&2
-  $BAZEL_REAL run --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:clean_compile_commands
-  if [ $? -ne 0 ]; then
-    echo "⚠️  Clean command failed, continuing..." >&2
-  fi
-
-  echo "Building with compile commands aspect..." >&2
-  $BAZEL_REAL "$1" ${aspect} ${outputGroups} "\${@:2}"
+  $BAZEL_REAL "$@"
   BAZEL_EXIT_CODE=$?
 
   if [ $BAZEL_EXIT_CODE -eq 0 ]; then
     echo "Updating compile commands..." >&2
-    $BAZEL_REAL run --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands
+    $BAZEL_REAL --quiet run --show_result=0 --experimental_convenience_symlinks=ignore @pigweed//pw_ide/bazel:update_compile_commands -- -- "$@"
     if [ $? -eq 0 ]; then
       mkdir -p ${CDB_FILE_DIR}
       echo "$*" > ${CDB_FILE_DIR}/${LAST_BAZEL_COMMAND_FILE_NAME}

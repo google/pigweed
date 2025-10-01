@@ -19,16 +19,23 @@ platform-specific compilation databases.
 
 import argparse
 import collections
+from collections.abc import Iterator
 import json
 import os
-import shutil
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
-from typing import List, NamedTuple
+import tempfile
+from typing import NamedTuple
 
 # A unique suffix to identify fragments created by our aspect.
-_FRAGMENT_SUFFIX = ".pw_aspect.compile_commands.json"
+_FRAGMENT_SUFFIX = '.pw_aspect.compile_commands.json'
+
+_COMPILE_COMMANDS_OUTPUT_GROUP = 'pw_cc_compile_commands_fragments'
+
+# pylint: disable=line-too-long
+_COMPILE_COMMANDS_ASPECT = '@pigweed//pw_ide/bazel/compile_commands:pw_cc_compile_commands_aspect.bzl%pw_cc_compile_commands_aspect'
+# pylint: enable=line-too-long
 
 # Supported architectures for clangd, based on the provided list.
 # TODO(b/442862617): A better way than this than hardcoded list.
@@ -111,7 +118,7 @@ SUPPORTED_MARCH_ARCHITECTURES = {
 class CompileCommand(NamedTuple):
     file: str
     directory: str
-    arguments: List[str]
+    arguments: list[str]
 
 
 def _parse_args() -> argparse.Namespace:
@@ -125,7 +132,99 @@ def _parse_args() -> argparse.Namespace:
             'written to $BUILD_WORKSPACE_DIRECTORY/.compile_commands'
         ),
     )
+    parser.add_argument(
+        'bazel_args',
+        nargs=argparse.REMAINDER,
+        help=(
+            'Arguments after "--" are used to guide compile command generation.'
+        ),
+    )
     return parser.parse_args()
+
+
+_SUPPORTED_SUBCOMMANDS = set(
+    (
+        'build',
+        'test',
+        'run',
+    )
+)
+
+
+def _run_bazel(args: list[str]) -> subprocess.CompletedProcess[str]:
+    """Runs bazel with the given arguments."""
+    return subprocess.run(
+        (
+            os.environ.get('BAZEL_REAL', 'bazelisk'),
+            *args,
+        ),
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=os.environ.get('BUILD_WORKING_DIRECTORY'),
+    )
+
+
+def _build_and_collect_fragments(forwarded_args: list[str]) -> Iterator[Path]:
+    """Collects fragments using `bazel cquery`."""
+    if forwarded_args and forwarded_args[0] == '--':
+        # Remove initial double-dash.
+        forwarded_args.pop(0)
+
+    subcommand_index = None
+    for i, arg in enumerate(forwarded_args):
+        if arg in _SUPPORTED_SUBCOMMANDS:
+            subcommand_index = i
+            break
+
+    # This is an unsupported subcommand, so don't regenerate.
+    if subcommand_index is None:
+        return
+
+    print('Generating compile commands...')
+    # We use a temporary directory as the symlink prefix so we can parse the
+    # output and find resulting files.
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        bep_path = Path(tmp_dir) / 'compile_command_bep.json'
+        command = list(forwarded_args)
+        command[subcommand_index] = 'build'
+        command.extend(
+            (
+                f'--aspects={_COMPILE_COMMANDS_ASPECT}',
+                f'--output_groups={_COMPILE_COMMANDS_OUTPUT_GROUP}',
+                # This also makes all paths resolve as absolute.
+                '--experimental_convenience_symlinks=ignore',
+                f'--build_event_json_file={bep_path}',
+            )
+        )
+
+        _run_bazel(command)
+        fragments = set()
+        for line in bep_path.read_text().splitlines():
+            event = json.loads(line)
+            for file in event.get('namedSetOfFiles', {}).get('files', []):
+                file_uri = file.get('uri', '')
+                if not file_uri.endswith(_FRAGMENT_SUFFIX):
+                    continue
+                fragments.add(Path(file_uri.removeprefix('file://')).resolve())
+
+        yield from fragments
+
+
+def _collect_fragments_via_glob(bazel_output_path: Path) -> Iterator[Path]:
+    """Collects fragments by globbing the output directory."""
+    print("Searching for existing compile command fragments...")
+    yield from bazel_output_path.rglob(f"*{_FRAGMENT_SUFFIX}")
+
+
+def _collect_fragments(
+    bazel_output_path: Path, forwarded_args: list[str]
+) -> Iterator[Path]:
+    """Dispatches to the correct fragment collection method."""
+    if forwarded_args:
+        yield from _build_and_collect_fragments(forwarded_args)
+    else:
+        yield from _collect_fragments_via_glob(bazel_output_path)
 
 
 def main() -> int:
@@ -137,8 +236,6 @@ def main() -> int:
             "Error: This script must be run with 'bazel run'.", file=sys.stderr
         )
         return 1
-
-    print("Searching for existing compile command fragments...")
 
     try:
         # Use `bazel info output_path` to robustly find the output directory,
@@ -178,7 +275,7 @@ def main() -> int:
         return 1
 
     # Search for fragments with our unique suffix.
-    all_fragments = list(bazel_output_path.rglob(f"*{_FRAGMENT_SUFFIX}"))
+    all_fragments = list(_collect_fragments(bazel_output_path, args.bazel_args))
 
     if not all_fragments:
         print(
@@ -200,8 +297,9 @@ def main() -> int:
     if not output_dir:
         output_dir = Path(workspace_root) / ".compile_commands"
     if output_dir.exists():
-        shutil.rmtree(output_dir)
-    output_dir.mkdir()
+        for f in output_dir.rglob('*/compile_commands.json'):
+            Path(f).unlink()
+    output_dir.mkdir(exist_ok=True)
 
     for platform, fragments in fragments_by_platform.items():
         print(f"Processing platform: {platform}...")
@@ -217,7 +315,7 @@ def main() -> int:
                     )
 
         platform_dir = output_dir / platform
-        platform_dir.mkdir()
+        platform_dir.mkdir(exist_ok=True)
         merged_json_path = platform_dir / "compile_commands.json"
 
         processed_commands = []

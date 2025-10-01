@@ -96,7 +96,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             self.fs,
             self.output_path,
             'target1',
-            'linux',
+            'k8-fastbuild',
             [
                 {
                     'file': 'a.cc',
@@ -109,7 +109,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         merged_path = (
             self.workspace_root
             / '.compile_commands'
-            / 'linux'
+            / 'k8-fastbuild'
             / 'compile_commands.json'
         )
         self.assertTrue(merged_path.exists())
@@ -125,7 +125,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             self.fs,
             self.output_path,
             't1',
-            'linux',
+            'k8-fastbuild',
             [
                 {
                     'file': 'a.cc',
@@ -148,10 +148,10 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             ],
         )
         self.assertEqual(merger.main(), 0)
-        linux_path = (
+        host_fastbuild_path = (
             self.workspace_root
             / '.compile_commands'
-            / 'linux'
+            / 'k8-fastbuild'
             / 'compile_commands.json'
         )
         mac_path = (
@@ -160,18 +160,18 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             / 'mac'
             / 'compile_commands.json'
         )
-        self.assertTrue(linux_path.exists())
+        self.assertTrue(host_fastbuild_path.exists())
         self.assertTrue(mac_path.exists())
 
     def test_merge_with_json_error(self):
         """Test corrupt compile command fragments."""
-        fragment_path = self.output_path / f'bad.linux{_FRAGMENT_SUFFIX}'
+        fragment_path = self.output_path / f'bad.k8-fastbuild{_FRAGMENT_SUFFIX}'
         self.fs.create_file(fragment_path, contents='not json')
         _create_fragment(
             self.fs,
             self.output_path,
             'good',
-            'linux',
+            'k8-fastbuild',
             [
                 {
                     'file': 'a.cc',
@@ -188,7 +188,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         merged_path = (
             self.workspace_root
             / '.compile_commands'
-            / 'linux'
+            / 'k8-fastbuild'
             / 'compile_commands.json'
         )
         with open(merged_path, 'r') as f:
@@ -201,7 +201,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             self.fs,
             self.output_path,
             't1',
-            'linux',
+            'k8-fastbuild',
             [
                 {
                     'file': 'a.cc',
@@ -214,7 +214,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         merged_path = (
             self.workspace_root
             / '.compile_commands'
-            / 'linux'
+            / 'k8-fastbuild'
             / 'compile_commands.json'
         )
         with open(merged_path, 'r') as f:
@@ -227,7 +227,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             self.fs,
             self.output_path,
             't1',
-            'linux',
+            'k8-fastbuild',
             [
                 {
                     'file': 'bazel-out/k8-fastbuild/bin/a.cc',
@@ -240,7 +240,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         merged_path = (
             self.workspace_root
             / '.compile_commands'
-            / 'linux'
+            / 'k8-fastbuild'
             / 'compile_commands.json'
         )
         with open(merged_path, 'r') as f:
@@ -256,7 +256,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             self.fs,
             self.output_path,
             't1',
-            'linux',
+            'k8-fastbuild',
             [
                 {
                     'file': 'external/my_repo/a.cc',
@@ -273,7 +273,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         merged_path = (
             self.workspace_root
             / '.compile_commands'
-            / 'linux'
+            / 'k8-fastbuild'
             / 'compile_commands.json'
         )
         with open(merged_path, 'r') as f:
@@ -289,12 +289,12 @@ class MergerTest(fake_filesystem_unittest.TestCase):
 
     def test_empty_fragment_file(self):
         """Test that an empty fragment file doesn't cause issues."""
-        _create_fragment(self.fs, self.output_path, 'empty', 'linux', [])
+        _create_fragment(self.fs, self.output_path, 'empty', 'k8-fastbuild', [])
         _create_fragment(
             self.fs,
             self.output_path,
             'good',
-            'linux',
+            'k8-fastbuild',
             [
                 {
                     'file': 'a.cc',
@@ -307,7 +307,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         merged_path = (
             self.workspace_root
             / '.compile_commands'
-            / 'linux'
+            / 'k8-fastbuild'
             / 'compile_commands.json'
         )
         with open(merged_path, 'r') as f:
@@ -327,6 +327,83 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         with io.StringIO() as buf, redirect_stderr(buf):
             self.assertEqual(merger.main(), 1)
             self.assertIn('not found', buf.getvalue())
+
+    @mock.patch('pw_ide.bazel.merger._run_bazel')
+    def test_build_and_collect_fragments(self, mock_run_bazel):
+        """Tests that fragments are collected via `bazel build`."""
+        bep_content_line = json.dumps(
+            {
+                'namedSetOfFiles': {
+                    'files': [
+                        {
+                            'uri': 'file:///path/to/fragment1.k8-fastbuild'
+                            + _FRAGMENT_SUFFIX
+                        },
+                        {
+                            'uri': 'file:///path/to/fragment2.k8-fastbuild'
+                            + _FRAGMENT_SUFFIX
+                        },
+                        {'uri': 'file:///path/to/other_file.txt'},
+                    ]
+                }
+            }
+        )
+
+        def run_bazel_side_effect(args):
+            bep_path_arg = next(
+                arg
+                for arg in args
+                if arg.startswith('--build_event_json_file=')
+            )
+            bep_path = Path(bep_path_arg.split('=', 1)[1])
+            bep_path.write_text(bep_content_line)
+            return mock.Mock(returncode=0)
+
+        mock_run_bazel.side_effect = run_bazel_side_effect
+
+        self.fs.create_file(
+            '/path/to/fragment1.k8-fastbuild' + _FRAGMENT_SUFFIX,
+            contents=json.dumps(
+                [
+                    {
+                        'file': 'a.cc',
+                        'directory': '__WORKSPACE_ROOT__',
+                        'arguments': ['c', 'd'],
+                    }
+                ]
+            ),
+        )
+        self.fs.create_file(
+            '/path/to/fragment2.k8-fastbuild' + _FRAGMENT_SUFFIX,
+            contents=json.dumps(
+                [
+                    {
+                        'file': 'b.cc',
+                        'directory': '__WORKSPACE_ROOT__',
+                        'arguments': ['e', 'f'],
+                    }
+                ]
+            ),
+        )
+
+        with mock.patch.object(
+            sys, 'argv', ['merger.py', '--', 'build', '//...']
+        ):
+            self.assertEqual(merger.main(), 0)
+
+        merged_path = (
+            self.workspace_root
+            / '.compile_commands'
+            / 'k8-fastbuild'
+            / 'compile_commands.json'
+        )
+        self.assertTrue(merged_path.exists())
+        with open(merged_path, 'r') as f:
+            data = json.load(f)
+        self.assertEqual(len(data), 2)
+        files = {item['file'] for item in data}
+        self.assertIn('a.cc', files)
+        self.assertIn('b.cc', files)
 
 
 if __name__ == '__main__':
