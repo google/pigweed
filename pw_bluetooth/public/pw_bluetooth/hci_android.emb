@@ -1141,3 +1141,154 @@ struct LEApcfAdTypeCommand:
     --
     -- NOTE: This field is not applicable when the action above is
     -- ApcfAction::Clear.
+
+# ----------------------------- Batch Scanning ---------------------------------
+
+
+enum BatchScanSubOpcode:
+  [maximum_bits: 8]
+  ENABLE                 = 0x01
+  SET_STORAGE_PARAMETERS = 0x02
+  SET_SCAN_PARAMETERS    = 0x03
+  READ_RESULT_PARAMETERS = 0x04
+
+
+enum BatchScanOwnAddressType:
+  [maximum_bits: 8]
+  PUBLIC = 0x00
+  RANDOM = 0x01
+
+
+enum BatchScanDiscardRule:
+  [maximum_bits: 8]
+  DISCARD_OLDEST       = 0x00
+  DISCARD_WEAKEST_RSSI = 0x01
+
+
+enum BatchScanReadMode:
+  [maximum_bits: 8]
+  TRUNCATED = 0x00
+  FULL      = 0x00
+
+
+struct LEBatchScanCommandCompleteEvent:
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         BatchScanSubOpcode        sub_opcode
+
+
+struct LEBatchScanEnableCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0     [+vendor_size]  AndroidCommandHeader    vendor_command
+  $next [+1]            hci.GenericEnableParam  enabled
+
+
+struct LEBatchScanSetStorageParametersCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+  $next [+1]            UInt                  full_max
+    -- Max storage space (in %) allocated to full style
+    [requires: 0 <= this <= 100]
+
+  $next [+1]            UInt                  truncated_max
+    -- Max storage space (in %) allocated to truncated style
+    [requires: 0 <= this <= 100]
+
+  $next [+1]            UInt                  notify_threshold
+    -- Setup notification level (in %) for individual storage pool. Setting to
+    -- 0 will disable notification via the vendor-specific HCI event (storage
+    -- threshold breach subevent).
+    [requires: 0 <= this <= 100]
+
+
+struct LEBatchScanSetScanParametersCommand:
+  -- This subcommand will start batch scanning, if enabled. In Truncated
+  -- scanning, results are stored in truncated form where the unique key for
+  -- Truncated style = {BD_ADDR, scan_interval}. This means only one BD_ADDR
+  -- will be recorded for each scan interval. The record to keep for Truncated
+  -- mode is the following: {BD_ADDR, Tx Power, RSSI, Timestamp} When Full mode
+  -- is enabled, active scanning will be used and Scan Responses will be
+  -- recorded.
+  --
+  -- The Full style unique key = {MAC, Ad packet}, irrespective of scan
+  -- interval. The record to keep for Full mode is {BD_ADDR, Tx Power, RSSI,
+  -- Timestamp, Ad packet, Scan Response}. In Full style, the same AD packet,
+  -- when seen multiple times across different scan intervals, is recorded only
+  -- once. However, in Truncated mode, it is the visibility of BA_ADDR across
+  -- different scan intervals that is of interest (once per scan interval). The
+  -- RSSI is the averaged value of all duplicates of a unique advertisement
+  -- within a scan interval.
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0     [+vendor_size]  AndroidCommandHeader     vendor_command
+  $next [+1]  bits:
+    0     [+1]          Flag                     truncated_mode_enabled
+    1     [+1]          Flag                     full_mode_enabled
+
+  $next [+4]            UInt                     window
+  $next [+4]            UInt                     interval
+  $next [+1]            BatchScanOwnAddressType  own_address_type
+  $next [+1]            BatchScanDiscardRule     discard_rule
+
+
+struct LEBatchScanReadResultsCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+  $next [+1]            BatchScanReadMode     read_mode
+
+
+struct LEBatchScanTruncatedResult:
+  0     [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         peer_address
+  $next [+1]                          hci.LEAddressType  peer_address_type
+  $next [+1]                          Int                tx_power
+  $next [+1]                          Int                rssi
+  $next [+2]                          UInt               timestamp
+
+
+struct LEBatchScanFullResult:
+  0     [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         peer_address
+  $next [+1]                          hci.LEAddressType  peer_address_type
+  $next [+1]                          Int                tx_power
+  $next [+1]                          Int                rssi
+  $next [+2]                          UInt               timestamp
+  $next [+1]                          UInt               advertising_data_length (ad_len)
+  $next [+ad_len]                     UInt:8[ad_len]     advertising_data
+  $next [+1]                          UInt               scan_response_length (sr_len)
+  $next [+sr_len]                     UInt:8[sr_len]     scan_response_data
+
+
+struct LEBatchScanReadResultsCommandCompleteEvent:
+  -- When the host issues this command, all the results in the controller may
+  -- not fit in one Command Complete event. The host will iterate issuing this
+  -- command until the corresponding results in the Command Complete event
+  -- indicate 0 in the number of records, which indicates the controller has no
+  -- more records to communicate to the host. Each Command Complete event could
+  -- contain multiple records of only one type of data (Full or Truncated).
+  --
+  -- Controller and host time references are not synchronized. The unit of the
+  -- timestamp is 50ms. The value of the timestamp is based off when the
+  -- Read_Batch_Scan_Results_Sub_cmd is given by the host. If a command arrival
+  -- time is T_c in the firmware, then the actual time the timestamp was taken
+  -- in the firmware is T_fw. The reporting time will be: (T_c - T_fw). T_c and
+  -- T_fw are in the firmware time domain. This lets the host compute how long
+  -- ago the event happened.
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0              [+hdr_size]                                     hci.CommandCompleteEvent                 command_complete
+  $next          [+1]                                            hci.StatusCode                           status
+  $next          [+1]                                            BatchScanSubOpcode                       sub_opcode
+    [requires: this == BatchScanSubOpcode.READ_RESULT_PARAMETERS]
+
+  $next          [+1]                                            BatchScanReadMode                        read_mode
+  $next          [+1]                                            UInt                                     num_records
+  # sizeof(status) + sizeof(sub_opcode) + sizeof(read_mode) + sizeof(num_records)
+  let prefix_size = 4
+  let results_offset = hdr_size+prefix_size
+  if read_mode == BatchScanReadMode.FULL:
+    let results_size = command_complete.return_parameters_size-prefix_size
+    results_offset [+results_size]                               UInt:8[results_size]                     full_results
+      -- NOTE(https://github.com/google/emboss/issues/230): Emboss currently
+      -- doesn't support variable length array elements and returns "error:
+      -- Array elements must be fixed size."
+
+  if read_mode == BatchScanReadMode.TRUNCATED:
+    results_offset [+LEBatchScanTruncatedResult.$size_in_bytes]  LEBatchScanTruncatedResult[num_records]  truncated_results
