@@ -954,10 +954,10 @@ void AdapterImpl::ParseLEGetVendorCapabilitiesCommandComplete(
   auto params = packet.view();
   state_.android_vendor_capabilities = AndroidVendorCapabilities::New(params);
 
-  size_t expected_size = 0;
   uint8_t major = params.version_supported().major_number().Read();
   uint8_t minor = params.version_supported().minor_number().Read();
 
+  std::optional<size_t> expected_size;
   if (major == 0 && minor == 0) {
     // The version_supported field was only introduced into the command in
     // Version 0.95. Controllers that use the base version, Version 0.55,
@@ -984,15 +984,26 @@ void AdapterImpl::ParseLEGetVendorCapabilitiesCommandComplete(
         version_1_05_size();
   }
 
+  if (!expected_size.has_value()) {
+    bt_log(INFO,
+           "gap",
+           "received LE Get Vendor Capabilities version %d.%d (%zu bytes), we "
+           "don't support this version yet, reading the fields we do support",
+           major,
+           minor,
+           event.size());
+    return;
+  }
+
   if (event.size() != expected_size) {
     bt_log(WARN,
            "gap",
-           "LE Get Vendor Capabilities Command Complete, received %zu bytes, "
-           "expected %zu bytes, version: %d.%d",
-           event.size(),
-           expected_size,
+           "received LE Get Vendor Capabilities version %d.%d (received %zu "
+           "bytes, expected %zu bytes)",
            major,
-           minor);
+           minor,
+           event.size(),
+           expected_size.value_or(-1));
   }
 }
 
