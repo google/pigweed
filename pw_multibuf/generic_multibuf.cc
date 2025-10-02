@@ -12,17 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_multibuf/multibuf_v2.h"
-
 #include <cstring>
 #include <utility>
 
 #include "public/pw_multibuf/multibuf_v2.h"
 #include "pw_assert/check.h"
 #include "pw_multibuf/internal/byte_iterator.h"
+#include "pw_multibuf/multibuf_v2.h"
 #include "pw_status/try.h"
 
-namespace pw::multibuf_impl {
+namespace pw::multibuf::internal {
 
 GenericMultiBuf& GenericMultiBuf::operator=(GenericMultiBuf&& other) {
   deque_ = std::move(other.deque_);
@@ -109,10 +108,10 @@ void GenericMultiBuf::Insert(const_iterator pos, GenericMultiBuf&& mb) {
     index += depth_;
   }
   if (mb.observer_ != nullptr) {
-    mb.observer_->Notify(MultiBufObserver::Event::kBytesRemoved, size);
+    mb.observer_->Notify(Observer::Event::kBytesRemoved, size);
   }
   if (observer_ != nullptr) {
-    observer_->Notify(MultiBufObserver::Event::kBytesAdded, size);
+    observer_->Notify(Observer::Event::kBytesAdded, size);
   }
 }
 
@@ -169,7 +168,7 @@ Result<GenericMultiBuf> GenericMultiBuf::Remove(const_iterator pos,
   CopyRange(pos, size, out);
   EraseRange(pos, size);
   if (observer_ != nullptr) {
-    observer_->Notify(MultiBufObserver::Event::kBytesRemoved, size);
+    observer_->Notify(Observer::Event::kBytesRemoved, size);
   }
   return Result<GenericMultiBuf>(std::move(out));
 }
@@ -200,7 +199,7 @@ Result<GenericMultiBuf::const_iterator> GenericMultiBuf::Discard(
   ClearRange(pos, size);
   EraseRange(pos, size);
   if (observer_ != nullptr) {
-    observer_->Notify(MultiBufObserver::Event::kBytesRemoved, size);
+    observer_->Notify(Observer::Event::kBytesRemoved, size);
   }
   return cbegin() + out_offset;
 }
@@ -219,7 +218,7 @@ UniquePtr<std::byte[]> GenericMultiBuf::Release(const_iterator pos) {
   auto* deallocator = GetDeallocator();
   EraseRange(pos - offset, size_t{GetLength(index)});
   if (observer_ != nullptr) {
-    observer_->Notify(MultiBufObserver::Event::kBytesRemoved, bytes.size());
+    observer_->Notify(Observer::Event::kBytesRemoved, bytes.size());
   }
   return UniquePtr<std::byte[]>(bytes.data(), bytes.size(), *deallocator);
 }
@@ -313,7 +312,7 @@ void GenericMultiBuf::Clear() {
   deque_.clear();
   ClearMemoryContext();
   if (observer_ != nullptr) {
-    observer_->Notify(MultiBufObserver::Event::kBytesRemoved, num_bytes);
+    observer_->Notify(Observer::Event::kBytesRemoved, num_bytes);
     observer_ = nullptr;
   }
 }
@@ -373,7 +372,7 @@ bool GenericMultiBuf::AddLayer(size_t offset, size_t length) {
     deque_.back().view.boundary = true;
   }
   if (observer_ != nullptr) {
-    observer_->Notify(MultiBufObserver::Event::kLayerAdded, num_fragments);
+    observer_->Notify(Observer::Event::kLayerAdded, num_fragments);
   }
   return true;
 }
@@ -444,7 +443,7 @@ void GenericMultiBuf::PopLayer() {
     deque_.pop_front();
   }
   if (observer_ != nullptr) {
-    observer_->Notify(MultiBufObserver::Event::kLayerRemoved, num_fragments);
+    observer_->Notify(Observer::Event::kLayerRemoved, num_fragments);
   }
 }
 
@@ -611,7 +610,7 @@ GenericMultiBuf::size_type GenericMultiBuf::Insert(const_iterator pos,
     };
   }
   if (observer_ != nullptr) {
-    observer_->Notify(MultiBufObserver::Event::kBytesAdded, length);
+    observer_->Notify(Observer::Event::kBytesAdded, length);
   }
   return index;
 }
@@ -902,4 +901,4 @@ void GenericMultiBuf::SetLayer(size_t offset, size_t length) {
   }
 }
 
-}  // namespace pw::multibuf_impl
+}  // namespace pw::multibuf::internal

@@ -22,8 +22,14 @@
 #include "pw_multibuf/internal/chunk_iterator.h"
 #include "pw_multibuf/internal/entry.h"
 
-namespace pw::multibuf_impl {
+namespace pw::multibuf {
 
+// Forward declarations for friending.
+namespace test {
+class IteratorTest;
+}  // namespace test
+
+namespace internal {
 class GenericMultiBuf;
 
 /// Type for iterating over the bytes in a multibuf.
@@ -170,10 +176,10 @@ class ByteIterator {
   friend class ByteIterator;
 
   // Allow MultiBufs to create iterators.
-  friend class GenericMultiBuf;
+  friend class ::pw::multibuf::internal::GenericMultiBuf;
 
   // For unit testing.
-  friend class IteratorTest;
+  friend class ::pw::multibuf::test::IteratorTest;
 
   constexpr ByteIterator(ChunkIteratorType chunk, size_t offset)
       : chunk_(chunk), offset_(offset) {}
@@ -195,4 +201,5 @@ class ByteIterator {
   size_t offset_ = 0;
 };
 
-}  // namespace pw::multibuf_impl
+}  // namespace internal
+}  // namespace pw::multibuf

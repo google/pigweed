@@ -30,10 +30,12 @@ cc_library {
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
+        "pw_multibuf_headers",
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
+        "pw_multibuf_headers",
     ],
     export_static_lib_headers: [
         "pw_bytes",

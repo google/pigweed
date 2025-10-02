@@ -27,6 +27,7 @@
 #include "pw_allocator/internal/managed_ptr.h"
 #include "pw_allocator/layout.h"
 #include "pw_allocator/unique_ptr.h"
+#include "pw_multibuf/properties.h"
 
 namespace pw {
 
@@ -36,9 +37,7 @@ namespace pw {
 template <typename T>
 class WeakPtr;
 
-enum class MultiBufProperty : uint8_t;
-
-template <MultiBufProperty...>
+template <multibuf::Property...>
 class BasicMultiBuf;
 
 /// A `std::shared_ptr<T>`-like type that integrates with `pw::Allocator`.
@@ -246,7 +245,7 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   friend class WeakPtr;
 
   // Allow MultiBufs to decompose SharedPtr<T>.
-  template <MultiBufProperty...>
+  template <multibuf::Property...>
   friend class BasicMultiBuf;
 
   /// Constructs and object of type `T` from the given `args`, and wraps it in a

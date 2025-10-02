@@ -274,12 +274,24 @@ pw_source_set("internal_test_utils") {
 ## Multibuf v2
 
 config("v2_config") {
+  # LINT.IfChange
   defines = [ "PW_MULTIBUF_VERSION=PW_MULTIBUF_V2" ]
+  # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
+}
+
+pw_source_set("properties") {
+  # LINT.IfChange
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/properties.h" ]
+
+  # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
 }
 
 pw_source_set("iterators") {
+  # LINT.IfChange
   public_configs = [ ":public_include_path" ]
   public = [
+    "public/pw_multibuf/chunks.h",
     "public/pw_multibuf/internal/byte_iterator.h",
     "public/pw_multibuf/internal/chunk_iterator.h",
     "public/pw_multibuf/internal/entry.h",
@@ -292,25 +304,12 @@ pw_source_set("iterators") {
     dir_pw_preprocessor,
   ]
   visibility = [ ":*" ]
-}
 
-pw_test("chunk_iterator_test") {
-  sources = [ "chunk_iterator_test.cc" ]
-  deps = [
-    ":iterator_testing",
-    ":iterators",
-  ]
-}
-
-pw_test("byte_iterator_test") {
-  sources = [ "byte_iterator_test.cc" ]
-  deps = [
-    ":iterator_testing",
-    ":iterators",
-  ]
+  # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
 }
 
 pw_source_set("iterator_testing") {
+  # LINT.IfChange
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_multibuf/internal/iterator_testing.h" ]
   public_deps = [
@@ -318,26 +317,54 @@ pw_source_set("iterator_testing") {
     "$dir_pw_allocator:bump_allocator",
     dir_pw_unit_test,
   ]
+
+  # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
+}
+
+pw_test("chunk_iterator_test") {
+  # LINT.IfChange
+  sources = [ "chunk_iterator_test.cc" ]
+  deps = [
+    ":iterator_testing",
+    ":iterators",
+  ]
+
+  # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
+}
+
+pw_test("byte_iterator_test") {
+  # LINT.IfChange
+  sources = [ "byte_iterator_test.cc" ]
+  deps = [
+    ":iterator_testing",
+    ":iterators",
+  ]
+
+  # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
 }
 
 pw_source_set("multibuf_v2") {
+  # LINT.IfChange
   public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_multibuf/multibuf_v2.h",
     "public/pw_multibuf/observer.h",
-    "public/pw_multibuf/properties.h",
   ]
   public_deps = [
     ":iterators",
+    ":properties",
     "$dir_pw_containers:dynamic_deque",
     dir_pw_allocator,
     dir_pw_bytes,
   ]
-  sources = [ "multibuf_v2.cc" ]
+  sources = [ "generic_multibuf.cc" ]
   deps = [ "$dir_pw_assert:check" ]
+
+  # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
 }
 
 pw_test("multibuf_v2_test") {
+  # LINT.IfChange
   sources = [ "multibuf_v2_test.cc" ]
   deps = [
     ":chunk",
@@ -351,6 +378,8 @@ pw_test("multibuf_v2_test") {
     dir_pw_status,
   ]
   negative_compilation_tests = true
+
+  # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
 }
 
 ## Test group

@@ -302,12 +302,25 @@ pw_add_library(pw_multibuf._internal_test_utils INTERFACE
 ## MultiBuf v2
 
 pw_add_library(pw_multibuf.v2_config INTERFACE
+  # LINT.IfChange
   PUBLIC_DEFINES
     PW_MULTIBUF_VERSION=PW_MULTIBUF_V2
+  # LINT.ThenChange(BUILD.bazel, BUILD.gn)
+)
+
+pw_add_library(pw_multibuf.properties INTERFACE
+  # LINT.IfChange
+  HEADERS
+    public/pw_multibuf/properties.h
+  PUBLIC_INCLUDES
+    public
+  # LINT.ThenChange(BUILD.bazel, BUILD.gn)
 )
 
 pw_add_library(pw_multibuf._iterators INTERFACE
+  # LINT.IfChange
   HEADERS
+    public/pw_multibuf/chunks.h
     public/pw_multibuf/internal/byte_iterator.h
     public/pw_multibuf/internal/chunk_iterator.h
     public/pw_multibuf/internal/entry.h
@@ -318,9 +331,11 @@ pw_add_library(pw_multibuf._iterators INTERFACE
     pw_bytes
     pw_containers.dynamic_deque
     pw_preprocessor
+  # LINT.ThenChange(BUILD.bazel, BUILD.gn)
 )
 
 pw_add_test(pw_multibuf.chunk_iterator_test
+  # LINT.IfChange
   SOURCES
     chunk_iterator_test.cc
   PRIVATE_DEPS
@@ -329,9 +344,11 @@ pw_add_test(pw_multibuf.chunk_iterator_test
   GROUPS
     modules
     pw_multibuf
+  # LINT.ThenChange(BUILD.bazel, BUILD.gn)
 )
 
 pw_add_test(pw_multibuf.byte_iterator_test
+  # LINT.IfChange
   SOURCES
     byte_iterator_test.cc
   PRIVATE_DEPS
@@ -340,9 +357,11 @@ pw_add_test(pw_multibuf.byte_iterator_test
   GROUPS
     modules
     pw_multibuf
+  # LINT.ThenChange(BUILD.bazel, BUILD.gn)
 )
 
 pw_add_library(pw_multibuf.iterator_testing INTERFACE
+  # LINT.IfChange
   HEADERS
     public/pw_multibuf/internal/iterator_testing.h
   PUBLIC_INCLUDES
@@ -351,13 +370,14 @@ pw_add_library(pw_multibuf.iterator_testing INTERFACE
     pw_allocator.bump_allocator
     pw_multibuf._iterators
     pw_unit_test
+  # LINT.ThenChange(BUILD.bazel, BUILD.gn)
 )
 
 pw_add_library(pw_multibuf.multibuf_v2 STATIC
+  # LINT.IfChange
   HEADERS
     public/pw_multibuf/multibuf_v2.h
     public/pw_multibuf/observer.h
-    public/pw_multibuf/properties.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -365,13 +385,16 @@ pw_add_library(pw_multibuf.multibuf_v2 STATIC
     pw_bytes
     pw_containers.dynamic_deque
     pw_multibuf._iterators
+    pw_multibuf.properties
   SOURCES
-    multibuf_v2.cc
+    generic_multibuf.cc
   PRIVATE_DEPS
     pw_assert.check
+  # LINT.ThenChange(BUILD.bazel, BUILD.gn)
 )
 
 pw_add_test(pw_multibuf.multibuf_v2_test
+  # LINT.IfChange
   SOURCES
     multibuf_v2_test.cc
   PRIVATE_DEPS
@@ -388,4 +411,5 @@ pw_add_test(pw_multibuf.multibuf_v2_test
   GROUPS
     modules
     pw_multibuf
+  # LINT.ThenChange(BUILD.bazel, BUILD.gn)
 )

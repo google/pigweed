@@ -31,7 +31,7 @@
 namespace pw::multibuf::examples {
 
 // DOCSTAG: [pw_multibuf-examples-async_queue-observer]
-class AsyncMultiBufQueueObserver : public MultiBufObserver {
+class AsyncMultiBufQueueObserver : public multibuf::Observer {
  public:
   async2::Poll<> PendNotFull(async2::Context& context) {
     PW_ASYNC_STORE_WAKER(context, full_waker_, "waiting for space");
@@ -45,9 +45,9 @@ class AsyncMultiBufQueueObserver : public MultiBufObserver {
 
  private:
   void DoNotify(Event event, size_t) override {
-    if (event == MultiBufObserver::Event::kBytesAdded) {
+    if (event == multibuf::Observer::Event::kBytesAdded) {
       std::move(empty_waker_).Wake();
-    } else if (event == MultiBufObserver::Event::kBytesRemoved) {
+    } else if (event == multibuf::Observer::Event::kBytesRemoved) {
       std::move(full_waker_).Wake();
     }
   }

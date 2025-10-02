@@ -53,6 +53,7 @@ cc_library(
         ":config",
         ":hardening",
         "//pw_bytes",
+        "//pw_multibuf:properties",
         "//pw_numeric:checked_arithmetic",
         "//pw_preprocessor",
         "//pw_result",

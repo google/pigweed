@@ -126,3 +126,10 @@ cc_library_static {
         "pw_span",
     ],
 }
+
+cc_library_headers {
+    name: "pw_multibuf_headers",
+    export_include_dirs: [
+        "public",
+    ],
+}

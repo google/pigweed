@@ -40,7 +40,7 @@ using ::pw::TrackedFlatConstMultiBuf;
 using ::pw::TrackedFlatMultiBuf;
 using ::pw::TrackedMultiBuf;
 using ::pw::allocator::test::AllocatorForTest;
-using Event = ::pw::MultiBufObserver::Event;
+using Event = ::pw::multibuf::Observer::Event;
 
 constexpr size_t kN = 32;
 
@@ -128,7 +128,7 @@ class MultiBufTest : public ::testing::Test {
 };
 
 // A test fixture that receives events when a MultiBuf changes.
-struct TestObserver : public pw::MultiBufObserver {
+struct TestObserver : public pw::multibuf::Observer {
   std::optional<Event> event;
   size_t value = 0;
 

@@ -21,16 +21,18 @@
 
 namespace {
 
-using ::pw::multibuf_impl::Chunks;
-using ::pw::multibuf_impl::IteratorTest;
+using ::pw::multibuf::Chunks;
+using ::pw::multibuf::internal::Entry;
+using ::pw::multibuf::test::IteratorTest;
+using Deque = pw::DynamicDeque<Entry>;
 
 template <typename IteratorType>
 class ChunkIteratorTestImpl : public IteratorTest {
  private:
   using FlippedType =
-      std::conditional_t<std::is_same_v<IteratorType, Chunks<>::iterator>,
-                         Chunks<>::const_iterator,
-                         Chunks<>::iterator>;
+      std::conditional_t<std::is_same_v<IteratorType, Chunks<Deque>::iterator>,
+                         Chunks<Deque>::const_iterator,
+                         Chunks<Deque>::iterator>;
 
  protected:
   ChunkIteratorTestImpl() {
@@ -51,7 +53,7 @@ class ChunkIteratorTestImpl : public IteratorTest {
   void CanCompareIteratorsUsingEqual();
   void CanCompareIteratorsUsingNotEqual();
 
-  Chunks<> chunks_;
+  Chunks<Deque> chunks_;
   IteratorType first_;
   FlippedType flipped_;
   IteratorType second_;
@@ -59,8 +61,9 @@ class ChunkIteratorTestImpl : public IteratorTest {
   IteratorType past_the_end_;
 };
 
-using ChunkIteratorTest = ChunkIteratorTestImpl<Chunks<>::iterator>;
-using ChunkConstIteratorTest = ChunkIteratorTestImpl<Chunks<>::const_iterator>;
+using ChunkIteratorTest = ChunkIteratorTestImpl<Chunks<Deque>::iterator>;
+using ChunkConstIteratorTest =
+    ChunkIteratorTestImpl<Chunks<Deque>::const_iterator>;
 using ChunksTest = IteratorTest;
 
 // Template method implementations.
@@ -68,7 +71,7 @@ using ChunksTest = IteratorTest;
 TEST_F(ChunkIteratorTest, CheckFixture) {}
 TEST_F(ChunkConstIteratorTest, CheckFixture) {}
 
-static_assert(sizeof(pw::multibuf_impl::Entry) == sizeof(std::byte*));
+static_assert(sizeof(pw::multibuf::internal::Entry) == sizeof(std::byte*));
 
 template <typename IteratorType>
 void ChunkIteratorTestImpl<

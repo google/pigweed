@@ -68,7 +68,7 @@ class MessageVector {
 // DOCSTAG: [pw_multibuf-examples-scatter_gather-message_vector]
 
 // DOCSTAG: [pw_multibuf-examples-scatter_gather-observer]
-class MessageVectorObserver : public MultiBufObserver {
+class MessageVectorObserver : public multibuf::Observer {
  public:
   void AddBytes(size_t num_bytes) { num_bytes_ += num_bytes; }
 
@@ -79,9 +79,9 @@ class MessageVectorObserver : public MultiBufObserver {
 
  private:
   void DoNotify(Event event, size_t value) override {
-    if (event == MultiBufObserver::Event::kBytesAdded) {
+    if (event == multibuf::Observer::Event::kBytesAdded) {
       num_bytes_ += value;
-    } else if (event == MultiBufObserver::Event::kBytesRemoved) {
+    } else if (event == multibuf::Observer::Event::kBytesRemoved) {
       num_bytes_ -= value;
     }
     if (num_bytes_ == 0) {

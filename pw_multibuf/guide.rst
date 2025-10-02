@@ -43,8 +43,8 @@ The following example creates just such a MultiBuf instance:
    :end-before: [pw_multibuf-examples-iterate-create]
 
 Note the use of :cc:`pw::ConstMultiBuf`. This type alias of
-:cc:`GenericMultiBuf <pw::multibuf_impl::GenericMultiBuf>` includes the
-:cc:`kConst <pw::MultiBufProperty>` as one of its
+:cc:`GenericMultiBuf <pw::multibuf::internal::GenericMultiBuf>` includes the
+:cc:`kConst <pw::multibuf::Property>` as one of its
 :ref:`module-pw_multibuf-design-properties`.
 
 Regardless of how the underlying memory is stored, MultiBuf methods can
@@ -126,9 +126,9 @@ producers):
    :start-after: [pw_multibuf-examples-async_queue-observer]
    :end-before: [pw_multibuf-examples-async_queue-observer]
 
-This type extends :cc:`pw::MultiBufObserver` and receives an
-:cc:`Event <pw::MultiBufObserver::Event>` every time the contents or
-structure of the MultiBuf instance changes.
+This type extends :cc:`Observer <pw::multibuf::Observer>` and receives an
+:cc:`Event <pw::multibuf::Observer::Event>` every time the contents or structure
+of the MultiBuf instance changes.
 
 With this, the queue can leverage the observer to add the same methods that
 produces and consumers can wait on:

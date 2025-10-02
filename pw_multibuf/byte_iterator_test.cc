@@ -20,10 +20,10 @@
 namespace {
 
 using ByteIterator =
-    ::pw::multibuf_impl::ByteIterator<uint16_t, /*kIsConst=*/false>;
+    ::pw::multibuf::internal::ByteIterator<uint16_t, /*kIsConst=*/false>;
 using ConstByteIterator =
-    ::pw::multibuf_impl::ByteIterator<uint16_t, /*kIsConst=*/true>;
-using ::pw::multibuf_impl::IteratorTest;
+    ::pw::multibuf::internal::ByteIterator<uint16_t, /*kIsConst=*/true>;
+using ::pw::multibuf::test::IteratorTest;
 
 // Test fixture.
 template <typename IteratorType>

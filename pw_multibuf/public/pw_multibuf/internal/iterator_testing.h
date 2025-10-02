@@ -18,12 +18,13 @@
 
 #include "pw_allocator/bump_allocator.h"
 #include "pw_containers/dynamic_deque.h"
+#include "pw_multibuf/chunks.h"
 #include "pw_multibuf/internal/byte_iterator.h"
 #include "pw_multibuf/internal/chunk_iterator.h"
 #include "pw_multibuf/internal/entry.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::multibuf_impl {
+namespace pw::multibuf::test {
 
 /// A test fixture that manually constructs a multibuf sequence of entries.
 ///
@@ -51,7 +52,7 @@ class IteratorTest : public ::testing::Test {
     deque_.reserve(kNumFragments * kNumLayers);
     for (uint16_t col = 0; col < kNumFragments; ++col) {
       for (uint16_t row = 0; row < kNumLayers; ++row) {
-        Entry entry;
+        internal::Entry entry;
         if (row == 0) {
           entry.data = &buffer_[col * kBufSize];
           for (size_t j = 0; j < kBufSize; ++j) {
@@ -80,7 +81,7 @@ class IteratorTest : public ::testing::Test {
     chunks_ = Chunks(deque_, kNumLayers);
   }
 
-  Chunks<>& chunks() { return chunks_; }
+  Chunks<DynamicDeque<internal::Entry>>& chunks() { return chunks_; }
 
   // Fragment 0 is non-empty.
   // Fragment 1 is empty.
@@ -97,7 +98,8 @@ class IteratorTest : public ::testing::Test {
     }
   }
 
-  std::pair<ByteIterator<uint16_t, false>, ByteIterator<uint16_t, false>>
+  std::pair<internal::ByteIterator<uint16_t, false>,
+            internal::ByteIterator<uint16_t, false>>
   GetByteIterators() {
     return {{chunks_.begin(), 0}, {chunks_.end(), 0}};
   }
@@ -121,11 +123,12 @@ class IteratorTest : public ::testing::Test {
   std::array<std::byte, kNumFragments * kBufSize> buffer_;
 
   // Create a minimally sized allocator for the deque.
-  std::array<std::byte, kNumLayers * kNumFragments * sizeof(Entry)> deque_mem_;
+  std::array<std::byte, kNumLayers * kNumFragments * sizeof(internal::Entry)>
+      deque_mem_;
   allocator::BumpAllocator allocator_;
-  DynamicDeque<Entry> deque_;
+  DynamicDeque<internal::Entry> deque_;
 
-  Chunks<> chunks_;
+  Chunks<DynamicDeque<internal::Entry>> chunks_;
 };
 
-}  // namespace pw::multibuf_impl
+}  // namespace pw::multibuf::test
