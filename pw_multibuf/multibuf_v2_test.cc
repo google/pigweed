@@ -461,6 +461,22 @@ PW_NC_EXPECT("Only conversion to other MultiBuf types are supported.");
 [[maybe_unused]] void ShouldAssert(TrackedMultiBuf& mb) {
   std::ignore = mb.as<pw::ByteSpan>();
 }
+#elif PW_NC_TEST(CannotConvertConstMultiBufToMultiBufInstance)
+PW_NC_EXPECT("Read-only data cannot be converted to mutable data.");
+[[maybe_unused]] MultiBuf::Instance ShouldAssert(ConstMultiBuf&& mb) {
+  return MultiBuf::Instance(std::move(mb));
+}
+#elif PW_NC_TEST(CannotConvertMultiBufToFlatMultiBufInstance)
+PW_NC_EXPECT("Flat MultiBufs do not have layer-related methods.");
+[[maybe_unused]] MultiBuf::Instance ShouldAssert(FlatMultiBuf&& mb) {
+  return MultiBuf::Instance(std::move(mb));
+}
+#elif PW_NC_TEST(CannotConvertTrackedMultiBufToMultiBufInstance)
+PW_NC_EXPECT("Untracked MultiBufs do not have observer-related methods.");
+[[maybe_unused]] TrackedMultiBuf::Instance ShouldAssert(MultiBuf&& mb) {
+  return TrackedMultiBuf::Instance(std::move(mb));
+}
+
 #endif  // PW_NC_TEST
 
 TEST_F(MultiBufTest, DefaultConstructedIsEmpty) {
@@ -555,68 +571,76 @@ TEST_F(MultiBufTest, MultiBufInstanceMoveAssignment) {
   EXPECT_EQ(mb2->size(), kN);
 }
 
-#if PW_NC_TEST(CopyConstructSameProperties)
-PW_NC_EXPECT_CLANG("call to deleted constructor");
-PW_NC_EXPECT_GCC("use of deleted function");
-[[maybe_unused]] ConstMultiBuf DeletedMove(const ConstMultiBuf& mb1) {
-  ConstMultiBuf mb2(mb1);
-  return mb2;
+#if PW_NC_TEST(CannotCopyConstructMultiBuf)
+PW_NC_EXPECT(
+    "Only copies and moves from `BasicMultiBuf<...>::Instance`"
+    "to `BasicMultiBuf<...>&` or another "
+    "`BasicMultiBuf<...>::Instance` are valid.");
+[[maybe_unused]] void ShouldAssert(MultiBuf&& mb) {
+  MultiBuf mb1(mb);
+  EXPECT_TRUE(mb1.empty());
+}
+#elif PW_NC_TEST(CannotCopyAssignMultiBuf)
+PW_NC_EXPECT(
+    "Only copies and moves from `BasicMultiBuf<...>::Instance`"
+    "to `BasicMultiBuf<...>&` or another "
+    "`BasicMultiBuf<...>::Instance` are valid.");
+[[maybe_unused]] void ShouldAssert(MultiBuf&& mb) {
+  MultiBuf mb1(std::move(mb));
+  EXPECT_TRUE(mb1.empty());
+}
+#elif PW_NC_TEST(CannotMoveConstructMultiBuf)
+PW_NC_EXPECT(
+    "Only copies and moves from `BasicMultiBuf<...>::Instance`"
+    "to `BasicMultiBuf<...>&` or another "
+    "`BasicMultiBuf<...>::Instance` are valid.");
+[[maybe_unused]] void ShouldAssert(MultiBuf&& mb) {
+  MultiBuf mb1 = mb;
+  EXPECT_TRUE(mb1.empty());
+}
+#elif PW_NC_TEST(CannotMoveAssignMultiBuf)
+PW_NC_EXPECT(
+    "Only copies and moves from `BasicMultiBuf<...>::Instance`"
+    "to `BasicMultiBuf<...>&` or another "
+    "`BasicMultiBuf<...>::Instance` are valid.");
+[[maybe_unused]] void ShouldAssert(MultiBuf&& mb) {
+  MultiBuf mb1 = std::move(mb);
+  EXPECT_TRUE(mb1.empty());
 }
 
-#elif PW_NC_TEST(CopyAssignSameProperties)
-PW_NC_EXPECT_CLANG("call to deleted constructor");
-PW_NC_EXPECT_GCC("use of deleted function");
-[[maybe_unused]] ConstMultiBuf DeletedMove(const ConstMultiBuf& mb1) {
-  ConstMultiBuf mb2 = mb1;
-  return mb2;
+#elif PW_NC_TEST(CannotConstructFromMultiBufInstance)
+PW_NC_EXPECT(
+    "Only copies and moves from `BasicMultiBuf<...>::Instance`"
+    "to `BasicMultiBuf<...>&` or another "
+    "`BasicMultiBuf<...>::Instance` are valid.");
+[[maybe_unused]] void ShouldAssert(MultiBuf::Instance&& mbi) {
+  MultiBuf mb(mbi);
+  EXPECT_TRUE(mb.empty());
 }
-
-#elif PW_NC_TEST(CopyConstructDifferentProperties)
-PW_NC_EXPECT_CLANG("call to deleted constructor");
-PW_NC_EXPECT_GCC("use of deleted function");
-[[maybe_unused]] ConstMultiBuf DeletedMove(const MultiBuf& mb1) {
-  ConstMultiBuf mb2(mb1);
-  return mb2;
+#elif PW_NC_TEST(CannotAssignFromMultiBufInstance)
+PW_NC_EXPECT(
+    "Only copies and moves from `BasicMultiBuf<...>::Instance`"
+    "to `BasicMultiBuf<...>&` or another "
+    "`BasicMultiBuf<...>::Instance` are valid.");
+[[maybe_unused]] void ShouldAssert(MultiBuf::Instance&& mbi) {
+  MultiBuf mb = mbi;
+  EXPECT_TRUE(mb.empty());
 }
-
-#elif PW_NC_TEST(CopyAssignDifferentProperties)
-PW_NC_EXPECT_CLANG("call to deleted constructor");
-PW_NC_EXPECT_GCC("use of deleted function");
-[[maybe_unused]] ConstMultiBuf DeletedMove(const MultiBuf& mb1) {
-  ConstMultiBuf mb2 = mb1;
-  return mb2;
+#elif PW_NC_TEST(CannotCopyConstructInstance)
+PW_NC_EXPECT(
+    "Instances can only be created from existing MultiBufs using "
+    "move-construction or move-assignment.");
+[[maybe_unused]] void ShouldAssert(MultiBuf&& mb) {
+  MultiBuf::Instance tmp(mb);
+  EXPECT_TRUE(tmp->empty());
 }
-
-#elif PW_NC_TEST(MoveConstructSameProperties)
-PW_NC_EXPECT_CLANG("call to deleted constructor");
-PW_NC_EXPECT_GCC("use of deleted function");
-[[maybe_unused]] ConstMultiBuf DeletedMove(ConstMultiBuf& mb1) {
-  ConstMultiBuf mb2(std::move(mb1));
-  return mb2;
-}
-
-#elif PW_NC_TEST(MoveAssignSameProperties)
-PW_NC_EXPECT_CLANG("call to deleted constructor");
-PW_NC_EXPECT_GCC("use of deleted function");
-[[maybe_unused]] ConstMultiBuf DeletedMove(ConstMultiBuf& mb1) {
-  ConstMultiBuf mb2 = std::move(mb1);
-  return mb2;
-}
-
-#elif PW_NC_TEST(MoveConstructDifferentProperties)
-PW_NC_EXPECT_CLANG("call to deleted constructor");
-PW_NC_EXPECT_GCC("use of deleted function");
-[[maybe_unused]] ConstMultiBuf DeletedMove(MultiBuf& mb1) {
-  ConstMultiBuf mb2(std::move(mb1));
-  return mb2;
-}
-
-#elif PW_NC_TEST(MoveAssignDifferentProperties)
-PW_NC_EXPECT_CLANG("call to deleted constructor");
-PW_NC_EXPECT_GCC("use of deleted function");
-[[maybe_unused]] ConstMultiBuf DeletedMove(MultiBuf& mb1) {
-  ConstMultiBuf mb2 = std::move(mb1);
-  return mb2;
+#elif PW_NC_TEST(CannotCopyAssignInstance)
+PW_NC_EXPECT(
+    "Instances can only be created from existing MultiBufs using "
+    "move-construction or move-assignment.");
+[[maybe_unused]] void ShouldAssert(MultiBuf&& mb) {
+  MultiBuf::Instance tmp = mb;
+  EXPECT_TRUE(tmp->empty());
 }
 #endif  // PW_NC_TEST
 
@@ -667,9 +691,8 @@ TEST_F(MultiBufTest, MutableDereference) {
   ConstMultiBuf& mb = mbi;
   mb.at(0) = std::byte(0);
 }
-#endif
 
-#if PW_NC_TEST(MutableAccess)
+#elif PW_NC_TEST(MutableAccess)
 PW_NC_EXPECT_CLANG(
     "cannot assign to return value because function 'operator\[\]' returns a "
     "const value");
@@ -679,9 +702,8 @@ TEST_F(MultiBufTest, MutableAccess) {
   ConstMultiBuf& mb = mbi;
   mb[0] = std::byte(0);
 }
-#endif
 
-#if PW_NC_TEST(MutableIterators)
+#elif PW_NC_TEST(MutableIterators)
 PW_NC_EXPECT_CLANG(
     "cannot assign to return value because function 'operator\*' returns a "
     "const value");
@@ -690,6 +712,14 @@ TEST_F(MultiBufTest, MutableIterators) {
   ConstMultiBuf::Instance mb(allocator_);
   *mb->begin() = std::byte(0);
 }
+
+#elif PW_NC_TEST(CannotReturnMultiBuf)
+PW_NC_EXPECT(
+    "Only copies and moves from `BasicMultiBuf<...>::Instance`"
+    "to `BasicMultiBuf<...>&` or another "
+    "`BasicMultiBuf<...>::Instance` are valid.");
+[[maybe_unused]] MultiBuf ShouldAssert(MultiBuf&& mb) { return mb; }
+
 #endif
 
 TEST_F(MultiBufTest, IsDerefencableWithArrayOperator) {

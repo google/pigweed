@@ -24,6 +24,7 @@
 #include <type_traits>
 
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/null_allocator.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/dynamic_deque.h"
 #include "pw_multibuf/chunks.h"
@@ -185,22 +186,21 @@ class BasicMultiBuf {
  protected:
   using Deque = DynamicDeque<multibuf::internal::Entry>;
   using GenericMultiBuf = multibuf::internal::GenericMultiBuf;
-  using Property = multibuf::Property;
 
  public:
   /// Returns whether the MultiBuf data is immutable.
   [[nodiscard]] static constexpr bool is_const() {
-    return ((kProperties == Property::kConst) || ...);
+    return ((kProperties == multibuf::Property::kConst) || ...);
   }
 
   /// Returns whether additional views can be layered on the MultiBuf.
   [[nodiscard]] static constexpr bool is_layerable() {
-    return ((kProperties == Property::kLayerable) || ...);
+    return ((kProperties == multibuf::Property::kLayerable) || ...);
   }
 
   /// Returns whether an observer can be registered on the MultiBuf.
   [[nodiscard]] static constexpr bool is_observable() {
-    return ((kProperties == Property::kObservable) || ...);
+    return ((kProperties == multibuf::Property::kObservable) || ...);
   }
 
   using size_type = typename Deque::size_type;
@@ -240,19 +240,23 @@ class BasicMultiBuf {
 
   // Interfaces are not copyable or movable; copy and move `Instance`s instead.
 
-  BasicMultiBuf(const BasicMultiBuf&) = delete;
+  BasicMultiBuf(const BasicMultiBuf&) { InvalidCopyOrMove<>(); }
 
-  template <Property... kOtherProperties>
-  BasicMultiBuf(const BasicMultiBuf<kOtherProperties...>&) = delete;
+  template <multibuf::Property... kOtherProperties>
+  BasicMultiBuf(const BasicMultiBuf<kOtherProperties...>&) {
+    InvalidCopyOrMove<>();
+  }
 
-  BasicMultiBuf& operator=(const BasicMultiBuf&) = delete;
+  BasicMultiBuf& operator=(const BasicMultiBuf&) { InvalidCopyOrMove<>(); }
 
-  template <Property... kOtherProperties>
-  BasicMultiBuf& operator=(const BasicMultiBuf<kOtherProperties...>&) = delete;
+  template <multibuf::Property... kOtherProperties>
+  BasicMultiBuf& operator=(const BasicMultiBuf<kOtherProperties...>&) {
+    InvalidCopyOrMove<>();
+  }
 
-  BasicMultiBuf(BasicMultiBuf&&) = delete;
+  BasicMultiBuf(BasicMultiBuf&&) { InvalidCopyOrMove<>(); }
 
-  BasicMultiBuf& operator=(BasicMultiBuf&&) = delete;
+  BasicMultiBuf& operator=(BasicMultiBuf&&) { InvalidCopyOrMove<>(); }
 
   // Conversions
 
@@ -472,7 +476,7 @@ class BasicMultiBuf {
   ///
   /// @param    pos     Location to insert memory within the MultiBuf.
   /// @param    mb      MultiBuf to be inserted.
-  template <Property... kOtherProperties>
+  template <multibuf::Property... kOtherProperties>
   [[nodiscard]] bool TryReserveForInsert(
       const_iterator pos, const BasicMultiBuf<kOtherProperties...>& mb);
 
@@ -540,7 +544,7 @@ class BasicMultiBuf {
   ///
   /// @param    pos     Location to insert memory within the MultiBuf.
   /// @param    mb      MultiBuf to be inserted.
-  template <Property... kOtherProperties>
+  template <multibuf::Property... kOtherProperties>
   void Insert(const_iterator pos, BasicMultiBuf<kOtherProperties...>&& mb);
 
   /// Insert memory before the given iterator.
@@ -645,7 +649,7 @@ class BasicMultiBuf {
   /// object unchanged. Otherwise, returns true.
   ///
   /// @param    mb      MultiBuf to be inserted.
-  template <Property... kOtherProperties>
+  template <multibuf::Property... kOtherProperties>
   [[nodiscard]] bool TryReserveForPushBack(
       const BasicMultiBuf<kOtherProperties...>& mb);
 
@@ -698,7 +702,7 @@ class BasicMultiBuf {
   /// pre-allocate the needed space without crashing.
   ///
   /// @param    mb      MultiBuf to be inserted.
-  template <Property... kOtherProperties>
+  template <multibuf::Property... kOtherProperties>
   void PushBack(BasicMultiBuf<kOtherProperties...>&& mb);
 
   /// Moves memory to the end of this object.
@@ -1134,7 +1138,15 @@ class BasicMultiBuf {
   constexpr BasicMultiBuf() { multibuf::internal::PropertiesAreValid(); }
 
  private:
-  template <Property...>
+  template <bool kValidCopyOrMove = false>
+  static constexpr void InvalidCopyOrMove() {
+    static_assert(kValidCopyOrMove,
+                  "Only copies and moves from `BasicMultiBuf<...>::Instance`"
+                  "to `BasicMultiBuf<...>&` or another "
+                  "`BasicMultiBuf<...>::Instance` are valid.");
+  }
+
+  template <multibuf::Property...>
   friend class BasicMultiBuf;
 
   constexpr GenericMultiBuf& generic() {
@@ -1640,11 +1652,41 @@ class Instance {
   constexpr Instance(Instance&&) = default;
   constexpr Instance& operator=(Instance&&) = default;
 
+  // Provide a more helpful compile-time error when a user tries to
+  // copy-construct an interface type.
+  template <Property... kProperties>
+  constexpr Instance(const BasicMultiBuf<kProperties...>&)
+      : base_(allocator::GetNullAllocator()) {
+    MoveOnly<>();
+  }
+
+  // Provide a more helpful compile-time error when a user tries to copy-assign
+  // an interface type.
+  template <Property... kProperties>
+  constexpr Instance& operator=(const BasicMultiBuf<kProperties...>&) {
+    MoveOnly<>();
+  }
+
   constexpr Instance(MultiBufType&& mb)
       : base_(std::move(static_cast<GenericMultiBuf&>(mb))) {}
 
   constexpr Instance& operator=(MultiBufType&& mb) {
     base_ = std::move(static_cast<GenericMultiBuf&>(mb));
+    return *this;
+  }
+
+  template <Property... kProperties>
+  constexpr Instance(BasicMultiBuf<kProperties...>&& mb)
+      : base_(std::move(static_cast<internal::GenericMultiBuf&>(mb))) {
+    internal::AssertIsConvertible<BasicMultiBuf<kProperties...>,
+                                  MultiBufType>();
+  }
+
+  template <Property... kProperties>
+  constexpr Instance& operator=(BasicMultiBuf<kProperties...>&& mb) {
+    internal::AssertIsConvertible<BasicMultiBuf<kProperties...>,
+                                  MultiBufType>();
+    base_ = std::move(static_cast<internal::GenericMultiBuf&>(mb));
     return *this;
   }
 
@@ -1678,6 +1720,15 @@ class Instance {
   }
 
  private:
+  // Helper functions to provide a more helpful compile-time error when a this
+  // type is used incorrectly.
+  template <bool kMoveOnly = false>
+  static constexpr void MoveOnly() {
+    static_assert(kMoveOnly,
+                  "Instances can only be created from existing MultiBufs using "
+                  "move-construction or move-assignment.");
+  }
+
   GenericMultiBuf base_;
 };
 

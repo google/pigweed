@@ -429,6 +429,7 @@ cc_library(
         ":iterators",
         ":properties",
         "//pw_allocator",
+        "//pw_allocator:null_allocator",
         "//pw_bytes",
         "//pw_containers:dynamic_deque",
     ],

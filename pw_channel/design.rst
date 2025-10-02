@@ -175,6 +175,8 @@ This is only valid if, for the datagram channel:
 - short or zero-length writes through the byte API will not result in
   unacceptable overhead.
 
+.. _module-pw_channel-design-hourglass_inheritance_pattern:
+
 -----------------------------
 Hourglass inheritance pattern
 -----------------------------

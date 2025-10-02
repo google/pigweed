@@ -125,7 +125,9 @@ inherits from all valid combinations of ``BasicMultiBuf<...kProperties>``. This
 design allows any ``BasicMultiBuf`` reference to be safely ``static_cast`` to a
 ``GenericMultiBuf`` reference, which holds the actual state (the deque,
 observer, etc.). This ``GenericMultiBuf`` can in turn be cast to any other
-compatible ``BasicMultiBuf`` interface.
+compatible ``BasicMultiBuf`` interface. This pattern is the same as the one used
+in :ref:`module-pw_channel`, and is referred to as an
+:ref:`module-pw_channel-design-hourglass_inheritance_pattern`.
 
 To create a concrete objects, use an
 :cc:`Instance <pw::multibuf::internal::Instance>` templated on one of the

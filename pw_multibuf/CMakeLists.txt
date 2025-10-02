@@ -382,6 +382,7 @@ pw_add_library(pw_multibuf.multibuf_v2 STATIC
     public
   PUBLIC_DEPS
     pw_allocator
+    pw_allocator.null_allocator
     pw_bytes
     pw_containers.dynamic_deque
     pw_multibuf._iterators
