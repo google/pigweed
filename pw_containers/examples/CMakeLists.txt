@@ -69,6 +69,13 @@ pw_add_test(pw_containers.examples.multiple_containers
     multiple_containers.cc
 )
 
+pw_add_test(pw_containers.examples.optional_tuple
+  PRIVATE_DEPS
+    pw_containers.optional_tuple
+  SOURCES
+    optional_tuple.cc
+)
+
 pw_add_test(pw_containers.examples.vector
   PRIVATE_DEPS
     pw_function

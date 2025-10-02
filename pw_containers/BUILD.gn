@@ -350,6 +350,16 @@ pw_source_set("intrusive_multiset") {
   public_deps = [ ":aa_tree" ]
 }
 
+pw_source_set("optional_tuple") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/optional_tuple.h" ]
+  public_deps = [
+    ":bitset",
+    "$dir_pigweed/third_party/fuchsia:stdcompat",
+    dir_pw_polyfill,
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":algorithm_test",
@@ -376,6 +386,7 @@ pw_test_group("tests") {
     ":dynamic_vector_test",
     ":wrapped_iterator_test",
     ":ptr_iterator_test",
+    ":optional_tuple_test",
   ]
   group_deps = [ "examples" ]
 }
@@ -649,6 +660,17 @@ pw_test("intrusive_item_test") {
     ":intrusive_multimap",
     ":intrusive_multiset",
     ":intrusive_set",
+  ]
+  negative_compilation_tests = true
+}
+
+pw_test("optional_tuple_test") {
+  sources = [ "optional_tuple_test.cc" ]
+  deps = [
+    ":optional_tuple",
+    ":test_helpers",
+    "$dir_pw_unit_test:constexpr",
+    dir_pw_polyfill,
   ]
   negative_compilation_tests = true
 }

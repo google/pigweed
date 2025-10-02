@@ -390,6 +390,17 @@ pw_add_library(pw_containers.intrusive_set INTERFACE
     pw_containers.aa_tree
 )
 
+pw_add_library(pw_containers.optional_tuple INTERFACE
+  HEADERS
+    public/pw_containers/optional_tuple.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.bitset
+    pw_polyfill
+    pw_third_party.fuchsia.stdcompat
+)
+
 pw_add_test(pw_containers.algorithm_test
   SOURCES
     algorithm_test.cc
@@ -664,6 +675,20 @@ pw_add_test(pw_containers.intrusive_item_test
     pw_containers.intrusive_multimap
     pw_containers.intrusive_set
     pw_containers.intrusive_multiset
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.optional_tuple_test
+  SOURCES
+    optional_tuple_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_containers._test_helpers
+    pw_containers.optional_tuple
+    pw_polyfill
+    pw_unit_test.constexpr
   GROUPS
     modules
     pw_containers

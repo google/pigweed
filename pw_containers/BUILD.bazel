@@ -654,6 +654,30 @@ pw_cc_test(
     ],
 )
 
+cc_library(
+    name = "optional_tuple",
+    hdrs = ["public/pw_containers/optional_tuple.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":bitset",
+        "//pw_assert:assert",
+        "//pw_polyfill",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+pw_cc_test(
+    name = "optional_tuple_test",
+    srcs = ["optional_tuple_test.cc"],
+    has_nc_test = True,
+    deps = [
+        ":optional_tuple",
+        ":test_helpers",
+        "//pw_polyfill",
+        "//pw_unit_test:constexpr",
+    ],
+)
+
 filegroup(
     name = "doxygen",
     srcs = [
@@ -679,6 +703,7 @@ filegroup(
         "public/pw_containers/intrusive_multimap.h",
         "public/pw_containers/intrusive_multiset.h",
         "public/pw_containers/intrusive_set.h",
+        "public/pw_containers/optional_tuple.h",
         "public/pw_containers/ptr_iterator.h",
         "public/pw_containers/to_array.h",
         "public/pw_containers/vector.h",

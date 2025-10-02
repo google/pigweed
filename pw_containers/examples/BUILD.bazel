@@ -90,6 +90,12 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "optional_tuple",
+    srcs = ["optional_tuple.cc"],
+    deps = ["//pw_containers:optional_tuple"],
+)
+
+pw_cc_test(
     name = "vector",
     srcs = ["vector.cc"],
     deps = [
@@ -117,6 +123,7 @@ sphinx_docs_library(
         "intrusive_multiset.cc",
         "intrusive_set.cc",
         "multiple_containers.cc",
+        "optional_tuple.cc",
         "vector.cc",
         "wrapped_iterator.cc",
     ],

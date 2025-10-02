@@ -33,13 +33,18 @@ struct CopyOnly {
 };
 
 struct MoveOnly {
-  explicit MoveOnly(int val) : value(val) {}
+  explicit constexpr MoveOnly(int val) : value(val) {}
 
   MoveOnly(const MoveOnly&) = delete;
+  MoveOnly& operator=(const MoveOnly&) = delete;
 
-  MoveOnly(MoveOnly&& other) {
+  constexpr MoveOnly(MoveOnly&& other) : value(other.value) {
+    other.value = kDeleted;
+  }
+  constexpr MoveOnly& operator=(MoveOnly&& other) {
     value = other.value;
     other.value = kDeleted;
+    return *this;
   }
 
   static constexpr int kDeleted = -1138;

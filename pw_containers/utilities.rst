@@ -54,34 +54,30 @@ in Java 8. ``WrappedIterator`` and ``FilteredView`` require no memory
 allocation, which is helpful when memory is too constrained to process the items
 into a new container.
 
-------------------------
-pw::containers::to_array
-------------------------
-:cc:`pw::containers::to_array` is a C++14-compatible implementation of
-C++20's `std::to_array
-<https://en.cppreference.com/w/cpp/container/array/to_array>`_.  In C++20, it
-is an alias for ``std::to_array``. It converts a C array to a ``std::array``.
+-----------------
+pw::OptionalTuple
+-----------------
+:cc:`pw::OptionalTuple` is an efficient tuple implementation with optional
+elements, similar to ``std::tuple<std::optional<Types>...>``. Field presence is
+tracked by a single :cc:`pw::BitSet`, instead of a flag in each type.
 
-----------
-pw::all_of
-----------
-:cc:`pw::all_of` is a C++17 compatible implementation of C++20's
-`std::all_of <https://en.cppreference.com/w/cpp/algorithm/all_any_none_of>`_.
-In C++20, it is an alias for ``std::all_of``. This backports the ``constexpr``
-overload of the function.
+Example
+=======
+.. literalinclude:: examples/optional_tuple.cc
+   :language: cpp
+   :linenos:
+   :start-at: #include
+   :end-at: }  // namespace example
 
-----------
-pw::any_of
-----------
-:cc:`pw::any_of` is a C++17 compatible implementation of C++20's
-`std::any_of <https://en.cppreference.com/w/cpp/algorithm/all_any_none_of>`_.
-In C++20, it is an alias for ``std::any_of``. This backports the ``constexpr``
-overload of the function.
+---------------
+C++20 polyfills
+---------------
+:cs:`pw_containers/public/pw_containers/to_array.h` provides
+:cc:`pw::containers::to_array`, a C++17-compatible implementation of C++20's
+`std::to_array <https://en.cppreference.com/w/cpp/container/array/to_array>`_.
+In C++20, it is an alias for ``std::to_array``. It converts a C array to a
+``std::array``.
 
------------
-pw::find_if
------------
-:cc:`pw::find_if` is a C++17 compatible implementation of C++20's
-`std::find_if <https://en.cppreference.com/w/cpp/algorithm/find>`_. In C++20, it
-is an alias for ``std::find_if``. This backports the ``constexpr`` overload of
-the function.
+:cs:`pw_containers/public/pw_containers/algorithm.h` provides ``constexpr``
+implementations of  various ``<algorithm>`` functions including :cc:`pw::copy`,
+:cc:`pw::all_of`, :cc:`pw::any_of`, and :cc:`pw::find_if`.

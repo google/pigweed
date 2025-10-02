@@ -71,6 +71,11 @@ pw_test("multiple_containers") {
   sources = [ "multiple_containers.cc" ]
 }
 
+pw_test("optional_tuple") {
+  deps = [ "$dir_pw_containers:optional_tuple" ]
+  sources = [ "optional_tuple.cc" ]
+}
+
 pw_test("vector") {
   deps = [
     "$dir_pw_containers:vector",
@@ -96,6 +101,7 @@ pw_test_group("examples") {
     ":intrusive_set",
     ":intrusive_multiset",
     ":multiple_containers",
+    ":optional_tuple",
     ":vector",
     ":wrapped_iterator",
   ]
