@@ -80,6 +80,58 @@ _BAZEL_TOOL_JOB_REQUEST = """
 }
 """
 
+_BAZEL_BUILD_JOB_WITH_STARTUP_ARGS_REQUEST = """
+{
+  "jobs": [
+    {
+      "build": {
+        "build_config": {
+          "build_type": "bazel",
+          "args": [
+            "--config=rp2040",
+            "--output_base=/tmp/bazel",
+            "--batch",
+            "--nobatch_cpu_scheduling",
+            "--max_idle_secs",
+            "60",
+            "--verbose_failures"
+          ],
+          "env": {
+            "FOO": "bar"
+          }
+        },
+        "targets": [
+          "//..."
+        ]
+      }
+    }
+  ]
+}
+"""
+
+_BAZEL_TOOL_JOB_WITH_STARTUP_ARGS_REQUEST = """
+{
+  "jobs": [
+    {
+      "tool": {
+        "build_config": {
+          "build_type": "bazel",
+          "args": [
+            "--subcommands",
+            "--output_base=/tmp/bazel",
+            "--batch"
+          ],
+          "env": {
+            "BAZ": "qux"
+          }
+        },
+        "target": "@pigweed//:format"
+      }
+    }
+  ]
+}
+"""
+
 
 class TestBazelBuildDriver(unittest.TestCase):
     """Tests for the bazel_driver."""
@@ -98,7 +150,7 @@ class TestBazelBuildDriver(unittest.TestCase):
         self.assertEqual(build_job.actions[0].executable, 'bazelisk')
         self.assertEqual(
             list(build_job.actions[0].args),
-            ['canonicalize-flags', '--config=rp2040'],
+            ['canonicalize-flags', '--', '--config=rp2040'],
         )
         self.assertEqual(build_job.actions[0].env['FOO'], 'bar')
 
@@ -151,7 +203,7 @@ class TestBazelBuildDriver(unittest.TestCase):
         self.assertEqual(build_job.actions[0].executable, 'bazelisk')
         self.assertEqual(
             list(build_job.actions[0].args),
-            ['canonicalize-flags', '--config=rp2040'],
+            ['canonicalize-flags', '--', '--config=rp2040'],
         )
 
         # Check build action
@@ -187,7 +239,7 @@ class TestBazelBuildDriver(unittest.TestCase):
         self.assertEqual(tool_job.actions[0].executable, 'bazelisk')
         self.assertEqual(
             list(tool_job.actions[0].args),
-            ['canonicalize-flags', '--subcommands'],
+            ['canonicalize-flags', '--', '--subcommands'],
         )
         self.assertEqual(tool_job.actions[0].env['BAZ'], 'qux')
 
@@ -213,6 +265,118 @@ class TestBazelBuildDriver(unittest.TestCase):
                 action.run_from,
                 build_driver_pb2.Action.InvocationLocation.INVOKER_CWD,
             )
+
+    def test_bazel_build_driver_with_startup_args(self):
+        """Checks that startup args are handled during a build sequence."""
+        driver = BazelBuildDriver()
+        response = driver.generate_jobs_from_json(
+            _BAZEL_BUILD_JOB_WITH_STARTUP_ARGS_REQUEST
+        )
+        self.assertEqual(len(response.jobs), 1)
+
+        # Verify the build job
+        build_job = response.jobs[0]
+        self.assertEqual(len(build_job.actions), 3)
+
+        # Check canonicalize-flags action for build
+        self.assertEqual(build_job.actions[0].executable, 'bazelisk')
+        self.assertEqual(
+            list(build_job.actions[0].args),
+            [
+                '--output_base=/tmp/bazel',
+                '--batch',
+                '--nobatch_cpu_scheduling',
+                '--max_idle_secs',
+                '60',
+                'canonicalize-flags',
+                '--',
+                '--config=rp2040',
+                '--verbose_failures',
+            ],
+        )
+        self.assertEqual(build_job.actions[0].env['FOO'], 'bar')
+
+        # Check build action
+        self.assertEqual(build_job.actions[1].executable, 'bazelisk')
+        self.assertEqual(
+            list(build_job.actions[1].args),
+            [
+                '--output_base=/tmp/bazel',
+                '--batch',
+                '--nobatch_cpu_scheduling',
+                '--max_idle_secs',
+                '60',
+                'build',
+                '--symlink_prefix=${BUILD_ROOT}/bazel-',
+                '--config=rp2040',
+                '--verbose_failures',
+                '//...',
+            ],
+        )
+        self.assertEqual(build_job.actions[1].env['FOO'], 'bar')
+
+        # Check test action
+        self.assertEqual(build_job.actions[2].executable, 'bazelisk')
+        self.assertEqual(
+            list(build_job.actions[2].args),
+            [
+                '--output_base=/tmp/bazel',
+                '--batch',
+                '--nobatch_cpu_scheduling',
+                '--max_idle_secs',
+                '60',
+                'test',
+                '--symlink_prefix=${BUILD_ROOT}/bazel-',
+                '--config=rp2040',
+                '--verbose_failures',
+                '//...',
+            ],
+        )
+        self.assertEqual(build_job.actions[2].env['FOO'], 'bar')
+
+    def test_bazel_tool_driver_with_startup_args(self):
+        """Checks that startup args are handled during a tool sequence."""
+        driver = BazelBuildDriver()
+        response = driver.generate_jobs_from_json(
+            _BAZEL_TOOL_JOB_WITH_STARTUP_ARGS_REQUEST
+        )
+        self.assertEqual(len(response.jobs), 1)
+
+        # Verify the tool job
+        tool_job = response.jobs[0]
+        self.assertEqual(len(tool_job.actions), 2)
+
+        # Check canonicalize-flags action for tool
+        self.assertEqual(tool_job.actions[0].executable, 'bazelisk')
+        self.assertEqual(
+            list(tool_job.actions[0].args),
+            [
+                '--output_base=/tmp/bazel',
+                '--batch',
+                'canonicalize-flags',
+                '--',
+                '--subcommands',
+            ],
+        )
+        self.assertEqual(tool_job.actions[0].env['BAZ'], 'qux')
+
+        # Check run action
+        self.assertEqual(tool_job.actions[1].executable, 'bazelisk')
+        self.assertEqual(
+            list(tool_job.actions[1].args),
+            [
+                '--output_base=/tmp/bazel',
+                '--batch',
+                'run',
+                '--ui_event_filters=FATAL,ERROR,PROGRESS',
+                '--experimental_convenience_symlinks=ignore',
+                '--subcommands',
+                '@pigweed//:format',
+                '--',
+                '${FORWARDED_LAUNCH_ARGS}',
+            ],
+        )
+        self.assertEqual(tool_job.actions[1].env['BAZ'], 'qux')
 
     def test_nop(self):
         driver = BazelBuildDriver()
