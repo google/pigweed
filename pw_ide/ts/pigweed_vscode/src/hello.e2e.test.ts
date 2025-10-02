@@ -29,26 +29,29 @@ import { workingDir } from './settings/vscode';
 
 suite('Extension Test Suite', () => {
   vscode.window.showInformationMessage('Starting tests.');
-  test('Clang init', async () => {
-    const success = await initBazelClangdPath();
-    assert.strictEqual(success, true);
-  });
+  // TODO: b/449001410 - Re-enable these when we support Windows.
+  if (process.platform !== 'win32') {
+    test('Clang init', async () => {
+      const success = await initBazelClangdPath();
+      assert.strictEqual(success, true);
+    });
 
-  test('Clang is from Pigweed', async () => {
-    const path = clangdPath();
-    assert.strictEqual(path!.includes('pw_toolchain/host_clang'), true);
-  });
+    test('Clang is from Pigweed', async () => {
+      const path = clangdPath();
+      assert.strictEqual(path!.includes('pw_toolchain/host_clang'), true);
+    });
 
-  test('Bazel build test', async () => {
-    await patchBazeliskIntoTerminalPath();
-    const output = await executeInTerminalAndGetStdout(
-      'bazel build //pw_status',
-    );
-    assert.strictEqual(
-      output.indexOf('Build completed successfully') > 0,
-      true,
-    );
-  });
+    test('Bazel build test', async () => {
+      await patchBazeliskIntoTerminalPath();
+      const output = await executeInTerminalAndGetStdout(
+        'bazelisk build //pw_status',
+      );
+      assert.strictEqual(
+        output.indexOf('Build completed successfully') > 0,
+        true,
+      );
+    });
+  }
 
   test('Bazel Interceptor cleanup on deactivate', async () => {
     const interceptorPath = getBazelInterceptorPath();

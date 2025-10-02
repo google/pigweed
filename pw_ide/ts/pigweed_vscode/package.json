@@ -282,11 +282,9 @@
   "scripts": {
     "clean": "rimraf out dist",
     "build": "tsc -p ./",
-    "build:e2e": "tsc -p tsconfig.e2e.json",
     "bundle": "webpack --mode production --devtool hidden-source-map",
     "watch:build": "tsc -watch -p ./",
     "watch:bundle": "webpack --mode development --watch",
-    "watch:e2e": "tsc -watch -p tsconfig.e2e.json",
     "lint": "eslint src --ext ts",
     "fix": "eslint src --ext ts --fix",
     "prePackage": "node out/scripts/prepostPackage.mjs --pre",
@@ -296,9 +294,7 @@
     "package": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackage && npm run postPackage",
     "packagePrerelease": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackagePrerelease && npm run postPackage",
     "vsceLogin": "vsce login pigweed",
-    "test:unit": "npm run clean && npm run build && vscode-test --label unitTests",
-    "test:e2e": "npm run clean && npm run build && npm run build:e2e && vscode-test --label e2eTests",
-    "test:all": "rimraf .vscode-test && npm run clean && npm run build && vscode-test --jobs=1"
+    "test:all": "rimraf .vscode-test && npm run clean && npm run build && vscode-test"
   },
   "dependencies": {
     "@bazel/bazelisk": "^1.19.0",

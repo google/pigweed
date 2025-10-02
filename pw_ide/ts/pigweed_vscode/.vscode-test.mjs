@@ -17,21 +17,17 @@ import path from 'path';
 
 export default defineConfig([
   {
-    label: 'unitTests',
-    files: 'out/**/*.unit.test.js',
+    label: 'allTests',
+    files: 'out/**/*.test.js',
     workspaceFolder: path.join(process.cwd(), '..', '..', '..'),
     mocha: {
       ui: 'tdd',
       timeout: 120000,
     },
-  },
-  {
-    label: 'e2eTests',
-    files: 'out/**/*.e2e.test.js',
-    workspaceFolder: path.join(process.cwd(), '..', '..', '..'),
-    mocha: {
-      timeout: 60000,
-    },
+    // TODO: https://pwbug.dev/427219817 - Rapid successive extension installs
+    // have a tendency to flake. Do not split this in a way that causes
+    // multiple installs until https://github.com/microsoft/vscode/issues/256031
+    // is fixed.
     launchArgs: ['--install-extension', 'BazelBuild.vscode-bazel'],
   },
 ]);

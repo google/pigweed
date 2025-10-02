@@ -168,19 +168,17 @@ export async function patchBazeliskIntoTerminalPath(
   // isn't plain `bazelisk`.
   if (path.basename(bazeliskPath) !== 'bazelisk') {
     try {
-      fs.symlink(
+      fs.symlinkSync(
         bazeliskPath,
         path.join(path.dirname(bazeliskPath), 'bazelisk'),
-        (error) => {
-          const message = error
-            ? `${error.errno} ${error.message}`
-            : 'unknown error';
-          throw new Error(message);
-        },
       );
-    } catch (error: unknown) {
-      logger.error(`Failed to create Bazelisk symlink for ${bazeliskPath}`);
-      return;
+    } catch (error: any) {
+      if (error.code !== 'EEXIST') {
+        logger.error(
+          `Failed to create Bazelisk symlink for ${bazeliskPath}: ${error.message}`,
+        );
+        return;
+      }
     }
   }
 
