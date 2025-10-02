@@ -99,7 +99,39 @@ pw_test_group("tests") {
     ":tokenized_trace_buffer_test",
     ":tokenized_trace_buffer_log_test",
     ":trace_service_pwpb_test",
+    ":decoder_test",
   ]
+}
+
+pw_source_set("decoder") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_trace_tokenized/decoder.h" ]
+  sources = [ "decoder.cc" ]
+  public_deps = [
+    ":pw_trace_tokenized",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_result",
+    "$dir_pw_status",
+    "$dir_pw_stream",
+    "$dir_pw_string",
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$dir_pw_tokenizer:decoder",
+    "$dir_pw_varint:stream",
+  ]
+}
+
+pw_test("decoder_test") {
+  enable_if = _pw_trace_tokenized_is_selected
+  deps = [
+    ":decoder",
+    "$dir_pw_assert:check",
+    "$dir_pw_log",
+    "$dir_pw_stream",
+    "$dir_pw_tokenizer:decoder",
+    "$dir_pw_trace",
+  ]
+  sources = [ "decoder_test.cc" ]
 }
 
 pw_source_set("pw_trace_tokenized") {

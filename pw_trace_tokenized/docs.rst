@@ -22,12 +22,11 @@ significant changes.
 Future work will:
 
 1. Add a more complete API for how to retrieve data from ring_buffer.
-2. Add a Python library to decode the trace data.
-3. Add examples with sample output (especially for filtering and triggering).
-4. Add tools to retrieve trace data.
-5. Add more sinks, such as RTT.
-6. Add support to more platforms.
-7. Improve the locking behaviour and provide default trace locking
+2. Add examples with sample output (especially for filtering and triggering).
+3. Add tools to retrieve trace data.
+4. Add more sinks, such as RTT.
+5. Add support to more platforms.
+6. Improve the locking behaviour and provide default trace locking
    implementions.
 
 --------
@@ -46,12 +45,12 @@ debugging.
 
 
 Compatibility
--------------
+=============
 Most of this module is compatible with C and C++, the only exception to this is
 the ``RegisterCallbackWhenCreated`` helper class.
 
 Dependencies
-------------
+============
 ``pw_assert``
 ``pw_log``
 ``pw_preprocessor``
@@ -68,7 +67,7 @@ implements all features of the tracing facade.
 
 
 Event Callbacks & Data Sinks
-----------------------------
+============================
 The tokenized trace module adds both event callbacks and data sinks which
 provide hooks into tracing.
 
@@ -135,7 +134,7 @@ which you don't require.
 .. cpp:function:: pw_Status pw_trace_UnregisterSink(pw_trace_SinkHandle handle)
 
 Trace Reference
----------------
+===============
 Some use-cases might involve referencing a specific trace event, for example
 to use it as a trigger or filtering. Since the trace events are tokenized, a
 macro is provided to generate the token to use as a reference. All the fields
@@ -197,7 +196,7 @@ access to the buffer. The data in the block is defined by the
 prefixed-ring-buffer format without any user-preamble.
 
 Added dependencies
-------------------
+==================
 ``pw_ring_buffer``
 ``pw_varint``
 
@@ -237,7 +236,7 @@ function would produce this in the output logs:
    [TRACE] end
 
 Added dependencies
-------------------
+==================
 ``pw_base64``
 ``pw_log``
 ``pw_ring_buffer``
@@ -245,9 +244,17 @@ Added dependencies
 ``pw_tokenizer``
 ``pw_varint``
 
---------------
+-------
+Decoder
+-------
+
+C++ decoder
+===========
+The :cc:`pw::trace::TokenizedDecoder` class will decode binary trace data into
+:cc:`pw::trace::DecodedEvent` objects for custom consumption.
+
 Python decoder
---------------
+==============
 The python decoder can be used to convert the binary trace data into json data
 which can be viewed in chrome://tracing.
 
@@ -265,12 +272,12 @@ example. This is early work, and is provided as an example of how different
 tracing concepts can look.
 
 Basic
------
+=====
 The basic example turns on tracing and dumps all trace output to a file provided
 on the command line.
 
 Trigger
--------
+=======
 The trigger example demonstrates how a trace event can be used as a trigger to
 start and stop capturing a trace. The examples makes use of ``PW_TRACE_REF``
 and ``PW_TRACE_REF_DATA`` to specify a start and stop event for the capture.
@@ -278,7 +285,7 @@ This can be useful if the trace buffer is small and you wish to capture a
 specific series of events.
 
 Filter
-------
+======
 The filter example demonstrates how a callback can be used to filter which trace
 events get processed and saved. In this example all events from the processing
 task which don't have traceId equal to 3 are removed. Both the other task traces

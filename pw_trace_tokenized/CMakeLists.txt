@@ -225,3 +225,23 @@ pw_add_library(pw_trace_tokenized.transfer_handler STATIC
   PUBLIC_DEPS
     pw_transfer
 )
+
+pw_add_library(pw_trace_tokenized.decoder STATIC
+  HEADERS
+    public/pw_trace_tokenized/decoder.h
+  SOURCES
+    decoder.cc
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_trace_tokenized
+    pw_bytes
+    pw_log
+    pw_result
+    pw_status
+    pw_stream
+    pw_string
+    pw_tokenizer.decoder
+    pw_varint.stream
+    pw_third_party.fuchsia.stdcompat
+)

@@ -232,6 +232,29 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "decoder",
+    srcs = [
+        "decoder.cc",
+    ],
+    hdrs = [
+        "public/pw_trace_tokenized/decoder.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":pw_trace_tokenized",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_result",
+        "//pw_status",
+        "//pw_stream",
+        "//pw_string",
+        "//pw_tokenizer:decoder",
+        "//pw_varint:stream",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
 proto_library(
     name = "protos",
     srcs = [
@@ -270,6 +293,7 @@ filegroup(
     srcs = [
         "public/pw_trace_tokenized/base_trace_service.h",
         "public/pw_trace_tokenized/config.h",
+        "public/pw_trace_tokenized/decoder.h",
         "public/pw_trace_tokenized/trace_buffer.h",
         "public/pw_trace_tokenized/trace_buffer_log.h",
         "public/pw_trace_tokenized/trace_callback.h",
@@ -375,6 +399,21 @@ pw_cc_test(
         ":buffer_log",
         ":pw_trace_tokenized",
         "//pw_preprocessor",
+    ],
+)
+
+pw_cc_test(
+    name = "decoder_test",
+    srcs = [
+        "decoder_test.cc",
+    ],
+    deps = [
+        ":decoder",
+        "//pw_assert:check",
+        "//pw_log",
+        "//pw_stream",
+        "//pw_tokenizer:decoder",
+        "//pw_trace",
     ],
 )
 
