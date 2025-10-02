@@ -29,6 +29,7 @@ rust_test(
     srcs = [
         "target.rs",
     ],
+    edition = "2024",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     use_libtest_harness = False,

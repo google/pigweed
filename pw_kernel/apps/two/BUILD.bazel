@@ -19,6 +19,7 @@ rust_binary(
     srcs = [
         "main.rs",
     ],
+    edition = "2024",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [
@@ -32,6 +33,7 @@ rust_binary(
 app_package(
     name = "app_two",
     app_name = "two",
+    edition = "2024",
     system_config = "//pw_kernel/target:system_config_file",
     tags = ["kernel"],
 )

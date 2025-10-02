@@ -21,6 +21,7 @@ package(default_visibility = ["//visibility:public"])
 rust_library(
     name = "circular_buffer",
     srcs = ["lib.rs"],
+    edition = "2024",
     rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     deps = [

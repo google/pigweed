@@ -23,6 +23,7 @@ rust_library(
         "lib.rs",
         "system_config.rs",
     ],
+    edition = "2024",
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
@@ -40,6 +41,7 @@ rust_binary(
     srcs = [
         "main.rs",
     ],
+    edition = "2024",
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [

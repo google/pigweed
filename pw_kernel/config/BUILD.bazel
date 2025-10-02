@@ -23,6 +23,7 @@ rust_library(
         "lib.rs",
     ],
     crate_name = "kernel_config",
+    edition = "2024",
     tags = ["kernel"],
 )
 

@@ -24,6 +24,7 @@ rust_library(
         "lib.rs",
         "unsafe_list.rs",
     ],
+    edition = "2024",
     rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     deps = ["//pw_kernel/lib/foreign_box"] + KERNEL_TEST_DEPS,

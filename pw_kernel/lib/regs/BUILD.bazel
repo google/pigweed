@@ -19,6 +19,7 @@ load("//pw_kernel:flags.bzl", "KERNEL_TEST_DEPS", "KERNEL_TEST_RUSTC_FLAGS")
 rust_library(
     name = "regs",
     srcs = ["regs.rs"],
+    edition = "2024",
     rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     visibility = ["//visibility:public"],

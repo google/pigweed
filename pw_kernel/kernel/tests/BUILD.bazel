@@ -27,6 +27,7 @@ rust_library(
         "@platforms//cpu:riscv32": ["arch_riscv"],
         "//conditions:default": [],
     }),
+    edition = "2024",
     rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     target_compatible_with = select({

@@ -61,6 +61,7 @@ rust_library(
         ":default_handler_enabled": ["default_handler"],
         "//conditions:default": [],
     }),
+    edition = "2024",
     rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     deps = ["//pw_log/rust:pw_log"] + KERNEL_TEST_DEPS,

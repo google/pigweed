@@ -25,6 +25,7 @@ rust_library(
         "spinlock.rs",
     ],
     crate_features = ["user_space"],
+    edition = "2024",
     proc_macro_deps = [
         "@rust_crates//:paste",
     ],

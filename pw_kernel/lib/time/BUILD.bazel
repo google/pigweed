@@ -23,6 +23,7 @@ rust_library(
     srcs = [
         "time.rs",
     ],
+    edition = "2024",
     rustc_flags = KERNEL_TEST_RUSTC_FLAGS,
     tags = ["kernel"],
     deps = [

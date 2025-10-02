@@ -35,6 +35,7 @@ rust_library(
             "riscv32_without_atomics": [],
             "//conditions:default": ["builtin_impls"],
         }),
+    edition = "2024",
     tags = ["kernel"],
 )
 

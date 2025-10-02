@@ -17,6 +17,7 @@ load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library")
 rust_library(
     name = "log_if",
     srcs = ["log_if.rs"],
+    edition = "2024",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [

@@ -55,6 +55,7 @@ rust_library(
             "std_panic_handler",
         ],
     }),
+    edition = "2024",
     proc_macro_deps = [
         "@rust_crates//:paste",
     ] + select({

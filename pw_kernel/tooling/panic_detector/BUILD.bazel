@@ -25,6 +25,7 @@ rust_library(
         "riscv/elf_mem.rs",
         "riscv/mod.rs",
     ],
+    edition = "2024",
     proc_macro_deps = [
         "@rust_crates//:bitfield-struct",
     ],
@@ -43,6 +44,7 @@ rust_binary(
     srcs = [
         "main.rs",
     ],
+    edition = "2024",
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:public"],
     deps = [

@@ -19,6 +19,7 @@ package(default_visibility = ["//visibility:public"])
 rust_library(
     name = "demo",
     srcs = ["main.rs"],
+    edition = "2024",
     tags = ["kernel"],
     deps = [
         "//pw_kernel/config:kernel_config",

@@ -19,6 +19,7 @@ rust_proc_macro(
     srcs = [
         "pw_log_backend_basic_macro.rs",
     ],
+    edition = "2024",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [
@@ -36,6 +37,7 @@ rust_library(
     srcs = [
         "tokenized_writer.rs",
     ],
+    edition = "2024",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [

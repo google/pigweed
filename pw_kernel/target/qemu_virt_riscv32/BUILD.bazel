@@ -48,6 +48,7 @@ constraint_value(
 rust_library(
     name = "entry",
     srcs = ["entry.rs"],
+    edition = "2024",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
@@ -62,6 +63,7 @@ rust_library(
     name = "config",
     srcs = ["config.rs"],
     crate_name = "kernel_config",
+    edition = "2024",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
@@ -72,6 +74,7 @@ rust_library(
 rust_library(
     name = "uart",
     srcs = ["uart.rs"],
+    edition = "2024",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [

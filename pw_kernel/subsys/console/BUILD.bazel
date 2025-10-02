@@ -18,6 +18,7 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 rust_library(
     name = "console",
     srcs = ["console.rs"],
+    edition = "2024",
     visibility = ["//visibility:public"],
     deps = [
         "//pw_status/rust:pw_status",
@@ -28,6 +29,7 @@ rust_library(
     name = "console_backend_stdio",
     srcs = ["console_backend_stdio.rs"],
     crate_name = "console_backend",
+    edition = "2024",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_status/rust:pw_status",
@@ -43,6 +45,7 @@ rust_library(
         "//conditions:default": [],
     }),
     crate_name = "console_backend",
+    edition = "2024",
     target_compatible_with = select({
         "@platforms//cpu:armv8-m": [],
         "@platforms//cpu:riscv32": [],
@@ -62,6 +65,7 @@ rust_library(
     name = "colors",
     srcs = ["colors.rs"],
     crate_features = ["color"],
+    edition = "2024",
     deps = [
         "//pw_bytes/rust:pw_bytes",
         "//pw_log/rust:pw_log_backend_api",
@@ -81,6 +85,7 @@ rust_library(
         "pw_log_backend_basic.rs",
     ],
     crate_name = "pw_log_backend",
+    edition = "2024",
     proc_macro_deps = ["//pw_kernel/lib/pw_log_helper:pw_log_backend_basic_macro"],
     visibility = ["//visibility:public"],
     deps = [
@@ -96,6 +101,7 @@ rust_library(
         "pw_log_backend_tokenized.rs",
     ],
     crate_name = "pw_log_backend",
+    edition = "2024",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [

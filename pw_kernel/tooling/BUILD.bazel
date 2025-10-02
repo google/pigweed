@@ -21,6 +21,7 @@ load("//pw_kernel/tooling:code_size.bzl", "code_size")
 rust_binary(
     name = "system_assembler",
     srcs = ["system_assembler.rs"],
+    edition = "2024",
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
@@ -33,6 +34,7 @@ rust_binary(
 rust_binary(
     name = "presubmit",
     srcs = ["presubmit.rs"],
+    edition = "2024",
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:public"],

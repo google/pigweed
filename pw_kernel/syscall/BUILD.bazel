@@ -21,6 +21,7 @@ rust_library(
     srcs = [
         "syscall_defs.rs",
     ],
+    edition = "2024",
     tags = ["kernel"],
     deps = [
         "//pw_status/rust:pw_status",
@@ -41,6 +42,7 @@ rust_library(
         "@platforms//cpu:riscv32": ["arch_riscv"],
         "//conditions:default": ["arch_host"],
     }),
+    edition = "2024",
     tags = ["kernel"],
     deps = [
         ":syscall_defs",

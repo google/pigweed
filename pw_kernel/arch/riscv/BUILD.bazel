@@ -44,6 +44,7 @@ rust_library(
         "//pw_build/constraints/riscv/extensions:A.not": ["disable_interrupts_atomic"],
         "//conditions:default": [],
     }),
+    edition = "2024",
     proc_macro_deps = [
         "//pw_kernel/macros:riscv_macro",
         "@rust_crates//:paste",

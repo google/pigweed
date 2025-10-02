@@ -19,6 +19,7 @@ package(default_visibility = ["//visibility:public"])
 rust_library(
     name = "target_common",
     srcs = ["target_common.rs"],
+    edition = "2024",
     tags = ["kernel"],
     deps = [
         "//pw_kernel/lib/pw_assert",

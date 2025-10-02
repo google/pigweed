@@ -22,6 +22,7 @@ rust_proc_macro(
     srcs = [
         "unittest_proc_macro.rs",
     ],
+    edition = "2024",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [
@@ -34,6 +35,7 @@ rust_proc_macro(
 rust_library(
     name = "unittest",
     srcs = ["unittest.rs"],
+    edition = "2024",
     proc_macro_deps = [
         ":unittest_proc_macro",
     ],
@@ -48,6 +50,7 @@ rust_library(
 rust_library(
     name = "unittest_core",
     srcs = ["unittest_core.rs"],
+    edition = "2024",
     tags = ["kernel"],
     visibility = ["//visibility:public"],
     deps = [

@@ -39,6 +39,7 @@ rust_library(
         "@platforms//cpu:riscv32": ["arch_riscv"],
         "//conditions:default": [],
     }),
+    edition = "2024",
     proc_macro_deps = [
         ":userspace_macro",
     ],
@@ -63,6 +64,7 @@ rust_proc_macro(
         "riscv/entry.s",
     ],
     crate_features = ["user_space"],
+    edition = "2024",
     tags = ["kernel"],
     deps = [
         "@rust_crates//:proc-macro2",

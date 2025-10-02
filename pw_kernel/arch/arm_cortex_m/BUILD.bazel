@@ -37,6 +37,7 @@ rust_library(
         "timer.rs",
     ],
     crate_features = ["user_space"],
+    edition = "2024",
     proc_macro_deps = [
         "//pw_kernel/macros:arm_cortex_m_macro",
         "@rust_crates//:paste",
