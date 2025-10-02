@@ -112,7 +112,7 @@ filegroup(
         ":non_cpp_deps",
     ],
     tags = ["manual"],
-    visibility = ["//pw_ide/bazel:__subpackages__"],
+    visibility = ["//pw_ide/py:__subpackages__"],
 )
 
 pw_cc_compile_commands_fragments(
@@ -121,5 +121,5 @@ pw_cc_compile_commands_fragments(
     targets = [
         ":test_compile_commands_outputs",
     ],
-    visibility = ["//pw_ide/bazel:__subpackages__"],
+    visibility = ["//pw_ide/py:__subpackages__"],
 )

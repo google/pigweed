@@ -467,7 +467,7 @@
       "name": "compile_commands_integration_test",
       "description": "Runs integration tests for pw_ide's compile commands generator",
       "use_config": "bazel_default",
-      "target": "//pw_ide/bazel:integration_test",
+      "target": "//pw_ide/py:integration_test",
       "type": "ANALYZER"
     },
     {

@@ -56,3 +56,14 @@ pw_python_package("py") {
   mypy_ini = "$dir_pigweed/.mypy.ini"
   ruff_toml = "$dir_pigweed/.ruff.toml"
 }
+
+# These are intentionally excluded from the GN build since they're
+# Bazel-only.
+group("bazel_only") {
+  data = [
+    "integration_test.py",
+    "merger_test.py",
+    "pw_ide/cleaner.py",
+    "pw_ide/merger.py",
+  ]
+}

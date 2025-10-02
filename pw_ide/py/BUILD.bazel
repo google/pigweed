@@ -14,6 +14,7 @@
 
 load("@rules_platform//platform_data:defs.bzl", "platform_data")
 load("@rules_python//python:defs.bzl", "py_library")
+load("//pw_build:pw_py_importable_runfile.bzl", "pw_py_importable_runfile")
 load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -28,6 +29,7 @@ py_library(
         "pw_ide/cpp.py",
         "pw_ide/editors.py",
         "pw_ide/exceptions.py",
+        "pw_ide/merger.py",
         "pw_ide/python.py",
         "pw_ide/settings.py",
         "pw_ide/symlinks.py",
@@ -152,4 +154,64 @@ pw_py_test(
         "test_cases.py",
     ],
     deps = [":pw_ide"],
+)
+
+pw_py_binary(
+    name = "update_compile_commands",
+    srcs = ["pw_ide/merger.py"],
+    main = "pw_ide/merger.py",
+    deps = ["//pw_cli/py:pw_cli"],
+)
+
+pw_py_binary(
+    name = "clean_compile_commands",
+    srcs = ["pw_ide/cleaner.py"],
+    main = "pw_ide/cleaner.py",
+)
+
+pw_py_test(
+    name = "merger_test",
+    srcs = ["merger_test.py"],
+    deps = [
+        ":pw_ide",
+        "@pigweed_python_packages//pyfakefs",
+    ],
+)
+
+# For testing, do not increase visibility.
+pw_py_importable_runfile(
+    name = "clangd_binary",
+    testonly = True,
+    src = "@llvm_toolchain//:bin/clangd",
+    executable = True,
+    import_location = "pw_ide.clangd_binary",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+# For testing, do not increase visibility.
+pw_py_importable_runfile(
+    name = "update_compile_commands_binary",
+    testonly = True,
+    src = "//pw_ide/bazel:update_compile_commands",
+    executable = True,
+    import_location = "pw_ide.update_compile_commands_binary",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+pw_py_binary(
+    name = "integration_test",
+    testonly = True,
+    srcs = ["integration_test.py"],
+    data = [
+        # Ensure compile commands are always available.
+        "//pw_ide/bazel/compile_commands/test:test_compile_commands",
+        # Ensure generated files exist.
+        "//pw_ide/bazel/compile_commands/test:test_compile_commands_outputs",
+    ],
+    deps = [
+        ":clangd_binary",
+        ":update_compile_commands_binary",
+    ],
 )

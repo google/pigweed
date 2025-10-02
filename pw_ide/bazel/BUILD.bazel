@@ -12,84 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# This file makes this directory a Bazel package.
-
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("//pw_build:pw_py_importable_runfile.bzl", "pw_py_importable_runfile")
-load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
-
 package(default_visibility = ["//visibility:public"])
 
-exports_files([
-    "merger.sh",
-    "merger.py",
-    "cleaner.py",
-])
-
-py_library(
-    name = "merger",
-    testonly = True,
-    srcs = ["merger.py"],
-    visibility = ["//visibility:private"],
-    deps = ["//pw_cli/py:pw_cli"],
-)
-
-py_binary(
+alias(
     name = "update_compile_commands",
-    srcs = ["merger.py"],
-    main = "merger.py",
-    deps = ["//pw_cli/py:pw_cli"],
+    actual = "//pw_ide/py:update_compile_commands",
 )
 
-py_binary(
+alias(
     name = "clean_compile_commands",
-    srcs = ["cleaner.py"],
-    main = "cleaner.py",
-)
-
-pw_py_test(
-    name = "merger_test",
-    srcs = ["merger_test.py"],
-    deps = [
-        ":merger",
-        "@pigweed_python_packages//pyfakefs",
-    ],
-)
-
-# For testing, do not increase visibility.
-pw_py_importable_runfile(
-    name = "clangd_binary",
-    testonly = True,
-    src = "@llvm_toolchain//:bin/clangd",
-    executable = True,
-    import_location = "pw_ide.bazel.compile_commands.clangd_binary",
-    tags = ["manual"],
-    visibility = ["//visibility:private"],
-)
-
-# For testing, do not increase visibility.
-pw_py_importable_runfile(
-    name = "update_compile_commands_binary",
-    testonly = True,
-    src = "//pw_ide/bazel:update_compile_commands",
-    executable = True,
-    import_location = "pw_ide.bazel.compile_commands.update_compile_commands_binary",
-    tags = ["manual"],
-    visibility = ["//visibility:private"],
-)
-
-pw_py_binary(
-    name = "integration_test",
-    testonly = True,
-    srcs = ["integration_test.py"],
-    data = [
-        # Ensure compile commands are always available.
-        "//pw_ide/bazel/compile_commands/test:test_compile_commands",
-        # Ensure generated files exist.
-        "//pw_ide/bazel/compile_commands/test:test_compile_commands_outputs",
-    ],
-    deps = [
-        ":clangd_binary",
-        ":update_compile_commands_binary",
-    ],
+    actual = "//pw_ide/py:clean_compile_commands",
 )

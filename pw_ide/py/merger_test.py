@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Test for pw_ide.bazel.merger."""
+"""Test for the pw_ide compile commands fragment merger."""
 
 import io
 import json
@@ -31,7 +31,7 @@ import sys
 
 from pyfakefs import fake_filesystem_unittest
 
-from pw_ide.bazel import merger
+from pw_ide import merger
 
 _FRAGMENT_SUFFIX = '.pw_aspect.compile_commands.json'
 
@@ -69,7 +69,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
         )
 
         self.mock_run_bazel = self.enterContext(
-            mock.patch('pw_ide.bazel.merger._run_bazel')
+            mock.patch('pw_ide.merger._run_bazel')
         )
 
         def run_bazel_side_effect(
@@ -329,7 +329,7 @@ class MergerTest(fake_filesystem_unittest.TestCase):
             self.assertEqual(merger.main(), 1)
             self.assertIn('not found', buf.getvalue())
 
-    @mock.patch('pw_ide.bazel.merger._run_bazel')
+    @mock.patch('pw_ide.merger._run_bazel')
     def test_build_and_collect_fragments(self, mock_run_bazel):
         """Tests that fragments are collected via `bazel build`."""
         bep_content_line = json.dumps(
