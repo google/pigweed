@@ -262,7 +262,8 @@ class span : public pw_span_internal::ExtentStorage<Extent> {
 
   // Artificially templatized to break ambiguity for span(ptr, 0).
   template <typename = void>
-  constexpr span(T* begin, T* end) noexcept : span(begin, end - begin) {
+  constexpr span(T* begin, T* end) noexcept
+      : span(begin, static_cast<size_t>(end - begin)) {
     // Note: CHECK_LE is not constexpr, hence regular CHECK must be used.
     _PW_SPAN_ASSERT(begin <= end);
   }
