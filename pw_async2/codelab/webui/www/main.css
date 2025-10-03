@@ -1,0 +1,210 @@
+/*
+ * Copyright 2025 The Pigweed Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+body {
+  font-family: Arial;
+  background-color: #222;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.vending-machine {
+  background-color: #444;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow:
+    0 10px 20px #00000020,
+    inset 0 0 15px #00000080;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  width: 640px;
+  border: 5px solid #333;
+}
+
+.display-panel {
+  font-family: Courier;
+  grid-column: 1 / -1;
+  background-color: #222;
+  color: #0f0;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  border: 2px solid #333;
+  min-height: 24px;
+}
+
+.item-slots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  background: #333;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.item-slot {
+  background-color: #555;
+  border: 2px solid #666;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  color: #fff;
+}
+
+.item-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+  height: 40px;
+}
+
+.item-stock {
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.item-motor {
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.motor-state {
+  color: lightcyan;
+  font-weight: bold;
+}
+
+.motor-state.on {
+  color: lightgreen;
+}
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #444;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.debug-control-panel {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  justify-content: space-between;
+  background: #444;
+}
+
+.credit-display {
+  background-color: #222;
+  color: #ffc107;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  margin-bottom: 20px;
+  font-family: Courier;
+  font-size: 1.2em;
+}
+
+.status-display {
+  font-family: Courier;
+  grid-column: 1 / -1;
+  background-color: #222;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  border: 2px solid #333;
+  border-radius: 8px;
+}
+
+.status-display.connected {
+  color: cyan;
+}
+
+.status-display.disconnected {
+  color: red;
+}
+
+.status-display.connecting {
+  color: yellow;
+}
+
+button {
+  font-size: 1em;
+  text-align: center;
+  min-width: 160px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+  margin-top: 5px;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.vend-button {
+  background-color: #08f;
+  color: white;
+  width: 100%;
+}
+
+.vend-button:hover {
+  background-color: #04c;
+}
+
+.coin-button {
+  background-color: #2c4;
+  color: black;
+}
+
+.coin-button:hover {
+  background-color: #172;
+}
+
+.return-button {
+  background-color: #fc0;
+  color: black;
+}
+
+.return-button:hover {
+  background-color: #c80;
+}
+
+.debug-dispatcher-button {
+  background-color: #fa0;
+  color: black;
+}
+
+.debug-dispatcher-button:hover {
+  background-color: #c60;
+}
+
+.quit-button {
+  background-color: #fa0;
+  color: black;
+}
+
+.quit-button:hover {
+  background-color: #c60;
+}

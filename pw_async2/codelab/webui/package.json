@@ -1,0 +1,17 @@
+{
+  "name": "pw_async2-codelab-webui",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "esbuild --outdir=. www/main.ts --tsconfig=tsconfig.json --bundle --sourcemap --minify --loader:.bin=binary --servedir=. --log-override:direct-eval=silent",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.13.1",
+    "@typescript-eslint/parser": "^7.13.1",
+    "esbuild": "^0.25.4",
+    "eslint": "^8.57.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.2.2"
+  }
+}

@@ -1,0 +1,89 @@
+<!--
+Copyright 2025 The Pigweed Authors
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+-->
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="main.css">
+  <title>Vending Machine Simulator</title>
+</head>
+
+<body>
+  <div class="vending-machine">
+    <div id="status-display" class="status-display connecting">
+      Waiting for connection...
+    </div>
+
+    <div id="message-display" class="display-panel">
+      Welcome to the PigweedCo Vending Machine Demo!
+    </div>
+
+    <div class="item-slots">
+      <!-- Item Slot 0 -->
+      <div class="item-slot">
+        <div class="item-name" id="name-0">Raspberry Pi Pico 2</div>
+        <div class="item-stock">Stock: <span id="stock-0">10</span></div>
+        <div class="item-motor">Motor: <span class="motor-state" id="motor-0">off</span></div>
+        <button class="vend-button" id="vend-0">Select</button>
+      </div>
+      <!-- Item Slot 1 -->
+      <div class="item-slot">
+        <div class="item-name" id="name-1">Extra RAM</div>
+        <div class="item-stock">Stock: <span id="stock-1">10</span></div>
+        <div class="item-motor">Motor: <span class="motor-state" id="motor-1">off</span></div>
+        <button class="vend-button" id="vend-1">Select</button>
+      </div>
+      <!-- Item Slot 2 -->
+      <div class="item-slot">
+        <div class="item-name" id="name-2">P0 Bugfix</div>
+        <div class="item-stock">Stock: <span id="stock-2">10</span></div>
+        <div class="item-motor">Motor: <span class="motor-state" id="motor-2">off</span></div>
+        <button class="vend-button" id="vend-2">Select</button>
+      </div>
+      <!-- Item Slot 3 -->
+      <div class="item-slot">
+        <div class="item-name" id="name-3">Zero cost abstraction</div>
+        <div class="item-stock">Stock: <span id="stock-3">10</span></div>
+        <div class="item-motor">Motor: <span class="motor-state" id="motor-3">off</span></div>
+        <button class="vend-button" id="vend-3">Select</button>
+      </div>
+    </div>
+
+    <div class="control-panel">
+      <div>
+        <div class="credit-display">Credit: <span id="credit-value">0</span></div>
+        <button id="insert-coin-button" class="coin-button">Insert Coin</button>
+        <button id="return-coins-button" class="return-button">Return Coins</button>
+      </div>
+      <div>
+        <div class="credit-display">Bank: <span id="bank-value">0</span></div>
+      </div>
+    </div>
+
+    <div id="dispensed-display" class="display-panel">Last dispensed nothing</div>
+
+    <div class="debug-control-panel">
+      <button id="debug-dispatcher-button" class="debug-dispatcher-button">Dump Dispatcher State</button>
+      <button id="quit-button" class="quit-button">Quit codelab (leaves this UI open)</button>
+    </div>
+  </div>
+  <script src="/main.js"></script>
+</body>
+
+</html>
