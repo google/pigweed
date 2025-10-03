@@ -300,6 +300,13 @@ config("cpp20") {
   ]
 }
 
+config("cpp23") {
+  cflags_cc = [
+    "-std=c++23",
+    "-Wno-register",
+  ]
+}
+
 # Selects the C++ standard to used based on the pw_toolchain_CXX_STANDARD
 # toolchain trait.
 config("toolchain_cpp_standard") {
@@ -309,6 +316,8 @@ config("toolchain_cpp_standard") {
     configs = [ ":cpp17" ]
   } else if (pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX20) {
     configs = [ ":cpp20" ]
+  } else if (pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX23) {
+    configs = [ ":cpp23" ]
   } else {
     assert(false,
            "Unexpected pw_toolchain_CXX_STANDARD value: " +

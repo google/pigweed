@@ -21,6 +21,7 @@ pw_toolchain_STANDARD = {
   CXX14 = 201402
   CXX17 = 201703
   CXX20 = 202002
+  CXX23 = 202302
 }
 
 if (defined(is_fuchsia_tree) && is_fuchsia_tree) {
@@ -48,7 +49,8 @@ assert(
         pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX11 ||
         pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX14 ||
         pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX17 ||
-        pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX20,
+        pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX20 ||
+        pw_toolchain_CXX_STANDARD == pw_toolchain_STANDARD.CXX23,
     "pw_toolchain_CXX_STANDARD ($pw_toolchain_CXX_STANDARD) is an " +
         "unsupported value. The toolchain must set it to one of the " +
         "pw_toolchain_STANDARD constants (e.g. pw_toolchain_STANDARD.CXX17).")
