@@ -93,7 +93,7 @@ Learn more
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 
-      C/C++ API reference for ``Task``, ``Dispatcher``, ``CoRo``, and more.
+      C/C++ API reference for ``Task``, ``Dispatcher``, ``Coro``, and more.
 
    .. grid-item-card:: :octicon:`pencil` Code size analysis
       :link: module-pw_async2-size-reports
