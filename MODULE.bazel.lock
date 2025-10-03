@@ -77,8 +77,6 @@
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
     "https://bcr.bazel.build/modules/bzip2/1.0.8/MODULE.bazel": "83ee443b286b0b91566e5ee77e74ba6445895f3135467893871560f9e4ebc159",
     "https://bcr.bazel.build/modules/bzip2/1.0.8/source.json": "b64f3a2f973749cf5f6ee32b3d804af56a35a746228a7845ed5daa31c8cc8af1",
-    "https://bcr.bazel.build/modules/emboss/2024.1017.203246/MODULE.bazel": "e0c58f6ab1622089c414fd4192a5f8792599ca938d224506d60eae09ef68ca44",
-    "https://bcr.bazel.build/modules/emboss/2024.1017.203246/source.json": "b0cec0e38af36f1dff88ec402e5b464594e81f0c39172704f373a96440a53923",
     "https://bcr.bazel.build/modules/freertos/10.5.1.bcr.2/MODULE.bazel": "dcc13aef86495f5418f4cdd532eefe9a4319c44771ef57b8abda0c3560d8e6ed",
     "https://bcr.bazel.build/modules/freertos/10.5.1.bcr.2/source.json": "a35b2479d5ede2c414512e3e287fad3348eb1def5800e93cd85b1449002a4d12",
     "https://bcr.bazel.build/modules/fuzztest/20250214.0/MODULE.bazel": "b65b66befece838904a4e1a8bf5bb8d610b0e7519f0e4654fae6e61f3b9a54e8",

@@ -53,10 +53,6 @@ bazel_dep(name = "rules_python", version = "0.40.0")
 bazel_dep(name = "rules_rust", version = "0.65.0")
 bazel_dep(name = "rules_shell", version = "0.4.0")
 
-# LINT.IfChange(emboss)
-bazel_dep(name = "emboss", version = "2024.1017.203246", repo_name = "com_google_emboss")
-# LINT.ThenChange(/pw_package/py/pw_package/packages/emboss.py:emboss)
-
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 bazel_dep(name = "rules_doxygen", version = "2.4.2", dev_dependency = True)
 bazel_dep(name = "rules_mypy", version = "0.38.0", dev_dependency = True)
@@ -117,6 +113,17 @@ git_repository(
     commit = "db677011c7363509a288a9fb3bf0a50830bbf791",
     remote = "https://github.com/erenon/bazel_clang_tidy.git",
 )
+
+# TODO: https://github.com/google/emboss/issues/164 - Wire up the emboss repo to
+# BCR. Currently there is an entry contributed by a community member, but it is
+# not up to date.
+# LINT.IfChange(emboss)
+git_repository(
+    name = "com_google_emboss",
+    remote = "https://pigweed.googlesource.com/third_party/github/google/emboss.git",
+    tag = "v2025.1003.000719",
+)
+# LINT.ThenChange(/pw_package/py/pw_package/packages/emboss.py:emboss)
 
 # TODO: b/383856665 - rules_fuchsia requires host_platform. Once this is fixed
 # we can remove this entry.
