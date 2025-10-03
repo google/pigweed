@@ -799,8 +799,7 @@ TEST_F(CommandChannelTest, EventHandlerEventWhileTransactionPending) {
 
 // Tests:
 //  - Calling RemoveQueuedCommand on a synchronous command that has already been
-//  sent to the
-//    controller returns false.
+//    sent to the controller returns false.
 //  - The command still completes and notifies the callback.
 TEST_F(CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
   auto req_reset =

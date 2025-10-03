@@ -3619,5 +3619,45 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(auth_request_count(), 0u);
 }
 
+TEST_F(PairingStateTest, TransactionCollision) {
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  SecureSimplePairingState pairing_state(
+      peer()->GetWeakPtr(),
+      pairing_delegate.GetWeakPtr(),
+      connection()->GetWeakPtr(),
+      /*outgoing_connection=*/false,
+      MakeAuthRequestCallback(),
+      NoOpStatusCallback,
+      /*low_energy_address_delegate=*/this,
+      /*controller_remote_public_key_validation_supported=*/true,
+      sm_factory_func(),
+      dispatcher());
+
+  TestStatusHandler status_handler;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                status_handler.MakeStatusCallback());
+  RunUntilIdle();
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
+              kTestLinkKey)));
+
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
+  ASSERT_EQ(0, status_handler.call_count());
+
+  pairing_state.OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  ASSERT_EQ(0, status_handler.call_count());
+
+  auto tc_result = ToResult(
+      pw::bluetooth::emboss::StatusCode::LMP_ERROR_TRANSACTION_COLLISION);
+  hci::Result<bool> result(tc_result.take_error());
+  connection()->TriggerEncryptionChangeCallback(result);
+  ASSERT_EQ(0, status_handler.call_count());
+
+  connection()->TriggerEncryptionChangeCallback(fit::ok(true));
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(fit::ok(), *status_handler.status());
+}
+
 }  // namespace
 }  // namespace bt::gap

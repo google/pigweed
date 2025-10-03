@@ -495,6 +495,44 @@ void LegacyPairingState::OnAuthenticationComplete(
   EnableEncryption();
 }
 
+// Determine if we should ignore an error returned to us during the pairing
+// process. For example, the Central and Peripheral can both initiate the same
+// transaction (e.g. enable encryption) at the same time. In such a situation,
+// the Controller will respond with LMP Error Transction Collision.
+static bool ShouldIgnoreError(
+    bool is_central,
+    const bt::Error<pw::bluetooth::emboss::StatusCode>& error) {
+  if (!error.is_protocol_error()) {
+    return false;
+  }
+
+  // Bluetooth core specification Version 6.0, Volume 2, Part C, Section 2.5.1:
+  // An LMP Transaction Collision indicates that both the Central and the
+  // Peripheral initiated the same LMP transaction at the same time. We only
+  // receive this error when we are the Peripheral. The Central's operation
+  // takes precedence. Ignore this event and wait for the completion event after
+  // the Central LM completes the procedure.
+  if (error.protocol_error() ==
+      pw::bluetooth::emboss::StatusCode::LMP_ERROR_TRANSACTION_COLLISION) {
+    if (is_central) {
+      bt_log(WARN,
+             "gap-bredr",
+             "LMP transaction collision while attempting to enable encryption. "
+             "We are the central and should never have gotten this "
+             "notification from the Controller.");
+    } else {
+      bt_log(INFO,
+             "gap-bredr",
+             "LMP transaction collision while attempting to enable encryption. "
+             "Waiting for local LM to resolve the collision.");
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
 void LegacyPairingState::OnEncryptionChange(hci::Result<bool> result) {
   PW_CHECK(link_.is_alive());
 
@@ -531,16 +569,20 @@ void LegacyPairingState::OnEncryptionChange(hci::Result<bool> result) {
     return;
   }
 
-  if (result.is_ok()) {
-    // Encryption indicates the end of pairing so reset state for another
-    // pairing
-    state_ = State::kIdle;
-  } else {
+  if (result.is_error()) {
+    const auto& error = result.error_value();
+    if (ShouldIgnoreError(outgoing_connection(), error)) {
+      return;
+    }
+
     state_ = State::kFailed;
+    SignalStatus(result.take_error(), __func__);
+    return;
   }
 
-  SignalStatus(result.is_ok() ? hci::Result<>(fit::ok()) : result.take_error(),
-               __func__);
+  // Encryption indicates the end of pairing so reset state for another pairing
+  state_ = State::kIdle;
+  SignalStatus(hci::Result<>(fit::ok()), __func__);
 }
 
 std::unique_ptr<LegacyPairingState::Pairing>

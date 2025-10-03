@@ -1214,6 +1214,46 @@ TEST_F(LegacyPairingStateTest, PairingInitiatorCallbackMayDestroyPairingState) {
   EXPECT_TRUE(cb_called);
 }
 
+TEST_F(LegacyPairingStateTest, TransactionCollision) {
+  FakePairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(/*confirm=*/true);
+      });
+
+  LegacyPairingState pairing_state(peer()->GetWeakPtr(),
+                                   pairing_delegate.GetWeakPtr(),
+                                   connection()->GetWeakPtr(),
+                                   /*outgoing_connection=*/false,
+                                   MakeAuthRequestCallback(),
+                                   NoOpStatusCallback);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  bool cb_called = false;
+  auto status_cb = [&cb_called](hci_spec::ConnectionHandle,
+                                hci::Result<> status) {
+    EXPECT_FALSE(status.is_error());
+    cb_called = true;
+  };
+
+  pairing_state.InitiatePairing(status_cb);
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
+  pairing_state.OnPinCodeRequest(NoOpUserPinCodeCallback);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
+  pairing_state.OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+
+  auto tc_result = ToResult(
+      pw::bluetooth::emboss::StatusCode::LMP_ERROR_TRANSACTION_COLLISION);
+  hci::Result<bool> result(tc_result.take_error());
+  pairing_state.OnEncryptionChange(result);
+
+  EXPECT_FALSE(cb_called);
+  pairing_state.OnEncryptionChange(fit::ok(true));
+  EXPECT_TRUE(cb_called);
+}
+
 // Event injectors. Return values are necessarily ignored in order to make types
 // match, so don't use these functions to test return values. Likewise,
 // arguments have been filled with test defaults for a successful pairing flow.
