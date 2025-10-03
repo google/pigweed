@@ -176,6 +176,18 @@ fn handle_channel_respond<'a, K: Kernel>(kernel: K, mut args: K::SyscallArgs<'a>
     ret.map(|_| 0)
 }
 
+fn handle_debug_log<'a, K: Kernel>(kernel: K, mut args: K::SyscallArgs<'a>) -> Result<u64> {
+    let buffer_addr = args.next_usize()?;
+    let buffer_len = args.next_usize()?;
+    let buffer = SyscallBuffer::new_in_current_process(
+        kernel,
+        crate::MemoryRegionType::ReadOnlyData,
+        buffer_addr..(buffer_addr + buffer_len),
+    )?;
+    let mut console = console::Console::new();
+    console.write_all(buffer.as_slice()).map(|_| 0)
+}
+
 pub fn handle_syscall<'a, K: Kernel>(
     kernel: K,
     id: u16,
@@ -210,8 +222,9 @@ pub fn handle_syscall<'a, K: Kernel>(
             log_if::debug_if!(SYSCALL_DEBUG, "sycall: Shutdown {}", exit_code as u32);
             crate::target::shutdown(exit_code);
         }
+        SysCallId::DebugLog => handle_debug_log(kernel, args),
         _ => {
-            log_if::debug_if!(SYSCALL_DEBUG, "syscall: Unknown id {}", id as usize);
+            log_if::debug_if!(SYSCALL_DEBUG, "syscall: log");
             Err(Error::InvalidArgument)
         }
     };

@@ -63,3 +63,8 @@ pub fn debug_putc(c: char) -> Result<u32> {
 pub fn debug_shutdown(status: Result<()>) -> Result<()> {
     SysCall::debug_shutdown(status.status_code())
 }
+
+#[inline(always)]
+pub fn debug_log(buffer: &[u8]) -> Result<()> {
+    SysCall::debug_log(buffer.as_ptr(), buffer.len())
+}

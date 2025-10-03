@@ -74,6 +74,7 @@ rust_library(
         "//pw_kernel/lib/pw_cast",
         "//pw_kernel/lib/regs",
         "//pw_kernel/lib/time",
+        "//pw_kernel/subsys/console",
         "//pw_kernel/syscall:syscall_defs",
         "//pw_log/rust:pw_log",
         "//pw_status/rust:pw_status",

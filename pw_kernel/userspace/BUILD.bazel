@@ -50,6 +50,7 @@ rust_library(
         "//pw_kernel/lib/time",
         "//pw_kernel/syscall:syscall_defs",
         "//pw_kernel/syscall:syscall_user",
+        "//pw_log/rust:pw_log",
         "//pw_status/rust:pw_status",
     ],
 )

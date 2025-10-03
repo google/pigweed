@@ -21,6 +21,7 @@ use userspace::syscall::{self, Signals};
 use userspace::time::Instant;
 
 fn handle_uppercase_ipcs() -> Result<()> {
+    pw_log::info!("IPC service starting");
     loop {
         // Wait for an IPC to come in.
         syscall::object_wait(handle::IPC, Signals::READABLE, Instant::MAX)?;
@@ -50,7 +51,7 @@ fn entry() -> ! {
     if let Err(e) = handle_uppercase_ipcs() {
         // On error, log that it occurred and, since this is written as a test,
         // shut down the system with the error code.
-        let _ = syscall::debug_putc('!');
+        pw_log::error!("IPC service error: {}", e as u32);
         let _ = syscall::debug_shutdown(Err(e));
     }
 

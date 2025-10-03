@@ -66,6 +66,7 @@ rust_library(
     srcs = ["colors.rs"],
     crate_features = ["color"],
     edition = "2024",
+    visibility = ["//visibility:public"],
     deps = [
         "//pw_bytes/rust:pw_bytes",
         "//pw_log/rust:pw_log_backend_api",

@@ -13,6 +13,7 @@
 // the License.
 #![no_std]
 
+use pw_status::Error;
 #[cfg(feature = "arch_arm_cortex_m")]
 pub use userspace_macro::arm_cortex_m_entry as entry;
 #[cfg(feature = "arch_riscv")]
@@ -20,3 +21,12 @@ pub use userspace_macro::riscv_entry as entry;
 
 pub mod syscall;
 pub mod time;
+
+#[allow(non_snake_case)]
+#[unsafe(no_mangle)]
+pub extern "C" fn pw_assert_HandleFailure() -> ! {
+    pw_log::error!("Thread Panicking!");
+    let _ = syscall::debug_shutdown(Err(Error::Unknown));
+    #[allow(clippy::empty_loop)]
+    loop {}
+}

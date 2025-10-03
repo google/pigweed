@@ -113,4 +113,10 @@ impl SyscallBuffer {
 
         Ok(copy_len)
     }
+
+    #[must_use]
+    pub fn as_slice(&self) -> &[u8] {
+        // Safety: Address and size are checked and validated in `new()`.
+        unsafe { core::slice::from_raw_parts(self.addr.as_ptr(), self.size) }
+    }
 }
