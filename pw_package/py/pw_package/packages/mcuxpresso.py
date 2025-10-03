@@ -29,7 +29,10 @@ class McuxpressoSdk(pw_package.package_manager.Package):
             name='evkmimxrt595',
             # temporary point to antmicro github fork until
             # SDK generated files will be upstreamed
-            url='https://github.com/antmicro/mcuxpresso-sdk.git',
+            url=(
+                'https://pigweed.googlesource.com/third_party/github/'
+                'antmicro/mcuxpresso-sdk.git'
+            ),
             commit='0cc0caa0c44fc9ceae1ad4c0a9e3b79e8b38d751',
         )
 
