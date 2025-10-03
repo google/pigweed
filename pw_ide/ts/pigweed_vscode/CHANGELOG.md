@@ -1,5 +1,42 @@
 # Change Log
 
+## [1.9.11] - 2025-10-03
+
+### ✨ Features & Improvements
+
+* **Compile Commands Rework**: The system for creating the compile commands
+database has been reworked and now defaults to the more robust aspect-based
+generator.
+
+* **UI & UX Enhancements**:
+    * The output from the wrapper has been tuned for a better user experience.
+    * A new "Help" section with a welcome header has been added to guide users.
+    * The sidebar UI now automatically refreshes when a new build is completed.
+    * The target selection dropdown now has a variable width to accommodate longer target names.
+
+* **Improved Error Visibility**: Errors related to per-file compile commands
+are now clearly displayed in the IDE's banner.
+
+* **Configuration**:
+	* A new flag has been added to avoid the creation of Bazel symlinks in the
+      aspect wrapper.
+	* The last used Bazel command is now saved in a `.txt` file within the
+      project instead of the global VS Code settings.
+
+### 🐛 Bug Fixes
+
+* **Performance**:
+	* To prevent excessive restarts, the `clangd` process is now "debounced"
+      when compile commands are changed frequently.
+	* The number of CPU cores used by the `clangd` process during indexing has
+      been reduced to improve system performance.
+
+* **Stability**:
+	* Fixed a crash that could occur if the Pigweed project root directory was
+      not found.
+	* Corrected an issue that prevented pasting and other keyboard events from
+      working properly in the manual build input field.
+
 ## [1.9.9] - 2025-09-05
 
 ### Bug Fixes
