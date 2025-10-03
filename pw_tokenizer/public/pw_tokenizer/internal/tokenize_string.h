@@ -27,6 +27,8 @@
 
 #include <stdint.h>
 
+#include "pw_preprocessor/compiler.h"
+
 #define _PW_TOKENIZER_ENTRY_MAGIC 0xBAA98DEE
 
 // DOCSTAG: [pw_tokenizer-elf-entry]
@@ -51,7 +53,6 @@ typedef struct {
 #ifdef __cplusplus
 
 #include "pw_containers/to_array.h"
-#include "pw_preprocessor/compiler.h"
 
 namespace pw::tokenizer::internal {
 

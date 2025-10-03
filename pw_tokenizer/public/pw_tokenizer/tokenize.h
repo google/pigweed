@@ -360,13 +360,13 @@ PW_EXTERN_C_END
 /// values are stored as an entry in the ELF section. As a note for tokenized
 /// enum support, the enum name should be used as the string, and the enum value
 /// as the token.
-#define PW_TOKENIZER_DEFINE_TOKEN(token, domain, string)                       \
-  static_assert(::pw::tokenizer::internal::ValidDomain(domain),                \
-                "pw_tokenizer domains may only contain alphanumeric "          \
-                "characters, underscore, or colon, and cannot start with a "   \
-                "number; space characters are ignored");                       \
-  alignas(1) static constexpr auto _PW_TOKENIZER_SECTION _PW_TOKENIZER_UNIQUE( \
-      _pw_tokenizer_string_entry_) =                                           \
+#define PW_TOKENIZER_DEFINE_TOKEN(token, domain, string)                     \
+  static_assert(::pw::tokenizer::internal::ValidDomain(domain),              \
+                "pw_tokenizer domains may only contain alphanumeric "        \
+                "characters, underscore, or colon, and cannot start with a " \
+                "number; space characters are ignored");                     \
+  alignas(1) static constexpr auto _PW_TOKENIZER_SECTION PW_NO_SANITIZE(     \
+      "address") _PW_TOKENIZER_UNIQUE(_pw_tokenizer_string_entry_) =         \
       ::pw::tokenizer::internal::MakeEntry(token, domain, string)
 
 /// @}
@@ -401,7 +401,9 @@ constexpr bool Contains(const char* haystack, const char* needle) {
 #define _PW_ALIGNAS(alignment) __attribute__((aligned(alignment)))
 
 #define PW_TOKENIZER_DEFINE_TOKEN(token, domain, string) \
-  _PW_ALIGNAS(1) static const _PW_TOKENIZER_STRING_ENTRY(token, domain, string)
+  _PW_ALIGNAS(1)                                         \
+  static const PW_NO_SANITIZE("address")                 \
+      _PW_TOKENIZER_STRING_ENTRY(token, domain, string)
 
 // There is no way to do this in C.
 #define _PW_TOKENIZE_VALIDATE_FORMAT_STRING(format) \
