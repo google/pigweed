@@ -40,8 +40,14 @@ if("${dir_pw_third_party_emboss}" STREQUAL "")
   return()
 endif()
 
-pw_add_library(pw_third_party.emboss.cpp_utils INTERFACE
-  HEADERS
+if(EXISTS ${dir_pw_third_party_emboss}/gen/sources.cmake)
+  include(${dir_pw_third_party_emboss}/gen/sources.cmake)
+  set(emboss_headers)
+  foreach(source IN LISTS EMBOSS_RUNTIME_CPP_SOURCES)
+    list(APPEND emboss_headers "${dir_pw_third_party_emboss}/${source}")
+  endforeach()
+else()
+  set(emboss_headers
     ${dir_pw_third_party_emboss}/runtime/cpp/emboss_arithmetic.h
     ${dir_pw_third_party_emboss}/runtime/cpp/emboss_arithmetic_all_known_generated.h
     ${dir_pw_third_party_emboss}/runtime/cpp/emboss_arithmetic_maximum_operation_generated.h
@@ -57,6 +63,12 @@ pw_add_library(pw_third_party.emboss.cpp_utils INTERFACE
     ${dir_pw_third_party_emboss}/runtime/cpp/emboss_prelude.h
     ${dir_pw_third_party_emboss}/runtime/cpp/emboss_text_util.h
     ${dir_pw_third_party_emboss}/runtime/cpp/emboss_view_parameters.h
+  )
+endif()
+
+pw_add_library(pw_third_party.emboss.cpp_utils INTERFACE
+  HEADERS
+    ${emboss_headers}
   PUBLIC_INCLUDES
     ${dir_pw_third_party_emboss}
   PUBLIC_DEPS

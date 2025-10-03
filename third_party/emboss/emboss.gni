@@ -22,4 +22,10 @@ declare_args() {
   # target for overriding Emboss defines (e.g. EMBOSS_CHECK).
   pw_third_party_emboss_CONFIG =
       "$dir_pigweed/third_party/emboss:default_overrides"
+
+  # Use the pre-generated list of sources provided by the Emboss project. This
+  # flag is intended to be temporarily used until downstream users have had
+  # enough time to update their Emboss to a newer version.
+  # TODO(b/449017056): Remove this flag when downstream users have migrated.
+  pw_third_party_emboss_USE_GEN_SOURCES = "false"
 }

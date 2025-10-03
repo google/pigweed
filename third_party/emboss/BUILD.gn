@@ -18,6 +18,10 @@ import("$dir_pw_build/target_types.gni")
 
 import("$pw_external_emboss/emboss.gni")
 
+if ("$pw_third_party_emboss_USE_GEN_SOURCES" == "true") {
+  import("$dir_pw_third_party_emboss/gen/sources.gni")
+}
+
 config("default_config") {
   # EMBOSS_DCHECK is used as an assert() for logic embedded in Emboss, where
   # EMBOSS_CHECK is used to check preconditions on application logic (e.g.
@@ -43,23 +47,30 @@ pw_source_set("cpp_utils") {
   # emboss depends on a separate checkout not included in pigweed, so
   # ignore gn check for this module.
   check_includes = false
-  public = [
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic_all_known_generated.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic_maximum_operation_generated.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_array_view.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_bit_util.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_constant_view.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_cpp_types.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_cpp_util.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_defines.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_enum_view.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_maybe.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_memory_util.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_prelude.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_text_util.h",
-    "$dir_pw_third_party_emboss/runtime/cpp/emboss_view_parameters.h",
-  ]
+  if ("$pw_third_party_emboss_USE_GEN_SOURCES" == "true") {
+    public = []
+    foreach(source, emboss_runtime_cpp_sources) {
+      public += [ "$dir_pw_third_party_emboss/$source" ]
+    }
+  } else {
+    public = [
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic_all_known_generated.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic_maximum_operation_generated.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_array_view.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_bit_util.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_constant_view.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_cpp_types.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_cpp_util.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_defines.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_enum_view.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_maybe.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_memory_util.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_prelude.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_text_util.h",
+      "$dir_pw_third_party_emboss/runtime/cpp/emboss_view_parameters.h",
+    ]
+  }
   public_deps = [ pw_third_party_emboss_CONFIG ]
   visibility = [ "*" ]
 }
