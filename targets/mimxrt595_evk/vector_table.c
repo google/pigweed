@@ -17,7 +17,7 @@
 #include "pw_boot/boot.h"
 #include "pw_boot_cortex_m/boot.h"
 #include "pw_preprocessor/compiler.h"
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 
 // Extern symbols provided by linker script.
 // This symbol contains the size of the image.
@@ -28,7 +28,7 @@ extern uint8_t _pw_image_size;
 // expect, it might have hit a fault and ended up here.
 static void DefaultFaultHandler(void) {
   // Wait for debugger to attach.
-  pw_InfiniteLoop();
+  pw_BusyWaitForever();
 }
 
 // Default interrupt handler that entries in the ARMv8-M vector table (below)
@@ -37,7 +37,7 @@ static void DefaultFaultHandler(void) {
 // raised an interrupt and ended up here.
 static void DefaultInterruptHandler(void) {
   // Wait for debugger to attach.
-  pw_InfiniteLoop();
+  pw_BusyWaitForever();
 }
 
 // Default handlers to insert into the ARMv8-M vector table (below) that

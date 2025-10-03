@@ -12,49 +12,50 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 
 #include "pw_unit_test/framework.h"
 
-extern "C" int pw_TestInfiniteLoopC(int loop_infinitely_if_0);
+extern "C" int pw_TestBusyWaitForeverC(int loop_infinitely_if_0);
 
 namespace {
 
-int TestInfiniteLoop(int loop_infinitely_if_0) {
+int TestBusyWaitForever(int loop_infinitely_if_0) {
   if (loop_infinitely_if_0 != 0) {
     return loop_infinitely_if_0;
   }
-  pw::InfiniteLoop();  // No return statement needed because of infinite loop.
+  // No return statement needed because of infinite loop.
+  pw::BusyWaitForever();
 }
 
-TEST(InfiniteLoop, Compiles) {
-  EXPECT_EQ(TestInfiniteLoop(123), 123);
+TEST(BusyWaitForever, Compiles) {
+  EXPECT_EQ(TestBusyWaitForever(123), 123);
 
   if (false) {
-    EXPECT_EQ(TestInfiniteLoop(0), 0);  // Loops forever!
+    EXPECT_EQ(TestBusyWaitForever(0), 0);  // Loops forever!
   }
 }
 
-int TestInfiniteLoopCAlias(int loop_infinitely_if_0) {
+int TestBusyWaitForeverCAlias(int loop_infinitely_if_0) {
   if (loop_infinitely_if_0 != 0) {
     return loop_infinitely_if_0;
   }
-  pw_InfiniteLoop();  // No return statement needed because of infinite loop.
+  pw_BusyWaitForever();  // No return statement needed because of infinite loop.
 }
 
-TEST(InfiniteLoop, CAliasCompiles) {
-  EXPECT_EQ(TestInfiniteLoopCAlias(123), 123);
+TEST(BusyWaitForever, CAliasCompiles) {
+  EXPECT_EQ(TestBusyWaitForeverCAlias(123), 123);
 
   if (false) {
-    EXPECT_EQ(TestInfiniteLoopCAlias(0), 0);  // Loops forever!
+    EXPECT_EQ(TestBusyWaitForeverCAlias(0), 0);  // Loops forever!
   }
 }
 
-TEST(InfiniteLoop, CompilesInC) {
-  EXPECT_EQ(pw_TestInfiniteLoopC(123), 123);
+TEST(BusyWaitForever, CompilesInC) {
+  EXPECT_EQ(pw_TestBusyWaitForeverC(123), 123);
 
   if (false) {
-    EXPECT_EQ(pw_TestInfiniteLoopC(0), 0);  // Loops forever!
+    EXPECT_EQ(pw_TestBusyWaitForeverC(0), 0);  // Loops forever!
   }
 }
 

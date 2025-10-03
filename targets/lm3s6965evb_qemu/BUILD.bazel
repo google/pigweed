@@ -35,7 +35,7 @@ cc_library(
         "//pw_malloc",
         "//pw_preprocessor",
         "//pw_sys_io_baremetal_lm3s6965evb",
-        "//pw_toolchain:infinite_loop",
+        "//pw_toolchain:busy_wait_forever",
         "//pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
     ],
     alwayslink = 1,

@@ -187,7 +187,7 @@ cc_library(
         "//pw_preprocessor",
         "//pw_sys_io_mcuxpresso",
         "//pw_system:init",
-        "//pw_toolchain:infinite_loop",
+        "//pw_toolchain:busy_wait_forever",
         "//targets:mcuxpresso_sdk",
         "//targets/mimxrt595_evk_freertos/config",
         "//third_party/freertos:support",

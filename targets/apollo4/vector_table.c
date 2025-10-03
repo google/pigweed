@@ -17,14 +17,14 @@
 #include "pw_boot/boot.h"
 #include "pw_boot_cortex_m/boot.h"
 #include "pw_preprocessor/compiler.h"
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 
 // Default handler to insert into the ARMv7-M vector table (below).
 // This function exists for convenience. If a device isn't doing what you
 // expect, it might have hit a fault and ended up here.
 static void DefaultFaultHandler(void) {
   // Wait for debugger to attach.
-  pw_InfiniteLoop();
+  pw_BusyWaitForever();
 }
 
 // This typedef is for convenience when building the vector table. With the

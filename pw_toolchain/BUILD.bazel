@@ -103,10 +103,19 @@ cc_library(
 )
 
 cc_library(
-    name = "infinite_loop",
-    hdrs = ["public/pw_toolchain/infinite_loop.h"],
+    name = "busy_wait_forever",
+    hdrs = [
+        "public/pw_toolchain/busy_wait_forever.h",
+        "public/pw_toolchain/infinite_loop.h",
+    ],
     strip_include_prefix = "public",
     deps = ["//pw_preprocessor"],
+)
+
+alias(
+    name = "infinite_loop",
+    actual = ":busy_wait_forever",
+    deprecation = ":infinite_loop has been renamed to :busy_wait_forever",
 )
 
 pw_cc_test(
@@ -130,13 +139,13 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "infinite_loop_test",
+    name = "busy_wait_forever_test",
     srcs = [
-        "infinite_loop_test.cc",
-        "infinite_loop_test_c.c",
+        "busy_wait_forever_test.cc",
+        "busy_wait_forever_test_c.c",
     ],
     deps = [
-        ":infinite_loop",
+        ":busy_wait_forever",
         "//pw_unit_test",
     ],
 )
@@ -168,9 +177,9 @@ cc_library(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_toolchain/busy_wait_forever.h",
         "public/pw_toolchain/constexpr_tag.h",
         "public/pw_toolchain/globals.h",
-        "public/pw_toolchain/infinite_loop.h",
         "public/pw_toolchain/no_destructor.h",
     ],
 )

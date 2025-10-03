@@ -17,7 +17,7 @@
 #include "pw_boot/boot.h"
 #include "pw_boot_cortex_m/boot.h"
 #include "pw_preprocessor/compiler.h"
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 #include "stm32f4xx.h"
 
 // Default handler to insert into the ARMv7-M vector table (below).
@@ -25,7 +25,7 @@
 // expect, it might have hit a fault and ended up here.
 static void DefaultFaultHandler(void) {
   // Wait for debugger to attach.
-  pw_InfiniteLoop();
+  pw_BusyWaitForever();
 }
 
 // This is the device's interrupt vector table. It's not referenced in any

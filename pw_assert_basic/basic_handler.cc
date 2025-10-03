@@ -26,7 +26,7 @@
 #include "pw_string/string_builder.h"
 #include "pw_sys_io/sys_io.h"
 #if (PW_ASSERT_BASIC_ACTION == PW_ASSERT_BASIC_ACTION_LOOP)
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 #endif  // (PW_ASSERT_BASIC_ACTION == PW_ASSERT_BASIC_ACTION_LOOP)
 
 // ANSI color constants to control the terminal. Not Windows compatible.
@@ -151,7 +151,7 @@ extern "C" void pw_assert_basic_HandleFailure(const char* file_name,
     WriteLine("");
     WriteLine(
         "     ... until a debugger joins. System is waiting in a while(1)");
-    pw::InfiniteLoop();
+    pw::BusyWaitForever();
 #else
 #error PW_ASSERT_BASIC_ACTION Must be set to valid option.
 #endif

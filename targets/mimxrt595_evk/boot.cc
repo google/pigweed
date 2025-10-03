@@ -21,7 +21,7 @@
 #include "pw_boot_cortex_m/boot.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io_mcuxpresso/init.h"
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 
 #if PW_MALLOC_ACTIVE
 #include "pw_malloc/malloc.h"
@@ -48,5 +48,5 @@ void pw_boot_PreMainInit() {
 
 PW_NO_RETURN void pw_boot_PostMain() {
   // In case main() returns, just sit here until the device is reset.
-  pw::InfiniteLoop();
+  pw::BusyWaitForever();
 }

@@ -18,7 +18,7 @@
 #include "pw_malloc/malloc.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io_baremetal_stm32f429/init.h"
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 
 // Note that constexpr is used inside of this function instead of using a static
 // constexpr or declaring it outside of this function in an anonymous namespace,
@@ -62,5 +62,5 @@ void pw_boot_PreMainInit() { pw_sys_io_stm32f429_Init(); }
 
 PW_NO_RETURN void pw_boot_PostMain() {
   // In case main() returns, just sit here until the device is reset.
-  pw::InfiniteLoop();
+  pw::BusyWaitForever();
 }

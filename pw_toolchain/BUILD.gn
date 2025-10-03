@@ -64,10 +64,11 @@ pw_source_set("globals") {
   public = [ "public/pw_toolchain/globals.h" ]
 }
 
-pw_source_set("infinite_loop") {
+pw_source_set("busy_wait_forever") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_toolchain/infinite_loop.h" ]
+  public = [ "public/pw_toolchain/busy_wait_forever.h" ]
   public_deps = [ dir_pw_preprocessor ]
+  sources = [ "public/pw_toolchain/infinite_loop.h" ]
 }
 
 pw_source_set("sibling_cast") {
@@ -98,7 +99,7 @@ pw_test_group("tests") {
     ":globals_test",
     ":no_destructor_test",
     ":sibling_cast_test",
-    ":infinite_loop_test",
+    ":busy_wait_forever_test",
   ]
 }
 
@@ -120,10 +121,10 @@ pw_test("globals_test") {
   ]
 }
 
-pw_test("infinite_loop_test") {
+pw_test("busy_wait_forever_test") {
   sources = [
-    "infinite_loop_test.cc",
-    "infinite_loop_test_c.c",
+    "busy_wait_forever_test.cc",
+    "busy_wait_forever_test_c.c",
   ]
-  deps = [ ":infinite_loop" ]
+  deps = [ ":busy_wait_forever" ]
 }

@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 
-int pw_TestInfiniteLoopC(int loop_infinitely_if_0) {
+int pw_TestBusyWaitForeverC(int loop_infinitely_if_0) {
   if (loop_infinitely_if_0 != 0) {
     return loop_infinitely_if_0;
   }
-  pw_InfiniteLoop();  // No return statement needed because of infinite loop.
+  pw_BusyWaitForever();  // No return statement needed because of infinite loop.
 }

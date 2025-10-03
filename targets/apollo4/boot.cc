@@ -16,7 +16,7 @@
 
 #include "pw_malloc/malloc.h"
 #include "pw_sys_io_ambiq_sdk/init.h"
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 
 PW_EXTERN_C void pw_boot_PreStaticMemoryInit() {}
 
@@ -32,5 +32,5 @@ PW_EXTERN_C void pw_boot_PreMainInit() {}
 
 PW_EXTERN_C PW_NO_RETURN void pw_boot_PostMain() {
   // In case main() returns, just sit here until the device is reset.
-  pw::InfiniteLoop();
+  pw::BusyWaitForever();
 }

@@ -61,8 +61,9 @@ pw_add_test(pw_toolchain.globals_test
     pw_toolchain
 )
 
-pw_add_library(pw_toolchain.infinite_loop INTERFACE
+pw_add_library(pw_toolchain.busy_wait_forever INTERFACE
   HEADERS
+    public/pw_toolchain/busy_wait_forever.h
     public/pw_toolchain/infinite_loop.h
   PUBLIC_DEPS
     pw_preprocessor
@@ -70,12 +71,17 @@ pw_add_library(pw_toolchain.infinite_loop INTERFACE
     public
 )
 
-pw_add_test(pw_toolchain.infinite_loop_test
+pw_add_library(pw_toolchain.infinite_loop INTERFACE
+  PUBLIC_DEPS
+    pw_toolchain.busy_wait_forever
+)
+
+pw_add_test(pw_toolchain.busy_wait_forever_test
   SOURCES
-    infinite_loop_test.cc
-    infinite_loop_test_c.c
+    busy_wait_forever_test.cc
+    busy_wait_forever_test_c.c
   PRIVATE_DEPS
-    pw_toolchain.infinite_loop
+    pw_toolchain.busy_wait_forever
   GROUPS
     modules
     pw_toolchain

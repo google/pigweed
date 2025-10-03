@@ -16,7 +16,7 @@
 
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io_baremetal_lm3s6965evb/init.h"
-#include "pw_toolchain/infinite_loop.h"
+#include "pw_toolchain/busy_wait_forever.h"
 
 // Note that constexpr is used inside of this function instead of using a static
 // constexpr or declaring it outside of this function in an anonymous namespace,
@@ -43,5 +43,5 @@ extern "C" PW_NO_RETURN void pw_boot_PostMain() {
   *aircr = 0x5fa0004;
 
   // In case main() returns, just sit here until the device is reset.
-  pw::InfiniteLoop();
+  pw::BusyWaitForever();
 }

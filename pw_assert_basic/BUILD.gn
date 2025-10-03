@@ -82,7 +82,7 @@ pw_source_set("basic_handler") {
     "$dir_pw_preprocessor",
     "$dir_pw_string:builder",
     "$dir_pw_sys_io",
-    "$dir_pw_toolchain:infinite_loop",
+    "$dir_pw_toolchain:busy_wait_forever",
   ]
   sources = [ "basic_handler.cc" ]
 }
